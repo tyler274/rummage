@@ -1,7 +1,4 @@
-use bevy::{
-    prelude::*,
-    utils::{HashMap, HashSet},
-};
+use bevy::{prelude::*, utils::HashMap};
 use bitflags::bitflags;
 
 bitflags! {
