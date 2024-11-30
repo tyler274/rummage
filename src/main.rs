@@ -14,15 +14,17 @@ fn hello_world() {
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(bevy::render::RenderPlugin {
-            render_creation: bevy_render::settings::RenderCreation::Automatic(
-                bevy::render::settings::WgpuSettings {
-                    backends: Some(bevy::render::settings::Backends::VULKAN),
-                    ..default()
-                },
-            ),
-            ..default()
-        }))
+        .add_plugins(DefaultPlugins)
+        // How to forcibly change the render backend to Vulkan
+        // .add_plugins(DefaultPlugins.set(bevy::render::RenderPlugin {
+        //     render_creation: bevy_render::settings::RenderCreation::Automatic(
+        //         bevy::render::settings::WgpuSettings {
+        //             backends: Some(bevy::render::settings::Backends::VULKAN),
+        //             ..default()
+        //         },
+        //     ),
+        //     ..default()
+        // }))
         .add_systems(Update, hello_world)
         .run();
 }
