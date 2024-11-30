@@ -6,7 +6,7 @@ use bevy::{
 use crate::{card::Card, mana::ManaPool};
 
 pub(crate) struct Hand {
-    cards: HashSet<Card>,
+    cards: Vec<Card>,
 }
 
 #[derive(Component, Default, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
