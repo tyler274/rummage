@@ -15,12 +15,12 @@ bitflags! {
     /// - `ALL` (combination of all colors)
     #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
     struct Color: u8 {
+        const COLORLESS = 0b00000;
         const WHITE = 0b00001;
         const BLUE = 0b00010;
         const BLACK = 0b00100;
         const RED = 0b01000;
         const GREEN = 0b10000;
-        const COLORLESS = 0b00000;
         const ALL = Self::WHITE.bits() & Self::BLUE.bits() & Self::BLACK.bits() & Self::RED.bits() & Self::GREEN.bits();
     }
 }

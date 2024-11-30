@@ -3,10 +3,10 @@ use bevy::{
     utils::{HashMap, HashSet},
 };
 
-use crate::mana::ManaPool;
+use crate::{card::Card, mana::ManaPool};
 
 pub(crate) struct Hand {
-    cards: HashSet<Entity>,
+    cards: HashSet<Card>,
 }
 
 #[derive(Component, Default, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]

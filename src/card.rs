@@ -11,6 +11,9 @@ bitflags! {
         const ARTIFACT = 0b10000;
         const LAND = 0b100000;
         const LEGENDARY = 0b1000000;
+        const SAGA = 0b10000000;
+        // TODO: Flip cards, transforms, pathstrider, etc.
+        const HISTORIC = Self::ARTIFACT.bits() | Self::LEGENDARY.bits() | Self::SAGA.bits();
     }
 }
 
@@ -33,13 +36,23 @@ pub(crate) struct Card {
     name: String,
     // The cost written on the card, e.g. "1WU"
     cost: u64,
+    id: u64,
 }
 
 #[derive(Component, Default, Debug, Clone, PartialEq, Eq)]
 #[require(Card, CreatureType)]
-struct Creature {
+struct CreatureCard {
     power: u64,
     toughness: u64,
     // TODO: Placeholder for actual rules simulation
     abilities: Vec<String>,
+}
+
+#[derive(Component, Default, Debug, Clone, PartialEq, Eq)]
+#[require(CreatureCard)]
+struct CreatureOnField {
+    power_modifier: i64,
+    toughness_modifier: i64,
+    battle_damage: u64,
+    token: bool,
 }
