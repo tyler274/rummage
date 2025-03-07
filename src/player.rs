@@ -1,17 +1,20 @@
-use bevy::{
-    prelude::*,
-    utils::{HashMap, HashSet},
+use bevy::prelude::*;
+use crate::{
+    card::Card,
+    mana::ManaPool,
 };
 
-use crate::{card::Card, mana::ManaPool};
-
+#[derive(Component, Default, Debug, Clone, PartialEq, Eq)]
+#[allow(dead_code)]
 pub(crate) struct Hand {
     cards: Vec<Card>,
 }
 
-#[derive(Component, Default, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[require(ManaPool)]
+#[derive(Component, Default, Debug, Clone)]
+#[allow(dead_code)]
 pub(crate) struct Player {
     name: String,
-    health: u64,
+    life: i32,
+    mana_pool: ManaPool,
+    hand: Hand,
 }

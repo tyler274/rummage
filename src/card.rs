@@ -3,7 +3,7 @@ use bitflags::bitflags;
 
 bitflags! {
     #[derive(Component, Default, Debug, Clone, PartialEq, Eq)]
-    struct CardType: u8 {
+    pub struct CardType: u8 {
         const CREATURE = 0b00001;
         const INSTANT = 0b00010;
         const SORCERY = 0b00100;
@@ -20,7 +20,7 @@ bitflags! {
 bitflags! {
     // There are about 300 creatures types.
     #[derive(Component, Default, Debug, Clone, PartialEq, Eq)]
-    struct CreatureType: u8 {
+    pub struct CreatureType: u8 {
         const HUMAN = 0b00001;
         const WIZARD = 0b00010;
         const DRAGON = 0b00100;
@@ -30,29 +30,29 @@ bitflags! {
     }
 }
 
-#[derive(Component, Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Component, Default, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[require(CardType)]
-pub(crate) struct Card {
-    name: String,
+pub struct Card {
+    pub name: String,
     // The cost written on the card, e.g. "1WU"
-    cost: u64,
-    id: u64,
+    pub cost: u64,
+    pub id: u64,
 }
 
 #[derive(Component, Default, Debug, Clone, PartialEq, Eq)]
 #[require(Card, CreatureType)]
-struct CreatureCard {
-    power: u64,
-    toughness: u64,
+pub struct CreatureCard {
+    pub power: u64,
+    pub toughness: u64,
     // TODO: Placeholder for actual rules simulation
-    abilities: Vec<String>,
+    pub abilities: Vec<String>,
 }
 
 #[derive(Component, Default, Debug, Clone, PartialEq, Eq)]
 #[require(CreatureCard)]
-struct CreatureOnField {
-    power_modifier: i64,
-    toughness_modifier: i64,
-    battle_damage: u64,
-    token: bool,
+pub struct CreatureOnField {
+    pub power_modifier: i64,
+    pub toughness_modifier: i64,
+    pub battle_damage: u64,
+    pub token: bool,
 }

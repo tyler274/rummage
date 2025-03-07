@@ -36,7 +36,33 @@ pub(crate) struct Mana {
     amount: u64,
 }
 
-#[derive(Component, Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[allow(dead_code)]
 pub(crate) struct ManaPool {
     mana: HashMap<Color, Mana>,
+}
+
+impl ManaPool {
+    pub fn new() -> Self {
+        Self {
+            mana: HashMap::new(),
+        }
+    }
+
+    pub fn add(&mut self, mana: Mana) {
+        self.mana.entry(mana.color).and_modify(|e| e.amount += mana.amount).or_insert(mana);
+    }
+
+    pub fn remove(&mut self, mana: Mana) -> bool {
+        if let Some(existing) = self.mana.get_mut(&mana.color) {
+            if existing.amount >= mana.amount {
+                existing.amount -= mana.amount;
+                if existing.amount == 0 {
+                    self.mana.remove(&mana.color);
+                }
+                return true;
+            }
+        }
+        false
+    }
 }
