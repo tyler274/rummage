@@ -28,7 +28,7 @@ impl Plugin for CardsPlugin {
 struct CardRng(StdRng);
 
 /// Returns a list of example cards for testing and development.
-/// Currently returns a subset of 5 cards from the full deck.
+/// Currently returns a subset of 7 cards from the full deck.
 ///
 /// # Arguments
 /// * `player_entity` - The entity ID of the player who will own these cards
@@ -448,9 +448,9 @@ pub fn get_example_cards(_player_entity: Entity) -> Vec<Card> {
         },
     ];
 
-    // Randomly select 5 cards from the full deck
+    // Randomly select 7 cards for a proper starting hand
     all_cards.shuffle(&mut rand::rng());
-    all_cards.truncate(5);
+    all_cards.truncate(7);
     all_cards
 }
 
