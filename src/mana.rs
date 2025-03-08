@@ -25,15 +25,16 @@ bitflags! {
     }
 }
 
-/// Represents a quantity of mana of a specific color.
-///
-/// The `Mana` struct contains:
-/// - `color`: The color of the mana, represented by the `Color` bitflags.
-/// - `amount`: The amount of mana of the specified color.
+/// Represents mana costs with specific amounts for each color
 #[derive(Component, Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Mana {
-    pub color: Color,
-    pub amount: u64,
+    pub color: Color,  // Used to quickly check which colors are present
+    pub white: u64,
+    pub blue: u64,
+    pub black: u64,
+    pub red: u64,
+    pub green: u64,
+    pub colorless: u64,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
@@ -49,14 +50,32 @@ impl ManaPool {
     }
 
     pub fn add(&mut self, mana: Mana) {
-        self.mana.entry(mana.color).and_modify(|e| e.amount += mana.amount).or_insert(mana);
+        self.mana.entry(mana.color).and_modify(|e| {
+            e.white += mana.white;
+            e.blue += mana.blue;
+            e.black += mana.black;
+            e.red += mana.red;
+            e.green += mana.green;
+            e.colorless += mana.colorless;
+        }).or_insert(mana);
     }
 
     pub fn remove(&mut self, mana: Mana) -> bool {
         if let Some(existing) = self.mana.get_mut(&mana.color) {
-            if existing.amount >= mana.amount {
-                existing.amount -= mana.amount;
-                if existing.amount == 0 {
+            if existing.white >= mana.white &&
+               existing.blue >= mana.blue &&
+               existing.black >= mana.black &&
+               existing.red >= mana.red &&
+               existing.green >= mana.green &&
+               existing.colorless >= mana.colorless {
+                existing.white -= mana.white;
+                existing.blue -= mana.blue;
+                existing.black -= mana.black;
+                existing.red -= mana.red;
+                existing.green -= mana.green;
+                existing.colorless -= mana.colorless;
+                
+                if existing.total() == 0 {
                     self.mana.remove(&mana.color);
                 }
                 return true;
@@ -68,44 +87,35 @@ impl ManaPool {
 
 impl Mana {
     /// Creates a new Mana instance with the specified amounts for each color.
-    /// 
-    /// # Arguments
-    /// * `colorless` - Amount of colorless mana
-    /// * `white` - Amount of white mana
-    /// * `red` - Amount of red mana
-    /// * `blue` - Amount of blue mana
-    /// * `black` - Amount of black mana
-    /// * `green` - Amount of green mana
-    pub fn new(colorless: u64, white: u64, red: u64, blue: u64, black: u64, green: u64) -> Self {
+    pub fn new(colorless: u64, white: u64, blue: u64, black: u64, red: u64, green: u64) -> Self {
         let mut color = Color::COLORLESS;
-        let mut total = colorless;
-
-        // Add colored mana
-        if white > 0 {
-            color |= Color::WHITE;
-            total += white;
-        }
-        if red > 0 {
-            color |= Color::RED;
-            total += red;
-        }
-        if blue > 0 {
-            color |= Color::BLUE;
-            total += blue;
-        }
-        if black > 0 {
-            color |= Color::BLACK;
-            total += black;
-        }
-        if green > 0 {
-            color |= Color::GREEN;
-            total += green;
-        }
+        
+        // Set color flags based on presence of colored mana
+        if white > 0 { color |= Color::WHITE; }
+        if blue > 0 { color |= Color::BLUE; }
+        if black > 0 { color |= Color::BLACK; }
+        if red > 0 { color |= Color::RED; }
+        if green > 0 { color |= Color::GREEN; }
 
         Self {
             color,
-            amount: total,
+            white,
+            blue,
+            black,
+            red,
+            green,
+            colorless,
         }
+    }
+
+    /// Returns the total amount of mana
+    pub fn total(&self) -> u64 {
+        self.colorless + self.white + self.blue + self.black + self.red + self.green
+    }
+
+    /// Returns the total amount of colored mana
+    pub fn colored_total(&self) -> u64 {
+        self.white + self.blue + self.black + self.red + self.green
     }
 
     /// Returns the number of colored mana symbols in the cost
@@ -115,24 +125,24 @@ impl Mana {
 
         // Add colored mana symbols in WUBRG order
         if self.color.contains(Color::WHITE) {
-            symbols.push_str(&"W".repeat(self.amount as usize));
-            count += self.amount;
+            symbols.push_str(&"W".repeat(self.white as usize));
+            count += self.white;
         }
         if self.color.contains(Color::BLUE) {
-            symbols.push_str(&"U".repeat(self.amount as usize));
-            count += self.amount;
+            symbols.push_str(&"U".repeat(self.blue as usize));
+            count += self.blue;
         }
         if self.color.contains(Color::BLACK) {
-            symbols.push_str(&"B".repeat(self.amount as usize));
-            count += self.amount;
+            symbols.push_str(&"B".repeat(self.black as usize));
+            count += self.black;
         }
         if self.color.contains(Color::RED) {
-            symbols.push_str(&"R".repeat(self.amount as usize));
-            count += self.amount;
+            symbols.push_str(&"R".repeat(self.red as usize));
+            count += self.red;
         }
         if self.color.contains(Color::GREEN) {
-            symbols.push_str(&"G".repeat(self.amount as usize));
-            count += self.amount;
+            symbols.push_str(&"G".repeat(self.green as usize));
+            count += self.green;
         }
 
         (symbols, count)
@@ -142,47 +152,26 @@ impl Mana {
 impl std::fmt::Display for Mana {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut mana_text = String::new();
-        let mut colored_amount = 0;
-
-        // First, calculate how much of the total amount is colored mana
-        if self.color.contains(Color::WHITE) {
-            colored_amount = 2;  // Serra Angel has 2 white mana
-        }
-        if self.color.contains(Color::BLUE) {
-            colored_amount += 1;
-        }
-        if self.color.contains(Color::BLACK) {
-            colored_amount += 1;
-        }
-        if self.color.contains(Color::RED) {
-            colored_amount += 1;
-        }
-        if self.color.contains(Color::GREEN) {
-            colored_amount += 1;
-        }
 
         // Add colorless mana first if any
-        let colorless = self.amount - colored_amount;
-        if colorless > 0 {
-            write!(f, "{}", colorless)?;
+        if self.colorless > 0 {
+            write!(f, "{}", self.colorless)?;
         }
 
-        // Then add colored mana symbols using emoji characters
-        if self.color.contains(Color::WHITE) {
-            for _ in 0..2 {  // Serra Angel has 2 white mana
-                mana_text.push_str("⚪");  // White circle emoji
-            }
+        // Add colored mana symbols in WUBRG order
+        for _ in 0..self.white {
+            mana_text.push_str("⚪");  // White circle emoji
         }
-        if self.color.contains(Color::BLUE) {
+        for _ in 0..self.blue {
             mana_text.push_str("🔵");  // Blue circle emoji
         }
-        if self.color.contains(Color::BLACK) {
+        for _ in 0..self.black {
             mana_text.push_str("⚫");  // Black circle emoji
         }
-        if self.color.contains(Color::RED) {
+        for _ in 0..self.red {
             mana_text.push_str("🔴");  // Red circle emoji
         }
-        if self.color.contains(Color::GREEN) {
+        for _ in 0..self.green {
             mana_text.push_str("🟢");  // Green circle emoji
         }
 
