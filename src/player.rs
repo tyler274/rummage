@@ -1,5 +1,5 @@
 use crate::card::{
-    card_types_to_string, Card, CardDetails, CardTextContent, CardTextType, Draggable,
+    Card, CardDetails, CardTextContent, CardTextType, Draggable, card_types_to_string,
 };
 use crate::cards::get_example_cards;
 use crate::mana::ManaPool;
@@ -94,6 +94,17 @@ pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
                     text_type: CardTextType::Type,
                 },
                 Transform::from_xyz(0.0, 0.0, z + 0.1),
+            ))
+            .set_parent(card_entity);
+
+        // Spawn rules text
+        commands
+            .spawn((
+                CardTextContent {
+                    text: card.rules_text.clone(),
+                    text_type: CardTextType::RulesText,
+                },
+                Transform::from_xyz(0.0, -card_size.y * 0.2, z + 0.1),
             ))
             .set_parent(card_entity);
 

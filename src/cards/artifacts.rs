@@ -16,6 +16,7 @@ pub fn get_artifact_cards() -> Vec<Card> {
             },
             types: CardTypes::ARTIFACT,
             card_details: CardDetails::Other,
+            rules_text: "Tap: Add {2} to your mana pool.".to_string(),
         },
         Card {
             name: "Black Lotus".to_string(),
@@ -30,6 +31,9 @@ pub fn get_artifact_cards() -> Vec<Card> {
             },
             types: CardTypes::ARTIFACT,
             card_details: CardDetails::Other,
+            rules_text:
+                "Tap, Sacrifice Black Lotus: Add three mana of any one color to your mana pool."
+                    .to_string(),
         },
         Card {
             name: "Mox Sapphire".to_string(),
@@ -44,6 +48,7 @@ pub fn get_artifact_cards() -> Vec<Card> {
             },
             types: CardTypes::ARTIFACT,
             card_details: CardDetails::Other,
+            rules_text: "Tap: Add {U} to your mana pool.".to_string(),
         },
     ]
 }

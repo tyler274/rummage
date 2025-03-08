@@ -60,6 +60,7 @@ pub struct Card {
     pub cost: Mana,
     pub types: CardTypes,
     pub card_details: CardDetails,
+    pub rules_text: String,
 }
 
 #[allow(dead_code)]
@@ -108,6 +109,7 @@ pub enum CardTextType {
     Cost,
     Type,
     PowerToughness,
+    RulesText,
 }
 
 #[derive(Resource)]

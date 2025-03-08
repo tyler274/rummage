@@ -20,6 +20,7 @@ pub fn get_red_cards() -> Vec<Card> {
                 toughness: 5,
                 creature_type: CreatureType::DRAGON | CreatureType::WIZARD,
             }),
+            rules_text: "Flying\nWhenever Dragon Mage deals combat damage to a player, each player discards their hand, then draws seven cards.".to_string(),
         },
         Card {
             name: "Lightning Bolt".to_string(),
@@ -34,6 +35,7 @@ pub fn get_red_cards() -> Vec<Card> {
             },
             types: CardTypes::INSTANT,
             card_details: CardDetails::Other,
+            rules_text: "Lightning Bolt deals 3 damage to any target.".to_string(),
         },
         Card {
             name: "Shivan Dragon".to_string(),
@@ -52,6 +54,7 @@ pub fn get_red_cards() -> Vec<Card> {
                 toughness: 5,
                 creature_type: CreatureType::DRAGON,
             }),
+            rules_text: "Flying\n{R}: Shivan Dragon gets +1/+0 until end of turn.".to_string(),
         },
         Card {
             name: "Fireball".to_string(),
@@ -66,6 +69,7 @@ pub fn get_red_cards() -> Vec<Card> {
             },
             types: CardTypes::SORCERY,
             card_details: CardDetails::Other,
+            rules_text: "Fireball deals X damage divided evenly, rounded down, among any number of targets.\nFireball costs {1} more to cast for each target beyond the first.".to_string(),
         },
         Card {
             name: "Wheel of Fortune".to_string(),
@@ -80,6 +84,7 @@ pub fn get_red_cards() -> Vec<Card> {
             },
             types: CardTypes::SORCERY,
             card_details: CardDetails::Other,
+            rules_text: "Each player discards their hand, then draws seven cards.".to_string(),
         },
     ]
 }

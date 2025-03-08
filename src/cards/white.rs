@@ -20,6 +20,7 @@ pub fn get_white_cards() -> Vec<Card> {
                 toughness: 4,
                 creature_type: CreatureType::ANGEL,
             }),
+            rules_text: "Flying, vigilance".to_string(),
         },
         Card {
             name: "Wrath of God".to_string(),
@@ -34,6 +35,7 @@ pub fn get_white_cards() -> Vec<Card> {
             },
             types: CardTypes::SORCERY,
             card_details: CardDetails::Other,
+            rules_text: "Destroy all creatures. They can't be regenerated.".to_string(),
         },
         Card {
             name: "Swords to Plowshares".to_string(),
@@ -48,6 +50,7 @@ pub fn get_white_cards() -> Vec<Card> {
             },
             types: CardTypes::INSTANT,
             card_details: CardDetails::Other,
+            rules_text: "Exile target creature. Its controller gains life equal to its power.".to_string(),
         },
         Card {
             name: "Armageddon".to_string(),
@@ -62,6 +65,7 @@ pub fn get_white_cards() -> Vec<Card> {
             },
             types: CardTypes::SORCERY,
             card_details: CardDetails::Other,
+            rules_text: "Destroy all lands.".to_string(),
         },
         Card {
             name: "Balance".to_string(),
@@ -76,6 +80,7 @@ pub fn get_white_cards() -> Vec<Card> {
             },
             types: CardTypes::SORCERY,
             card_details: CardDetails::Other,
+            rules_text: "Each player chooses a number of lands they control equal to the number of lands controlled by the player who controls the fewest, then sacrifices the rest. Players discard cards and sacrifice creatures the same way.".to_string(),
         },
     ]
 }

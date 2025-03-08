@@ -1,4 +1,4 @@
-use crate::card::{Card, CardTextContent, CardTextType, DebugConfig, SpawnedText};
+use crate::card::{Card, CardDetails, CardTextContent, CardTextType, DebugConfig, SpawnedText};
 use bevy::prelude::*;
 use bevy::text::{JustifyText, Text2d, TextBounds, TextColor, TextFont, TextLayout};
 
@@ -110,6 +110,12 @@ pub fn spawn_card_text(
                     card_size.y * 0.05, // Match name size for consistency
                     JustifyText::Right,
                     None,
+                ),
+                CardTextType::RulesText => (
+                    Vec3::new(-card_size.x * 0.45, -card_size.y * 0.1, 1.0),
+                    card_size.y * 0.035,
+                    JustifyText::Left,
+                    Some(Vec2::new(card_size.x * 0.9, card_size.y * 0.5)),
                 ),
             };
 
