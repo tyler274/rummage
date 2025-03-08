@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy::text::{JustifyText, Text2d, TextColor, TextFont, TextLayout};
+use bevy::text::{JustifyText, Text2d, TextColor, TextFont, TextLayout, TextBounds};
 use crate::card::{Card, CardTextContent, CardTextType, SpawnedText, DebugConfig};
 
 /// Component for storing text offset relative to its parent card
@@ -90,12 +90,12 @@ pub fn spawn_card_text(
             // Calculate relative offsets from card center
             let (offset, font_size, alignment) = match content.text_type {
                 CardTextType::Name => (
-                    Vec3::new(-card_size.x * 0.25, card_size.y * 0.35, 1.0),
-                    12.0,
-                    JustifyText::Left
+                    Vec3::new(0.0, card_size.y * 0.3, 1.0), // Moved down from 0.35 to 0.3
+                    11.0,
+                    JustifyText::Center
                 ),
                 CardTextType::Cost => (
-                    Vec3::new(card_size.x * 0.35, card_size.y * 0.35, 1.0),
+                    Vec3::new(card_size.x * 0.35, card_size.y * 0.4, 1.0), // Moved up from 0.35 to 0.4
                     9.0,
                     JustifyText::Right
                 ),
@@ -119,11 +119,7 @@ pub fn spawn_card_text(
                     font_size,
                     ..default()
                 },
-                TextColor(if content.text_type == CardTextType::Type {
-                    Color::srgb(0.3, 0.3, 0.3)
-                } else {
-                    Color::BLACK
-                }),
+                TextColor(Color::BLACK),
                 TextLayout::new_with_justify(alignment),
                 Transform::from_translation(offset),
                 Visibility::Visible,
