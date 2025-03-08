@@ -1,4 +1,4 @@
-use crate::card::{Card, CardDetails, CardTextContent, CardTextType, DebugConfig, SpawnedText};
+use crate::card::{Card, CardTextContent, CardTextType, DebugConfig, SpawnedText};
 use bevy::prelude::*;
 use bevy::text::{JustifyText, Text2d, TextBounds, TextColor, TextFont, TextLayout};
 
@@ -88,10 +88,10 @@ pub fn spawn_card_text(
             // Calculate relative offsets from card center
             let (offset, font_size, alignment, bounds) = match content.text_type {
                 CardTextType::Name => (
-                    Vec3::new(-card_size.x * 0.12, card_size.y * 0.34, 1.0),
-                    card_size.y * 0.05, // Scale font with card height for consistent proportions
+                    Vec3::new(card_size.x * -0.05, card_size.y * 0.34, 1.0),
+                    card_size.y * 0.09, // Scale font with card height for consistent proportions
                     JustifyText::Left,
-                    Some(Vec2::new(card_size.x * 0.75, card_size.y * 0.5)), // Wide bounds for name wrapping
+                    Some(Vec2::new(card_size.x * 0.70, card_size.y * 0.5)), // Wide bounds for name wrapping
                 ),
                 CardTextType::Cost => (
                     Vec3::new(card_size.x * 0.32, card_size.y * 0.45, 1.0),
@@ -101,7 +101,7 @@ pub fn spawn_card_text(
                 ),
                 CardTextType::Type => (
                     Vec3::new(-card_size.x * 0.10, card_size.y * 0.1, 1.0),
-                    card_size.y * 0.04, // Slightly smaller for type line
+                    card_size.y * 0.045, // Slightly smaller for type line
                     JustifyText::Left,
                     Some(Vec2::new(card_size.x * 0.8, card_size.y * 0.5)),
                 ),
@@ -112,10 +112,10 @@ pub fn spawn_card_text(
                     None,
                 ),
                 CardTextType::RulesText => (
-                    Vec3::new(-card_size.x * 0.45, -card_size.y * 0.1, 1.0),
-                    card_size.y * 0.035,
-                    JustifyText::Left,
-                    Some(Vec2::new(card_size.x * 0.9, card_size.y * 0.5)),
+                    Vec3::new(card_size.x * 0.0, -card_size.y * 0.1, 1.0), // Centered horizontally but with left margin
+                    card_size.y * 0.045,
+                    JustifyText::Left, // Keep left justification for rules text
+                    Some(Vec2::new(card_size.x * 0.80, card_size.y * 0.45)), // Slightly narrower bounds
                 ),
             };
 
