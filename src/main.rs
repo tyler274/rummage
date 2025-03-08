@@ -42,13 +42,19 @@ fn hello_world() {
 }
 
 fn setup_camera(mut commands: Commands) {
+    let mut projection = OrthographicProjection::default_2d();
+    projection.scale = 1.0;
+    projection.near = -1000.0;
+    projection.far = 1000.0;
+
     commands.spawn((
         Camera2d,
         Camera {
             clear_color: ClearColorConfig::Custom(Color::srgb(0.1, 0.1, 0.1)),
             ..default()
         },
-        Transform::default(),
+        Transform::from_xyz(0.0, 0.0, 0.0),
+        projection,
     ));
 }
 
@@ -65,7 +71,7 @@ fn handle_window_resize(
         
         if let Ok(mut projection) = projection_query.get_single_mut() {
             // Keep a fixed vertical size and scale the horizontal size with aspect ratio
-            let vertical_size = 800.0;
+            let vertical_size = 600.0; // Match the spawn_hand height
             let aspect_ratio = event.width / event.height;
             let horizontal_size = vertical_size * aspect_ratio;
             
@@ -195,10 +201,10 @@ fn spawn_card(
 fn spawn_hand(mut commands: Commands, window: Query<&Window>) {
     // Safely get window
     let Ok(_window) = window.get_single() else { return };
-    let window_height = 800.0; // Use fixed height for consistent card positioning
-    let card_spacing = 150.0;
-    let start_x = -300.0;
-    let base_y = -window_height * 0.3; // Position cards 30% up from the bottom
+    let window_height = 600.0; // Reduced height for better visibility
+    let card_spacing = 120.0; // Reduced spacing
+    let start_x = -200.0; // Moved cards more towards center
+    let base_y = -window_height * 0.25; // Position cards 25% up from the bottom
 
     // Spawn a hand of iconic MTG cards
     let cards = vec![
@@ -278,11 +284,40 @@ enum CardTextType {
     PowerToughness,
 }
 
+// Add debug visualization for card bounds
+fn spawn_debug_bounds(commands: &mut Commands, card_pos: Vec2, card_size: Vec2, text_pos: Vec2) {
+    // Card center marker
+    commands.spawn((
+        Sprite {
+            color: Color::srgb(1.0, 0.0, 0.0), // Red
+            custom_size: Some(Vec2::new(5.0, 5.0)),
+            ..default()
+        },
+        Transform::from_xyz(card_pos.x, card_pos.y, 100.0),
+        Visibility::Visible,
+        InheritedVisibility::default(),
+        ViewVisibility::default(),
+    ));
+
+    // Text position marker
+    commands.spawn((
+        Sprite {
+            color: Color::srgb(0.0, 1.0, 0.0), // Green
+            custom_size: Some(Vec2::new(5.0, 5.0)),
+            ..default()
+        },
+        Transform::from_xyz(text_pos.x, text_pos.y, 100.0),
+        Visibility::Visible,
+        InheritedVisibility::default(),
+        ViewVisibility::default(),
+    ));
+}
+
 // Cursor remember you need to use Text2d, because Text2dBundle is deprecated in Bevy 0.15.x
 fn spawn_card_text(
     mut commands: Commands,
     text_content_query: Query<(Entity, &CardTextContent, &Parent), (Without<SpawnedText>, With<CardTextContent>)>,
-    card_query: Query<&Transform, With<Card>>,
+    card_query: Query<(&Transform, &Sprite), With<Card>>,
     asset_server: Res<AssetServer>,
 ) {
     let font = asset_server.load("fonts/FiraSans-Bold.ttf");
@@ -290,24 +325,35 @@ fn spawn_card_text(
     for (content_entity, content, parent) in text_content_query.iter() {
         let parent_entity = parent.get();
         
-        // Get parent card's position
-        if let Ok(card_transform) = card_query.get(parent_entity) {
-            let card_pos = card_transform.translation.truncate();
+        if let Ok((card_transform, sprite)) = card_query.get(parent_entity) {
+            let card_size = sprite.custom_size.unwrap_or(Vec2::new(100.0, 140.0));
             
-            // Calculate offset and style based on text type
-            let (offset, font_size) = match content.text_type {
-                CardTextType::Name => (Vec2::new(-45.0, 55.0), 16.0),
-                CardTextType::Cost => (Vec2::new(45.0, 55.0), 18.0),
-                CardTextType::Type => (Vec2::new(0.0, 0.0), 14.0),
-                CardTextType::PowerToughness => (Vec2::new(45.0, -55.0), 18.0),
+            // Calculate relative offsets from card center
+            let (offset, font_size, alignment) = match content.text_type {
+                CardTextType::Name => (
+                    Vec3::new(0.0, card_size.y * 0.35, 1.0),
+                    16.0,
+                    JustifyText::Center
+                ),
+                CardTextType::Cost => (
+                    Vec3::new(-card_size.x * 0.35, card_size.y * 0.35, 1.0),
+                    16.0,
+                    JustifyText::Left
+                ),
+                CardTextType::Type => (
+                    Vec3::new(0.0, 0.0, 1.0),
+                    14.0,
+                    JustifyText::Center
+                ),
+                CardTextType::PowerToughness => (
+                    Vec3::new(-card_size.x * 0.35, -card_size.y * 0.35, 1.0),
+                    16.0,
+                    JustifyText::Left
+                ),
             };
 
-            // Calculate world position
-            let text_pos = card_pos + offset;
-
-            // Create text with world space rendering
-            commands.spawn((
-                // Core text components for 2D world space
+            // Create text entity with relative transform
+            let text_entity = commands.spawn((
                 Text2d::new(content.text.clone()),
                 TextFont {
                     font: font.clone(),
@@ -319,48 +365,50 @@ fn spawn_card_text(
                 } else {
                     Color::BLACK
                 }),
-                TextLayout::new_with_justify(JustifyText::Center),
-                Transform::from_xyz(text_pos.x, text_pos.y, card_transform.translation.z + 0.1),
+                TextLayout::new_with_justify(alignment),
+                Transform::from_translation(offset),
                 Visibility::Visible,
                 InheritedVisibility::default(),
                 ViewVisibility::default(),
-                // Custom components
-                CardText { offset },
+                CardText { offset: offset.truncate() },
                 SpawnedText,
-            )).set_parent(parent_entity);
+            )).id();
 
-            // Mark the content entity as processed
+            // Set up parent-child relationship
+            commands.entity(parent_entity).add_child(text_entity);
             commands.entity(content_entity).insert(SpawnedText);
+
+            // Add debug visualization
+            spawn_debug_bounds(&mut commands, 
+                card_transform.translation.truncate(),
+                card_size,
+                card_transform.translation.truncate() + offset.truncate()
+            );
         }
     }
 }
 
 fn handle_drag_and_text(
-    mut card_query: Query<(Entity, &mut Draggable, &mut Transform)>,
-    mut text_query: Query<(&mut Transform, &Parent, &CardText), (With<Text2d>, Without<Draggable>)>,
+    mut card_query: Query<(Entity, &mut Draggable, &mut Transform), With<Card>>,
     mouse_button: Res<bevy::input::ButtonInput<MouseButton>>,
     windows: Query<&Window>,
     camera: Query<(&Camera, &GlobalTransform)>,
+    mut commands: Commands,
 ) {
-    // Safely get window and camera
     let Ok(window) = windows.get_single() else { return };
     let Ok((camera, camera_transform)) = camera.get_single() else { return };
 
     let card_width = 100.0;
     let card_height = card_width * 1.4;
 
-    // Get mouse position in world coordinates
     if let Some(cursor_pos) = window.cursor_position() {
         if let Ok(world_position) = camera.viewport_to_world_2d(camera_transform, cursor_pos) {
-            // Handle mouse down
             if mouse_button.just_pressed(MouseButton::Left) {
-                // Find the highest z-index currently in use
                 let mut max_z_index: f32 = 0.0;
                 for (_, draggable, _) in card_query.iter() {
                     max_z_index = max_z_index.max(draggable.z_index);
                 }
 
-                // First pass: find the topmost card under the cursor
                 let mut topmost_card: Option<(Entity, f32)> = None;
                 for (entity, draggable, transform) in card_query.iter() {
                     let card_bounds = Rect::from_center_size(
@@ -378,56 +426,38 @@ fn handle_drag_and_text(
                     }
                 }
 
-                // Second pass: if we found a card, make it draggable
                 if let Some((target_entity, _)) = topmost_card {
                     if let Ok((_, mut draggable, transform)) = card_query.get_mut(target_entity) {
                         draggable.dragging = true;
                         draggable.drag_offset = world_position - transform.translation.truncate();
                         draggable.z_index = max_z_index + 1.0;
-
-                        // Update text z-indices immediately for the dragged card
-                        for (mut text_transform, text_parent, _) in text_query.iter_mut() {
-                            if text_parent.get() == target_entity {
-                                text_transform.translation.z = max_z_index + 1.1;
-                            }
-                        }
                     }
                 }
             }
 
-            // Handle mouse up
             if mouse_button.just_released(MouseButton::Left) {
                 for (_, mut draggable, _) in card_query.iter_mut() {
                     draggable.dragging = false;
                 }
             }
 
-            // First collect all the updates we need to make
-            let mut updates = Vec::new();
-            for (entity, draggable, transform) in card_query.iter() {
-                let card_pos = if draggable.dragging {
-                    (world_position - draggable.drag_offset).extend(draggable.z_index)
-                } else {
-                    transform.translation
-                };
-                
+            for (entity, draggable, mut card_transform) in card_query.iter_mut() {
                 if draggable.dragging {
-                    updates.push((entity, card_pos));
-                }
+                    let new_pos = world_position - draggable.drag_offset;
+                    card_transform.translation = new_pos.extend(draggable.z_index);
 
-                // Update text positions
-                for (mut text_transform, text_parent, card_text) in text_query.iter_mut() {
-                    if text_parent.get() == entity {
-                        let text_pos = card_pos.truncate() + card_text.offset;
-                        text_transform.translation = text_pos.extend(card_pos.z + 0.1);
-                    }
-                }
-            }
-
-            // Then apply the updates
-            for (entity, new_pos) in updates {
-                if let Ok((_, _, mut transform)) = card_query.get_mut(entity) {
-                    transform.translation = new_pos;
+                    // Debug marker for card position
+                    commands.spawn((
+                        Sprite {
+                            color: Color::srgb(0.0, 0.0, 1.0),
+                            custom_size: Some(Vec2::new(3.0, 3.0)),
+                            ..default()
+                        },
+                        Transform::from_xyz(new_pos.x, new_pos.y, 100.0),
+                        Visibility::Visible,
+                        InheritedVisibility::default(),
+                        ViewVisibility::default(),
+                    ));
                 }
             }
         }
