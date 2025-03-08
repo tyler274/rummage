@@ -34,8 +34,14 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Rummage".to_string(),
-                resolution: WindowResolution::new(1280.0, 720.0),
-                present_mode: bevy::window::PresentMode::AutoVsync,
+                resolution: WindowResolution::new(1920.0, 1080.0),
+                present_mode: bevy::window::PresentMode::AutoNoVsync,
+                resizable: true,
+                resize_constraints: bevy::window::WindowResizeConstraints {
+                    min_width: 960.0,  // Half of 1920
+                    min_height: 540.0, // Half of 1080
+                    ..default()
+                },
                 ..default()
             }),
             ..default()

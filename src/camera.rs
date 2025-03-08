@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::window::WindowResized;
 
 /// Sets up the 2D orthographic camera with a fixed scale and view area.
-/// 
+///
 /// # Coordinate System Debugging Notes
 /// During development, we encountered several issues with text positioning relative to cards:
 /// 1. Initial approach: Using fixed pixel offsets
@@ -40,29 +40,22 @@ pub fn setup_camera(mut commands: Commands) {
 /// Handles window resize events by maintaining a fixed vertical size and adjusting
 /// the horizontal size based on aspect ratio.
 pub fn handle_window_resize(
-    mut resize_reader: EventReader<WindowResized>,
-    mut projection_query: Query<&mut OrthographicProjection>,
+    mut resize_events: EventReader<WindowResized>,
+    mut projection_query: Query<&mut OrthographicProjection, With<Camera2d>>,
     mut windows: Query<&mut Window>,
 ) {
-    let Ok(mut window) = windows.get_single_mut() else { return };
-    
-    for event in resize_reader.read() {
-        // Force a window redraw to clear any artifacts
-        window.present_mode = bevy::window::PresentMode::AutoVsync;
-        
+    for resize_event in resize_events.read() {
         if let Ok(mut projection) = projection_query.get_single_mut() {
-            // Keep a fixed vertical size and scale the horizontal size with aspect ratio
-            let vertical_size = 600.0; // Match the spawn_hand height
-            let aspect_ratio = event.width / event.height;
-            let horizontal_size = vertical_size * aspect_ratio;
-            
-            projection.area = Rect::new(
-                -horizontal_size / 2.0,
-                -vertical_size / 2.0,
-                horizontal_size / 2.0,
-                vertical_size / 2.0,
-            );
-            projection.scale = 1.0;
+            // Maintain fixed height and adjust width based on aspect ratio
+            let aspect = resize_event.width / resize_event.height;
+            projection.scale = 1.0 / resize_event.height * 1080.0 * aspect; // Scale relative to 1080p height
+
+            // Update window surface
+            if let Ok(mut window) = windows.get_single_mut() {
+                window
+                    .resolution
+                    .set(resize_event.width, resize_event.height);
+            }
         }
     }
-} 
+}
