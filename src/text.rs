@@ -1,6 +1,6 @@
+use crate::card::{Card, CardTextContent, CardTextType, DebugConfig, SpawnedText};
 use bevy::prelude::*;
-use bevy::text::{JustifyText, Text2d, TextColor, TextFont, TextLayout, TextBounds};
-use crate::card::{Card, CardTextContent, CardTextType, SpawnedText, DebugConfig};
+use bevy::text::{JustifyText, Text2d, TextBounds, TextColor, TextFont, TextLayout};
 
 /// Component for storing text offset relative to its parent card
 #[derive(Component)]
@@ -9,7 +9,7 @@ pub struct CardText {
 }
 
 /// Spawns debug visualization markers for card and text positions
-/// 
+///
 /// # Debug Visualization Colors
 /// - Red dots: Card center points
 /// - Green dots: Text anchor points
@@ -49,7 +49,7 @@ fn spawn_debug_bounds(commands: &mut Commands, card_pos: Vec2, _card_size: Vec2,
 
 /// Spawns text components for cards using relative transforms.
 /// Text entities are created as children of card entities to maintain proper positioning.
-/// 
+///
 /// # Text Positioning Evolution
 /// 1. Initial Approach (Failed):
 ///    - Used absolute world coordinates
@@ -74,7 +74,10 @@ fn spawn_debug_bounds(commands: &mut Commands, card_pos: Vec2, _card_size: Vec2,
 /// - Power/Toughness: Bottom right
 pub fn spawn_card_text(
     mut commands: Commands,
-    text_content_query: Query<(Entity, &CardTextContent, &Parent), (Without<SpawnedText>, With<CardTextContent>)>,
+    text_content_query: Query<
+        (Entity, &CardTextContent, &Parent),
+        (Without<SpawnedText>, With<CardTextContent>),
+    >,
     card_query: Query<(&Transform, &Sprite), With<Card>>,
     asset_server: Res<AssetServer>,
     debug_config: Res<DebugConfig>,
@@ -84,63 +87,71 @@ pub fn spawn_card_text(
 
     for (content_entity, content, parent) in text_content_query.iter() {
         let parent_entity = parent.get();
-        
+
         if let Ok((card_transform, sprite)) = card_query.get(parent_entity) {
             let card_size = sprite.custom_size.unwrap_or(Vec2::new(100.0, 140.0));
-            
+
             // Calculate relative offsets from card center
-            let (offset, font_size, alignment) = match content.text_type {
+            let (offset, font_size, alignment, bounds) = match content.text_type {
                 CardTextType::Name => (
                     Vec3::new(0.0, card_size.y * 0.3, 1.0),
                     11.0,
-                    JustifyText::Center
+                    JustifyText::Center,
+                    None,
                 ),
                 CardTextType::Cost => (
                     Vec3::new(card_size.x * 0.32, card_size.y * 0.4, 1.0),
                     10.0,
-                    JustifyText::Right
+                    JustifyText::Right,
+                    None,
                 ),
                 CardTextType::Type => (
-                    Vec3::new(0.0, card_size.y * 0.1, 1.0),
+                    Vec3::new(-card_size.x * 0.10, card_size.y * 0.1, 1.0),
                     10.0,
-                    JustifyText::Center
+                    JustifyText::Left,
+                    Some(Vec2::new(card_size.x * 0.8, 40.0)),
                 ),
                 CardTextType::PowerToughness => (
                     Vec3::new(card_size.x * 0.35, -card_size.y * 0.35, 1.0),
                     12.0,
-                    JustifyText::Right
+                    JustifyText::Right,
+                    None,
                 ),
             };
 
             // Create text entity with relative transform
-            let text_entity = commands.spawn((
-                Text2d::new(content.text.clone()),
-                TextFont {
-                    font: if content.text_type == CardTextType::Cost {
-                        emoji_font.clone()  // Use emoji font for mana symbols
-                    } else {
-                        regular_font.clone()
+            let text_entity = commands
+                .spawn((
+                    Text2d::new(content.text.clone()),
+                    TextFont {
+                        font: if content.text_type == CardTextType::Cost {
+                            emoji_font.clone() // Use emoji font for mana symbols
+                        } else {
+                            regular_font.clone()
+                        },
+                        font_size: if content.text_type == CardTextType::Cost {
+                            10.0
+                        } else {
+                            font_size
+                        },
+                        ..default()
                     },
-                    font_size: if content.text_type == CardTextType::Cost {
-                        10.0
+                    TextColor(if content.text_type == CardTextType::Cost {
+                        Color::WHITE // White for better contrast
                     } else {
-                        font_size
+                        Color::BLACK
+                    }),
+                    TextLayout::new_with_justify(alignment),
+                    Transform::from_translation(offset),
+                    Visibility::Visible,
+                    InheritedVisibility::default(),
+                    ViewVisibility::default(),
+                    CardText {
+                        offset: offset.truncate(),
                     },
-                    ..default()
-                },
-                TextColor(if content.text_type == CardTextType::Cost {
-                    Color::WHITE  // White for better contrast
-                } else {
-                    Color::BLACK
-                }),
-                TextLayout::new_with_justify(alignment),
-                Transform::from_translation(offset),
-                Visibility::Visible,
-                InheritedVisibility::default(),
-                ViewVisibility::default(),
-                CardText { offset: offset.truncate() },
-                SpawnedText,
-            )).id();
+                    SpawnedText,
+                ))
+                .id();
 
             // Set up parent-child relationship
             commands.entity(parent_entity).add_child(text_entity);
@@ -148,12 +159,20 @@ pub fn spawn_card_text(
 
             // Add debug visualization only if enabled
             if debug_config.show_text_positions {
-                spawn_debug_bounds(&mut commands, 
+                spawn_debug_bounds(
+                    &mut commands,
                     card_transform.translation.truncate(),
                     card_size,
-                    card_transform.translation.truncate() + offset.truncate()
+                    card_transform.translation.truncate() + offset.truncate(),
                 );
+            }
+
+            // Add text bounds if specified
+            if let Some(bounds) = bounds {
+                commands
+                    .entity(text_entity)
+                    .insert(TextBounds::from(bounds));
             }
         }
     }
-} 
+}
