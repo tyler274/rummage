@@ -6,6 +6,8 @@ mod player;
 use bevy::prelude::*;
 use bevy::math::Rect;
 use bevy::window::WindowResized;
+// Cursor remember you need to use Text2d, because text2dbundle is deprecated
+use bevy::text::{JustifyText, Text2d, TextColor, TextFont, TextLayout};
 use mana::Mana;
 use card::{Card, CardType, CreatureCard, CreatureType};
 use bevy::app::AppExit;
@@ -19,24 +21,20 @@ struct Draggable {
 
 #[derive(Component)]
 struct CardText {
-    offset: Vec2,  // Store the initial offset from the card
-    content: String, // Store the text content
+    offset: Vec2,
 }
 
 #[derive(Component)]
 struct CardTextContent {
     text: String,
-    position: Vec2,
+    text_type: CardTextType,
 }
 
 #[derive(Component)]
 struct SpawnedText;
 
 #[derive(Component)]
-struct InHand {
-    #[allow(dead_code)]
-    index: usize,
-}
+struct InHand;
 
 fn hello_world() {
     println!("hello world!");
@@ -150,14 +148,14 @@ fn spawn_card(
     commands.spawn((
         CardTextContent {
             text: name,
-            position: Vec2::new(-card_width * 0.45, card_height * 0.45),
+            text_type: CardTextType::Name,
         },
     )).set_parent(card_entity);
 
     commands.spawn((
         CardTextContent {
             text: cost.to_string(),
-            position: Vec2::new(card_width * 0.45, card_height * 0.45),
+            text_type: CardTextType::Cost,
         },
     )).set_parent(card_entity);
 
@@ -178,7 +176,7 @@ fn spawn_card(
     commands.spawn((
         CardTextContent {
             text: type_text,
-            position: Vec2::new(-card_width * 0.45, 0.0),
+            text_type: CardTextType::Type,
         },
     )).set_parent(card_entity);
 
@@ -186,7 +184,7 @@ fn spawn_card(
         commands.spawn((
             CardTextContent {
                 text: format!("{}/{}", p, toughness.unwrap()),
-                position: Vec2::new(card_width * 0.45, -card_height * 0.45),
+                text_type: CardTextType::PowerToughness,
             },
         )).set_parent(card_entity);
     }
@@ -205,7 +203,7 @@ fn spawn_hand(mut commands: Commands, window: Query<&Window>) {
     // Spawn a hand of iconic MTG cards
     let cards = vec![
         // Lightning Bolt - Red Instant
-        (spawn_card(
+        spawn_card(
             &mut commands,
             "Lightning Bolt".to_string(),
             1,
@@ -215,9 +213,9 @@ fn spawn_hand(mut commands: Commands, window: Query<&Window>) {
             None,
             vec!["Deal 3 damage to any target".to_string()],
             Vec2::new(start_x, base_y),
-        ), 0),
+        ),
         // Black Lotus - Artifact
-        (spawn_card(
+        spawn_card(
             &mut commands,
             "Black Lotus".to_string(),
             0,
@@ -227,9 +225,9 @@ fn spawn_hand(mut commands: Commands, window: Query<&Window>) {
             None,
             vec!["Add three mana of any one color".to_string()],
             Vec2::new(start_x + card_spacing, base_y),
-        ), 1),
+        ),
         // Tarmogoyf - Green Creature
-        (spawn_card(
+        spawn_card(
             &mut commands,
             "Tarmogoyf".to_string(),
             2,
@@ -239,9 +237,9 @@ fn spawn_hand(mut commands: Commands, window: Query<&Window>) {
             Some(3),
             vec!["*/* where * is the number of card types in all graveyards".to_string()],
             Vec2::new(start_x + card_spacing * 2.0, base_y),
-        ), 2),
+        ),
         // Snapcaster Mage - Blue Creature
-        (spawn_card(
+        spawn_card(
             &mut commands,
             "Snapcaster Mage".to_string(),
             2,
@@ -251,9 +249,9 @@ fn spawn_hand(mut commands: Commands, window: Query<&Window>) {
             Some(1),
             vec!["Flash".to_string(), "When this enters the battlefield, target instant or sorcery card in your graveyard gains flashback".to_string()],
             Vec2::new(start_x + card_spacing * 3.0, base_y),
-        ), 3),
+        ),
         // Dark Confidant - Black Creature
-        (spawn_card(
+        spawn_card(
             &mut commands,
             "Dark Confidant".to_string(),
             2,
@@ -263,65 +261,83 @@ fn spawn_hand(mut commands: Commands, window: Query<&Window>) {
             Some(1),
             vec!["At the beginning of your upkeep, reveal the top card of your library and put that card into your hand. You lose life equal to its converted mana cost.".to_string()],
             Vec2::new(start_x + card_spacing * 4.0, base_y),
-        ), 4),
+        ),
     ];
 
     // Add InHand component to each card
-    for (entity, index) in cards {
-        commands.entity(entity).insert(InHand { index });
+    for entity in cards {
+        commands.entity(entity).insert(InHand);
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum CardTextType {
+    Name,
+    Cost,
+    Type,
+    PowerToughness,
+}
+
+// Cursor remember you need to use Text2d, because Text2dBundle is deprecated in Bevy 0.15.x
 fn spawn_card_text(
     mut commands: Commands,
-    text_content_query: Query<(Entity, &CardTextContent, &Parent), Without<SpawnedText>>,
-    draggable_query: Query<&Draggable>,
+    text_content_query: Query<(Entity, &CardTextContent, &Parent), (Without<SpawnedText>, With<CardTextContent>)>,
+    card_query: Query<&Transform, With<Card>>,
+    asset_server: Res<AssetServer>,
 ) {
+    let font = asset_server.load("fonts/FiraSans-Bold.ttf");
+
     for (content_entity, content, parent) in text_content_query.iter() {
-        // Get the parent card's z-index, defaulting to 0.0 if not found
-        let parent_z_index = draggable_query.get(parent.get()).map_or(0.0, |d| d.z_index);
         let parent_entity = parent.get();
         
-        // Store the initial offset in the CardText component
-        let offset = content.position;
+        // Get parent card's position
+        if let Ok(card_transform) = card_query.get(parent_entity) {
+            let card_pos = card_transform.translation.truncate();
+            
+            // Calculate offset and style based on text type
+            let (offset, font_size) = match content.text_type {
+                CardTextType::Name => (Vec2::new(-45.0, 55.0), 16.0),
+                CardTextType::Cost => (Vec2::new(45.0, 55.0), 18.0),
+                CardTextType::Type => (Vec2::new(0.0, 0.0), 14.0),
+                CardTextType::PowerToughness => (Vec2::new(45.0, -55.0), 18.0),
+            };
 
-        // Adjust scale based on text type
-        let scale = if offset.y > 0.0 {
-            0.3  // Title and mana cost
-        } else if offset.y < 0.0 {
-            0.4  // Power/Toughness
-        } else {
-            0.25  // Type line and abilities
-        };
+            // Calculate world position
+            let text_pos = card_pos + offset;
 
-        // Create a sprite for text representation
-        commands.spawn((
-            // Core sprite components
-            Sprite {
-                color: Color::BLACK,
-                custom_size: Some(Vec2::new(content.text.len() as f32 * 10.0 * scale, 20.0 * scale)),
-                ..default()
-            },
-            Transform::from_xyz(content.position.x, content.position.y, parent_z_index + 0.1),
-            GlobalTransform::default(),
-            Visibility::default(),
-            InheritedVisibility::default(),
-            // Custom components
-            CardText { 
-                offset,
-                content: content.text.clone(),
-            },
-            SpawnedText,
-        )).set_parent(parent_entity);
+            // Create text with world space rendering
+            commands.spawn((
+                // Core text components for 2D world space
+                Text2d::new(content.text.clone()),
+                TextFont {
+                    font: font.clone(),
+                    font_size,
+                    ..default()
+                },
+                TextColor(if content.text_type == CardTextType::Type {
+                    Color::srgb(0.3, 0.3, 0.3)
+                } else {
+                    Color::BLACK
+                }),
+                TextLayout::new_with_justify(JustifyText::Center),
+                Transform::from_xyz(text_pos.x, text_pos.y, card_transform.translation.z + 0.1),
+                Visibility::Visible,
+                InheritedVisibility::default(),
+                ViewVisibility::default(),
+                // Custom components
+                CardText { offset },
+                SpawnedText,
+            )).set_parent(parent_entity);
 
-        // Remove the CardTextContent entity since we don't need it anymore
-        commands.entity(content_entity).despawn();
+            // Mark the content entity as processed
+            commands.entity(content_entity).insert(SpawnedText);
+        }
     }
 }
 
 fn handle_drag_and_text(
     mut card_query: Query<(Entity, &mut Draggable, &mut Transform)>,
-    mut text_query: Query<(&mut Transform, &Parent, &CardText), (With<CardText>, Without<Draggable>)>,
+    mut text_query: Query<(&mut Transform, &Parent, &CardText), (With<Text2d>, Without<Draggable>)>,
     mouse_button: Res<bevy::input::ButtonInput<MouseButton>>,
     windows: Query<&Window>,
     camera: Query<(&Camera, &GlobalTransform)>,
@@ -368,12 +384,12 @@ fn handle_drag_and_text(
                         draggable.dragging = true;
                         draggable.drag_offset = world_position - transform.translation.truncate();
                         draggable.z_index = max_z_index + 1.0;
-                    }
 
-                    // Update text z-indices
-                    for (mut text_transform, text_parent, _) in text_query.iter_mut() {
-                        if text_parent.get() == target_entity {
-                            text_transform.translation.z = max_z_index + 1.1;
+                        // Update text z-indices immediately for the dragged card
+                        for (mut text_transform, text_parent, _) in text_query.iter_mut() {
+                            if text_parent.get() == target_entity {
+                                text_transform.translation.z = max_z_index + 1.1;
+                            }
                         }
                     }
                 }
@@ -386,18 +402,32 @@ fn handle_drag_and_text(
                 }
             }
 
-            // Handle dragging
-            for (entity, draggable, mut transform) in card_query.iter_mut() {
+            // First collect all the updates we need to make
+            let mut updates = Vec::new();
+            for (entity, draggable, transform) in card_query.iter() {
+                let card_pos = if draggable.dragging {
+                    (world_position - draggable.drag_offset).extend(draggable.z_index)
+                } else {
+                    transform.translation
+                };
+                
                 if draggable.dragging {
-                    let new_pos = world_position - draggable.drag_offset;
-                    transform.translation = new_pos.extend(draggable.z_index);
+                    updates.push((entity, card_pos));
+                }
 
-                    // Update text positions using stored offsets
-                    for (mut text_transform, text_parent, card_text) in text_query.iter_mut() {
-                        if text_parent.get() == entity {
-                            text_transform.translation = (new_pos + card_text.offset).extend(draggable.z_index + 0.1);
-                        }
+                // Update text positions
+                for (mut text_transform, text_parent, card_text) in text_query.iter_mut() {
+                    if text_parent.get() == entity {
+                        let text_pos = card_pos.truncate() + card_text.offset;
+                        text_transform.translation = text_pos.extend(card_pos.z + 0.1);
                     }
+                }
+            }
+
+            // Then apply the updates
+            for (entity, new_pos) in updates {
+                if let Ok((_, _, mut transform)) = card_query.get_mut(entity) {
+                    transform.translation = new_pos;
                 }
             }
         }
@@ -416,7 +446,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                resolution: (800.0, 600.0).into(),
+                resolution: (1280.0, 720.0).into(),
                 title: "Rummage".to_string(),
                 present_mode: bevy::window::PresentMode::AutoVsync,
                 ..default()
@@ -424,12 +454,12 @@ fn main() {
             ..default()
         }))
         .add_systems(Startup, (
+            hello_world,
             setup_camera,
             spawn_hand,
             spawn_card_text.after(spawn_hand),
         ))
         .add_systems(Update, (
-            hello_world,
             handle_drag_and_text,
             handle_window_resize,
             handle_exit,
