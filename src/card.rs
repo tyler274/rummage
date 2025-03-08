@@ -104,7 +104,7 @@ pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
         },
         Card {
             name: "Shivan Dragon".to_string(),
-            cost: Mana::new(4, 0, 2, 0, 0, 0), // 4RR
+            cost: Mana::new(4, 0, 0, 0, 2, 0), // 4RR
             card_type: CardType::Creature(CreatureCard {
                 power: 5,
                 toughness: 5,
@@ -113,7 +113,7 @@ pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
         },
         Card {
             name: "Jace's Archivist".to_string(),
-            cost: Mana::new(1, 0, 0, 2, 0, 0), // 1UU
+            cost: Mana::new(1, 0, 2, 0, 0, 0), // 1UU
             card_type: CardType::Creature(CreatureCard {
                 power: 2,
                 toughness: 2,
@@ -131,7 +131,7 @@ pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
         },
         Card {
             name: "Dragon Mage".to_string(),
-            cost: Mana::new(4, 0, 3, 0, 0, 0), // 4RRR
+            cost: Mana::new(5, 0, 0, 0, 2, 0), // 5RR - corrected parameter order for red mana
             card_type: CardType::Creature(CreatureCard {
                 power: 5,
                 toughness: 5,
