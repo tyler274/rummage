@@ -1,20 +1,11 @@
 use bevy::prelude::*;
-use crate::{
-    card::Card,
-    mana::ManaPool,
-};
-
-#[derive(Component, Default, Debug, Clone, PartialEq, Eq)]
-#[allow(dead_code)]
-pub(crate) struct Hand {
-    cards: Vec<Card>,
-}
+use crate::card::Card;
+use crate::mana::ManaPool;
 
 #[derive(Component, Default, Debug, Clone)]
-#[allow(dead_code)]
-pub(crate) struct Player {
-    name: String,
-    life: i32,
-    mana_pool: ManaPool,
-    hand: Hand,
+pub struct Player {
+    pub name: String,
+    pub life: i32,
+    pub mana_pool: ManaPool,
+    pub cards: Vec<Card>,
 }
