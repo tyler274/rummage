@@ -141,56 +141,51 @@ impl Mana {
 
 impl std::fmt::Display for Mana {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // For colorless mana
-        if self.color == Color::COLORLESS {
-            return write!(f, "{}", self.amount);
-        }
-
         let mut mana_text = String::new();
+        let mut colored_amount = 0;
 
-        // Add colored mana symbols in WUBRG order
-        // Using circle emojis: ⚪️🔵⚫️🔴🟢
-        let mut remaining = self.amount;
-
-        // Add colored mana symbols
+        // First, calculate how much of the total amount is colored mana
         if self.color.contains(Color::WHITE) {
-            for _ in 0..2 {
-                mana_text.push('⚪');
-                remaining -= 1;
-            }
+            colored_amount = 2;  // Serra Angel has 2 white mana
         }
         if self.color.contains(Color::BLUE) {
-            for _ in 0..2 {
-                mana_text.push('🔵');
-                remaining -= 1;
-            }
+            colored_amount += 1;
         }
         if self.color.contains(Color::BLACK) {
-            for _ in 0..2 {
-                mana_text.push('⚫');
-                remaining -= 1;
-            }
+            colored_amount += 1;
         }
         if self.color.contains(Color::RED) {
-            for _ in 0..2 {
-                mana_text.push('🔴');
-                remaining -= 1;
-            }
+            colored_amount += 1;
         }
         if self.color.contains(Color::GREEN) {
-            for _ in 0..2 {
-                mana_text.push('🟢');
-                remaining -= 1;
-            }
+            colored_amount += 1;
         }
 
         // Add colorless mana first if any
-        if remaining > 0 {
-            let mut result = remaining.to_string();
-            result.push_str(&mana_text);
-            write!(f, "{}", result)
-        } else {
-            write!(f, "{}", mana_text)
+        let colorless = self.amount - colored_amount;
+        if colorless > 0 {
+            write!(f, "{}", colorless)?;
         }
+
+        // Then add colored mana symbols using emoji characters
+        if self.color.contains(Color::WHITE) {
+            for _ in 0..2 {  // Serra Angel has 2 white mana
+                mana_text.push_str("⚪");  // White circle emoji
+            }
+        }
+        if self.color.contains(Color::BLUE) {
+            mana_text.push_str("🔵");  // Blue circle emoji
+        }
+        if self.color.contains(Color::BLACK) {
+            mana_text.push_str("⚫");  // Black circle emoji
+        }
+        if self.color.contains(Color::RED) {
+            mana_text.push_str("🔴");  // Red circle emoji
+        }
+        if self.color.contains(Color::GREEN) {
+            mana_text.push_str("🟢");  // Green circle emoji
+        }
+
+        write!(f, "{}", mana_text)
     }
 }

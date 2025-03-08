@@ -79,7 +79,8 @@ pub fn spawn_card_text(
     asset_server: Res<AssetServer>,
     debug_config: Res<DebugConfig>,
 ) {
-    let font = asset_server.load("fonts/FiraSans-Bold.ttf");
+    let regular_font: Handle<Font> = asset_server.load("fonts/FiraSans-Bold.ttf");
+    let emoji_font: Handle<Font> = asset_server.load("fonts/NotoColorEmoji.ttf");
 
     for (content_entity, content, parent) in text_content_query.iter() {
         let parent_entity = parent.get();
@@ -90,13 +91,13 @@ pub fn spawn_card_text(
             // Calculate relative offsets from card center
             let (offset, font_size, alignment) = match content.text_type {
                 CardTextType::Name => (
-                    Vec3::new(0.0, card_size.y * 0.3, 1.0), // Moved down from 0.35 to 0.3
+                    Vec3::new(0.0, card_size.y * 0.3, 1.0),
                     11.0,
                     JustifyText::Center
                 ),
                 CardTextType::Cost => (
-                    Vec3::new(card_size.x * 0.35, card_size.y * 0.4, 1.0), // Moved up from 0.35 to 0.4
-                    9.0,
+                    Vec3::new(card_size.x * 0.32, card_size.y * 0.4, 1.0),
+                    10.0,
                     JustifyText::Right
                 ),
                 CardTextType::Type => (
@@ -115,11 +116,23 @@ pub fn spawn_card_text(
             let text_entity = commands.spawn((
                 Text2d::new(content.text.clone()),
                 TextFont {
-                    font: font.clone(),
-                    font_size,
+                    font: if content.text_type == CardTextType::Cost {
+                        emoji_font.clone()  // Use emoji font for mana symbols
+                    } else {
+                        regular_font.clone()
+                    },
+                    font_size: if content.text_type == CardTextType::Cost {
+                        10.0
+                    } else {
+                        font_size
+                    },
                     ..default()
                 },
-                TextColor(Color::BLACK),
+                TextColor(if content.text_type == CardTextType::Cost {
+                    Color::WHITE  // White for better contrast
+                } else {
+                    Color::BLACK
+                }),
                 TextLayout::new_with_justify(alignment),
                 Transform::from_translation(offset),
                 Visibility::Visible,
