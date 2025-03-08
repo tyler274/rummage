@@ -2,19 +2,29 @@ mod penacony;
 
 use crate::card::{Card, CardDetails, CardTypes, CreatureCard, CreatureType};
 use crate::mana::{Color, Mana};
+use crate::player::Player;
 use bevy::prelude::*;
-use bevy_turborand::prelude::*;
+use rand::prelude::*;
+use rand::rngs::StdRng;
 
 pub struct CardsPlugin;
 
 impl Plugin for CardsPlugin {
     fn build(&self, app: &mut App) {
-        // Nothing to initialize
+        app.insert_resource(CardRng(StdRng::seed_from_u64(42)))
+            .add_systems(Update, shuffle_player_cards);
     }
 }
 
-/// Returns a list of example cards for testing and development
-pub fn get_example_cards(mut rng: ResMut<GlobalRng>) -> Vec<Card> {
+#[derive(Resource)]
+struct CardRng(StdRng);
+
+/// Returns a list of example cards for testing and development.
+/// Currently returns a subset of 5 cards from the full deck.
+///
+/// # Arguments
+/// * `player_entity` - The entity ID of the player who will own these cards
+pub fn get_example_cards(_player_entity: Entity) -> Vec<Card> {
     let mut all_cards = vec![
         // Original cards
         Card {
@@ -430,11 +440,15 @@ pub fn get_example_cards(mut rng: ResMut<GlobalRng>) -> Vec<Card> {
         },
     ];
 
-    // Shuffle the cards using Fisher-Yates algorithm
-    for i in (1..all_cards.len()).rev() {
-        let j = rng.usize(0..=i);
-        all_cards.swap(i, j);
-    }
+    // Return a subset of cards for now
     all_cards.truncate(5);
     all_cards
+}
+
+/// System that shuffles cards for all players.
+/// Uses a seeded RNG for deterministic shuffling in multiplayer.
+fn shuffle_player_cards(mut players: Query<&mut Player>, mut rng: ResMut<CardRng>) {
+    for mut player in players.iter_mut() {
+        player.cards.shuffle(&mut rng.0);
+    }
 }

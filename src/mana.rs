@@ -92,6 +92,7 @@ impl ManaPool {
 
 impl Mana {
     /// Creates a new Mana instance with the specified amounts for each color.
+    #[allow(dead_code)]
     pub fn new(colorless: u64, white: u64, blue: u64, black: u64, red: u64, green: u64) -> Self {
         let mut color = Color::COLORLESS;
 
@@ -129,12 +130,12 @@ impl Mana {
     }
 
     /// Returns the total amount of colored mana
-    pub fn colored_total(&self) -> u64 {
+    pub fn _colored_total(&self) -> u64 {
         self.white + self.blue + self.black + self.red + self.green
     }
 
     /// Returns the number of colored mana symbols in the cost
-    fn colored_symbols(&self) -> (String, u64) {
+    fn _colored_symbols(&self) -> (String, u64) {
         let mut symbols = String::new();
         let mut count = 0;
 

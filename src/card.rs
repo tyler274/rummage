@@ -219,32 +219,6 @@ pub fn handle_card_dragging(
     }
 }
 
-pub fn creature_type_to_string(creature_type: &CreatureType) -> String {
-    let mut types = Vec::new();
-
-    if creature_type.contains(CreatureType::DRAGON) {
-        types.push("Dragon");
-    }
-    if creature_type.contains(CreatureType::WIZARD) {
-        types.push("Wizard");
-    }
-    if creature_type.contains(CreatureType::HUMAN) {
-        types.push("Human");
-    }
-    if creature_type.contains(CreatureType::ANGEL) {
-        types.push("Angel");
-    }
-    if creature_type.contains(CreatureType::DEMON) {
-        types.push("Demon");
-    }
-
-    if types.is_empty() {
-        "Unknown".to_string()
-    } else {
-        types.join(" ")
-    }
-}
-
 pub fn card_types_to_string(types: &CardTypes) -> String {
     let mut type_strings = Vec::new();
 

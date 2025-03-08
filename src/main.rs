@@ -9,9 +9,8 @@ mod text;
 use bevy::app::AppExit;
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
-use bevy::winit::WinitWindows;
 use bevy::DefaultPlugins;
-use bevy_turborand::prelude::*;
+use bevy_rand::prelude::*;
 use camera::{handle_window_resize, setup_camera};
 use card::{debug_render_text_positions, handle_card_dragging, DebugConfig};
 use cards::CardsPlugin;
@@ -30,10 +29,6 @@ fn handle_exit(mut exit_events: EventReader<AppExit>) {
     }
 }
 
-fn setup(mut commands: Commands) {
-    commands.spawn((Camera2d::default(), Transform::default()));
-}
-
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -46,7 +41,7 @@ fn main() {
             ..default()
         }))
         .add_plugins(DragPlugin)
-        .add_plugins(RngPlugin::default())
+        .add_plugins(EntropyPlugin::<WyRand>::default())
         .add_plugins(CardsPlugin)
         .insert_resource(DebugConfig {
             show_text_positions: false, // Set to false to disable debug rendering
