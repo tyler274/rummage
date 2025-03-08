@@ -112,7 +112,7 @@ pub fn spawn_card_text(
                     Some(Vec2::new(card_size.x * 0.8, 40.0)),
                 ),
                 CardTextType::PowerToughness => (
-                    Vec3::new(card_size.x * 0.35, -card_size.y * 0.35, 1.0),
+                    Vec3::new(card_size.x * 0.35, -card_size.y * 0.46, 1.0),
                     12.0,
                     JustifyText::Right,
                     None,

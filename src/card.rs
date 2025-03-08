@@ -1,5 +1,5 @@
 use crate::mana::Mana;
-use bevy::{input::mouse::MouseButton, prelude::*};
+use bevy::{input::mouse::MouseButton, prelude::*, sprite::SpriteBundle};
 use bitflags::bitflags;
 
 bitflags! {
@@ -48,7 +48,13 @@ bitflags! {
     }
 }
 
-#[derive(Component, Debug, Clone, PartialEq, Eq)]
+#[derive(Bundle)]
+pub struct CardBundle {
+    pub sprite_bundle: SpriteBundle,
+    pub card: Card,
+}
+
+#[derive(Component, Debug, Clone)]
 pub struct Card {
     pub name: String,
     pub cost: Mana,

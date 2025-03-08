@@ -1,24 +1,23 @@
+mod camera;
 mod card;
+mod cards;
+mod drag;
 mod mana;
 mod player;
-mod camera;
 mod text;
-mod drag;
 
-use bevy::prelude::*;
 use bevy::app::AppExit;
-use camera::{setup_camera, handle_window_resize};
+use bevy::prelude::*;
+use camera::{handle_window_resize, setup_camera};
+use card::{debug_render_text_positions, handle_card_dragging, spawn_hand, DebugConfig};
 use text::spawn_card_text;
-use card::{spawn_hand, handle_card_dragging, debug_render_text_positions, DebugConfig};
 
 fn hello_world() {
     println!("hello world!");
     println!("Mana default color is: {:?}", mana::Mana::default());
 }
 
-fn handle_exit(
-    mut exit_events: EventReader<AppExit>,
-) {
+fn handle_exit(mut exit_events: EventReader<AppExit>) {
     for _exit_event in exit_events.read() {
         println!("Received exit event, cleaning up...");
     }
@@ -38,17 +37,23 @@ fn main() {
         .insert_resource(DebugConfig {
             show_text_positions: false, // Set to false to disable debug rendering
         })
-        .add_systems(Startup, (
-            hello_world,
-            setup_camera,
-            spawn_hand,
-            spawn_card_text.after(spawn_hand),
-        ))
-        .add_systems(Update, (
-            handle_card_dragging,
-            handle_window_resize,
-            handle_exit,
-            debug_render_text_positions,
-        ))
+        .add_systems(
+            Startup,
+            (
+                hello_world,
+                setup_camera,
+                spawn_hand,
+                spawn_card_text.after(spawn_hand),
+            ),
+        )
+        .add_systems(
+            Update,
+            (
+                handle_card_dragging,
+                handle_window_resize,
+                handle_exit,
+                debug_render_text_positions,
+            ),
+        )
         .run();
 }
