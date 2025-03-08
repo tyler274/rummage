@@ -243,11 +243,20 @@ pub fn handle_card_dragging(
 
                 // Second pass: start dragging only the top card
                 if let Some(top_entity) = top_card {
-                    for (entity, _, mut draggable, global_transform) in card_query.iter_mut() {
+                    // Find the highest z-index among all cards
+                    let mut max_z = highest_z;
+                    for (_, _, draggable, _) in card_query.iter() {
+                        max_z = max_z.max(draggable.z_index);
+                    }
+
+                    for (entity, mut transform, mut draggable, global_transform) in card_query.iter_mut() {
                         if entity == top_entity {
                             let card_pos = global_transform.translation().truncate();
                             draggable.dragging = true;
                             draggable.drag_offset = card_pos - world_pos;
+                            // Set the dragged card's z-index higher than all others
+                            draggable.z_index = max_z + 1.0;
+                            transform.translation.z = max_z + 1.0;
                         }
                     }
                 }
@@ -275,7 +284,10 @@ pub fn handle_card_dragging(
             for (_, mut transform, draggable, _) in card_query.iter_mut() {
                 if draggable.dragging {
                     let new_pos = world_pos + draggable.drag_offset;
-                    transform.translation = new_pos.extend(draggable.z_index);
+                    transform.translation.x = new_pos.x;
+                    transform.translation.y = new_pos.y;
+                    // Maintain the z-index we set when dragging started
+                    transform.translation.z = draggable.z_index;
                 }
             }
         }
