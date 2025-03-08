@@ -88,7 +88,7 @@ pub fn spawn_card_text(
             // Calculate relative offsets from card center
             let (offset, font_size, alignment, bounds) = match content.text_type {
                 CardTextType::Name => (
-                    Vec3::new(card_size.x * -0.05, card_size.y * 0.34, 1.0),
+                    Vec3::new(card_size.x * -0.05, card_size.y * 0.30, 1.0),
                     card_size.y * 0.09, // Scale font with card height for consistent proportions
                     JustifyText::Left,
                     Some(Vec2::new(card_size.x * 0.70, card_size.y * 0.5)), // Wide bounds for name wrapping
@@ -112,7 +112,7 @@ pub fn spawn_card_text(
                     None,
                 ),
                 CardTextType::RulesText => (
-                    Vec3::new(card_size.x * 0.0, -card_size.y * 0.1, 1.0), // Centered horizontally but with left margin
+                    Vec3::new(-card_size.x * 0.0, -card_size.y * 0.15, 1.0), // Centered horizontally but with left margin
                     card_size.y * 0.045,
                     JustifyText::Left, // Keep left justification for rules text
                     Some(Vec2::new(card_size.x * 0.80, card_size.y * 0.45)), // Slightly narrower bounds

@@ -1,21 +1,83 @@
 use crate::mana::Mana;
 use bevy::{input::mouse::MouseButton, prelude::*, sprite::Sprite};
 use bitflags::bitflags;
+use serde::{Deserialize, Serialize};
+use std::hash::Hash;
 
 bitflags! {
-    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-    pub struct CreatureType: u32 {
+    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, Hash)]
+    pub struct CreatureType: u64 {
         const NONE = 0;
         const HUMAN = 1 << 0;
         const WIZARD = 1 << 1;
         const DRAGON = 1 << 2;
         const ANGEL = 1 << 3;
         const DEMON = 1 << 4;
+        // Common creature types
+        const WARRIOR = 1 << 5;
+        const SOLDIER = 1 << 6;
+        const CLERIC = 1 << 7;
+        const ROGUE = 1 << 8;
+        const SHAMAN = 1 << 9;
+        const BEAST = 1 << 10;
+        const ELEMENTAL = 1 << 11;
+        const VAMPIRE = 1 << 12;
+        const ZOMBIE = 1 << 13;
+        const GOBLIN = 1 << 14;
+        const ELF = 1 << 15;
+        const MERFOLK = 1 << 16;
+        const BIRD = 1 << 17;
+        const SPIRIT = 1 << 18;
+        const KNIGHT = 1 << 19;
+        const DRUID = 1 << 20;
+        const ASSASSIN = 1 << 21;
+        const ARTIFICER = 1 << 22;
+        const MONK = 1 << 23;
+        const HORROR = 1 << 24;
+        const GIANT = 1 << 25;
+        const DINOSAUR = 1 << 26;
+        const HYDRA = 1 << 27;
+        const PHOENIX = 1 << 28;
+        const WURM = 1 << 29;
+        const PHYREXIAN = 1 << 30;
+        const BERSERKER = 1 << 31;
+        const SPHINX = 1 << 32;
+        const IMP = 1 << 33;
+        const GARGOYLE = 1 << 34;
+        const LHURGOYF = 1 << 35;
+        const OOZE = 1 << 36;
+        const SQUIRREL = 1 << 37;
+        const KAVU = 1 << 38;
+        const CAT = 1 << 39;
+        const DRAKE = 1 << 40;
+        const GNOME = 1 << 41;
+        const ARCHON = 1 << 42;
+        const LIZARD = 1 << 43;
+        const INSECT = 1 << 44;
+        const CONSTRUCT = 1 << 45;
+        const GOLEM = 1 << 46;
+        const MONKEY = 1 << 47;
+        const NYMPH = 1 << 48;
+        const EFREET = 1 << 49;
+        const INCARNATION = 1 << 50;
+        const DRYAD = 1 << 51;
+        // New types
+        const TREEFOLK = 1 << 52;
+        const SLIVER = 1 << 53;
+        const SNAKE = 1 << 54;
+        const WOLF = 1 << 55;
+        const WEREWOLF = 1 << 56;
+        const SCOUT = 1 << 58;
+        const ADVISOR = 1 << 59;
+        const ALLY = 1 << 60;
+        const MERCENARY = 1 << 61;
+        const REBEL = 1 << 62;
+        const SPIDER = 1 << 63;
     }
 }
 
 bitflags! {
-    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, Hash)]
     pub struct CardTypes: u32 {
         const NONE = 0;
         // Basic types
@@ -42,6 +104,21 @@ bitflags! {
 
         // Subtypes
         const SAGA = 1 << 18;
+        const EQUIPMENT = 1 << 19;
+        const AURA = 1 << 20;
+        const VEHICLE = 1 << 21;
+        const FOOD = 1 << 22;
+        const CLUE = 1 << 23;
+        const TREASURE = 1 << 24;
+        const FORTIFICATION = 1 << 25;
+        const CONTRAPTION = 1 << 26;
+
+        // Land subtypes
+        const PLAINS = 1 << 27;
+        const ISLAND = 1 << 28;
+        const SWAMP = 1 << 29;
+        const MOUNTAIN = 1 << 30;
+        const FOREST = 1 << 31;
 
         // Derived types
         const HISTORIC = Self::LEGENDARY.bits() | Self::ARTIFACT.bits() | Self::SAGA.bits();
@@ -54,7 +131,7 @@ pub struct CardBundle {
     pub card: Card,
 }
 
-#[derive(Component, Debug, Clone)]
+#[derive(Component, Debug, Clone, Serialize, Deserialize)]
 pub struct Card {
     pub name: String,
     pub cost: Mana,
@@ -64,7 +141,7 @@ pub struct Card {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CardDetails {
     Creature(CreatureCard),
     Planeswalker { loyalty: i32 },
@@ -72,7 +149,7 @@ pub enum CardDetails {
     Other, // For cards that don't need additional details
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CreatureCard {
     pub power: i32,
     pub toughness: i32,
@@ -122,6 +199,123 @@ impl Default for DebugConfig {
         Self {
             show_text_positions: false,
         }
+    }
+}
+
+impl CreatureType {
+    fn infer_from_name_and_text(name: &str, rules_text: &str) -> Self {
+        let mut creature_types = Self::NONE;
+        let text = format!("{} {}", name, rules_text).to_lowercase();
+
+        // Phyrexian inference
+        if text.contains("phyrexian") || text.contains("compleated") || text.contains("praetors") {
+            creature_types |= Self::PHYREXIAN;
+        }
+
+        // Common race/class patterns
+        let patterns = [
+            ("artificer", Self::ARTIFICER),
+            ("assassin", Self::ASSASSIN),
+            ("berserker", Self::BERSERKER),
+            ("knight", Self::KNIGHT),
+            ("warrior", Self::WARRIOR),
+            ("wizard", Self::WIZARD),
+            ("cleric", Self::CLERIC),
+            ("druid", Self::DRUID),
+            ("shaman", Self::SHAMAN),
+            ("rogue", Self::ROGUE),
+            ("soldier", Self::SOLDIER),
+            ("monk", Self::MONK),
+            ("sphinx", Self::SPHINX),
+            ("imp", Self::IMP),
+            ("gargoyle", Self::GARGOYLE),
+            ("goyf", Self::LHURGOYF),
+            ("ooze", Self::OOZE),
+            ("squirrel", Self::SQUIRREL),
+            ("kavu", Self::KAVU),
+            ("lion", Self::CAT),
+            ("drake", Self::DRAKE),
+            ("gnome", Self::GNOME),
+            ("archon", Self::ARCHON),
+            ("rootwalla", Self::LIZARD),
+            ("insect", Self::INSECT),
+            ("wasp", Self::INSECT),
+            ("construct", Self::CONSTRUCT),
+            ("golem", Self::GOLEM),
+            ("treefolk", Self::TREEFOLK),
+            ("sliver", Self::SLIVER),
+            ("snake", Self::SNAKE),
+            ("serpent", Self::SNAKE),
+            ("wolf", Self::WOLF),
+            ("werewolf", Self::WEREWOLF),
+            ("vampire", Self::VAMPIRE),
+            ("scout", Self::SCOUT),
+            ("advisor", Self::ADVISOR),
+            ("ally", Self::ALLY),
+            ("mercenary", Self::MERCENARY),
+            ("rebel", Self::REBEL),
+            ("spider", Self::SPIDER),
+        ];
+
+        for (pattern, creature_type) in patterns.iter() {
+            if text.contains(pattern) {
+                creature_types |= *creature_type;
+            }
+        }
+
+        // Special cases based on card names
+        if text.contains("manufactor") || text.contains("cryptkeeper") || text.contains("millikin")
+        {
+            creature_types |= Self::CONSTRUCT;
+        }
+
+        if text.contains("thought monitor") || text.contains("sojourner's companion") {
+            creature_types |= Self::CONSTRUCT;
+        }
+
+        if text.contains("sanctum weaver") {
+            creature_types |= Self::DRYAD;
+        }
+
+        if text.contains("glimmer bairn") {
+            creature_types |= Self::SPIRIT;
+        }
+
+        // Werewolf transformations
+        if text.contains("transform") && text.contains("wolf") {
+            creature_types |= Self::WEREWOLF;
+        }
+
+        creature_types
+    }
+
+    fn apply_retroactive_types(name: &str, existing_types: Self) -> Self {
+        let mut types = existing_types;
+
+        // Known retroactive additions
+        let retroactive_types = [
+            ("Urza", Self::HUMAN | Self::ARTIFICER),
+            ("Mishra", Self::HUMAN | Self::ARTIFICER),
+            ("Yawgmoth", Self::PHYREXIAN),
+            ("Gix", Self::PHYREXIAN),
+            ("Xantcha", Self::PHYREXIAN),
+            ("Ashnod", Self::HUMAN | Self::ARTIFICER),
+            ("Tawnos", Self::HUMAN | Self::ARTIFICER),
+            ("Slobad", Self::GOBLIN | Self::ARTIFICER),
+            ("Glissa", Self::PHYREXIAN | Self::ELF),
+            ("Ragavan", Self::MONKEY),
+            ("Sythis", Self::NYMPH),
+            ("Yusri", Self::EFREET),
+            ("Wonder", Self::INCARNATION),
+        ];
+
+        for (character_name, character_types) in retroactive_types.iter() {
+            if name.contains(character_name) {
+                types |= *character_types;
+            }
+        }
+
+        types
     }
 }
 

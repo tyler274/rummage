@@ -14,6 +14,20 @@ rand_core = "0.9.3"
 rand = "0.9.0"
 bevy_rand = { version = "0.9", features = ["wyrand", "experimental"] }
 bevy_prng = { version = "0.9", features = ["wyrand"] }
+reqwest = { version = "0.12.12", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+async-trait = "0.1"
+flate2 = "1.1.0"
+bzip2 = "0.5.2"
+sha2 = "0.10.8"
+hex = "0.4.3"
+tar = "0.4.44"
+dirs = "6.0.0"
+tokio = { version = "1.0", features = ["time"] }
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["full"] }
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]

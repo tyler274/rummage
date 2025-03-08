@@ -1,5 +1,6 @@
 use bevy::{prelude::*, utils::HashMap};
 use bitflags::bitflags;
+use serde::{Deserialize, Serialize};
 
 bitflags! {
     /// Represents the different colors of mana.
@@ -13,7 +14,7 @@ bitflags! {
     /// - `GREEN`
     /// - `COLORLESS`
     /// - `ALL` (combination of all colors)
-    #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
     pub struct Color: u8 {
         const COLORLESS = 0b00000;
         const WHITE = 0b00001;
@@ -26,7 +27,20 @@ bitflags! {
 }
 
 /// Represents mana costs with specific amounts for each color
-#[derive(Component, Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Component,
+    Default,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+)]
 pub struct Mana {
     pub color: Color, // Used to quickly check which colors are present
     pub white: u64,

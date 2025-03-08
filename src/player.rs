@@ -31,7 +31,8 @@ pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
     let mut cards = get_example_cards(player_entity);
     // Shuffle the initial hand
     cards.shuffle(&mut rand::rng());
-    let display_cards = cards.clone();
+    // Take the first 7 cards for display
+    let display_cards = cards.iter().take(7).cloned().collect::<Vec<_>>();
 
     // Update the player's cards while preserving other fields
     commands
