@@ -1,9 +1,13 @@
-use crate::card::{card_types_to_string, Card, CardDetails, CardTextContent, CardTextType};
+use crate::card::{
+    card_types_to_string, Card, CardDetails, CardTextContent, CardTextType, Draggable,
+};
 use crate::cards::get_example_cards;
 use crate::mana::ManaPool;
 use bevy::prelude::*;
 use bevy::sprite::Sprite;
+use bevy_turborand::prelude::*;
 
+#[allow(dead_code)]
 #[derive(Component, Default, Debug, Clone)]
 pub struct Player {
     pub name: String,
@@ -12,13 +16,14 @@ pub struct Player {
     pub cards: Vec<Card>,
 }
 
-pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
-    let cards = get_example_cards();
+pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>, rng: ResMut<GlobalRng>) {
+    let cards = get_example_cards(rng);
     let card_size = Vec2::new(100.0, 140.0);
     let spacing = 120.0;
     let start_x = -(cards.len() as f32 * spacing) / 2.0 + spacing / 2.0;
 
     for (i, card) in cards.into_iter().enumerate() {
+        let z = i as f32;
         let card_entity = commands
             .spawn((
                 card.clone(),
@@ -26,7 +31,12 @@ pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
                     custom_size: Some(card_size),
                     ..default()
                 },
-                Transform::from_xyz(start_x + i as f32 * spacing, 0.0, 0.0),
+                Transform::from_xyz(start_x + i as f32 * spacing, 0.0, z),
+                Draggable {
+                    dragging: false,
+                    drag_offset: Vec2::ZERO,
+                    z_index: z,
+                },
             ))
             .id();
 

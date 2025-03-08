@@ -8,8 +8,15 @@ mod text;
 
 use bevy::app::AppExit;
 use bevy::prelude::*;
+use bevy::window::WindowResolution;
+use bevy::winit::WinitWindows;
+use bevy::DefaultPlugins;
+use bevy_turborand::prelude::*;
 use camera::{handle_window_resize, setup_camera};
-use card::{debug_render_text_positions, handle_card_dragging, spawn_hand, DebugConfig};
+use card::{debug_render_text_positions, handle_card_dragging, DebugConfig};
+use cards::CardsPlugin;
+use drag::DragPlugin;
+use player::spawn_hand;
 use text::spawn_card_text;
 
 fn hello_world() {
@@ -23,17 +30,24 @@ fn handle_exit(mut exit_events: EventReader<AppExit>) {
     }
 }
 
+fn setup(mut commands: Commands) {
+    commands.spawn((Camera2d::default(), Transform::default()));
+}
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                resolution: (1280.0, 720.0).into(),
                 title: "Rummage".to_string(),
+                resolution: WindowResolution::new(1280.0, 720.0),
                 present_mode: bevy::window::PresentMode::AutoVsync,
                 ..default()
             }),
             ..default()
         }))
+        .add_plugins(DragPlugin)
+        .add_plugins(RngPlugin::default())
+        .add_plugins(CardsPlugin)
         .insert_resource(DebugConfig {
             show_text_positions: false, // Set to false to disable debug rendering
         })

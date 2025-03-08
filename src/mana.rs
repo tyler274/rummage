@@ -28,7 +28,7 @@ bitflags! {
 /// Represents mana costs with specific amounts for each color
 #[derive(Component, Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Mana {
-    pub color: Color,  // Used to quickly check which colors are present
+    pub color: Color, // Used to quickly check which colors are present
     pub white: u64,
     pub blue: u64,
     pub black: u64,
@@ -42,6 +42,7 @@ pub struct ManaPool {
     pub mana: HashMap<Color, Mana>,
 }
 
+#[allow(dead_code)]
 impl ManaPool {
     pub fn new() -> Self {
         Self {
@@ -50,31 +51,35 @@ impl ManaPool {
     }
 
     pub fn add(&mut self, mana: Mana) {
-        self.mana.entry(mana.color).and_modify(|e| {
-            e.white += mana.white;
-            e.blue += mana.blue;
-            e.black += mana.black;
-            e.red += mana.red;
-            e.green += mana.green;
-            e.colorless += mana.colorless;
-        }).or_insert(mana);
+        self.mana
+            .entry(mana.color)
+            .and_modify(|e| {
+                e.white += mana.white;
+                e.blue += mana.blue;
+                e.black += mana.black;
+                e.red += mana.red;
+                e.green += mana.green;
+                e.colorless += mana.colorless;
+            })
+            .or_insert(mana);
     }
 
     pub fn remove(&mut self, mana: Mana) -> bool {
         if let Some(existing) = self.mana.get_mut(&mana.color) {
-            if existing.white >= mana.white &&
-               existing.blue >= mana.blue &&
-               existing.black >= mana.black &&
-               existing.red >= mana.red &&
-               existing.green >= mana.green &&
-               existing.colorless >= mana.colorless {
+            if existing.white >= mana.white
+                && existing.blue >= mana.blue
+                && existing.black >= mana.black
+                && existing.red >= mana.red
+                && existing.green >= mana.green
+                && existing.colorless >= mana.colorless
+            {
                 existing.white -= mana.white;
                 existing.blue -= mana.blue;
                 existing.black -= mana.black;
                 existing.red -= mana.red;
                 existing.green -= mana.green;
                 existing.colorless -= mana.colorless;
-                
+
                 if existing.total() == 0 {
                     self.mana.remove(&mana.color);
                 }
@@ -89,13 +94,23 @@ impl Mana {
     /// Creates a new Mana instance with the specified amounts for each color.
     pub fn new(colorless: u64, white: u64, blue: u64, black: u64, red: u64, green: u64) -> Self {
         let mut color = Color::COLORLESS;
-        
+
         // Set color flags based on presence of colored mana
-        if white > 0 { color |= Color::WHITE; }
-        if blue > 0 { color |= Color::BLUE; }
-        if black > 0 { color |= Color::BLACK; }
-        if red > 0 { color |= Color::RED; }
-        if green > 0 { color |= Color::GREEN; }
+        if white > 0 {
+            color |= Color::WHITE;
+        }
+        if blue > 0 {
+            color |= Color::BLUE;
+        }
+        if black > 0 {
+            color |= Color::BLACK;
+        }
+        if red > 0 {
+            color |= Color::RED;
+        }
+        if green > 0 {
+            color |= Color::GREEN;
+        }
 
         Self {
             color,
@@ -160,19 +175,19 @@ impl std::fmt::Display for Mana {
 
         // Add colored mana symbols in WUBRG order
         for _ in 0..self.white {
-            mana_text.push_str("⚪");  // White circle emoji
+            mana_text.push_str("⚪"); // White circle emoji
         }
         for _ in 0..self.blue {
-            mana_text.push_str("🔵");  // Blue circle emoji
+            mana_text.push_str("🔵"); // Blue circle emoji
         }
         for _ in 0..self.black {
-            mana_text.push_str("⚫");  // Black circle emoji
+            mana_text.push_str("⚫"); // Black circle emoji
         }
         for _ in 0..self.red {
-            mana_text.push_str("🔴");  // Red circle emoji
+            mana_text.push_str("🔴"); // Red circle emoji
         }
         for _ in 0..self.green {
-            mana_text.push_str("🟢");  // Green circle emoji
+            mana_text.push_str("🟢"); // Green circle emoji
         }
 
         write!(f, "{}", mana_text)

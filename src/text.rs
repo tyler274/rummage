@@ -2,12 +2,6 @@ use crate::card::{Card, CardTextContent, CardTextType, DebugConfig, SpawnedText}
 use bevy::prelude::*;
 use bevy::text::{JustifyText, Text2d, TextBounds, TextColor, TextFont, TextLayout};
 
-/// Component for storing text offset relative to its parent card
-#[derive(Component)]
-pub struct CardText {
-    pub offset: Vec2,
-}
-
 /// Spawns debug visualization markers for card and text positions
 ///
 /// # Debug Visualization Colors
@@ -146,9 +140,6 @@ pub fn spawn_card_text(
                     Visibility::Visible,
                     InheritedVisibility::default(),
                     ViewVisibility::default(),
-                    CardText {
-                        offset: offset.truncate(),
-                    },
                     SpawnedText,
                 ))
                 .id();

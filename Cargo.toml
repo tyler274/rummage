@@ -5,12 +5,13 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.15", features = ["dynamic_linking", "wayland"] }
-renet = { version = "0.0.16", features = ["bevy", "serde"] }
 log = { version = "*", features = [
     "max_level_debug",
     "release_max_level_warn",
 ] }
-bitflags = "2.6.0"
+bitflags = "2.9.0"
+rand_core = "0.9.3"
+bevy_turborand = "0.10.0"
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]

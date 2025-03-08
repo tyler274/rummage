@@ -1,5 +1,5 @@
 use crate::mana::Mana;
-use bevy::{input::mouse::MouseButton, prelude::*, sprite::SpriteBundle};
+use bevy::{input::mouse::MouseButton, prelude::*, sprite::Sprite};
 use bitflags::bitflags;
 
 bitflags! {
@@ -50,7 +50,7 @@ bitflags! {
 
 #[derive(Bundle)]
 pub struct CardBundle {
-    pub sprite_bundle: SpriteBundle,
+    pub sprite_bundle: Sprite,
     pub card: Card,
 }
 
@@ -62,6 +62,7 @@ pub struct Card {
     pub card_details: CardDetails,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CardDetails {
     Creature(CreatureCard),
@@ -118,138 +119,6 @@ impl Default for DebugConfig {
     fn default() -> Self {
         Self {
             show_text_positions: false,
-        }
-    }
-}
-
-pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
-    let card_width = 100.0;
-    let card_height = card_width * 1.4;
-    let spacing = 20.0;
-    let num_cards = 5;
-    let total_width = (num_cards as f32 * card_width) + ((num_cards - 1) as f32 * spacing);
-    let start_x = -total_width / 2.0;
-    let y = -250.0;
-
-    // Define iconic MTG cards
-    let cards = vec![
-        Card {
-            name: "Serra Angel".to_string(),
-            cost: Mana::new(3, 2, 0, 0, 0, 0), // 3WW
-            types: CardTypes::CREATURE,
-            card_details: CardDetails::Creature(CreatureCard {
-                power: 4,
-                toughness: 4,
-                creature_type: CreatureType::ANGEL,
-            }),
-        },
-        Card {
-            name: "Shivan Dragon".to_string(),
-            cost: Mana::new(4, 0, 0, 0, 2, 0), // 4RR
-            types: CardTypes::CREATURE,
-            card_details: CardDetails::Creature(CreatureCard {
-                power: 5,
-                toughness: 5,
-                creature_type: CreatureType::DRAGON,
-            }),
-        },
-        Card {
-            name: "Jace's Archivist".to_string(),
-            cost: Mana::new(1, 0, 2, 0, 0, 0), // 1UU
-            types: CardTypes::CREATURE | CardTypes::LEGENDARY,
-            card_details: CardDetails::Creature(CreatureCard {
-                power: 2,
-                toughness: 2,
-                creature_type: CreatureType::HUMAN | CreatureType::WIZARD,
-            }),
-        },
-        Card {
-            name: "Prodigal Sorcerer".to_string(),
-            cost: Mana::new(2, 0, 1, 0, 0, 0), // 2U
-            types: CardTypes::CREATURE,
-            card_details: CardDetails::Creature(CreatureCard {
-                power: 1,
-                toughness: 1,
-                creature_type: CreatureType::HUMAN | CreatureType::WIZARD,
-            }),
-        },
-        Card {
-            name: "Dragon Mage".to_string(),
-            cost: Mana::new(5, 0, 0, 0, 2, 0), // 5RR
-            types: CardTypes::CREATURE,
-            card_details: CardDetails::Creature(CreatureCard {
-                power: 5,
-                toughness: 5,
-                creature_type: CreatureType::DRAGON | CreatureType::WIZARD,
-            }),
-        },
-    ];
-
-    for (i, card) in cards.into_iter().enumerate() {
-        let x = start_x + (i as f32 * (card_width + spacing));
-        let z = i as f32;
-
-        // Create a card entity with required components
-        let card_entity = commands
-            .spawn((
-                Sprite {
-                    custom_size: Some(Vec2::new(card_width, card_height)),
-                    color: Color::srgb(0.8, 0.8, 0.8), // Light gray color
-                    ..default()
-                },
-                Transform::from_xyz(x, y, z),
-                card.clone(),
-                Draggable {
-                    dragging: false,
-                    drag_offset: Vec2::ZERO,
-                    z_index: z,
-                },
-            ))
-            .insert(GlobalTransform::default())
-            .insert(Visibility::Visible)
-            .insert(InheritedVisibility::default())
-            .insert(ViewVisibility::default())
-            .id();
-
-        // Spawn text content entities as children
-        commands
-            .spawn((CardTextContent {
-                text: card.name.clone(),
-                text_type: CardTextType::Name,
-            },))
-            .set_parent(card_entity);
-
-        commands
-            .spawn((CardTextContent {
-                text: card.cost.to_string(),
-                text_type: CardTextType::Cost,
-            },))
-            .set_parent(card_entity);
-
-        // Add type line text
-        commands
-            .spawn((CardTextContent {
-                text: format!(
-                    "{} — {}",
-                    card_types_to_string(&card.types),
-                    match &card.card_details {
-                        CardDetails::Creature(creature) =>
-                            creature_type_to_string(&creature.creature_type),
-                        _ => String::new(),
-                    }
-                ),
-                text_type: CardTextType::Type,
-            },))
-            .set_parent(card_entity);
-
-        // Add power/toughness if it's a creature
-        if let CardDetails::Creature(creature) = &card.card_details {
-            commands
-                .spawn((CardTextContent {
-                    text: format!("{}/{}", creature.power, creature.toughness),
-                    text_type: CardTextType::PowerToughness,
-                },))
-                .set_parent(card_entity);
         }
     }
 }
