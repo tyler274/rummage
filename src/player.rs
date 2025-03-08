@@ -38,8 +38,8 @@ pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
         .entity(player_entity)
         .insert(Player { cards, ..player });
 
-    let card_size = Vec2::new(100.0, 140.0);
-    let spacing = 120.0;
+    let card_size = Vec2::new(672.0, 936.0);
+    let spacing = card_size.x * 1.1; // Reduced spacing multiplier for tighter layout
     let start_x = -(display_cards.len() as f32 * spacing) / 2.0 + spacing / 2.0;
 
     // Spawn visual cards
