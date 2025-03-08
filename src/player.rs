@@ -4,6 +4,7 @@ use crate::card::{
 use crate::cards::get_example_cards;
 use crate::mana::ManaPool;
 use bevy::prelude::*;
+use rand::seq::SliceRandom;
 
 #[allow(dead_code)]
 #[derive(Component, Default, Debug, Clone)]
@@ -27,7 +28,9 @@ pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
     let player_entity = commands.spawn(player.clone()).id();
 
     // Get example cards and clone them for display
-    let cards = get_example_cards(player_entity);
+    let mut cards = get_example_cards(player_entity);
+    // Shuffle the initial hand
+    cards.shuffle(&mut rand::rng());
     let display_cards = cards.clone();
 
     // Update the player's cards while preserving other fields
@@ -68,7 +71,7 @@ pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
                     text: card.name.clone(),
                     text_type: CardTextType::Name,
                 },
-                Transform::from_xyz(0.0, card_size.y * 0.3, z + 0.1),
+                Transform::from_xyz(-card_size.x * 0.20, card_size.y * 0.3, z + 0.1),
             ))
             .set_parent(card_entity);
 
@@ -79,7 +82,7 @@ pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
                     text: card.cost.to_string(),
                     text_type: CardTextType::Cost,
                 },
-                Transform::from_xyz(card_size.x * 0.4, card_size.y * 0.3, z + 0.1),
+                Transform::from_xyz(card_size.x * 0.35, card_size.y * 0.3, z + 0.1),
             ))
             .set_parent(card_entity);
 

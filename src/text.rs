@@ -88,13 +88,13 @@ pub fn spawn_card_text(
             // Calculate relative offsets from card center
             let (offset, font_size, alignment, bounds) = match content.text_type {
                 CardTextType::Name => (
-                    Vec3::new(0.0, card_size.y * 0.3, 1.0),
+                    Vec3::new(-card_size.x * 0.12, card_size.y * 0.34, 1.0),
                     11.0,
-                    JustifyText::Center,
-                    None,
+                    JustifyText::Left,
+                    Some(Vec2::new(card_size.x * 0.75, card_size.y * 0.5)),
                 ),
                 CardTextType::Cost => (
-                    Vec3::new(card_size.x * 0.32, card_size.y * 0.4, 1.0),
+                    Vec3::new(card_size.x * 0.32, card_size.y * 0.45, 1.0),
                     10.0,
                     JustifyText::Right,
                     None,
@@ -103,7 +103,7 @@ pub fn spawn_card_text(
                     Vec3::new(-card_size.x * 0.10, card_size.y * 0.1, 1.0),
                     10.0,
                     JustifyText::Left,
-                    Some(Vec2::new(card_size.x * 0.8, 40.0)),
+                    Some(Vec2::new(card_size.x * 0.8, card_size.y * 0.5)),
                 ),
                 CardTextType::PowerToughness => (
                     Vec3::new(card_size.x * 0.35, -card_size.y * 0.46, 1.0),
