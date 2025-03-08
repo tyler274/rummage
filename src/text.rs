@@ -89,25 +89,25 @@ pub fn spawn_card_text(
             let (offset, font_size, alignment, bounds) = match content.text_type {
                 CardTextType::Name => (
                     Vec3::new(-card_size.x * 0.12, card_size.y * 0.34, 1.0),
-                    11.0,
+                    card_size.y * 0.05, // Scale font with card height for consistent proportions
                     JustifyText::Left,
-                    Some(Vec2::new(card_size.x * 0.75, card_size.y * 0.5)),
+                    Some(Vec2::new(card_size.x * 0.75, card_size.y * 0.5)), // Wide bounds for name wrapping
                 ),
                 CardTextType::Cost => (
                     Vec3::new(card_size.x * 0.32, card_size.y * 0.45, 1.0),
-                    10.0,
+                    card_size.y * 0.06, // Larger size for mana symbols to improve visibility
                     JustifyText::Right,
                     None,
                 ),
                 CardTextType::Type => (
                     Vec3::new(-card_size.x * 0.10, card_size.y * 0.1, 1.0),
-                    10.0,
+                    card_size.y * 0.04, // Slightly smaller for type line
                     JustifyText::Left,
                     Some(Vec2::new(card_size.x * 0.8, card_size.y * 0.5)),
                 ),
                 CardTextType::PowerToughness => (
                     Vec3::new(card_size.x * 0.35, -card_size.y * 0.46, 1.0),
-                    12.0,
+                    card_size.y * 0.05, // Match name size for consistency
                     JustifyText::Right,
                     None,
                 ),
@@ -123,11 +123,7 @@ pub fn spawn_card_text(
                         } else {
                             regular_font.clone()
                         },
-                        font_size: if content.text_type == CardTextType::Cost {
-                            10.0
-                        } else {
-                            font_size
-                        },
+                        font_size,
                         ..default()
                     },
                     TextColor(if content.text_type == CardTextType::Cost {

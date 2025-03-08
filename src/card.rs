@@ -149,13 +149,18 @@ pub fn handle_card_dragging(
                 // First pass: find the card with highest z-index at cursor position
                 for (entity, _, draggable, global_transform) in card_query.iter() {
                     let card_pos = global_transform.translation().truncate();
-                    let card_size = Vec2::new(100.0, 140.0);
+                    // Using actual card dimensions (672x936) to match Magic card proportions
+                    let card_size = Vec2::new(672.0, 936.0);
+                    // No additional scaling needed since viewport_to_world_2d already gives us
+                    // coordinates in the same space as our card positions
+                    let scaled_size = card_size * 1.0;
 
                     // Check if the cursor is within the card bounds
-                    if world_pos.x >= card_pos.x - card_size.x / 2.0
-                        && world_pos.x <= card_pos.x + card_size.x / 2.0
-                        && world_pos.y >= card_pos.y - card_size.y / 2.0
-                        && world_pos.y <= card_pos.y + card_size.y / 2.0
+                    // The hit detection area now perfectly matches the visible card boundaries
+                    if world_pos.x >= card_pos.x - scaled_size.x / 2.0
+                        && world_pos.x <= card_pos.x + scaled_size.x / 2.0
+                        && world_pos.y >= card_pos.y - scaled_size.y / 2.0
+                        && world_pos.y <= card_pos.y + scaled_size.y / 2.0
                     {
                         if draggable.z_index > highest_z {
                             highest_z = draggable.z_index;

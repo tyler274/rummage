@@ -22,7 +22,7 @@ use bevy::window::WindowResized;
 /// automatically, eliminating the need for manual coordinate conversion.
 pub fn setup_camera(mut commands: Commands) {
     let mut projection = OrthographicProjection::default_2d();
-    projection.scale = 1.0;
+    projection.scale = 2.0; // Scale to make cards a reasonable size in the viewport
     projection.near = -1000.0;
     projection.far = 1000.0;
 
@@ -46,9 +46,12 @@ pub fn handle_window_resize(
 ) {
     for resize_event in resize_events.read() {
         if let Ok(mut projection) = projection_query.get_single_mut() {
-            // Maintain fixed height and adjust width based on aspect ratio
+            // Scale based on card height (936px) relative to window height
+            // We want the card to take up roughly 1/3 of the screen height
+            let target_card_height = 936.0;
             let aspect = resize_event.width / resize_event.height;
-            projection.scale = 1.0 / resize_event.height * 1080.0 * aspect; // Scale relative to 1080p height
+            // Scale by aspect ratio to maintain card proportions across different window sizes
+            projection.scale = (target_card_height / resize_event.height) * 2.0 * aspect;
 
             // Update window surface
             if let Ok(mut window) = windows.get_single_mut() {
