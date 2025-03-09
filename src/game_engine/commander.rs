@@ -163,7 +163,7 @@ impl CommandZoneManager {
 }
 
 /// Event that represents combat damage being dealt
-#[derive(Event)]
+#[derive(Event, Clone)]
 pub struct CombatDamageEvent {
     /// The source of the damage (usually a creature)
     pub source: Entity,
@@ -341,9 +341,11 @@ pub fn record_commander_damage(
 ) {
     for event in damage_events.read() {
         // Only process commander combat damage
-        if event.source_is_commander
-            && let Ok(mut commander) = commander_query.get_mut(event.source)
-        {
+        if !event.source_is_commander {
+            continue;
+        }
+
+        if let Ok(mut commander) = commander_query.get_mut(event.source) {
             if event.is_combat_damage && event.damage > 0 {
                 // Update the commander's damage tracking
                 if let Some(damage_entry) = commander
