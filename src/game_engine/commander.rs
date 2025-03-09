@@ -76,6 +76,92 @@ impl CommandZone {
     }
 }
 
+/// Enum indicating where a commander is currently located
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CommanderZoneLocation {
+    CommandZone,
+    Battlefield,
+    Graveyard,
+    Exile,
+    Hand,
+    Library,
+    Stack,
+}
+
+/// Manager for the Command Zone and Commander state
+#[derive(Resource, Debug, Default)]
+pub struct CommandZoneManager {
+    /// Maps player entities to their commander entities
+    pub player_commanders: HashMap<Entity, Vec<Entity>>,
+
+    /// Maps commander entities to their current zone
+    pub commander_zone_status: HashMap<Entity, CommanderZoneLocation>,
+
+    /// Tracks how many times a commander has moved zones
+    pub zone_transition_count: HashMap<Entity, u32>,
+
+    /// Tracks commander partnerships
+    pub commander_partners: HashMap<Entity, Entity>,
+
+    /// Maps commander entities to their color identity
+    pub commander_colors: HashMap<Entity, HashSet<Color>>,
+}
+
+impl CommandZoneManager {
+    /// Initialize with a list of players and their commanders
+    pub fn initialize(
+        &mut self,
+        player_commanders: HashMap<Entity, Vec<Entity>>,
+        cards: &Query<(Entity, &Card)>,
+    ) {
+        self.player_commanders = player_commanders.clone();
+
+        // Initialize all commanders as being in the command zone
+        for commanders in player_commanders.values() {
+            for &commander in commanders {
+                self.commander_zone_status
+                    .insert(commander, CommanderZoneLocation::CommandZone);
+                self.zone_transition_count.insert(commander, 0);
+
+                // Calculate and store color identity
+                if let Ok((_, card)) = cards.get(commander) {
+                    self.commander_colors
+                        .insert(commander, CommanderRules::extract_color_identity(card));
+                }
+            }
+        }
+    }
+
+    /// Get a player's commanders
+    pub fn get_player_commanders(&self, player: Entity) -> Vec<Entity> {
+        self.player_commanders
+            .get(&player)
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    /// Get a commander's current zone
+    pub fn get_commander_zone(&self, commander: Entity) -> CommanderZoneLocation {
+        self.commander_zone_status
+            .get(&commander)
+            .cloned()
+            .unwrap_or(CommanderZoneLocation::CommandZone)
+    }
+
+    /// Get the number of times a commander has been cast
+    pub fn get_cast_count(&self, commander: Entity) -> u32 {
+        self.zone_transition_count
+            .get(&commander)
+            .cloned()
+            .unwrap_or(0)
+    }
+
+    /// Update a commander's zone
+    pub fn update_commander_zone(&mut self, commander: Entity, new_zone: CommanderZoneLocation) {
+        self.commander_zone_status.insert(commander, new_zone);
+    }
+}
+
 /// Event that represents combat damage being dealt
 #[derive(Event)]
 pub struct CombatDamageEvent {
@@ -87,6 +173,8 @@ pub struct CombatDamageEvent {
     pub damage: u32,
     /// Whether this is combat damage (vs. direct damage from spells/abilities)
     pub is_combat_damage: bool,
+    /// Whether the source is a commander (for commander damage tracking)
+    pub source_is_commander: bool,
 }
 
 /// Event that triggers when a player needs to decide if their commander
@@ -201,18 +289,22 @@ impl CommanderRules {
 /// Initialize Commander-specific resources and components
 pub fn setup_commander(mut commands: Commands) {
     commands.insert_resource(CommandZone::default());
+    commands.insert_resource(CommandZoneManager::default());
 }
 
 /// Calculate the mana cost of a Commander including the Commander tax
-pub fn calculate_commander_tax(commander: &Commander) -> Mana {
-    // Create a new Mana cost based on the card's original cost plus tax
-    let tax = CommanderRules::calculate_tax(commander.cast_count);
+pub fn calculate_commander_cost(
+    commander: Entity,
+    base_cost: Mana,
+    cmd_zone_manager: &CommandZoneManager,
+) -> Mana {
+    let mut final_cost = base_cost.clone();
 
-    // In a real implementation, we would get the card's cost and add tax
-    // For now, we'll create a simple colorless mana cost with the tax
-    let mut mana = Mana::default();
-    mana.colorless = tax;
-    mana
+    // Get the commander's cast count and add tax
+    let cast_count = cmd_zone_manager.get_cast_count(commander);
+    final_cost.colorless += CommanderRules::calculate_tax(cast_count);
+
+    final_cost
 }
 
 /// Check if any player has lost due to commander damage
@@ -229,7 +321,7 @@ pub fn check_commander_damage_loss(
                 .iter()
                 .find(|(p, _)| p == &player_entity)
             {
-                if damage.1 >= 21 {
+                if damage.1 >= CommanderRules::COMMANDER_DAMAGE_THRESHOLD {
                     // Player has lost due to commander damage
                     commands.spawn(PlayerEliminatedEvent {
                         player: player_entity,
@@ -249,7 +341,9 @@ pub fn record_commander_damage(
 ) {
     for event in damage_events.read() {
         // Only process commander combat damage
-        if let Ok(mut commander) = commander_query.get_mut(event.source) {
+        if event.source_is_commander
+            && let Ok(mut commander) = commander_query.get_mut(event.source)
+        {
             if event.is_combat_damage && event.damage > 0 {
                 // Update the commander's damage tracking
                 if let Some(damage_entry) = commander
@@ -275,12 +369,27 @@ pub fn record_commander_damage(
 pub fn handle_commander_zone_change(
     mut commands: Commands,
     mut zone_manager: ResMut<ZoneManager>,
+    mut cmd_zone_manager: ResMut<CommandZoneManager>,
     mut zone_events: EventReader<ZoneChangeEvent>,
     commander_query: Query<(Entity, &Commander)>,
 ) {
     for event in zone_events.read() {
         // Check if the card is a commander
         if let Ok((entity, commander)) = commander_query.get(event.card) {
+            // Update the commander's zone status
+            let new_zone = match event.destination {
+                Zone::CommandZone => CommanderZoneLocation::CommandZone,
+                Zone::Battlefield => CommanderZoneLocation::Battlefield,
+                Zone::Graveyard => CommanderZoneLocation::Graveyard,
+                Zone::Exile => CommanderZoneLocation::Exile,
+                Zone::Hand => CommanderZoneLocation::Hand,
+                Zone::Library => CommanderZoneLocation::Library,
+                Zone::Stack => CommanderZoneLocation::Stack,
+                _ => CommanderZoneLocation::CommandZone, // Default case
+            };
+
+            cmd_zone_manager.update_commander_zone(entity, new_zone);
+
             // Special handling for commander death/exile
             if (event.destination == Zone::Graveyard || event.destination == Zone::Exile)
                 && (event.source == Zone::Battlefield || event.source == Zone::Stack)
@@ -293,6 +402,15 @@ pub fn handle_commander_zone_change(
                     can_go_to_command_zone: true,
                 });
             }
+
+            // Increase zone transition count if moved to command zone
+            if event.destination == Zone::CommandZone {
+                let count = cmd_zone_manager
+                    .zone_transition_count
+                    .entry(entity)
+                    .or_insert(0);
+                *count += 1;
+            }
         }
     }
 }
@@ -302,6 +420,7 @@ pub fn process_commander_zone_choices(
     mut commands: Commands,
     mut choice_events: EventReader<CommanderZoneChoiceEvent>,
     mut zone_manager: ResMut<ZoneManager>,
+    mut cmd_zone_manager: ResMut<CommandZoneManager>,
     mut commander_query: Query<&mut Commander>,
 ) {
     for event in choice_events.read() {
@@ -314,6 +433,17 @@ pub fn process_commander_zone_choices(
                 Zone::CommandZone,
             );
 
+            // Update the commander zone status
+            cmd_zone_manager
+                .update_commander_zone(event.commander, CommanderZoneLocation::CommandZone);
+
+            // Increment zone transition count
+            let count = cmd_zone_manager
+                .zone_transition_count
+                .entry(event.commander)
+                .or_insert(0);
+            *count += 1;
+
             // Notify that the commander moved to the command zone
             info!("Commander moved to command zone");
         }
@@ -324,31 +454,56 @@ pub fn process_commander_zone_choices(
 pub fn handle_commander_casting(
     mut commands: Commands,
     mut zone_manager: ResMut<ZoneManager>,
+    mut cmd_zone_manager: ResMut<CommandZoneManager>,
     mut commander_query: Query<&mut Commander>,
+    cards: Query<(Entity, &Card)>,
     // We would need other queries and inputs here
 ) {
     // In a full implementation, this would:
     // 1. Apply commander tax based on cast count
     // 2. Move the commander from command zone to stack
-    // 3. Increment cast count
+    // 3. Update the commander zone status
+    // 4. Increment cast count if successfully cast
 }
 
 /// Check for violation of color identity in a commander deck
 pub fn validate_commander_deck(
-    card_query: Query<&Card>,
-    commander_query: Query<(Entity, &Commander, &Card)>,
-) -> bool {
-    // For each player's deck, ensure all cards match their commander's color identity
-    // This is a placeholder implementation
-    true
+    card_query: Query<(Entity, &Card)>,
+    cmd_zone_manager: Res<CommandZoneManager>,
+    player_query: Query<(Entity, &Player)>,
+) -> HashMap<Entity, Vec<Entity>> {
+    // Map to store players and their illegal cards
+    let mut illegal_cards = HashMap::new();
+
+    // For each player, check their deck against their commander's color identity
+    for (player_entity, _) in player_query.iter() {
+        let commanders = cmd_zone_manager.get_player_commanders(player_entity);
+        if commanders.is_empty() {
+            continue;
+        }
+
+        // Get combined color identity of all commanders
+        let mut combined_identity = HashSet::new();
+        for &commander in &commanders {
+            if let Some(colors) = cmd_zone_manager.commander_colors.get(&commander) {
+                combined_identity.extend(colors.iter().cloned());
+            }
+        }
+
+        // TODO: This would need to check all cards in a player's deck
+        // For now, this is just a placeholder implementation
+    }
+
+    illegal_cards
 }
 
 /// System to handle Commander damage tracking
 pub fn track_commander_damage(
     mut commands: Commands,
     mut game_state: ResMut<GameState>,
-    commanders: Query<(Entity, &Commander, &crate::card::CreatureOnField)>,
+    commanders: Query<(Entity, &Commander)>,
     players: Query<Entity, With<Player>>,
+    cmd_zone_manager: Res<CommandZoneManager>,
     // We'll need a damage event/component to track actual damage
 ) {
     // This would be implemented to:

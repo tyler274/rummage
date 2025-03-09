@@ -1,7 +1,9 @@
 pub mod camera;
+pub mod combat_tests;
 pub mod commander_tests;
 pub mod game_engine_tests;
 pub mod menu;
 pub mod mtgjson;
+pub mod politics_tests;
 pub mod state_based_actions_tests;
 pub mod text_rendering;

@@ -2,8 +2,10 @@
 // It follows the implementation plan outlined in docs/game_loop.md
 
 mod actions;
+pub mod combat;
 pub mod commander;
 mod phase;
+mod politics;
 mod priority;
 mod stack;
 pub mod state;
@@ -11,8 +13,10 @@ mod turns;
 pub mod zones;
 
 pub use actions::*;
+pub use combat::*;
 pub use commander::*;
 pub use phase::*;
+pub use politics::*;
 pub use priority::*;
 pub use stack::*;
 pub use state::*;
@@ -52,6 +56,12 @@ impl Plugin for GameEnginePlugin {
 
         // Register commander-related systems and events
         commander::register_commander_systems(app);
+
+        // Register combat-related systems and events
+        combat::register_combat_systems(app);
+
+        // Register politics-related systems and events
+        politics::register_politics_systems(app);
     }
 }
 
