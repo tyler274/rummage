@@ -168,6 +168,7 @@ pub fn spawn_card_text(
             // Create text layout based on type
             let text_layout = match content.text_type {
                 CardTextType::Name => TextLayout::new_with_justify(JustifyText::Left),
+                CardTextType::Cost => TextLayout::new_with_justify(JustifyText::Center),
                 _ => TextLayout::default(),
             };
 
@@ -188,18 +189,20 @@ pub fn spawn_card_text(
                             CardTextType::RulesText => Some(card_size.x * 0.8),
                             CardTextType::Type => Some(card_size.x * 0.8),
                             CardTextType::Name => Some(card_size.x * 0.7), // Narrower width to force wrapping
+                            CardTextType::Cost => Some(card_size.x * 0.15), // Width to match background
                             _ => None,
                         },
                         height: match content.text_type {
                             CardTextType::RulesText => Some(card_size.y * 0.3),
                             CardTextType::Type => Some(card_size.y * 0.1),
                             CardTextType::Name => Some(card_size.y * 0.2), // Taller height to accommodate two lines
+                            CardTextType::Cost => Some(card_size.y * 0.08), // Height to match background
                             _ => None,
                         },
                     },
                     // Transform components
                     Transform::from_translation(if content.text_type == CardTextType::Cost {
-                        Vec3::new(0.0, 0.0, 0.2) // Relative to background for mana cost
+                        Vec3::new(0.0, 0.0, 0.1) // Slightly in front of background
                     } else {
                         offset
                     }),
