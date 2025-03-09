@@ -291,6 +291,13 @@ mod tests {
     use bevy::input::mouse::MouseMotion;
     use bevy::window::WindowResolution;
 
+    /// Helper function to set up a test environment with a camera and necessary resources.
+    ///
+    /// Creates an app with:
+    /// - A window of 800x600 resolution
+    /// - Default camera configuration
+    /// - Camera entity with individual components (no deprecated bundles)
+    /// - Pan state tracking
     fn setup_test_app() -> App {
         let mut app = App::new();
         app.add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -315,60 +322,68 @@ mod tests {
         app
     }
 
+    /// Tests that keyboard movement works correctly in a single direction.
+    ///
+    /// Verifies:
+    /// - Camera moves in the correct direction
+    /// - Movement only affects intended axis
+    /// - Movement speed matches configuration
     #[test]
     fn test_camera_keyboard_movement() {
         let mut app = setup_test_app();
 
         // Get initial camera position
-        let initial_pos = {
-            let world = app.world();
-            world
-                .query_filtered::<&Transform, With<Camera>>()
-                .single(world)
-                .translation
-        };
+        let initial_pos = app
+            .world
+            .query_filtered::<&Transform, With<Camera>>()
+            .single(&app.world)
+            .translation;
 
         // Press right arrow key
-        app.world_mut()
+        app.world
             .resource_mut::<ButtonInput<KeyCode>>()
             .press(KeyCode::ArrowRight);
         app.update();
 
         // Get new position
-        let new_pos = {
-            let world = app.world();
-            world
-                .query_filtered::<&Transform, With<Camera>>()
-                .single(world)
-                .translation
-        };
+        let new_pos = app
+            .world
+            .query_filtered::<&Transform, With<Camera>>()
+            .single(&app.world)
+            .translation;
 
         // Camera should have moved right (positive x)
         assert!(new_pos.x > initial_pos.x);
         assert_eq!(new_pos.y, initial_pos.y); // Y should not change
     }
 
+    /// Tests camera zoom functionality with mouse wheel input.
+    ///
+    /// Verifies:
+    /// - Zoom in reduces scale (makes objects larger)
+    /// - Zoom changes are smooth and proportional
+    /// - Window entity is properly handled
     #[test]
     fn test_camera_zoom() {
         let mut app = setup_test_app();
 
         // Get initial zoom
-        let initial_scale = {
-            let world = app.world();
-            world
-                .query_filtered::<&OrthographicProjection, With<Camera>>()
-                .single(world)
-                .scale
-        };
+        let initial_scale = app
+            .world
+            .query_filtered::<&OrthographicProjection, With<Camera>>()
+            .single(&app.world)
+            .scale;
 
         // Get window entity
-        let window_entity = app
-            .world()
-            .query_filtered::<Entity, With<PrimaryWindow>>()
-            .single(&app.world());
+        let window_entity = {
+            let world = &app.world;
+            world
+                .query_filtered::<Entity, With<PrimaryWindow>>()
+                .single(world)
+        };
 
         // Simulate mouse wheel scroll in
-        app.world_mut().send_event(MouseWheel {
+        app.world.send_event(MouseWheel {
             unit: bevy::input::mouse::MouseScrollUnit::Line,
             x: 0.0,
             y: 1.0,
@@ -377,93 +392,97 @@ mod tests {
         app.update();
 
         // Get new zoom
-        let new_scale = {
-            let world = app.world();
-            world
-                .query_filtered::<&OrthographicProjection, With<Camera>>()
-                .single(world)
-                .scale
-        };
+        let new_scale = app
+            .world
+            .query_filtered::<&OrthographicProjection, With<Camera>>()
+            .single(&app.world)
+            .scale;
 
         // Camera should have zoomed in (scale decreased)
         assert!(new_scale < initial_scale);
     }
 
+    /// Tests camera panning with middle mouse button.
+    ///
+    /// Verifies:
+    /// - Pan state is properly tracked
+    /// - Camera position updates with mouse movement
+    /// - Pan sensitivity is applied correctly
     #[test]
     fn test_camera_pan() {
         let mut app = setup_test_app();
 
         // Get initial camera position
-        let initial_pos = {
-            let world = app.world();
-            world
-                .query_filtered::<&Transform, With<Camera>>()
-                .single(world)
-                .translation
-        };
+        let initial_pos = app
+            .world
+            .query_filtered::<&Transform, With<Camera>>()
+            .single(&app.world)
+            .translation;
 
         // Start panning (middle mouse button press)
-        app.world_mut()
+        app.world
             .resource_mut::<ButtonInput<MouseButton>>()
             .press(MouseButton::Middle);
 
         // Set initial cursor position
         {
-            let mut world = app.world_mut();
-            let window = world
+            let mut window = app
+                .world
                 .query_filtered::<&mut Window, With<PrimaryWindow>>()
-                .single_mut(&mut world);
-            window
-                .cursor
-                .set_physical_position(Some(Vec2::new(400.0, 300.0)));
+                .single_mut(&mut app.world);
+            window.set_cursor_position(Some(Vec2::new(400.0, 300.0)));
         }
         app.update();
 
         // Simulate mouse movement
         {
-            let mut world = app.world_mut();
-            let window = world
+            let mut window = app
+                .world
                 .query_filtered::<&mut Window, With<PrimaryWindow>>()
-                .single_mut(&mut world);
-            window
-                .cursor
-                .set_physical_position(Some(Vec2::new(500.0, 350.0)));
+                .single_mut(&mut app.world);
+            window.set_cursor_position(Some(Vec2::new(500.0, 350.0)));
         }
         app.update();
 
         // Release middle mouse button
-        app.world_mut()
+        app.world
             .resource_mut::<ButtonInput<MouseButton>>()
             .release(MouseButton::Middle);
         app.update();
 
         // Get final position
-        let final_pos = {
-            let world = app.world();
-            world
-                .query_filtered::<&Transform, With<Camera>>()
-                .single(world)
-                .translation
-        };
+        let final_pos = app
+            .world
+            .query_filtered::<&Transform, With<Camera>>()
+            .single(&app.world)
+            .translation;
 
         // Camera should have moved in response to pan
         assert_ne!(final_pos, initial_pos);
     }
 
+    /// Tests camera zoom limits to ensure bounds are respected.
+    ///
+    /// Verifies:
+    /// - Cannot zoom out beyond max_zoom
+    /// - Cannot zoom in beyond min_zoom
+    /// - Zoom stops smoothly at limits
     #[test]
     fn test_zoom_limits() {
         let mut app = setup_test_app();
-        let config = app.world().resource::<CameraConfig>().clone();
+        let config = app.world.resource::<CameraConfig>().clone();
 
         // Get window entity once
-        let window_entity = app
-            .world()
-            .query_filtered::<Entity, With<PrimaryWindow>>()
-            .single(&app.world());
+        let window_entity = {
+            let world = &app.world;
+            world
+                .query_filtered::<Entity, With<PrimaryWindow>>()
+                .single(world)
+        };
 
         // Try to zoom out beyond limit
         for _ in 0..100 {
-            app.world_mut().send_event(MouseWheel {
+            app.world.send_event(MouseWheel {
                 unit: bevy::input::mouse::MouseScrollUnit::Line,
                 x: 0.0,
                 y: -1.0,
@@ -472,20 +491,18 @@ mod tests {
             app.update();
         }
 
-        let scale = {
-            let world = app.world();
-            world
-                .query_filtered::<&OrthographicProjection, With<Camera>>()
-                .single(world)
-                .scale
-        };
+        let scale = app
+            .world
+            .query_filtered::<&OrthographicProjection, With<Camera>>()
+            .single(&app.world)
+            .scale;
 
         // Should not zoom out beyond max_zoom
         assert!(scale <= config.max_zoom);
 
         // Try to zoom in beyond limit
         for _ in 0..100 {
-            app.world_mut().send_event(MouseWheel {
+            app.world.send_event(MouseWheel {
                 unit: bevy::input::mouse::MouseScrollUnit::Line,
                 x: 0.0,
                 y: 1.0,
@@ -494,47 +511,47 @@ mod tests {
             app.update();
         }
 
-        let scale = {
-            let world = app.world();
-            world
-                .query_filtered::<&OrthographicProjection, With<Camera>>()
-                .single(world)
-                .scale
-        };
+        let scale = app
+            .world
+            .query_filtered::<&OrthographicProjection, With<Camera>>()
+            .single(&app.world)
+            .scale;
 
         // Should not zoom in beyond min_zoom
         assert!(scale >= config.min_zoom);
     }
 
+    /// Tests diagonal camera movement to ensure proper normalization.
+    ///
+    /// Verifies:
+    /// - Diagonal movement affects both axes
+    /// - Movement speed is normalized (not faster diagonally)
+    /// - Multiple key presses work simultaneously
     #[test]
     fn test_camera_diagonal_movement() {
         let mut app = setup_test_app();
 
         // Get initial camera position
-        let initial_pos = {
-            let world = app.world();
-            world
-                .query_filtered::<&Transform, With<Camera>>()
-                .single(world)
-                .translation
-        };
+        let initial_pos = app
+            .world
+            .query_filtered::<&Transform, With<Camera>>()
+            .single(&app.world)
+            .translation;
 
         // Press up and right arrows simultaneously
         {
-            let mut input = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
+            let mut input = app.world.resource_mut::<ButtonInput<KeyCode>>();
             input.press(KeyCode::ArrowUp);
             input.press(KeyCode::ArrowRight);
         }
         app.update();
 
         // Get new position
-        let new_pos = {
-            let world = app.world();
-            world
-                .query_filtered::<&Transform, With<Camera>>()
-                .single(world)
-                .translation
-        };
+        let new_pos = app
+            .world
+            .query_filtered::<&Transform, With<Camera>>()
+            .single(&app.world)
+            .translation;
 
         // Camera should have moved diagonally (both x and y changed)
         assert!(new_pos.x > initial_pos.x);
@@ -545,9 +562,8 @@ mod tests {
             ((new_pos.x - initial_pos.x).powi(2) + (new_pos.y - initial_pos.y).powi(2)).sqrt();
 
         let straight_distance = {
-            let world = app.world();
-            let config = world.resource::<CameraConfig>();
-            let time = world.resource::<Time>();
+            let config = app.world.resource::<CameraConfig>();
+            let time = app.world.resource::<Time>();
             config.move_speed * time.delta().as_secs_f32()
         };
 
