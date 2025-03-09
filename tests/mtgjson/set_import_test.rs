@@ -140,6 +140,7 @@ impl CardSetStatistics {
     }
 }
 
+#[cfg(feature = "all_set_importer")]
 #[tokio::test]
 async fn test_import_all_sets() -> Result<(), Box<dyn std::error::Error>> {
     // Skip test in CI environment

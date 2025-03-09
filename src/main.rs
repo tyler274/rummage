@@ -2,6 +2,7 @@ mod camera;
 mod card;
 mod cards;
 mod drag;
+mod game_engine;
 mod mana;
 mod menu;
 mod player;
@@ -19,6 +20,7 @@ use camera::{
 use card::{DebugConfig, debug_render_text_positions, handle_card_dragging};
 use cards::CardsPlugin;
 use drag::DragPlugin;
+use game_engine::GameEnginePlugin;
 use menu::{GameState, MenuPlugin};
 use player::spawn_hand;
 use text::spawn_card_text;
@@ -31,6 +33,7 @@ impl Plugin for GamePlugin {
         app.add_plugins(DragPlugin)
             .add_plugins(EntropyPlugin::<WyRand>::default())
             .add_plugins(CardsPlugin)
+            .add_plugins(GameEnginePlugin)
             .insert_resource(DebugConfig {
                 show_text_positions: false,
             })

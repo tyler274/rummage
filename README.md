@@ -1,42 +1,60 @@
-# Rummage
+# Rummage - A Magic: The Gathering Engine
 
-Rummage is a Card Game project that uses the Bevy game engine. This project includes various modules such as `card`, `mana`, and `player`.
+![Magic: The Gathering](https://img.shields.io/badge/MTG-Commander-green)
+![Bevy](https://img.shields.io/badge/Bevy-0.15.3-blue)
+![Rust](https://img.shields.io/badge/Rust-2024-orange)
 
-## Building the Project
+Rummage is a Magic: The Gathering game engine built with Bevy, focusing on the Commander format.
 
-To build this project, follow these steps:
+## Features
 
-1. **Install Rust**: Ensure you have Rust installed. You can install Rust using [rustup](https://rustup.rs/).
+- Core MTG game loop implementation
+- Phase and turn management
+- Priority and stack system
+- Commander-specific rules and mechanics
+- Zone management (battlefield, graveyard, exile, command zone, etc.)
+- Commander damage tracking
+- Card representation and rendering
 
-2. **Clone the Repository**: Clone the project repository to your local machine.
-    ```sh
-    git clone git@github.com:tyler274/rummage.git
-    cd rummage
-    ```
+## Commander Format Support
 
-3. **Install Dependencies**: Run the following command to install the necessary dependencies.
-    ```sh
-    cargo build
-    ```
+Rummage implements the specific rules for the Commander format:
 
-4. **Build the Project**: Use the following command to build the project in release mode.
-    ```sh
-    cargo build --release
-    ```
+- Starting life total of 40
+- Commander damage tracking (21 damage from a single commander eliminates a player)
+- Command zone mechanics (commanders can be cast from the command zone)
+- Commander tax (2 additional mana each time cast from command zone)
+- Color identity rules for deck construction
 
-5. **Run the Project**: After building, you can run the project using:
-    ```sh
-    cargo run
-    ```
+## Building & Running
+
+```bash
+# Build the project
+cargo build
+
+# Run the game
+cargo run
+
+# Run tests
+cargo test
+```
 
 ## Project Structure
 
-- `src/`
-  - `card.rs`: Contains the implementation of the card module.
-  - `mana.rs`: Contains the implementation of the mana module.
-  - `player.rs`: Contains the implementation of the player module.
-  - `main.rs`: The entry point of the application.
+- **src/game_engine/** - Core game engine
+  - **phase.rs** - Game phase system
+  - **priority.rs** - Player priority management
+  - **stack.rs** - Spell stack implementation
+  - **state.rs** - Game state tracking
+  - **zones.rs** - Game zones (hand, library, battlefield, etc.)
+  - **commander.rs** - Commander-specific rules
+  - **actions.rs** - Game actions
+  - **turns.rs** - Turn sequence
+
+- **src/card.rs** - Card data structures and functionality
+- **src/mana.rs** - Mana system
+- **src/player.rs** - Player management
 
 ## License
 
-MIT License
+This project is licensed under the MIT License - see the LICENSE.txt file for details.
