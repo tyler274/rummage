@@ -1,6 +1,6 @@
 use crate::card::{Card, CardDetails, CardTextContent, CardTextType, Draggable};
 use crate::cards::get_example_cards;
-use crate::mana::ManaPool;
+use crate::mana::{ManaPool, convert_rules_text_to_emoji};
 use bevy::prelude::*;
 use rand::seq::SliceRandom;
 
@@ -109,11 +109,11 @@ pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
                 .set_parent(card_entity);
         }
 
-        // Spawn rules text
+        // Spawn rules text with emoji mana symbols
         commands
             .spawn((
                 CardTextContent {
-                    text: card.rules_text.clone(),
+                    text: convert_rules_text_to_emoji(&card.rules_text),
                     text_type: CardTextType::RulesText,
                 },
                 Transform::from_xyz(-card_size.x * 0.35, -card_size.y * 0.15, z + 0.1),

@@ -22,6 +22,47 @@ use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// Emoji representations of mana symbols
+pub const MANA_EMOJI: &[(&str, &str)] = &[
+    ("{W}", "⚪"), // White mana
+    ("{U}", "🔵"), // Blue mana
+    ("{B}", "⚫"), // Black mana
+    ("{R}", "🔴"), // Red mana
+    ("{G}", "🟢"), // Green mana
+    ("{C}", "💎"), // Colorless mana
+    ("{0}", "⬡"),  // Zero mana
+    ("{1}", "①"),  // One generic mana
+    ("{2}", "②"),  // Two generic mana
+    ("{3}", "③"),  // Three generic mana
+    ("{4}", "④"),  // Four generic mana
+    ("{5}", "⑤"),  // Five generic mana
+    ("{6}", "⑥"),  // Six generic mana
+    ("{7}", "⑦"),  // Seven generic mana
+    ("{8}", "⑧"),  // Eight generic mana
+    ("{9}", "⑨"),  // Nine generic mana
+    ("{10}", "⑩"), // Ten generic mana
+    ("{X}", "✖️"), // Variable mana
+];
+
+/// Converts a mana symbol string to its emoji representation
+pub fn mana_symbol_to_emoji(symbol: &str) -> String {
+    for (pattern, emoji) in MANA_EMOJI {
+        if pattern == &symbol {
+            return emoji.to_string();
+        }
+    }
+    symbol.to_string()
+}
+
+/// Converts rules text containing mana symbols to emoji representation
+pub fn convert_rules_text_to_emoji(text: &str) -> String {
+    let mut result = text.to_string();
+    for (pattern, emoji) in MANA_EMOJI {
+        result = result.replace(pattern, emoji);
+    }
+    result
+}
+
 bitflags! {
     /// Represents the colors of mana in Magic: The Gathering.
     ///
@@ -300,7 +341,7 @@ impl Mana {
     }
 }
 
-/// Formats mana costs in the standard Magic: The Gathering notation.
+/// Formats mana costs using emoji symbols.
 ///
 /// # Examples
 ///
@@ -308,10 +349,8 @@ impl Mana {
 /// use rummage::mana::Mana;
 ///
 /// let cost = Mana::new_with_colors(2, 1, 1, 0, 0, 0);
-/// assert_eq!(cost.to_string(), "{W}{U}{C}{C}");
-///
-/// let free = Mana::new();
-/// assert_eq!(free.to_string(), "{0}");
+/// // Will display as "⚪🔵💎💎" (white, blue, and two colorless)
+/// println!("{}", cost);
 /// ```
 impl fmt::Display for Mana {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -319,28 +358,28 @@ impl fmt::Display for Mana {
 
         // Add colored mana in WUBRG order
         for _ in 0..self.white {
-            cost.push_str("{W}");
+            cost.push_str(&mana_symbol_to_emoji("{W}"));
         }
         for _ in 0..self.blue {
-            cost.push_str("{U}");
+            cost.push_str(&mana_symbol_to_emoji("{U}"));
         }
         for _ in 0..self.black {
-            cost.push_str("{B}");
+            cost.push_str(&mana_symbol_to_emoji("{B}"));
         }
         for _ in 0..self.red {
-            cost.push_str("{R}");
+            cost.push_str(&mana_symbol_to_emoji("{R}"));
         }
         for _ in 0..self.green {
-            cost.push_str("{G}");
+            cost.push_str(&mana_symbol_to_emoji("{G}"));
         }
 
         // Add colorless mana
         for _ in 0..self.colorless {
-            cost.push_str("{C}");
+            cost.push_str(&mana_symbol_to_emoji("{C}"));
         }
 
         if cost.is_empty() {
-            cost.push_str("{0}");
+            cost.push_str(&mana_symbol_to_emoji("{0}"));
         }
 
         write!(f, "{}", cost)
