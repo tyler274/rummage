@@ -89,7 +89,7 @@ pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
         commands
             .spawn((
                 CardTextContent {
-                    text: card.types.to_string(),
+                    text: card.type_line(),
                     text_type: CardTextType::Type,
                 },
                 Transform::from_xyz(0.0, 0.0, z + 0.1),
