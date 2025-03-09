@@ -3,6 +3,7 @@ mod card;
 mod cards;
 mod drag;
 mod mana;
+mod menu;
 mod player;
 mod text;
 
@@ -15,12 +16,39 @@ use camera::{CameraConfig, CameraPanState, camera_movement, handle_window_resize
 use card::{DebugConfig, debug_render_text_positions, handle_card_dragging};
 use cards::CardsPlugin;
 use drag::DragPlugin;
+use menu::{GameState, MenuPlugin};
 use player::spawn_hand;
-use text::spawn_card_text;
 
-fn hello_world() {
-    println!("hello world!");
-    println!("Mana default color is: {:?}", mana::Mana::default());
+// Plugin for the actual game systems
+pub struct GamePlugin;
+
+impl Plugin for GamePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(DragPlugin)
+            .add_plugins(EntropyPlugin::<WyRand>::default())
+            .add_plugins(CardsPlugin)
+            .insert_resource(DebugConfig {
+                show_text_positions: false,
+            })
+            .insert_resource(CameraConfig::default())
+            .insert_resource(CameraPanState::default())
+            .add_systems(OnEnter(GameState::InGame), setup_game)
+            .add_systems(
+                Update,
+                (
+                    handle_card_dragging,
+                    handle_window_resize,
+                    debug_render_text_positions,
+                    camera_movement,
+                )
+                    .run_if(in_state(GameState::InGame)),
+            );
+    }
+}
+
+fn setup_game(mut commands: Commands, asset_server: Res<AssetServer>) {
+    setup_camera(&mut commands);
+    spawn_hand(commands, asset_server);
 }
 
 fn handle_exit(mut exit_events: EventReader<AppExit>) {
@@ -46,32 +74,8 @@ fn main() {
             }),
             ..default()
         }))
-        .add_plugins(DragPlugin)
-        .add_plugins(EntropyPlugin::<WyRand>::default())
-        .add_plugins(CardsPlugin)
-        .insert_resource(DebugConfig {
-            show_text_positions: false, // Set to false to disable debug rendering
-        })
-        .insert_resource(CameraConfig::default())
-        .insert_resource(CameraPanState::default())
-        .add_systems(
-            Startup,
-            (
-                hello_world,
-                setup_camera,
-                spawn_hand,
-                spawn_card_text.after(spawn_hand),
-            ),
-        )
-        .add_systems(
-            Update,
-            (
-                handle_card_dragging,
-                handle_window_resize,
-                handle_exit,
-                debug_render_text_positions,
-                camera_movement,
-            ),
-        )
+        .add_plugins(MenuPlugin)
+        .add_plugins(GamePlugin)
+        .add_systems(Update, handle_exit)
         .run();
 }
