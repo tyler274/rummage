@@ -5,9 +5,39 @@
 /// - Text component management
 /// - Font handling and scaling
 /// - Debug visualization for text positions
+///
+/// # Important Note for Bevy 0.15.x Compatibility
+/// As of Bevy 0.15.x, all *Bundle types (Text2dBundle, SpriteBundle, etc.) are deprecated.
+/// Instead, spawn entities with individual components:
+/// ```ignore
+/// // OLD (deprecated):
+/// commands.spawn(Text2dBundle { ... });
+///
+/// // NEW (correct):
+/// commands.spawn((
+///     Text2d::new("text"),
+///     TextFont { ... },
+///     TextColor(...),
+///     TextLayout::default(),
+///     Transform::from_xyz(...),
+///     GlobalTransform::default(),
+///     Visibility::Visible,
+///     ViewVisibility::default(),
+/// ));
+/// ```
+///
+/// # Text Layout Strategy
+/// - Card names use a two-line layout with:
+///   - 70% card width bounds to encourage wrapping
+///   - 20% card height to fit two lines
+///   - Left-justified text for consistent alignment
+///   - Positioned near top-left of card
+/// - Other text elements (cost, type, rules) use single-line layouts
+///   with specific positioning for each type
 use crate::card::{Card, CardTextContent, CardTextType, DebugConfig, SpawnedText};
 use bevy::prelude::*;
-use bevy::text::{JustifyText, Text2d, TextBounds, TextColor, TextFont, TextLayout};
+use bevy::sprite::Anchor;
+use bevy::text::{Text2d, TextBounds};
 
 /// Spawns debug visualization markers for card and text positions
 ///
@@ -85,7 +115,7 @@ pub fn spawn_card_text(
     debug_config: Res<DebugConfig>,
 ) {
     let regular_font: Handle<Font> = asset_server.load("fonts/FiraSans-Bold.ttf");
-    let emoji_font: Handle<Font> = asset_server.load("fonts/NotoColorEmoji.ttf");
+    let mana_font: Handle<Font> = asset_server.load("fonts/mana.ttf");
 
     for (content_entity, content, parent) in text_content_query.iter() {
         let parent_entity = parent.get();
@@ -94,59 +124,83 @@ pub fn spawn_card_text(
             let card_size = sprite.custom_size.unwrap_or(Vec2::new(100.0, 140.0));
 
             // Calculate relative offsets from card center
-            let (offset, font_size, alignment, bounds) = match content.text_type {
+            let (offset, font_size, _anchor) = match content.text_type {
                 CardTextType::Name => (
-                    Vec3::new(card_size.x * -0.05, card_size.y * 0.30, 1.0),
-                    card_size.y * 0.09, // Scale font with card height for consistent proportions
-                    JustifyText::Left,
-                    Some(Vec2::new(card_size.x * 0.70, card_size.y * 0.5)), // Wide bounds for name wrapping
+                    Vec3::new(-card_size.x * 0.15, card_size.y * 0.35, 1.0), // Moved up slightly to accommodate two lines
+                    card_size.y * 0.07, // Slightly smaller font to fit two lines
+                    Anchor::TopLeft,
                 ),
                 CardTextType::Cost => (
                     Vec3::new(card_size.x * 0.32, card_size.y * 0.45, 1.0),
-                    card_size.y * 0.06, // Larger size for mana symbols to improve visibility
-                    JustifyText::Right,
-                    None,
+                    card_size.y * 0.06,
+                    Anchor::CenterRight,
                 ),
                 CardTextType::Type => (
                     Vec3::new(-card_size.x * 0.10, card_size.y * 0.1, 1.0),
-                    card_size.y * 0.045, // Slightly smaller for type line
-                    JustifyText::Left,
-                    Some(Vec2::new(card_size.x * 0.8, card_size.y * 0.5)),
+                    card_size.y * 0.045,
+                    Anchor::CenterLeft,
                 ),
                 CardTextType::PowerToughness => (
                     Vec3::new(card_size.x * 0.35, -card_size.y * 0.46, 1.0),
-                    card_size.y * 0.05, // Match name size for consistency
-                    JustifyText::Right,
-                    None,
+                    card_size.y * 0.05,
+                    Anchor::CenterRight,
                 ),
                 CardTextType::RulesText => (
-                    Vec3::new(-card_size.x * 0.0, -card_size.y * 0.15, 1.0), // Centered horizontally but with left margin
+                    Vec3::new(-card_size.x * 0.0, -card_size.y * 0.15, 1.0),
                     card_size.y * 0.045,
-                    JustifyText::Left, // Keep left justification for rules text
-                    Some(Vec2::new(card_size.x * 0.80, card_size.y * 0.45)), // Slightly narrower bounds
+                    Anchor::CenterLeft,
                 ),
+            };
+
+            // Create font and color settings
+            let font = if content.text_type == CardTextType::Cost {
+                mana_font.clone()
+            } else {
+                regular_font.clone()
+            };
+
+            let color = if content.text_type == CardTextType::Cost {
+                Color::WHITE
+            } else {
+                Color::BLACK
+            };
+
+            // Create text layout based on type
+            let text_layout = match content.text_type {
+                CardTextType::Name => TextLayout::new_with_justify(JustifyText::Left),
+                _ => TextLayout::default(),
             };
 
             // Create text entity with relative transform
             let text_entity = commands
                 .spawn((
+                    // Core text components
                     Text2d::new(content.text.clone()),
                     TextFont {
-                        font: if content.text_type == CardTextType::Cost {
-                            emoji_font.clone() // Use emoji font for mana symbols
-                        } else {
-                            regular_font.clone()
-                        },
+                        font,
                         font_size,
                         ..default()
                     },
-                    TextColor(if content.text_type == CardTextType::Cost {
-                        Color::WHITE // White for better contrast
-                    } else {
-                        Color::BLACK
-                    }),
-                    TextLayout::new_with_justify(alignment),
+                    TextColor(color),
+                    text_layout,
+                    TextBounds {
+                        width: match content.text_type {
+                            CardTextType::RulesText => Some(card_size.x * 0.8),
+                            CardTextType::Type => Some(card_size.x * 0.8),
+                            CardTextType::Name => Some(card_size.x * 0.7), // Narrower width to force wrapping
+                            _ => None,
+                        },
+                        height: match content.text_type {
+                            CardTextType::RulesText => Some(card_size.y * 0.3),
+                            CardTextType::Type => Some(card_size.y * 0.1),
+                            CardTextType::Name => Some(card_size.y * 0.2), // Taller height to accommodate two lines
+                            _ => None,
+                        },
+                    },
+                    // Transform components
                     Transform::from_translation(offset),
+                    GlobalTransform::default(),
+                    // Visibility components
                     Visibility::Visible,
                     InheritedVisibility::default(),
                     ViewVisibility::default(),
@@ -166,13 +220,6 @@ pub fn spawn_card_text(
                     card_size,
                     card_transform.translation.truncate() + offset.truncate(),
                 );
-            }
-
-            // Add text bounds if specified
-            if let Some(bounds) = bounds {
-                commands
-                    .entity(text_entity)
-                    .insert(TextBounds::from(bounds));
             }
         }
     }

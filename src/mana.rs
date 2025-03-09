@@ -22,43 +22,45 @@ use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-/// Emoji representations of mana symbols
-pub const MANA_EMOJI: &[(&str, &str)] = &[
-    ("{W}", "⚪"), // White mana
-    ("{U}", "🔵"), // Blue mana
-    ("{B}", "⚫"), // Black mana
-    ("{R}", "🔴"), // Red mana
-    ("{G}", "🟢"), // Green mana
-    ("{C}", "💎"), // Colorless mana
-    ("{0}", "⬡"),  // Zero mana
-    ("{1}", "①"),  // One generic mana
-    ("{2}", "②"),  // Two generic mana
-    ("{3}", "③"),  // Three generic mana
-    ("{4}", "④"),  // Four generic mana
-    ("{5}", "⑤"),  // Five generic mana
-    ("{6}", "⑥"),  // Six generic mana
-    ("{7}", "⑦"),  // Seven generic mana
-    ("{8}", "⑧"),  // Eight generic mana
-    ("{9}", "⑨"),  // Nine generic mana
-    ("{10}", "⑩"), // Ten generic mana
-    ("{X}", "✖️"), // Variable mana
+/// MTG mana symbol mappings using the Mana font
+/// See: https://mana.andrewgioia.com/icons.html
+pub const MANA_SYMBOLS: &[(&str, char)] = &[
+    ("{W}", 'w'),  // White mana
+    ("{U}", 'u'),  // Blue mana
+    ("{B}", 'b'),  // Black mana
+    ("{R}", 'r'),  // Red mana
+    ("{G}", 'g'),  // Green mana
+    ("{C}", 'c'),  // Colorless mana
+    ("{0}", '0'),  // Zero mana
+    ("{1}", '1'),  // One generic mana
+    ("{2}", '2'),  // Two generic mana
+    ("{3}", '3'),  // Three generic mana
+    ("{4}", '4'),  // Four generic mana
+    ("{5}", '5'),  // Five generic mana
+    ("{6}", '6'),  // Six generic mana
+    ("{7}", '7'),  // Seven generic mana
+    ("{8}", '8'),  // Eight generic mana
+    ("{9}", '9'),  // Nine generic mana
+    ("{10}", 'a'), // Ten generic mana
+    ("{X}", 'x'),  // Variable mana
+    ("{T}", 't'),  // Tap symbol
 ];
 
-/// Converts a mana symbol string to its emoji representation
-pub fn mana_symbol_to_emoji(symbol: &str) -> String {
-    for (pattern, emoji) in MANA_EMOJI {
+/// Converts a mana symbol string to its font character representation
+pub fn mana_symbol_to_char(symbol: &str) -> String {
+    for (pattern, ch) in MANA_SYMBOLS {
         if pattern == &symbol {
-            return emoji.to_string();
+            return ch.to_string();
         }
     }
     symbol.to_string()
 }
 
-/// Converts rules text containing mana symbols to emoji representation
-pub fn convert_rules_text_to_emoji(text: &str) -> String {
+/// Converts rules text containing mana symbols to font character representation
+pub fn convert_rules_text_to_symbols(text: &str) -> String {
     let mut result = text.to_string();
-    for (pattern, emoji) in MANA_EMOJI {
-        result = result.replace(pattern, emoji);
+    for (pattern, ch) in MANA_SYMBOLS {
+        result = result.replace(pattern, &ch.to_string());
     }
     result
 }
@@ -341,7 +343,7 @@ impl Mana {
     }
 }
 
-/// Formats mana costs using emoji symbols.
+/// Formats mana costs using font characters.
 ///
 /// # Examples
 ///
@@ -349,7 +351,7 @@ impl Mana {
 /// use rummage::mana::Mana;
 ///
 /// let cost = Mana::new_with_colors(2, 1, 1, 0, 0, 0);
-/// // Will display as "⚪🔵💎💎" (white, blue, and two colorless)
+/// // Will display as "wucc" (white, blue, and two colorless)
 /// println!("{}", cost);
 /// ```
 impl fmt::Display for Mana {
@@ -358,28 +360,28 @@ impl fmt::Display for Mana {
 
         // Add colored mana in WUBRG order
         for _ in 0..self.white {
-            cost.push_str(&mana_symbol_to_emoji("{W}"));
+            cost.push_str(&mana_symbol_to_char("{W}"));
         }
         for _ in 0..self.blue {
-            cost.push_str(&mana_symbol_to_emoji("{U}"));
+            cost.push_str(&mana_symbol_to_char("{U}"));
         }
         for _ in 0..self.black {
-            cost.push_str(&mana_symbol_to_emoji("{B}"));
+            cost.push_str(&mana_symbol_to_char("{B}"));
         }
         for _ in 0..self.red {
-            cost.push_str(&mana_symbol_to_emoji("{R}"));
+            cost.push_str(&mana_symbol_to_char("{R}"));
         }
         for _ in 0..self.green {
-            cost.push_str(&mana_symbol_to_emoji("{G}"));
+            cost.push_str(&mana_symbol_to_char("{G}"));
         }
 
         // Add colorless mana
         for _ in 0..self.colorless {
-            cost.push_str(&mana_symbol_to_emoji("{C}"));
+            cost.push_str(&mana_symbol_to_char("{C}"));
         }
 
         if cost.is_empty() {
-            cost.push_str(&mana_symbol_to_emoji("{0}"));
+            cost.push_str(&mana_symbol_to_char("{0}"));
         }
 
         write!(f, "{}", cost)
