@@ -654,55 +654,6 @@ pub fn handle_card_dragging(
     }
 }
 
-pub fn card_types_to_string(types: &CardTypes) -> String {
-    let mut type_strings = Vec::new();
-
-    // Add supertypes first
-    if types.contains(CardTypes::BASIC) {
-        type_strings.push("Basic");
-    }
-    if types.contains(CardTypes::LEGENDARY) {
-        type_strings.push("Legendary");
-    }
-    if types.contains(CardTypes::HISTORIC) {
-        type_strings.push("Historic");
-    }
-    if types.contains(CardTypes::SNOW) {
-        type_strings.push("Snow");
-    }
-    if types.contains(CardTypes::WORLD) {
-        type_strings.push("World");
-    }
-
-    // Add main types in canonical order
-    if types.contains(CardTypes::ARTIFACT) {
-        type_strings.push("Artifact");
-    }
-    if types.contains(CardTypes::CREATURE) {
-        type_strings.push("Creature");
-    }
-    if types.contains(CardTypes::ENCHANTMENT) {
-        type_strings.push("Enchantment");
-    }
-    if types.contains(CardTypes::INSTANT) {
-        type_strings.push("Instant");
-    }
-    if types.contains(CardTypes::LAND) {
-        type_strings.push("Land");
-    }
-    if types.contains(CardTypes::PLANESWALKER) {
-        type_strings.push("Planeswalker");
-    }
-    if types.contains(CardTypes::SORCERY) {
-        type_strings.push("Sorcery");
-    }
-    if types.contains(CardTypes::TRIBAL) {
-        type_strings.push("Tribal");
-    }
-
-    type_strings.join(" ")
-}
-
 pub fn debug_render_text_positions(
     mut gizmos: Gizmos,
     card_query: Query<(&Transform, &Card), With<Card>>,
