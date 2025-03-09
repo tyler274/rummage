@@ -198,7 +198,11 @@ pub fn spawn_card_text(
                         },
                     },
                     // Transform components
-                    Transform::from_translation(offset),
+                    Transform::from_translation(if content.text_type == CardTextType::Cost {
+                        Vec3::new(0.0, 0.0, 0.2) // Relative to background for mana cost
+                    } else {
+                        offset
+                    }),
                     GlobalTransform::default(),
                     // Visibility components
                     Visibility::Visible,
@@ -208,26 +212,32 @@ pub fn spawn_card_text(
                 ))
                 .id();
 
-            // For mana costs, add a dark background to make white text visible
+            // For mana costs, add a dark background and parent the text to it
             if content.text_type == CardTextType::Cost {
-                commands
+                let background = commands
                     .spawn((
                         Sprite {
                             color: Color::srgb(0.1, 0.1, 0.1),
                             custom_size: Some(Vec2::new(card_size.x * 0.15, card_size.y * 0.08)),
                             ..default()
                         },
-                        Transform::from_translation(offset - Vec3::new(0.0, 0.0, 0.1)), // Slightly behind text
+                        Transform::from_translation(offset),
                         GlobalTransform::default(),
                         Visibility::Visible,
                         InheritedVisibility::default(),
                         ViewVisibility::default(),
                     ))
-                    .set_parent(parent_entity);
+                    .id();
+
+                // Parent background to card
+                commands.entity(parent_entity).add_child(background);
+                // Parent text to background
+                commands.entity(background).add_child(text_entity);
+            } else {
+                // For non-mana cost text, parent directly to card
+                commands.entity(parent_entity).add_child(text_entity);
             }
 
-            // Set up parent-child relationship
-            commands.entity(parent_entity).add_child(text_entity);
             commands.entity(content_entity).insert(SpawnedText);
 
             // Add debug visualization only if enabled
