@@ -3,31 +3,37 @@ name = "rummage"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+test-utils = []
+
 [dependencies]
+async-trait = "0.1.77"
 bevy = { version = "0.15", features = ["dynamic_linking", "wayland"] }
+bevy_prng = { version = "0.9", features = ["wyrand"] }
+bevy_rand = { version = "0.9", features = ["wyrand", "experimental"] }
+bitflags = "2.9.0"
+bzip2 = "0.5.2"
+chrono = "0.4.40"
+dirs = "6.0.0"
+flate2 = "1.1.0"
+hex = "0.4.3"
 log = { version = "*", features = [
     "max_level_debug",
     "release_max_level_warn",
 ] }
-bitflags = "2.9.0"
-rand_core = "0.9.3"
 rand = "0.9.0"
-bevy_rand = { version = "0.9", features = ["wyrand", "experimental"] }
-bevy_prng = { version = "0.9", features = ["wyrand"] }
+rand_core = "0.9.3"
 reqwest = { version = "0.12.12", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-async-trait = "0.1"
-flate2 = "1.1.0"
-bzip2 = "0.5.2"
 sha2 = "0.10.8"
-hex = "0.4.3"
 tar = "0.4.44"
-dirs = "6.0.0"
 tokio = { version = "1.0", features = ["time"] }
+lazy_static = "1.4"
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }
+tokio-test = "0.4"
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
