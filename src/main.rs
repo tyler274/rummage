@@ -11,7 +11,7 @@ use bevy::app::AppExit;
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
 use bevy_rand::prelude::*;
-use camera::{CameraConfig, camera_movement, handle_window_resize, setup_camera};
+use camera::{CameraConfig, CameraPanState, camera_movement, handle_window_resize, setup_camera};
 use card::{DebugConfig, debug_render_text_positions, handle_card_dragging};
 use cards::CardsPlugin;
 use drag::DragPlugin;
@@ -53,6 +53,7 @@ fn main() {
             show_text_positions: false, // Set to false to disable debug rendering
         })
         .insert_resource(CameraConfig::default())
+        .insert_resource(CameraPanState::default())
         .add_systems(
             Startup,
             (

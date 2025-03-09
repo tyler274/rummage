@@ -4,7 +4,8 @@ use bevy::input::mouse::MouseWheel;
 ///
 /// This module provides functionality for:
 /// - Camera setup and configuration
-/// - Camera movement and controls
+/// - Camera movement (WASD/Arrow keys and middle mouse drag)
+/// - Mouse wheel zoom with smooth interpolation
 /// - Viewport management
 /// - Coordinate space transformations
 ///
@@ -43,7 +44,7 @@ use bevy::input::mouse::MouseWheel;
 /// }
 /// ```
 use bevy::prelude::*;
-use bevy::window::WindowResized;
+use bevy::window::{PrimaryWindow, WindowResized};
 
 /// Configuration for camera movement and zoom behavior.
 ///
@@ -66,7 +67,7 @@ use bevy::window::WindowResized;
 /// ```
 #[derive(Resource)]
 pub struct CameraConfig {
-    /// Movement speed in units per second
+    /// Movement speed in units per second (for keyboard movement)
     pub move_speed: f32,
     /// Zoom speed multiplier
     pub zoom_speed: f32,
@@ -74,17 +75,29 @@ pub struct CameraConfig {
     pub min_zoom: f32,
     /// Maximum zoom level (most zoomed in)
     pub max_zoom: f32,
+    /// Mouse pan sensitivity multiplier
+    pub pan_sensitivity: f32,
 }
 
 impl Default for CameraConfig {
     fn default() -> Self {
         Self {
             move_speed: 500.0,
-            zoom_speed: 0.15, // Significantly reduced for much smoother zooming
+            zoom_speed: 0.15,
             min_zoom: 0.1,
             max_zoom: 5.0,
+            pan_sensitivity: 1.0, // Base sensitivity, adjust if needed
         }
     }
+}
+
+/// Resource to track camera panning state
+#[derive(Resource, Default)]
+pub struct CameraPanState {
+    /// Whether the camera is currently being panned
+    is_panning: bool,
+    /// Last mouse position during pan
+    last_mouse_pos: Option<Vec2>,
 }
 
 /// Sets up the main game camera with proper scaling and projection.
@@ -115,6 +128,9 @@ pub fn setup_camera(mut commands: Commands) {
         Transform::default(),
         GlobalTransform::default(),
     ));
+
+    // Initialize camera pan state
+    commands.insert_resource(CameraPanState::default());
 }
 
 /// Handles window resize events by maintaining a fixed vertical size and adjusting
@@ -164,10 +180,16 @@ pub fn handle_window_resize(
 ///
 /// This system handles:
 /// - WASD/Arrow key movement
-/// - Mouse wheel zoom
+/// - Middle mouse button camera panning
+/// - Mouse wheel zoom with smooth interpolation
 /// - Zoom limits based on configuration
 ///
-/// Movement speed and zoom limits are controlled by the [`CameraConfig`] resource.
+/// Camera movement can be controlled in two ways:
+/// 1. Keyboard (WASD/Arrow keys) for precise movement
+/// 2. Middle mouse button drag for quick panning
+///
+/// The camera's position is updated based on the current projection scale
+/// to maintain consistent movement speed regardless of zoom level.
 ///
 /// # Examples
 ///
@@ -185,12 +207,19 @@ pub fn handle_window_resize(
 /// ```
 pub fn camera_movement(
     keyboard: Res<ButtonInput<KeyCode>>,
+    mouse_button: Res<ButtonInput<MouseButton>>,
     mut scroll_events: EventReader<MouseWheel>,
     mut camera_query: Query<(&mut Transform, &mut OrthographicProjection), With<Camera>>,
+    windows: Query<&Window, With<PrimaryWindow>>,
     time: Res<Time>,
     config: Res<CameraConfig>,
+    mut pan_state: ResMut<CameraPanState>,
 ) {
     let Ok((mut transform, mut projection)) = camera_query.get_single_mut() else {
+        return;
+    };
+
+    let Ok(window) = windows.get_single() else {
         return;
     };
 
@@ -212,6 +241,30 @@ pub fn camera_movement(
     if movement != Vec3::ZERO {
         transform.translation +=
             movement.normalize() * config.move_speed * time.delta().as_secs_f32();
+    }
+
+    // Handle middle mouse button panning
+    if mouse_button.just_pressed(MouseButton::Middle) {
+        pan_state.is_panning = true;
+        pan_state.last_mouse_pos = window.cursor_position();
+    }
+
+    if mouse_button.just_released(MouseButton::Middle) {
+        pan_state.is_panning = false;
+        pan_state.last_mouse_pos = None;
+    }
+
+    if pan_state.is_panning {
+        if let (Some(current_pos), Some(last_pos)) =
+            (window.cursor_position(), pan_state.last_mouse_pos)
+        {
+            let delta = current_pos - last_pos;
+            // Convert screen pixels to world units based on current zoom
+            let world_delta = delta * projection.scale;
+            transform.translation -=
+                Vec3::new(world_delta.x, -world_delta.y, 0.0) * config.pan_sensitivity;
+            pan_state.last_mouse_pos = Some(current_pos);
+        }
     }
 
     // Handle mouse wheel zoom with smoother interpolation
