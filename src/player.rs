@@ -24,7 +24,7 @@
 /// ensuring proper positioning and movement during drag operations.
 use crate::card::{Card, CardDetails, CardTextContent, CardTextType, Draggable};
 use crate::cards::get_example_cards;
-use crate::mana::{ManaPool, convert_rules_text_to_symbols};
+use crate::mana::{convert_rules_text_to_symbols, ManaPool};
 use bevy::prelude::*;
 use rand::seq::SliceRandom;
 

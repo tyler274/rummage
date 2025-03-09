@@ -1,3 +1,4 @@
+use crate::card::Card;
 /// Menu system for the game, handling main menu state and interactions.
 ///
 /// This module provides:
@@ -20,11 +21,7 @@
 /// - Consistent button sizing and spacing
 /// - Hover and click interactions
 /// - Smooth state transitions
-use bevy::app::AppExit;
 use bevy::prelude::*;
-
-// Note: As of Bevy 0.15.x, we use the modern component system instead of bundles.
-// Required components are automatically added when using the primary component.
 
 /// Game states for managing transitions between different parts of the game.
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
@@ -36,6 +33,8 @@ pub enum GameState {
     Loading,
     /// Active gameplay state
     InGame,
+    /// Game is paused, showing pause menu
+    PausedGame,
 }
 
 /// Marker component for menu-related entities to facilitate cleanup
@@ -55,6 +54,12 @@ pub enum MenuButtonAction {
     Settings,
     /// Exit the game
     Quit,
+    /// Resume the current game
+    Resume,
+    /// Restart the current game with a new hand
+    Restart,
+    /// Return to the main menu
+    MainMenu,
 }
 
 /// Plugin that sets up the menu system and its related systems
@@ -68,7 +73,18 @@ impl Plugin for MenuPlugin {
             .add_systems(Update, menu_action.run_if(in_state(GameState::MainMenu)))
             // Loading state systems
             .add_systems(OnEnter(GameState::Loading), start_game_loading)
-            .add_systems(OnExit(GameState::Loading), finish_loading);
+            .add_systems(OnExit(GameState::Loading), finish_loading)
+            // Pause menu systems
+            .add_systems(OnEnter(GameState::PausedGame), setup_pause_menu)
+            .add_systems(OnExit(GameState::PausedGame), cleanup_pause_menu)
+            .add_systems(
+                Update,
+                pause_menu_action.run_if(in_state(GameState::PausedGame)),
+            )
+            .add_systems(
+                Update,
+                handle_pause_input.run_if(in_state(GameState::InGame)),
+            );
     }
 }
 
@@ -79,17 +95,8 @@ const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.75, 0.35);
 
 /// Sets up the main menu interface with buttons and layout
 fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
-    // Spawn camera with all required components
-    commands.spawn((
-        Camera2d,
-        Camera::default(),
-        Transform::default(),
-        GlobalTransform::default(),
-        Visibility::default(),
-        InheritedVisibility::default(),
-        ViewVisibility::default(),
-        MenuItem,
-    ));
+    // Spawn camera
+    commands.spawn(Camera2d::default());
 
     // Main menu container
     commands
@@ -97,8 +104,9 @@ fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
-                justify_content: JustifyContent::Center,
+                flex_direction: FlexDirection::Column,
                 align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
                 ..default()
             },
             BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
@@ -117,7 +125,6 @@ fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                         ..default()
                     },
                     BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
-                    MenuItem,
                 ))
                 .with_children(|parent| {
                     spawn_menu_button(parent, "New Game", MenuButtonAction::NewGame, &asset_server);
@@ -153,37 +160,29 @@ fn spawn_menu_button(
 ) {
     parent
         .spawn((
-            Button,
             Node {
                 width: Val::Px(250.0),
                 height: Val::Px(65.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
                 ..default()
             },
             BackgroundColor(NORMAL_BUTTON),
+            Button,
+            Interaction::default(),
             action,
             MenuItem,
         ))
         .with_children(|parent| {
             parent.spawn((
-                Text::new(text),
-                TextFont {
-                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                    font_size: 40.0,
-                    ..default()
-                },
+                Text::new(text.to_string()),
+                TextFont::default()
+                    .with_font(asset_server.load("fonts/FiraSans-Bold.ttf"))
+                    .with_font_size(40.0),
                 TextColor(Color::srgb(0.9, 0.9, 0.9)),
                 MenuItem,
             ));
         });
-}
-
-/// Safely cleans up menu entities when transitioning to another state
-fn cleanup_main_menu(mut commands: Commands, menu_items: Query<Entity, With<MenuItem>>) {
-    for entity in menu_items.iter() {
-        if commands.get_entity(entity).is_some() {
-            commands.entity(entity).despawn_recursive();
-        }
-    }
 }
 
 /// Handles button interactions and triggers appropriate actions
@@ -192,39 +191,38 @@ fn menu_action(
         (&Interaction, &MenuButtonAction, &mut BackgroundColor),
         (Changed<Interaction>, With<Button>),
     >,
-    mut app_exit_events: EventWriter<AppExit>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
-    for (interaction, menu_button_action, mut color) in &mut interaction_query {
+    for (interaction, action, mut color) in interaction_query.iter_mut() {
         match *interaction {
             Interaction::Pressed => {
-                *color = PRESSED_BUTTON.into();
-                match menu_button_action {
+                *color = BackgroundColor(PRESSED_BUTTON);
+                match action {
                     MenuButtonAction::NewGame => {
-                        info!("Starting new game...");
                         next_state.set(GameState::Loading);
                     }
                     MenuButtonAction::LoadGame => {
-                        info!("Loading saved game...");
                         next_state.set(GameState::Loading);
                     }
-                    MenuButtonAction::Multiplayer => {
-                        info!("Multiplayer not implemented yet");
-                    }
                     MenuButtonAction::Settings => {
-                        info!("Settings not implemented yet");
+                        info!("Settings menu not implemented yet");
                     }
                     MenuButtonAction::Quit => {
-                        info!("Exiting game...");
-                        let _ = app_exit_events.send(AppExit::default());
+                        std::process::exit(0);
+                    }
+                    MenuButtonAction::Resume
+                    | MenuButtonAction::Restart
+                    | MenuButtonAction::MainMenu
+                    | MenuButtonAction::Multiplayer => {
+                        // These actions are handled in pause_menu_action
                     }
                 }
             }
             Interaction::Hovered => {
-                *color = HOVERED_BUTTON.into();
+                *color = BackgroundColor(HOVERED_BUTTON);
             }
             Interaction::None => {
-                *color = NORMAL_BUTTON.into();
+                *color = BackgroundColor(NORMAL_BUTTON);
             }
         }
     }
@@ -241,4 +239,144 @@ fn start_game_loading(mut next_state: ResMut<NextState<GameState>>) {
 /// Performs cleanup and finalization after loading completes
 fn finish_loading() {
     info!("Game loading complete!");
+}
+
+/// Sets up the pause menu interface with buttons and layout
+fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
+    // Container for pause menu
+    commands
+        .spawn((
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                ..default()
+            },
+            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.7)),
+            MenuItem,
+        ))
+        .with_children(|parent| {
+            // Title
+            parent.spawn((
+                Text::new("Game Paused"),
+                TextFont::default()
+                    .with_font(asset_server.load("fonts/FiraSans-Bold.ttf"))
+                    .with_font_size(40.0),
+                TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                Node {
+                    margin: UiRect::all(Val::Px(50.0)),
+                    ..default()
+                },
+                MenuItem,
+            ));
+
+            // Buttons container
+            parent
+                .spawn((Node {
+                    width: Val::Px(250.0),
+                    flex_direction: FlexDirection::Column,
+                    justify_content: JustifyContent::SpaceAround,
+                    align_items: AlignItems::Center,
+                    margin: UiRect::all(Val::Px(20.0)),
+                    ..default()
+                },))
+                .with_children(|parent| {
+                    spawn_menu_button(parent, "Resume", MenuButtonAction::Resume, &asset_server);
+                    spawn_menu_button(parent, "Restart", MenuButtonAction::Restart, &asset_server);
+                    spawn_menu_button(
+                        parent,
+                        "Settings",
+                        MenuButtonAction::Settings,
+                        &asset_server,
+                    );
+                    spawn_menu_button(
+                        parent,
+                        "Main Menu",
+                        MenuButtonAction::MainMenu,
+                        &asset_server,
+                    );
+                    spawn_menu_button(parent, "Exit Game", MenuButtonAction::Quit, &asset_server);
+                });
+        });
+}
+
+/// Handles pause menu button interactions and triggers appropriate actions
+fn pause_menu_action(
+    mut interaction_query: Query<
+        (&Interaction, &MenuButtonAction, &mut BackgroundColor),
+        (Changed<Interaction>, With<Button>),
+    >,
+    mut next_state: ResMut<NextState<GameState>>,
+    mut commands: Commands,
+    mut hand_query: Query<Entity, With<Card>>,
+) {
+    for (interaction, action, mut color) in interaction_query.iter_mut() {
+        match *interaction {
+            Interaction::Pressed => {
+                *color = BackgroundColor(PRESSED_BUTTON);
+                match action {
+                    MenuButtonAction::Resume => {
+                        next_state.set(GameState::InGame);
+                    }
+                    MenuButtonAction::Restart => {
+                        // Despawn current hand
+                        for entity in hand_query.iter_mut() {
+                            commands.entity(entity).despawn_recursive();
+                        }
+                        next_state.set(GameState::Loading);
+                    }
+                    MenuButtonAction::Settings => {
+                        info!("Settings menu not implemented yet");
+                    }
+                    MenuButtonAction::MainMenu => {
+                        // Despawn current hand before returning to main menu
+                        for entity in hand_query.iter_mut() {
+                            commands.entity(entity).despawn_recursive();
+                        }
+                        next_state.set(GameState::MainMenu);
+                    }
+                    MenuButtonAction::Quit => {
+                        std::process::exit(0);
+                    }
+                    _ => {}
+                }
+            }
+            Interaction::Hovered => {
+                *color = BackgroundColor(HOVERED_BUTTON);
+            }
+            Interaction::None => {
+                *color = BackgroundColor(NORMAL_BUTTON);
+            }
+        }
+    }
+}
+
+/// Handles escape key input to toggle pause menu
+fn handle_pause_input(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    if keyboard.just_pressed(KeyCode::Escape) {
+        next_state.set(GameState::PausedGame);
+    }
+}
+
+/// Safely cleans up menu entities when transitioning to another state
+fn cleanup_main_menu(mut commands: Commands, menu_items: Query<Entity, With<MenuItem>>) {
+    for entity in menu_items.iter() {
+        if commands.get_entity(entity).is_some() {
+            commands.entity(entity).despawn_recursive();
+        }
+    }
+}
+
+/// Safely cleans up pause menu entities when transitioning to another state
+fn cleanup_pause_menu(mut commands: Commands, menu_items: Query<Entity, With<MenuItem>>) {
+    for entity in menu_items.iter() {
+        if commands.get_entity(entity).is_some() {
+            commands.entity(entity).despawn_recursive();
+        }
+    }
 }
