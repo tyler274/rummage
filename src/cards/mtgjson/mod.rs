@@ -363,7 +363,6 @@ impl MTGClientType {
     /// # Rate Limiting
     /// 
     /// HTTP requests are limited to 10 requests per second using a global rate limiter
-    #[allow(dead_code)]
     pub async fn fetch_set(
         &self,
         set_code: &str,
@@ -427,26 +426,18 @@ impl MTGService {
         Self::new(MTGClientType::HTTP(reqwest::Client::new()))
     }
 
-    /// Gets the path for raw cache files
-    #[allow(dead_code)]
-    fn get_raw_cache_path(&self, set_code: &str) -> std::path::PathBuf {
-        std::path::PathBuf::from("sets").join(format!("{}.json", set_code))
-    }
-
     /// Gets the path for compressed set archives
-    #[allow(dead_code)]
     fn get_set_archive_path(&self, set_code: &str) -> std::path::PathBuf {
         std::path::PathBuf::from("sets").join(format!("{}.json.bz2", set_code))
     }
 
     /// Gets the path for set checksums
-    #[allow(dead_code)]
     fn get_set_checksum_path(&self, set_code: &str) -> std::path::PathBuf {
         std::path::PathBuf::from("sets").join(format!("{}.json.bz2.sha256", set_code))
     }
 
     /// Gets the path for set version information
-    #[allow(dead_code)]
+
     fn get_set_version_path(&self, set_code: &str) -> std::path::PathBuf {
         std::path::PathBuf::from("sets").join(format!("{}.json.bz2.version", set_code))
     }
@@ -455,7 +446,7 @@ impl MTGService {
     /// 
     /// This includes the current version number and update date.
     /// Results are cached to avoid unnecessary API calls.
-    #[allow(dead_code)]
+
     pub async fn fetch_meta(&self) -> Result<MTGJSONMeta, Error> {
         let mut meta = self.meta.lock().await;
         if meta.is_some() {
@@ -480,7 +471,7 @@ impl MTGService {
     /// 
     /// Checks both the version and checksum of the file against
     /// the current MTGJSON version.
-    #[allow(dead_code)]
+
     pub async fn verify_file_checksum(&self, set_code: &str, path: &Path) -> Result<bool, Error> {
         // First check if we have a version file and if it matches current version
         let version_path = self.get_set_version_path(set_code);

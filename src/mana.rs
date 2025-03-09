@@ -35,7 +35,7 @@ use std::fmt;
 /// assert_eq!(mana_symbol_to_char("{W}"), "{W}"); // Will render as white mana symbol
 /// assert_eq!(mana_symbol_to_char("{2}"), "{2}"); // Will render as generic mana 2
 /// ```
-pub const MANA_SYMBOLS: &[(&str, char)] = &[
+pub const _MANA_SYMBOLS: &[(&str, char)] = &[
     ("{W}", 'w'),  // White mana
     ("{U}", 'u'),  // Blue mana
     ("{B}", 'b'),  // Black mana
@@ -73,7 +73,7 @@ pub const MANA_SYMBOLS: &[(&str, char)] = &[
 /// use rummage::mana::mana_symbol_to_char;
 /// assert_eq!(mana_symbol_to_char("{W}"), "{W}");
 /// ```
-pub fn mana_symbol_to_char(symbol: &str) -> String {
+pub fn _mana_symbol_to_char(symbol: &str) -> String {
     // Keep the braces around the symbol for proper font rendering
     symbol.to_string()
 }
