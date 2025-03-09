@@ -208,6 +208,24 @@ pub fn spawn_card_text(
                 ))
                 .id();
 
+            // For mana costs, add a dark background to make white text visible
+            if content.text_type == CardTextType::Cost {
+                commands
+                    .spawn((
+                        Sprite {
+                            color: Color::srgb(0.1, 0.1, 0.1),
+                            custom_size: Some(Vec2::new(card_size.x * 0.15, card_size.y * 0.08)),
+                            ..default()
+                        },
+                        Transform::from_translation(offset - Vec3::new(0.0, 0.0, 0.1)), // Slightly behind text
+                        GlobalTransform::default(),
+                        Visibility::Visible,
+                        InheritedVisibility::default(),
+                        ViewVisibility::default(),
+                    ))
+                    .set_parent(parent_entity);
+            }
+
             // Set up parent-child relationship
             commands.entity(parent_entity).add_child(text_entity);
             commands.entity(content_entity).insert(SpawnedText);
