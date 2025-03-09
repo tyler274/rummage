@@ -6,8 +6,6 @@ pub mod mtgjson;
 pub mod red;
 pub mod white;
 
-pub use mtgjson::MTGService;
-
 use crate::card::{Card, debug_render_text_positions, handle_card_dragging};
 use bevy::prelude::*;
 
