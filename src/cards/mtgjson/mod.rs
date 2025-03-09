@@ -1,3 +1,17 @@
+//! MTGJSON Integration Module
+//! 
+//! This module provides integration with the MTGJSON API (https://mtgjson.com/), allowing the application
+//! to fetch and process Magic: The Gathering card data. It includes functionality for:
+//! 
+//! - Fetching card sets and individual cards
+//! - Rate-limited API access
+//! - Local caching of downloaded data
+//! - Conversion between MTGJSON and internal card representations
+//! - Mock client support for testing
+//! 
+//! The module implements proper rate limiting to respect MTGJSON's API guidelines and includes
+//! robust error handling and data validation.
+
 use crate::card::{
     ArtifactCard, Card, CardDetails, CardTypes, CreatureCard, CreatureType, EnchantmentCard,
     LandCard, SpellCard, SpellType,
@@ -22,30 +36,43 @@ pub mod test_utils;
 use test_utils::MockClient;
 
 lazy_static! {
+    /// Global rate limiter for MTGJSON API requests
+    /// Ensures we don't exceed the API's rate limits
     static ref RATE_LIMITER: Arc<TokioMutex<Instant>> = Arc::new(TokioMutex::new(Instant::now()));
 }
 
-const RATE_LIMIT_DURATION: Duration = Duration::from_millis(100); // 10 requests per second max
+/// Duration between API requests (100ms = 10 requests per second max)
+const RATE_LIMIT_DURATION: Duration = Duration::from_millis(100);
 
 #[allow(dead_code)]
 type Error = Box<dyn std::error::Error>;
 
+/// Response structure for MTGJSON Meta API endpoint
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MTGJSONMetaResponse {
+    /// Meta information about the response
     pub meta: MTGJSONMetaData,
+    /// Actual meta data content
     pub data: MTGJSONMetaData,
 }
 
+/// Metadata structure containing version and date information
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MTGJSONMetaData {
+    /// Date of the data update
     pub date: String,
+    /// Version of the MTGJSON data
     pub version: String,
 }
 
+/// Combined metadata structure including checksums
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MTGJSONMeta {
+    /// Date of the data update
     pub date: String,
+    /// Version of the MTGJSON data
     pub version: String,
+    /// Map of file checksums for validation
     pub checksums: HashMap<String, String>,
 }
 
@@ -59,177 +86,283 @@ impl From<MTGJSONMetaResponse> for MTGJSONMeta {
     }
 }
 
+/// Metadata specific to a card set
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MTGJSONSetMeta {
+    /// Version of the set data
     #[serde(default)]
     pub version: String,
+    /// Date of the set data update
     #[serde(default)]
     pub date: String,
 }
 
+/// Response structure for set data from MTGJSON
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MTGJSONSetResponse {
+    /// The actual set data
     pub data: MTGJSONSet,
+    /// Metadata about the set
     pub meta: MTGJSONSetMeta,
 }
 
+/// Comprehensive structure representing a Magic: The Gathering card set
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MTGJSONSet {
+    /// List of artist IDs associated with the set
     #[serde(default)]
     pub artist_ids: Option<Vec<String>>,
+    /// Platforms where the set is available (e.g., "paper", "mtgo")
     #[serde(default)]
     pub availability: Vec<String>,
+    /// List of cards in the set
     pub cards: Vec<MTGJSONCard>,
+    /// Set code (e.g., "M21" for Core Set 2021)
     pub code: String,
+    /// Full name of the set
     pub name: String,
+    /// Total number of cards in the set including variants
     #[serde(default)]
     pub total_set_size: i32,
+    /// Official release date of the set
     #[serde(default)]
     pub release_date: String,
+    /// Type of the set (e.g., "core", "expansion")
     #[serde(rename = "type")]
     pub type_: String,
+    /// Unique identifier for the set
     #[serde(default)]
     pub uuid: Option<String>,
+    /// Available language versions
     #[serde(default)]
     pub languages: Vec<String>,
+    /// Booster pack configuration data
     #[serde(default)]
     pub booster: Option<serde_json::Value>,
+    /// Information about sealed products
     #[serde(default)]
     pub sealed_product: Option<Vec<serde_json::Value>>,
+    /// Token cards in the set
     #[serde(default)]
     pub tokens: Option<Vec<MTGJSONCard>>,
+    /// Set name translations
     #[serde(default)]
     pub translations: Option<HashMap<String, Option<String>>>,
+    /// Number of cards in the base set (excluding variants)
     #[serde(default)]
     pub base_set_size: Option<i32>,
+    /// Block the set belongs to
     #[serde(default)]
     pub block: Option<String>,
+    /// Whether the set is only available in non-English
     #[serde(default)]
     pub is_foreign_only: Option<bool>,
+    /// Whether this is a preview of an unreleased set
     #[serde(default)]
     pub is_partial_preview: Option<bool>,
+    /// Whether the set is only available online
     #[serde(default)]
     pub is_online_only: Option<bool>,
+    /// Keyrune code for set symbol font
     #[serde(default)]
     pub keyrunecode: Option<String>,
+    /// CardMarket set ID
     #[serde(default)]
     pub mcm_id: Option<i32>,
+    /// CardMarket set name
     #[serde(default)]
     pub mcm_name: Option<String>,
+    /// Magic Online set code
     #[serde(default)]
     pub mtgo_code: Option<String>,
+    /// TCGPlayer group ID
     #[serde(default)]
     pub tcgplayer_group_id: Option<i32>,
+    /// Set metadata
     #[serde(default)]
     pub meta: Option<MTGJSONSetMeta>,
 }
 
+/// Comprehensive structure representing a single Magic: The Gathering card
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MTGJSONCard {
+    /// Artist name
     pub artist: Option<String>,
+    /// Artist unique identifiers
     #[serde(rename = "artistIds")]
     pub artist_ids: Option<Vec<String>>,
+    /// Platforms where the card is available
     pub availability: Vec<String>,
+    /// Card border color
     #[serde(rename = "borderColor")]
     pub border_color: String,
+    /// Card's color identity in Commander
     #[serde(rename = "colorIdentity")]
     pub color_identity: Vec<String>,
+    /// Card's colors
     pub colors: Option<Vec<String>>,
+    /// Converted mana cost (total mana value)
     #[serde(rename = "convertedManaCost")]
     pub converted_mana_cost: Option<f32>,
+    /// EDHREC card ranking
     #[serde(rename = "edhrecRank")]
     pub edhrec_rank: Option<i32>,
+    /// Available card finishes (e.g., foil)
     pub finishes: Vec<String>,
+    /// Card data in other languages
     #[serde(rename = "foreignData")]
     pub foreign_data: Option<Vec<serde_json::Value>>,
+    /// Card frame style version
     #[serde(rename = "frameVersion")]
     pub frame_version: String,
+    /// Whether foil version exists
     #[serde(rename = "hasFoil")]
     pub has_foil: bool,
+    /// Whether non-foil version exists
     #[serde(rename = "hasNonFoil")]
     pub has_non_foil: bool,
+    /// Various platform-specific identifiers
     pub identifiers: MTGJSONCardIdentifiers,
+    /// Whether this is a reprint
     #[serde(rename = "isReprint")]
     pub is_reprint: Option<bool>,
+    /// Whether this is a starter card
     #[serde(rename = "isStarter")]
     pub is_starter: Option<bool>,
+    /// Card's keyword abilities
     pub keywords: Option<Vec<String>>,
+    /// Card's language
     #[serde(default = "default_language")]
     pub language: String,
+    /// Card's layout (e.g., normal, split)
     pub layout: String,
+    /// Format legality information
     #[serde(default)]
     pub legalities: HashMap<String, String>,
+    /// Mana cost string
     #[serde(rename = "manaCost")]
     pub mana_cost: Option<String>,
+    /// Total mana value
     #[serde(rename = "manaValue")]
     pub mana_value: Option<f32>,
+    /// Card name
     pub name: String,
+    /// Collector number
     pub number: String,
+    /// Power (for creatures)
     pub power: Option<String>,
+    /// Set codes where this card was printed
     #[serde(default)]
     pub printings: Vec<String>,
+    /// URLs to purchase the card
     #[serde(rename = "purchaseUrls")]
     pub purchase_urls: Option<HashMap<String, String>>,
+    /// Card rarity
     #[serde(default = "default_rarity")]
     pub rarity: String,
+    /// Official rulings
     pub rulings: Option<Vec<MTGJSONRuling>>,
+    /// Security stamp type
     #[serde(rename = "securityStamp")]
     pub security_stamp: Option<String>,
+    /// Set code this card belongs to
     #[serde(rename = "setCode")]
     pub set_code: String,
+    /// Products containing this card
     #[serde(rename = "sourceProducts")]
     pub source_products: Option<HashMap<String, Vec<String>>>,
+    /// Card subtypes
     pub subtypes: Vec<String>,
+    /// Card supertypes
     pub supertypes: Vec<String>,
+    /// Card text/rules
     pub text: Option<String>,
+    /// Toughness (for creatures)
     pub toughness: Option<String>,
+    /// Full type line
     #[serde(rename = "type")]
     pub type_: String,
+    /// Card types
     pub types: Vec<String>,
+    /// Unique identifier
     pub uuid: String,
+    /// Alternative versions
     pub variations: Option<Vec<String>>,
 }
 
+/// Collection of various card identifiers across different platforms
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MTGJSONCardIdentifiers {
+    /// CardKingdom product ID
     #[serde(rename = "cardKingdomId")]
     pub card_kingdom_id: Option<String>,
+    /// CardKingdom foil product ID
     #[serde(rename = "cardKingdomFoilId")]
     pub card_kingdom_foil_id: Option<String>,
+    /// MTGJSON v4 ID
     #[serde(rename = "mtgjsonV4Id")]
     pub mtgjson_v4_id: Option<String>,
+    /// Scryfall card back ID
     #[serde(rename = "scryfallCardBackId")]
     pub scryfall_card_back_id: Option<String>,
+    /// Scryfall card ID
     #[serde(rename = "scryfallId")]
     pub scryfall_id: Option<String>,
+    /// Scryfall illustration ID
     #[serde(rename = "scryfallIllustrationId")]
     pub scryfall_illustration_id: Option<String>,
+    /// Scryfall Oracle ID
     #[serde(rename = "scryfallOracleId")]
     pub scryfall_oracle_id: Option<String>,
+    /// TCGPlayer product ID
     #[serde(rename = "tcgplayerProductId")]
     pub tcgplayer_product_id: Option<String>,
 }
 
+/// Structure representing an official card ruling
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MTGJSONRuling {
+    /// Date the ruling was issued
     pub date: String,
+    /// Ruling text
     pub text: String,
 }
 
+/// Trait defining the interface for MTG data clients
 #[async_trait]
 pub trait MTGClient: Send + Sync {
+    /// Fetches a complete set by its code
     #[allow(dead_code)]
     async fn fetch_set(&self, set_code: &str) -> Result<MTGJSONSet, Box<dyn std::error::Error>>;
 }
 
+/// Enum representing different types of MTG clients
 #[derive(Debug)]
 #[allow(dead_code)]
 pub enum MTGClientType {
+    /// Live HTTP client for actual API requests
     HTTP(reqwest::Client),
+    /// Mock client for testing
     Mock(Arc<MockClient>),
 }
 
 impl MTGClientType {
+    /// Fetches a set from MTGJSON by its set code
+    /// 
+    /// This method handles both live HTTP requests and mock responses for testing.
+    /// For HTTP requests, it implements rate limiting to respect API guidelines.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `set_code` - The code of the set to fetch (e.g., "M21" for Core Set 2021)
+    /// 
+    /// # Returns
+    /// 
+    /// Returns a Result containing either the fetched set data or an error
+    /// 
+    /// # Rate Limiting
+    /// 
+    /// HTTP requests are limited to 10 requests per second using a global rate limiter
     #[allow(dead_code)]
     pub async fn fetch_set(
         &self,
@@ -263,14 +396,22 @@ impl MTGClientType {
     }
 }
 
+/// Service for interacting with MTGJSON data
+/// 
+/// This service handles fetching and caching of MTG card data,
+/// including versioning and data validation.
 #[allow(dead_code)]
 pub struct MTGService {
+    /// The client used to fetch data (either HTTP or Mock)
     client: MTGClientType,
+    /// In-memory cache of card sets
     cache: Arc<TokioMutex<HashMap<String, Vec<Card>>>>,
+    /// Cached metadata about the MTGJSON version
     meta: Arc<TokioMutex<Option<MTGJSONMeta>>>,
 }
 
 impl MTGService {
+    /// Creates a new MTGService instance with the specified client
     #[allow(dead_code)]
     pub fn new(client: MTGClientType) -> Self {
         Self {
@@ -280,31 +421,40 @@ impl MTGService {
         }
     }
 
+    /// Creates a new MTGService instance with a default HTTP client
     #[allow(dead_code)]
     pub fn new_with_reqwest() -> Self {
         Self::new(MTGClientType::HTTP(reqwest::Client::new()))
     }
 
+    /// Gets the path for raw cache files
     #[allow(dead_code)]
     fn get_raw_cache_path(&self, set_code: &str) -> std::path::PathBuf {
         std::path::PathBuf::from("sets").join(format!("{}.json", set_code))
     }
 
+    /// Gets the path for compressed set archives
     #[allow(dead_code)]
     fn get_set_archive_path(&self, set_code: &str) -> std::path::PathBuf {
         std::path::PathBuf::from("sets").join(format!("{}.json.bz2", set_code))
     }
 
+    /// Gets the path for set checksums
     #[allow(dead_code)]
     fn get_set_checksum_path(&self, set_code: &str) -> std::path::PathBuf {
         std::path::PathBuf::from("sets").join(format!("{}.json.bz2.sha256", set_code))
     }
 
+    /// Gets the path for set version information
     #[allow(dead_code)]
     fn get_set_version_path(&self, set_code: &str) -> std::path::PathBuf {
         std::path::PathBuf::from("sets").join(format!("{}.json.bz2.version", set_code))
     }
 
+    /// Fetches metadata about the current MTGJSON version
+    /// 
+    /// This includes the current version number and update date.
+    /// Results are cached to avoid unnecessary API calls.
     #[allow(dead_code)]
     pub async fn fetch_meta(&self) -> Result<MTGJSONMeta, Error> {
         let mut meta = self.meta.lock().await;
@@ -326,6 +476,10 @@ impl MTGService {
         Ok(meta_data)
     }
 
+    /// Verifies the integrity of a cached set file
+    /// 
+    /// Checks both the version and checksum of the file against
+    /// the current MTGJSON version.
     #[allow(dead_code)]
     pub async fn verify_file_checksum(&self, set_code: &str, path: &Path) -> Result<bool, Error> {
         // First check if we have a version file and if it matches current version
@@ -355,6 +509,10 @@ impl MTGService {
         Ok(false)
     }
 
+    /// Saves a set's data to the disk cache
+    /// 
+    /// Stores the compressed data along with its checksum and version
+    /// information for future validation.
     #[allow(dead_code)]
     async fn save_cache_to_disk(
         &self,
@@ -383,6 +541,14 @@ impl MTGService {
         Ok(())
     }
 
+    /// Fetches a set by its code, using caching when possible
+    /// 
+    /// This method implements a multi-level caching strategy:
+    /// 1. First checks the in-memory cache
+    /// 2. Then checks the disk cache
+    /// 3. Finally falls back to fetching from the API
+    /// 
+    /// Cache validation includes both version checking and checksum verification.
     #[allow(dead_code)]
     pub async fn fetch_set(&self, set_code: &str) -> Result<Vec<Card>, Box<dyn std::error::Error>> {
         // Check memory cache first
@@ -458,6 +624,9 @@ impl MTGService {
         Ok(cards)
     }
 
+    /// Fetches multiple sets in sequence
+    /// 
+    /// Returns a combined vector of all cards from the specified sets.
     #[allow(dead_code)]
     pub async fn fetch_multiple_sets(
         &self,
@@ -471,6 +640,14 @@ impl MTGService {
         Ok(all_cards)
     }
 
+    /// Fetches the list of all available sets
+    /// 
+    /// Filters the sets based on various criteria:
+    /// - Only includes main sets, expansions, and special sets
+    /// - Excludes unreleased sets
+    /// - Excludes empty sets
+    /// 
+    /// Returns a vector of set codes sorted by release date (newest first)
     #[allow(dead_code)]
     pub async fn fetch_set_list(&self) -> Result<Vec<String>, Error> {
         let url = "https://mtgjson.com/api/v5/SetList.json";
@@ -518,6 +695,14 @@ impl MTGService {
     }
 }
 
+/// Converts a MTGJSON card representation to our internal Card type
+/// 
+/// This function handles the conversion of all card attributes including:
+/// - Basic card information (name, mana cost)
+/// - Card types and subtypes
+/// - Special card details (creature stats, spell targets, etc.)
+/// 
+/// Returns None if the card cannot be converted (e.g., invalid type)
 pub fn convert_mtgjson_to_card(mtg_card: MTGJSONCard) -> Option<Card> {
     let types = determine_card_type(
         &mtg_card.types,
@@ -575,6 +760,14 @@ pub fn convert_mtgjson_to_card(mtg_card: MTGJSONCard) -> Option<Card> {
     })
 }
 
+/// Determines the card types from type strings
+/// 
+/// Processes three levels of type information:
+/// - Basic types (Creature, Instant, etc.)
+/// - Supertypes (Legendary, Basic, etc.)
+/// - Subtypes (Equipment, Saga, etc.)
+/// 
+/// Returns None if no valid types are found
 pub fn determine_card_type(
     types: &[String],
     supertypes: Option<&Vec<String>>,
@@ -646,6 +839,14 @@ pub fn determine_card_type(
     }
 }
 
+/// Determines creature types from subtypes and card text
+/// 
+/// This function processes multiple sources of type information:
+/// - Explicit subtypes from the card
+/// - Types inferred from the card name
+/// - Types inferred from rules text
+/// 
+/// Returns a CreatureType bitflag with all applicable types
 pub fn determine_creature_types(subtypes: &[String], name: &str, text: &str) -> CreatureType {
     let mut creature_types = CreatureType::NONE;
 
@@ -728,6 +929,13 @@ pub fn determine_creature_types(subtypes: &[String], name: &str, text: &str) -> 
     creature_types
 }
 
+/// Parses a mana cost string into a Mana struct
+/// 
+/// Handles both generic and colored mana symbols in the standard MTG format:
+/// - {1}, {2}, etc. for generic mana
+/// - {W}, {U}, {B}, {R}, {G} for colored mana
+/// 
+/// Example: "{2}{W}{W}" becomes Mana with colorless=2, white=2
 pub fn parse_mana_cost(cost: &str) -> Mana {
     let mut mana = Mana::default();
     let mut in_brace = false;
@@ -785,42 +993,60 @@ pub fn parse_mana_cost(cost: &str) -> Mana {
     mana
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MTGJSONSetList {
-    pub data: Vec<MTGJSONSetInfo>,
-    pub meta: MTGJSONMetaData,
+/// Default language for cards (English)
+fn default_language() -> String {
+    "English".to_string()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MTGJSONSetInfo {
-    pub code: String,
-    pub name: String,
-    #[serde(rename = "type")]
-    pub set_type: String,
-    #[serde(rename = "releaseDate", default)]
-    pub release_date: String,
-    #[serde(rename = "baseSetSize", default)]
-    pub base_set_size: i32,
-    #[serde(rename = "totalSetSize", default)]
-    pub total_set_size: i32,
-    #[serde(rename = "isFoilOnly", default)]
-    pub is_foil_only: bool,
-    #[serde(rename = "isOnlineOnly", default)]
-    pub is_online_only: bool,
-    #[serde(rename = "keyruneCode", default)]
-    pub keyrune_code: String,
-    #[serde(rename = "isPartialPreview", default)]
-    pub is_partial_preview: bool,
-    #[serde(default)]
-    pub languages: Vec<String>,
-    #[serde(default)]
-    pub translations: HashMap<String, Option<String>>,
-}
-
+/// Default rarity for cards (Common)
 fn default_rarity() -> String {
     "common".to_string()
 }
 
-fn default_language() -> String {
-    "English".to_string()
+/// Structure containing information about a set from the SetList endpoint
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MTGJSONSetList {
+    /// List of available sets
+    pub data: Vec<MTGJSONSetInfo>,
+    /// Metadata about the response
+    pub meta: MTGJSONMetaData,
+}
+
+/// Information about a single set from the SetList
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MTGJSONSetInfo {
+    /// Set code (e.g., "M21")
+    pub code: String,
+    /// Set name
+    pub name: String,
+    /// Type of set (core, expansion, etc.)
+    #[serde(rename = "type")]
+    pub set_type: String,
+    /// Release date (YYYY-MM-DD)
+    #[serde(rename = "releaseDate", default)]
+    pub release_date: String,
+    /// Number of unique cards
+    #[serde(rename = "baseSetSize", default)]
+    pub base_set_size: i32,
+    /// Total number of cards including variants
+    #[serde(rename = "totalSetSize", default)]
+    pub total_set_size: i32,
+    /// Whether only available in foil
+    #[serde(rename = "isFoilOnly", default)]
+    pub is_foil_only: bool,
+    /// Whether only available online
+    #[serde(rename = "isOnlineOnly", default)]
+    pub is_online_only: bool,
+    /// Code for set symbol font
+    #[serde(rename = "keyruneCode", default)]
+    pub keyrune_code: String,
+    /// Whether this is an unreleased preview
+    #[serde(rename = "isPartialPreview", default)]
+    pub is_partial_preview: bool,
+    /// Available languages
+    #[serde(default)]
+    pub languages: Vec<String>,
+    /// Set name translations
+    #[serde(default)]
+    pub translations: HashMap<String, Option<String>>,
 }
