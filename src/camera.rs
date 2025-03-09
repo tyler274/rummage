@@ -86,8 +86,10 @@ impl Default for CameraConfig {
         Self {
             move_speed: 500.0,
             zoom_speed: 0.15,
-            min_zoom: 0.1,
-            max_zoom: 5.0,
+            // In OrthographicProjection, min_zoom limits how far you can zoom out (higher value)
+            // and max_zoom limits how far you can zoom in (lower value)
+            min_zoom: 0.1,        // Most zoomed in
+            max_zoom: 5.0,        // Most zoomed out
             pan_sensitivity: 1.0, // Base sensitivity, adjust if needed
         }
     }
@@ -127,6 +129,7 @@ pub struct CameraPanState {
 /// }
 /// ```
 pub fn setup_camera(commands: &mut Commands) {
+    // Set up the camera with normal defaults
     commands.spawn((
         Camera2d::default(),
         Camera::default(),
@@ -140,6 +143,15 @@ pub fn setup_camera(commands: &mut Commands) {
 
     // Initialize camera pan state
     commands.insert_resource(CameraPanState::default());
+}
+
+/// Sets the initial zoom level for the camera - called after camera is created
+pub fn set_initial_zoom(mut query: Query<&mut OrthographicProjection, With<Camera>>) {
+    if let Ok(mut projection) = query.get_single_mut() {
+        // Set to 2.0 for a view that's twice as zoomed out
+        // In OrthographicProjection, higher scale = more zoomed out
+        projection.scale = 2.0;
+    }
 }
 
 /// Handles window resize events by maintaining a fixed vertical size and adjusting

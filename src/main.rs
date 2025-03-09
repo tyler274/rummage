@@ -12,7 +12,10 @@ use bevy::app::AppExit;
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
 use bevy_rand::prelude::*;
-use camera::{CameraConfig, CameraPanState, camera_movement, handle_window_resize, setup_camera};
+use camera::{
+    CameraConfig, CameraPanState, camera_movement, handle_window_resize, set_initial_zoom,
+    setup_camera,
+};
 use card::{DebugConfig, debug_render_text_positions, handle_card_dragging};
 use cards::CardsPlugin;
 use drag::DragPlugin;
@@ -33,7 +36,10 @@ impl Plugin for GamePlugin {
             })
             .insert_resource(CameraConfig::default())
             .insert_resource(CameraPanState::default())
-            .add_systems(OnExit(GameState::Loading), setup_game)
+            .add_systems(
+                OnExit(GameState::Loading),
+                (setup_game, set_initial_zoom.after(setup_game)),
+            )
             .add_systems(
                 Update,
                 (
