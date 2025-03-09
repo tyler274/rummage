@@ -284,3 +284,273 @@ pub fn camera_movement(
         projection.scale = (projection.scale * zoom_factor).clamp(config.min_zoom, config.max_zoom);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bevy::input::mouse::MouseMotion;
+    use bevy::window::WindowResolution;
+
+    fn setup_test_app() -> App {
+        let mut app = App::new();
+        app.add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                resolution: WindowResolution::new(800.0, 600.0),
+                ..default()
+            }),
+            ..default()
+        }))
+        .insert_resource(CameraConfig {
+            move_speed: 500.0,
+            zoom_speed: 0.15,
+            min_zoom: 0.1,
+            max_zoom: 5.0,
+            pan_sensitivity: 1.0,
+        })
+        .insert_resource(CameraPanState::default())
+        .add_systems(Startup, setup_camera)
+        .add_systems(Update, camera_movement);
+
+        app.update(); // Run startup systems
+        app
+    }
+
+    #[test]
+    fn test_camera_keyboard_movement() {
+        let mut app = setup_test_app();
+
+        // Get initial camera position
+        let initial_pos = {
+            let world = app.world();
+            world
+                .query_filtered::<&Transform, With<Camera>>()
+                .single(world)
+                .translation
+        };
+
+        // Press right arrow key
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::ArrowRight);
+        app.update();
+
+        // Get new position
+        let new_pos = {
+            let world = app.world();
+            world
+                .query_filtered::<&Transform, With<Camera>>()
+                .single(world)
+                .translation
+        };
+
+        // Camera should have moved right (positive x)
+        assert!(new_pos.x > initial_pos.x);
+        assert_eq!(new_pos.y, initial_pos.y); // Y should not change
+    }
+
+    #[test]
+    fn test_camera_zoom() {
+        let mut app = setup_test_app();
+
+        // Get initial zoom
+        let initial_scale = {
+            let world = app.world();
+            world
+                .query_filtered::<&OrthographicProjection, With<Camera>>()
+                .single(world)
+                .scale
+        };
+
+        // Get window entity
+        let window_entity = app
+            .world()
+            .query_filtered::<Entity, With<PrimaryWindow>>()
+            .single(&app.world());
+
+        // Simulate mouse wheel scroll in
+        app.world_mut().send_event(MouseWheel {
+            unit: bevy::input::mouse::MouseScrollUnit::Line,
+            x: 0.0,
+            y: 1.0,
+            window: window_entity,
+        });
+        app.update();
+
+        // Get new zoom
+        let new_scale = {
+            let world = app.world();
+            world
+                .query_filtered::<&OrthographicProjection, With<Camera>>()
+                .single(world)
+                .scale
+        };
+
+        // Camera should have zoomed in (scale decreased)
+        assert!(new_scale < initial_scale);
+    }
+
+    #[test]
+    fn test_camera_pan() {
+        let mut app = setup_test_app();
+
+        // Get initial camera position
+        let initial_pos = {
+            let world = app.world();
+            world
+                .query_filtered::<&Transform, With<Camera>>()
+                .single(world)
+                .translation
+        };
+
+        // Start panning (middle mouse button press)
+        app.world_mut()
+            .resource_mut::<ButtonInput<MouseButton>>()
+            .press(MouseButton::Middle);
+
+        // Set initial cursor position
+        {
+            let mut world = app.world_mut();
+            let window = world
+                .query_filtered::<&mut Window, With<PrimaryWindow>>()
+                .single_mut(&mut world);
+            window
+                .cursor
+                .set_physical_position(Some(Vec2::new(400.0, 300.0)));
+        }
+        app.update();
+
+        // Simulate mouse movement
+        {
+            let mut world = app.world_mut();
+            let window = world
+                .query_filtered::<&mut Window, With<PrimaryWindow>>()
+                .single_mut(&mut world);
+            window
+                .cursor
+                .set_physical_position(Some(Vec2::new(500.0, 350.0)));
+        }
+        app.update();
+
+        // Release middle mouse button
+        app.world_mut()
+            .resource_mut::<ButtonInput<MouseButton>>()
+            .release(MouseButton::Middle);
+        app.update();
+
+        // Get final position
+        let final_pos = {
+            let world = app.world();
+            world
+                .query_filtered::<&Transform, With<Camera>>()
+                .single(world)
+                .translation
+        };
+
+        // Camera should have moved in response to pan
+        assert_ne!(final_pos, initial_pos);
+    }
+
+    #[test]
+    fn test_zoom_limits() {
+        let mut app = setup_test_app();
+        let config = app.world().resource::<CameraConfig>().clone();
+
+        // Get window entity once
+        let window_entity = app
+            .world()
+            .query_filtered::<Entity, With<PrimaryWindow>>()
+            .single(&app.world());
+
+        // Try to zoom out beyond limit
+        for _ in 0..100 {
+            app.world_mut().send_event(MouseWheel {
+                unit: bevy::input::mouse::MouseScrollUnit::Line,
+                x: 0.0,
+                y: -1.0,
+                window: window_entity,
+            });
+            app.update();
+        }
+
+        let scale = {
+            let world = app.world();
+            world
+                .query_filtered::<&OrthographicProjection, With<Camera>>()
+                .single(world)
+                .scale
+        };
+
+        // Should not zoom out beyond max_zoom
+        assert!(scale <= config.max_zoom);
+
+        // Try to zoom in beyond limit
+        for _ in 0..100 {
+            app.world_mut().send_event(MouseWheel {
+                unit: bevy::input::mouse::MouseScrollUnit::Line,
+                x: 0.0,
+                y: 1.0,
+                window: window_entity,
+            });
+            app.update();
+        }
+
+        let scale = {
+            let world = app.world();
+            world
+                .query_filtered::<&OrthographicProjection, With<Camera>>()
+                .single(world)
+                .scale
+        };
+
+        // Should not zoom in beyond min_zoom
+        assert!(scale >= config.min_zoom);
+    }
+
+    #[test]
+    fn test_camera_diagonal_movement() {
+        let mut app = setup_test_app();
+
+        // Get initial camera position
+        let initial_pos = {
+            let world = app.world();
+            world
+                .query_filtered::<&Transform, With<Camera>>()
+                .single(world)
+                .translation
+        };
+
+        // Press up and right arrows simultaneously
+        {
+            let mut input = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
+            input.press(KeyCode::ArrowUp);
+            input.press(KeyCode::ArrowRight);
+        }
+        app.update();
+
+        // Get new position
+        let new_pos = {
+            let world = app.world();
+            world
+                .query_filtered::<&Transform, With<Camera>>()
+                .single(world)
+                .translation
+        };
+
+        // Camera should have moved diagonally (both x and y changed)
+        assert!(new_pos.x > initial_pos.x);
+        assert!(new_pos.y > initial_pos.y);
+
+        // Movement should be normalized (diagonal speed = straight speed)
+        let diagonal_distance =
+            ((new_pos.x - initial_pos.x).powi(2) + (new_pos.y - initial_pos.y).powi(2)).sqrt();
+
+        let straight_distance = {
+            let world = app.world();
+            let config = world.resource::<CameraConfig>();
+            let time = world.resource::<Time>();
+            config.move_speed * time.delta().as_secs_f32()
+        };
+
+        assert!((diagonal_distance - straight_distance).abs() < 0.01);
+    }
+}
