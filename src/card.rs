@@ -550,7 +550,8 @@ pub struct Draggable {
     pub z_index: f32,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
+#[allow(dead_code)] // These fields are used for text rendering and may be needed later
 pub struct CardTextContent {
     pub text: String,
     pub text_type: CardTextType,

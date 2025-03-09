@@ -11,5 +11,6 @@ pub mod card;
 pub mod cards;
 pub mod drag;
 pub mod mana;
+pub mod menu;
 pub mod player;
 pub mod text;

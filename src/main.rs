@@ -18,6 +18,7 @@ use cards::CardsPlugin;
 use drag::DragPlugin;
 use menu::{GameState, MenuPlugin};
 use player::spawn_hand;
+use text::spawn_card_text;
 
 // Plugin for the actual game systems
 pub struct GamePlugin;
@@ -40,6 +41,7 @@ impl Plugin for GamePlugin {
                     handle_window_resize,
                     debug_render_text_positions,
                     camera_movement,
+                    spawn_card_text,
                 )
                     .run_if(in_state(GameState::InGame)),
             );
@@ -47,13 +49,20 @@ impl Plugin for GamePlugin {
 }
 
 fn setup_game(mut commands: Commands, asset_server: Res<AssetServer>) {
+    info!("Setting up game environment...");
+
+    // First set up the camera - this needs to happen before spawning cards
     setup_camera(&mut commands);
+
+    // Then spawn the player's hand - this will create the card entities
+    // We use the same Commands instance since setup_camera takes a reference
+    info!("Spawning initial hand...");
     spawn_hand(commands, asset_server);
 }
 
 fn handle_exit(mut exit_events: EventReader<AppExit>) {
     for _exit_event in exit_events.read() {
-        println!("Received exit event, cleaning up...");
+        info!("Received exit event, cleaning up...");
     }
 }
 

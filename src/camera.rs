@@ -118,9 +118,9 @@ pub struct CameraPanState {
 ///         .run();
 /// }
 /// ```
-pub fn setup_camera(mut commands: Commands) {
+pub fn setup_camera(commands: &mut Commands) {
     commands.spawn((
-        Camera2d::default(),
+        Camera2d,
         Camera::default(),
         Visibility::default(),
         InheritedVisibility::default(),
