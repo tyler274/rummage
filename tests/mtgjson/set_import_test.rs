@@ -48,7 +48,7 @@ async fn validate_set_import(
                 // Validate BZ2 file can be decompressed and contains valid JSON
                 let compressed_data = fs::read(&bz2_path)?;
                 let decompressed = bzip2::read::BzDecoder::new(&compressed_data[..]);
-                let set_response: MTGJSONSetResponse = serde_json::from_reader(decompressed)?;
+                let _set_response: MTGJSONSetResponse = serde_json::from_reader(decompressed)?;
 
                 // Collect statistics
                 let mut stats = CardSetStatistics::default();

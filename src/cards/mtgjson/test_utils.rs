@@ -7,8 +7,6 @@ use super::{MTGClient, MTGJSONCard, MTGJSONCardIdentifiers, MTGJSONMeta, MTGJSON
 use crate::card::{Card, CardDetails, CardTypes, CreatureCard, CreatureType};
 use crate::mana::Mana;
 
-use tokio::sync::Mutex;
-
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct MockClient {
@@ -202,7 +200,7 @@ pub fn mock_basic_land(name: String, subtypes: Vec<String>) -> MTGJSONCard {
     }
 }
 
-pub fn mock_creature(name: &str, power: i32, toughness: i32) -> MTGJSONCard {
+pub fn _mock_creature(name: &str, power: i32, toughness: i32) -> MTGJSONCard {
     MTGJSONCard {
         artist: Some("Test Artist".to_string()),
         artist_ids: Some(vec!["test-artist-id".to_string()]),
@@ -425,7 +423,7 @@ pub fn create_mock_meta() -> MTGJSONMeta {
     }
 }
 
-pub fn mock_basic_land_set() -> MTGJSONSet {
+pub fn _mock_basic_land_set() -> MTGJSONSet {
     MTGJSONSet {
         artist_ids: Some(vec![]),
         availability: vec!["paper".to_string()],
@@ -461,12 +459,12 @@ pub fn mock_basic_land_set() -> MTGJSONSet {
     }
 }
 
-pub fn mock_modern_horizons_set() -> MTGJSONSet {
+pub fn _mock_modern_horizons_set() -> MTGJSONSet {
     MTGJSONSet {
         artist_ids: Some(vec![]),
         availability: vec!["paper".to_string()],
         cards: vec![
-            mock_creature("Test Creature", 2, 2),
+            _mock_creature("Test Creature", 2, 2),
             mock_instant("Test Instant"),
             mock_sorcery("Test Sorcery"),
         ],
@@ -495,7 +493,7 @@ pub fn mock_modern_horizons_set() -> MTGJSONSet {
     }
 }
 
-pub fn mock_set(cards: Vec<MTGJSONCard>) -> MTGJSONSet {
+pub fn _mock_set(cards: Vec<MTGJSONCard>) -> MTGJSONSet {
     MTGJSONSet {
         artist_ids: Some(vec![]),
         availability: vec!["paper".to_string()],
@@ -525,7 +523,7 @@ pub fn mock_set(cards: Vec<MTGJSONCard>) -> MTGJSONSet {
     }
 }
 
-pub fn mock_card() -> MTGJSONCard {
+pub fn _mock_card() -> MTGJSONCard {
     MTGJSONCard {
         artist: Some("Test Artist".to_string()),
         artist_ids: Some(vec!["test-artist-id".to_string()]),

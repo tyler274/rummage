@@ -1,6 +1,4 @@
-use crate::card::{
-    Card, CardDetails, CardTextContent, CardTextType, Draggable, card_types_to_string,
-};
+use crate::card::{Card, CardDetails, CardTextContent, CardTextType, Draggable};
 use crate::cards::get_example_cards;
 use crate::mana::ManaPool;
 use bevy::prelude::*;
@@ -91,7 +89,7 @@ pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
         commands
             .spawn((
                 CardTextContent {
-                    text: card_types_to_string(&card.types),
+                    text: card.types.to_string(),
                     text_type: CardTextType::Type,
                 },
                 Transform::from_xyz(0.0, 0.0, z + 0.1),
