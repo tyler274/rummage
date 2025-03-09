@@ -8,6 +8,25 @@ use bevy::input::mouse::MouseWheel;
 /// - Viewport management
 /// - Coordinate space transformations
 ///
+/// # Important Note for Bevy 0.15.x Compatibility
+/// As of Bevy 0.15.x, Camera2dBundle and other *Bundle types are deprecated.
+/// Instead, spawn camera entities with individual components:
+/// ```ignore
+/// // OLD (deprecated):
+/// commands.spawn(Camera2dBundle::default());
+///
+/// // NEW (correct):
+/// commands.spawn((
+///     Camera2d::default(),
+///     Camera::default(),
+///     Transform::default(),
+///     GlobalTransform::default(),
+///     Visibility::default(),
+///     InheritedVisibility::default(),
+///     ViewVisibility::default(),
+/// ));
+/// ```
+///
 /// # Examples
 ///
 /// ```no_run
@@ -61,9 +80,9 @@ impl Default for CameraConfig {
     fn default() -> Self {
         Self {
             move_speed: 500.0,
-            zoom_speed: 1.0,
+            zoom_speed: 0.5, // Reduced from 1.0 for smoother zooming
             min_zoom: 0.1,
-            max_zoom: 10.0,
+            max_zoom: 5.0, // Reduced from 10.0 to prevent too much zoom in
         }
     }
 }
@@ -195,14 +214,20 @@ pub fn camera_movement(
             movement.normalize() * config.move_speed * time.delta().as_secs_f32();
     }
 
-    // Handle mouse wheel zoom
+    // Handle mouse wheel zoom with smoother interpolation
     let mut zoom_delta = 0.0;
     for event in scroll_events.read() {
         zoom_delta += event.y;
     }
 
     if zoom_delta != 0.0 {
-        projection.scale = (projection.scale * (1.0 - zoom_delta * config.zoom_speed * 0.1))
-            .clamp(config.min_zoom, config.max_zoom);
+        // Use exponential scaling for smoother zoom
+        let zoom_factor = if zoom_delta > 0.0 {
+            1.0 / (1.0 + zoom_delta * config.zoom_speed)
+        } else {
+            1.0 + (-zoom_delta * config.zoom_speed)
+        };
+
+        projection.scale = (projection.scale * zoom_factor).clamp(config.min_zoom, config.max_zoom);
     }
 }
