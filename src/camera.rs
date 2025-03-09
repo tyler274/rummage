@@ -80,9 +80,9 @@ impl Default for CameraConfig {
     fn default() -> Self {
         Self {
             move_speed: 500.0,
-            zoom_speed: 0.5, // Reduced from 1.0 for smoother zooming
+            zoom_speed: 0.15, // Significantly reduced for much smoother zooming
             min_zoom: 0.1,
-            max_zoom: 5.0, // Reduced from 10.0 to prevent too much zoom in
+            max_zoom: 5.0,
         }
     }
 }
@@ -221,11 +221,11 @@ pub fn camera_movement(
     }
 
     if zoom_delta != 0.0 {
-        // Use exponential scaling for smoother zoom
+        // Use a gentler logarithmic scaling for smoother zoom
         let zoom_factor = if zoom_delta > 0.0 {
-            1.0 / (1.0 + zoom_delta * config.zoom_speed)
+            1.0 - (config.zoom_speed * zoom_delta.min(1.0))
         } else {
-            1.0 + (-zoom_delta * config.zoom_speed)
+            1.0 + (config.zoom_speed * (-zoom_delta).min(1.0))
         };
 
         projection.scale = (projection.scale * zoom_factor).clamp(config.min_zoom, config.max_zoom);
