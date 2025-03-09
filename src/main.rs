@@ -33,7 +33,7 @@ impl Plugin for GamePlugin {
             })
             .insert_resource(CameraConfig::default())
             .insert_resource(CameraPanState::default())
-            .add_systems(OnEnter(GameState::InGame), setup_game)
+            .add_systems(OnExit(GameState::Loading), setup_game)
             .add_systems(
                 Update,
                 (

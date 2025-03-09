@@ -1,4 +1,5 @@
 use crate::card::Card;
+use bevy::prelude::*;
 /// Menu system for the game, handling main menu state and interactions.
 ///
 /// This module provides:
@@ -21,7 +22,6 @@ use crate::card::Card;
 /// - Consistent button sizing and spacing
 /// - Hover and click interactions
 /// - Smooth state transitions
-use bevy::prelude::*;
 
 /// Game states for managing transitions between different parts of the game.
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
@@ -40,6 +40,14 @@ pub enum GameState {
 /// Marker component for menu-related entities to facilitate cleanup
 #[derive(Component)]
 pub struct MenuItem;
+
+/// Marker component for menu-related camera
+#[derive(Component)]
+pub struct MenuCamera;
+
+/// Marker component for game camera
+#[derive(Component)]
+pub struct GameCamera;
 
 /// Actions associated with menu buttons
 #[derive(Component)]
@@ -69,10 +77,16 @@ impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<GameState>()
             .add_systems(OnEnter(GameState::MainMenu), setup_main_menu)
-            .add_systems(OnExit(GameState::MainMenu), cleanup_main_menu)
+            .add_systems(
+                OnExit(GameState::MainMenu),
+                (cleanup_main_menu, cleanup_menu_camera),
+            )
             .add_systems(Update, menu_action.run_if(in_state(GameState::MainMenu)))
             // Loading state systems
-            .add_systems(OnEnter(GameState::Loading), start_game_loading)
+            .add_systems(
+                OnEnter(GameState::Loading),
+                (cleanup_game, start_game_loading).chain(),
+            )
             .add_systems(OnExit(GameState::Loading), finish_loading)
             // Pause menu systems
             .add_systems(OnEnter(GameState::PausedGame), setup_pause_menu)
@@ -81,10 +95,9 @@ impl Plugin for MenuPlugin {
                 Update,
                 pause_menu_action.run_if(in_state(GameState::PausedGame)),
             )
-            .add_systems(
-                Update,
-                handle_pause_input.run_if(in_state(GameState::InGame)),
-            );
+            .add_systems(Update, handle_pause_input)
+            // Add cleanup when entering main menu from game
+            .add_systems(OnEnter(GameState::MainMenu), cleanup_game);
     }
 }
 
@@ -95,8 +108,8 @@ const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.75, 0.35);
 
 /// Sets up the main menu interface with buttons and layout
 fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
-    // Spawn camera
-    commands.spawn(Camera2d::default());
+    // Spawn camera with menu marker
+    commands.spawn((Camera2d::default(), MenuCamera));
 
     // Main menu container
     commands
@@ -243,7 +256,7 @@ fn finish_loading() {
 
 /// Sets up the pause menu interface with buttons and layout
 fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
-    // Container for pause menu
+    // Container for pause menu - we use the existing game camera
     commands
         .spawn((
             Node {
@@ -302,6 +315,13 @@ fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
         });
 }
 
+/// Cleans up all cards in the game
+fn cleanup_cards(mut commands: Commands, cards: Query<Entity, With<Card>>) {
+    for card in cards.iter() {
+        commands.entity(card).despawn_recursive();
+    }
+}
+
 /// Handles pause menu button interactions and triggers appropriate actions
 fn pause_menu_action(
     mut interaction_query: Query<
@@ -309,46 +329,22 @@ fn pause_menu_action(
         (Changed<Interaction>, With<Button>),
     >,
     mut next_state: ResMut<NextState<GameState>>,
-    mut commands: Commands,
-    mut hand_query: Query<Entity, With<Card>>,
 ) {
     for (interaction, action, mut color) in interaction_query.iter_mut() {
         match *interaction {
             Interaction::Pressed => {
                 *color = BackgroundColor(PRESSED_BUTTON);
                 match action {
-                    MenuButtonAction::Resume => {
-                        next_state.set(GameState::InGame);
-                    }
-                    MenuButtonAction::Restart => {
-                        // Despawn current hand
-                        for entity in hand_query.iter_mut() {
-                            commands.entity(entity).despawn_recursive();
-                        }
-                        next_state.set(GameState::Loading);
-                    }
-                    MenuButtonAction::Settings => {
-                        info!("Settings menu not implemented yet");
-                    }
-                    MenuButtonAction::MainMenu => {
-                        // Despawn current hand before returning to main menu
-                        for entity in hand_query.iter_mut() {
-                            commands.entity(entity).despawn_recursive();
-                        }
-                        next_state.set(GameState::MainMenu);
-                    }
-                    MenuButtonAction::Quit => {
-                        std::process::exit(0);
-                    }
+                    MenuButtonAction::Resume => next_state.set(GameState::InGame),
+                    MenuButtonAction::Restart => next_state.set(GameState::Loading),
+                    MenuButtonAction::Settings => info!("Settings menu not implemented yet"),
+                    MenuButtonAction::MainMenu => next_state.set(GameState::MainMenu),
+                    MenuButtonAction::Quit => std::process::exit(0),
                     _ => {}
                 }
             }
-            Interaction::Hovered => {
-                *color = BackgroundColor(HOVERED_BUTTON);
-            }
-            Interaction::None => {
-                *color = BackgroundColor(NORMAL_BUTTON);
-            }
+            Interaction::Hovered => *color = BackgroundColor(HOVERED_BUTTON),
+            Interaction::None => *color = BackgroundColor(NORMAL_BUTTON),
         }
     }
 }
@@ -357,9 +353,14 @@ fn pause_menu_action(
 fn handle_pause_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut next_state: ResMut<NextState<GameState>>,
+    current_state: Res<State<GameState>>,
 ) {
     if keyboard.just_pressed(KeyCode::Escape) {
-        next_state.set(GameState::PausedGame);
+        match current_state.get() {
+            GameState::InGame => next_state.set(GameState::PausedGame),
+            GameState::PausedGame => next_state.set(GameState::InGame),
+            _ => (), // Do nothing for other states
+        }
     }
 }
 
@@ -378,5 +379,29 @@ fn cleanup_pause_menu(mut commands: Commands, menu_items: Query<Entity, With<Men
         if commands.get_entity(entity).is_some() {
             commands.entity(entity).despawn_recursive();
         }
+    }
+}
+
+/// Cleans up menu camera when transitioning between states
+fn cleanup_menu_camera(mut commands: Commands, menu_cameras: Query<Entity, With<MenuCamera>>) {
+    for camera in menu_cameras.iter() {
+        commands.entity(camera).despawn_recursive();
+    }
+}
+
+/// Cleans up all game entities (cards and camera) when restarting or exiting the game
+fn cleanup_game(
+    mut commands: Commands,
+    cards: Query<Entity, With<Card>>,
+    game_cameras: Query<Entity, With<GameCamera>>,
+) {
+    // Clean up all cards
+    for card in cards.iter() {
+        commands.entity(card).despawn_recursive();
+    }
+
+    // Clean up game camera
+    for camera in game_cameras.iter() {
+        commands.entity(camera).despawn_recursive();
     }
 }

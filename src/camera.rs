@@ -1,3 +1,4 @@
+use crate::menu::GameCamera;
 use bevy::core_pipeline::core_2d::Camera2d;
 use bevy::input::mouse::MouseWheel;
 /// Camera management for the game's 2D view.
@@ -120,13 +121,14 @@ pub struct CameraPanState {
 /// ```
 pub fn setup_camera(commands: &mut Commands) {
     commands.spawn((
-        Camera2d,
+        Camera2d::default(),
         Camera::default(),
         Visibility::default(),
         InheritedVisibility::default(),
         ViewVisibility::default(),
         Transform::default(),
         GlobalTransform::default(),
+        GameCamera,
     ));
 
     // Initialize camera pan state
