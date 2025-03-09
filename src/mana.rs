@@ -24,6 +24,17 @@ use std::fmt;
 
 /// MTG mana symbol mappings using the Mana font
 /// See: https://mana.andrewgioia.com/icons.html
+///
+/// These mappings define how mana symbols in braces (e.g., `{W}`, `{2}`) are rendered
+/// using the Mana font. The font expects the braced symbols as input and renders them
+/// as the appropriate mana symbols.
+///
+/// # Examples
+/// ```
+/// use rummage::mana::mana_symbol_to_char;
+/// assert_eq!(mana_symbol_to_char("{W}"), "{W}"); // Will render as white mana symbol
+/// assert_eq!(mana_symbol_to_char("{2}"), "{2}"); // Will render as generic mana 2
+/// ```
 pub const MANA_SYMBOLS: &[(&str, char)] = &[
     ("{W}", 'w'),  // White mana
     ("{U}", 'u'),  // Blue mana
@@ -46,23 +57,46 @@ pub const MANA_SYMBOLS: &[(&str, char)] = &[
     ("{T}", 't'),  // Tap symbol
 ];
 
-/// Converts a mana symbol string to its font character representation
+/// Converts a mana symbol string to its font character representation.
+///
+/// This function preserves the braces around mana symbols, as the Mana font
+/// expects braced symbols (e.g., `{W}`, `{2}`) to render them correctly.
+///
+/// # Arguments
+/// * `symbol` - The mana symbol to convert (e.g., "{W}", "{2}")
+///
+/// # Returns
+/// The symbol string unchanged, as the Mana font handles the conversion internally.
+///
+/// # Examples
+/// ```
+/// use rummage::mana::mana_symbol_to_char;
+/// assert_eq!(mana_symbol_to_char("{W}"), "{W}");
+/// ```
 pub fn mana_symbol_to_char(symbol: &str) -> String {
-    for (pattern, ch) in MANA_SYMBOLS {
-        if pattern == &symbol {
-            return ch.to_string();
-        }
-    }
+    // Keep the braces around the symbol for proper font rendering
     symbol.to_string()
 }
 
-/// Converts rules text containing mana symbols to font character representation
+/// Converts rules text containing mana symbols to font character representation.
+///
+/// This function preserves mana symbols in braces within the text, as the Mana font
+/// expects braced symbols to render them correctly.
+///
+/// # Arguments
+/// * `text` - The rules text containing mana symbols (e.g., "Add {W} to your mana pool")
+///
+/// # Returns
+/// The text unchanged, as the Mana font handles the symbol conversion internally.
+///
+/// # Examples
+/// ```
+/// use rummage::mana::convert_rules_text_to_symbols;
+/// assert_eq!(convert_rules_text_to_symbols("Add {W}"), "Add {W}");
+/// ```
 pub fn convert_rules_text_to_symbols(text: &str) -> String {
-    let mut result = text.to_string();
-    for (pattern, ch) in MANA_SYMBOLS {
-        result = result.replace(pattern, &ch.to_string());
-    }
-    result
+    // Keep the braces around the symbols for proper font rendering
+    text.to_string()
 }
 
 bitflags! {
@@ -358,30 +392,31 @@ impl fmt::Display for Mana {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut cost = String::new();
 
-        // Add colored mana in WUBRG order
-        for _ in 0..self.white {
-            cost.push_str(&mana_symbol_to_char("{W}"));
-        }
-        for _ in 0..self.blue {
-            cost.push_str(&mana_symbol_to_char("{U}"));
-        }
-        for _ in 0..self.black {
-            cost.push_str(&mana_symbol_to_char("{B}"));
-        }
-        for _ in 0..self.red {
-            cost.push_str(&mana_symbol_to_char("{R}"));
-        }
-        for _ in 0..self.green {
-            cost.push_str(&mana_symbol_to_char("{G}"));
+        // Add generic mana first (colorless mana that can be paid with any color)
+        if self.colorless > 0 {
+            // For generic mana, we use the number directly with braces
+            cost.push_str(&format!("{{{}}}", self.colorless));
         }
 
-        // Add colorless mana
-        for _ in 0..self.colorless {
-            cost.push_str(&mana_symbol_to_char("{C}"));
+        // Add colored mana in WUBRG order
+        for _ in 0..self.white {
+            cost.push_str("{W}");
+        }
+        for _ in 0..self.blue {
+            cost.push_str("{U}");
+        }
+        for _ in 0..self.black {
+            cost.push_str("{B}");
+        }
+        for _ in 0..self.red {
+            cost.push_str("{R}");
+        }
+        for _ in 0..self.green {
+            cost.push_str("{G}");
         }
 
         if cost.is_empty() {
-            cost.push_str(&mana_symbol_to_char("{0}"));
+            cost.push_str("{0}");
         }
 
         write!(f, "{}", cost)

@@ -5,6 +5,16 @@
 /// - Text component management
 /// - Font handling and scaling
 /// - Debug visualization for text positions
+/// - Mana symbol rendering using the Mana font
+///
+/// # Mana Symbol Rendering
+/// Mana symbols are rendered using a special font that expects symbols in braces:
+/// - Generic mana: `{1}`, `{2}`, etc.
+/// - Colored mana: `{W}`, `{U}`, `{B}`, `{R}`, `{G}`
+/// - Special symbols: `{C}` (colorless), `{T}` (tap)
+///
+/// The text is passed directly to the font with braces intact, and the font
+/// handles the conversion to the appropriate symbols.
 ///
 /// # Important Note for Bevy 0.15.x Compatibility
 /// As of Bevy 0.15.x, all *Bundle types (Text2dBundle, SpriteBundle, etc.) are deprecated.
@@ -32,7 +42,11 @@
 ///   - 20% card height to fit two lines
 ///   - Left-justified text for consistent alignment
 ///   - Positioned near top-left of card
-/// - Other text elements (cost, type, rules) use single-line layouts
+/// - Mana costs use:
+///   - Special Mana font for symbol rendering
+///   - Dark background for visibility
+///   - Centered in top-right corner
+/// - Other text elements (type, rules) use single-line layouts
 ///   with specific positioning for each type
 use crate::card::{Card, CardTextContent, CardTextType, DebugConfig, SpawnedText};
 use bevy::prelude::*;
@@ -168,7 +182,7 @@ pub fn spawn_card_text(
             // Create text layout based on type
             let text_layout = match content.text_type {
                 CardTextType::Name => TextLayout::new_with_justify(JustifyText::Left),
-                CardTextType::Cost => TextLayout::new_with_justify(JustifyText::Center),
+                CardTextType::Cost => TextLayout::new_with_justify(JustifyText::Left),
                 _ => TextLayout::default(),
             };
 
@@ -176,10 +190,14 @@ pub fn spawn_card_text(
             let text_entity = commands
                 .spawn((
                     // Core text components
-                    Text2d::new(content.text.clone()),
+                    Text2d::new(content.text.clone()), // Use the text directly, with braces intact
                     TextFont {
                         font,
-                        font_size,
+                        font_size: if content.text_type == CardTextType::Cost {
+                            card_size.y * 0.08 // Increased font size for mana symbols
+                        } else {
+                            font_size
+                        },
                         ..default()
                     },
                     TextColor(color),
@@ -189,14 +207,14 @@ pub fn spawn_card_text(
                             CardTextType::RulesText => Some(card_size.x * 0.8),
                             CardTextType::Type => Some(card_size.x * 0.8),
                             CardTextType::Name => Some(card_size.x * 0.7), // Narrower width to force wrapping
-                            CardTextType::Cost => Some(card_size.x * 0.15), // Width to match background
+                            CardTextType::Cost => Some(card_size.x * 0.3), // Wider to fit multiple symbols
                             _ => None,
                         },
                         height: match content.text_type {
                             CardTextType::RulesText => Some(card_size.y * 0.3),
                             CardTextType::Type => Some(card_size.y * 0.1),
                             CardTextType::Name => Some(card_size.y * 0.2), // Taller height to accommodate two lines
-                            CardTextType::Cost => Some(card_size.y * 0.08), // Height to match background
+                            CardTextType::Cost => Some(card_size.y * 0.12), // Taller for mana symbols
                             _ => None,
                         },
                     },
@@ -221,7 +239,7 @@ pub fn spawn_card_text(
                     .spawn((
                         Sprite {
                             color: Color::srgb(0.1, 0.1, 0.1),
-                            custom_size: Some(Vec2::new(card_size.x * 0.15, card_size.y * 0.08)),
+                            custom_size: Some(Vec2::new(card_size.x * 0.3, card_size.y * 0.12)), // Wider and taller background
                             ..default()
                         },
                         Transform::from_translation(offset),
