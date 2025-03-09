@@ -1,3 +1,10 @@
+/// Text rendering and layout for Magic: The Gathering cards.
+///
+/// This module provides:
+/// - Card text positioning and layout
+/// - Text component management
+/// - Font handling and scaling
+/// - Debug visualization for text positions
 use crate::card::{Card, CardTextContent, CardTextType, DebugConfig, SpawnedText};
 use bevy::prelude::*;
 use bevy::text::{JustifyText, Text2d, TextBounds, TextColor, TextFont, TextLayout};
@@ -63,9 +70,10 @@ fn spawn_debug_bounds(commands: &mut Commands, card_pos: Vec2, _card_size: Vec2,
 ///
 /// # Text Layout
 /// - Card Name: Centered at top
-/// - Mana Cost: Top left corner
+/// - Mana Cost: Top right corner
 /// - Type Line: Center
 /// - Power/Toughness: Bottom right
+/// - Rules Text: Center body
 pub fn spawn_card_text(
     mut commands: Commands,
     text_content_query: Query<

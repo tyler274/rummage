@@ -6,13 +6,13 @@ mod mana;
 mod player;
 mod text;
 
+use bevy::DefaultPlugins;
 use bevy::app::AppExit;
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
-use bevy::DefaultPlugins;
 use bevy_rand::prelude::*;
-use camera::{handle_window_resize, setup_camera};
-use card::{debug_render_text_positions, handle_card_dragging, DebugConfig};
+use camera::{CameraConfig, camera_movement, handle_window_resize, setup_camera};
+use card::{DebugConfig, debug_render_text_positions, handle_card_dragging};
 use cards::CardsPlugin;
 use drag::DragPlugin;
 use player::spawn_hand;
@@ -52,6 +52,7 @@ fn main() {
         .insert_resource(DebugConfig {
             show_text_positions: false, // Set to false to disable debug rendering
         })
+        .insert_resource(CameraConfig::default())
         .add_systems(
             Startup,
             (
@@ -68,6 +69,7 @@ fn main() {
                 handle_window_resize,
                 handle_exit,
                 debug_render_text_positions,
+                camera_movement,
             ),
         )
         .run();

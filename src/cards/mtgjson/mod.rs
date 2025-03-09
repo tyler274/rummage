@@ -938,6 +938,13 @@ pub fn determine_creature_types(subtypes: &[String], name: &str, text: &str) -> 
 /// Example: "{2}{W}{W}" becomes Mana with colorless=2, white=2
 pub fn parse_mana_cost(cost: &str) -> Mana {
     let mut mana = Mana::default();
+    
+    // Handle empty string case
+    if cost.is_empty() {
+        mana.color = Color::COLORLESS;
+        return mana;
+    }
+
     let mut in_brace = false;
     let mut current_number = String::new();
 
@@ -988,6 +995,11 @@ pub fn parse_mana_cost(cost: &str) -> Mana {
             }
             _ => {}
         }
+    }
+
+    // Set colorless flag if only colorless mana
+    if !mana.has_color() && mana.colorless > 0 {
+        mana.color = Color::COLORLESS;
     }
 
     mana

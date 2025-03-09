@@ -423,6 +423,39 @@ impl std::fmt::Display for CardTypes {
     }
 }
 
+/// Formats a card's complete type line, including creature types if applicable
+pub fn format_type_line(types: &CardTypes, card_details: &CardDetails) -> String {
+    let mut result = types.to_string();
+
+    // If it's a creature, append the creature types
+    if let CardDetails::Creature(creature) = card_details {
+        if !creature.creature_type.is_empty() {
+            result.push_str(" — ");
+            result.push_str(&creature.creature_type.to_string());
+        }
+    }
+    // Add other type-specific additions here if needed
+    // For example, for Enchantment - Aura, Artifact - Equipment, etc.
+    else if let CardDetails::Enchantment(enchantment) = card_details {
+        if let Some(enchantment_type) = &enchantment.enchantment_type {
+            result.push_str(" — ");
+            result.push_str(enchantment_type);
+        }
+    } else if let CardDetails::Artifact(artifact) = card_details {
+        if let Some(artifact_type) = &artifact.artifact_type {
+            result.push_str(" — ");
+            result.push_str(artifact_type);
+        }
+    } else if let CardDetails::Land(land) = card_details {
+        if let Some(land_type) = &land.land_type {
+            result.push_str(" — ");
+            result.push_str(land_type);
+        }
+    }
+
+    result
+}
+
 #[derive(Bundle)]
 pub struct CardBundle {
     pub sprite_bundle: Sprite,
@@ -436,6 +469,23 @@ pub struct Card {
     pub types: CardTypes,
     pub card_details: CardDetails,
     pub rules_text: String,
+}
+
+impl Card {
+    /// Gets the complete type line for the card, including subtypes
+    ///
+    /// This includes:
+    /// - Supertypes (e.g., "Legendary", "Basic")
+    /// - Card types (e.g., "Creature", "Instant")
+    /// - Subtypes (e.g., "Human Wizard", "Equipment")
+    ///
+    /// Examples:
+    /// - "Legendary Creature — Human Wizard"
+    /// - "Artifact — Equipment"
+    /// - "Basic Land — Forest"
+    pub fn type_line(&self) -> String {
+        format_type_line(&self.types, &self.card_details)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
