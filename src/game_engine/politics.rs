@@ -376,35 +376,45 @@ pub fn voting_system(
     }
 
     // Process new votes
-    for event in vote_cast_events.read() {
-        // Ignore votes for inactive/different votes
-        if let Some(active_vote) = &politics.active_vote {
+    // First copy active_vote details to avoid borrow conflicts
+    let active_vote_data = politics.active_vote.clone();
+
+    if let Some(active_vote) = active_vote_data {
+        // Process all vote cast events for this active vote
+        let mut new_votes = Vec::new();
+
+        for event in vote_cast_events.read() {
+            // Ignore votes for inactive/different votes
             if active_vote.id != event.vote_id {
                 continue;
             }
 
-            // Record the vote
-            politics
-                .votes_cast
-                .insert(event.player, event.choice.clone());
+            // Record the vote for processing later
+            new_votes.push((event.player, event.choice.clone()));
+        }
 
-            // Check if voting is complete
-            if politics.votes_cast.len() >= active_vote.eligible_voters.len()
-                || (!active_vote.requires_all_players && politics.is_vote_decisive())
-            {
-                // Determine the winner
-                if let Some(winning_choice) = politics.tally_votes() {
-                    // Send completion event
-                    commands.spawn(VoteCompletedEvent {
-                        vote_id: active_vote.id,
-                        winning_choice: winning_choice.0,
-                        vote_count: winning_choice.1,
-                    });
+        // Apply all new votes
+        for (player, choice) in new_votes {
+            politics.votes_cast.insert(player, choice);
+        }
 
-                    // Clear the active vote
-                    politics.active_vote = None;
-                    politics.votes_cast.clear();
-                }
+        // Check if voting is complete
+        let is_complete = politics.votes_cast.len() >= active_vote.eligible_voters.len()
+            || (!active_vote.requires_all_players && politics.is_vote_decisive());
+
+        if is_complete {
+            // Determine the winner
+            if let Some(winning_choice) = politics.tally_votes() {
+                // Send completion event
+                commands.spawn(VoteCompletedEvent {
+                    vote_id: active_vote.id,
+                    winning_choice: winning_choice.0,
+                    vote_count: winning_choice.1,
+                });
+
+                // Clear the active vote
+                politics.active_vote = None;
+                politics.votes_cast.clear();
             }
         }
     }
