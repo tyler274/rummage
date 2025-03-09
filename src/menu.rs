@@ -1,32 +1,63 @@
+/// Menu system for the game, handling main menu state and interactions.
+///
+/// This module provides:
+/// - Menu state management (MainMenu, Loading, InGame)
+/// - Button components and interactions
+/// - Menu layout and styling
+/// - State transitions between menu and game
+///
+/// # State Flow
+/// ```plaintext
+/// MainMenu -> Loading -> InGame
+///     ^          |
+///     |          |
+///     +----------+
+/// ```
+///
+/// # Menu Layout
+/// The menu is structured as a centered container with:
+/// - Vertical stack of buttons
+/// - Consistent button sizing and spacing
+/// - Hover and click interactions
+/// - Smooth state transitions
 use bevy::app::AppExit;
 use bevy::prelude::*;
 
 // Note: As of Bevy 0.15.x, we use the modern component system instead of bundles.
 // Required components are automatically added when using the primary component.
 
-// Game states
+/// Game states for managing transitions between different parts of the game.
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 pub enum GameState {
+    /// Initial state, showing the main menu
     #[default]
     MainMenu,
-    InGame,
+    /// Transitional state for loading game assets
     Loading,
+    /// Active gameplay state
+    InGame,
 }
 
-// UI component for menu items
+/// Marker component for menu-related entities to facilitate cleanup
 #[derive(Component)]
 pub struct MenuItem;
 
-// UI component for specific menu actions
+/// Actions associated with menu buttons
 #[derive(Component)]
 pub enum MenuButtonAction {
+    /// Start a new game session
     NewGame,
+    /// Load a previously saved game
     LoadGame,
+    /// Enter multiplayer mode
     Multiplayer,
+    /// Open settings menu
     Settings,
+    /// Exit the game
     Quit,
 }
 
+/// Plugin that sets up the menu system and its related systems
 pub struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
@@ -34,16 +65,31 @@ impl Plugin for MenuPlugin {
         app.init_state::<GameState>()
             .add_systems(OnEnter(GameState::MainMenu), setup_main_menu)
             .add_systems(OnExit(GameState::MainMenu), cleanup_main_menu)
-            .add_systems(Update, menu_action.run_if(in_state(GameState::MainMenu)));
+            .add_systems(Update, menu_action.run_if(in_state(GameState::MainMenu)))
+            // Loading state systems
+            .add_systems(OnEnter(GameState::Loading), start_game_loading)
+            .add_systems(OnExit(GameState::Loading), finish_loading);
     }
 }
 
+// Button colors for different interaction states
 const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
 const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.75, 0.35);
 
+/// Sets up the main menu interface with buttons and layout
 fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Camera2d);
+    // Spawn camera with all required components
+    commands.spawn((
+        Camera2d,
+        Camera::default(),
+        Transform::default(),
+        GlobalTransform::default(),
+        Visibility::default(),
+        InheritedVisibility::default(),
+        ViewVisibility::default(),
+        MenuItem,
+    ));
 
     // Main menu container
     commands
@@ -56,6 +102,7 @@ fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ..default()
             },
             BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
+            MenuItem,
         ))
         .with_children(|parent| {
             // Menu buttons container
@@ -70,6 +117,7 @@ fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                         ..default()
                     },
                     BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
+                    MenuItem,
                 ))
                 .with_children(|parent| {
                     spawn_menu_button(parent, "New Game", MenuButtonAction::NewGame, &asset_server);
@@ -96,6 +144,7 @@ fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
         });
 }
 
+/// Creates a menu button with text and interaction handlers
 fn spawn_menu_button(
     parent: &mut ChildBuilder,
     text: &str,
@@ -112,6 +161,7 @@ fn spawn_menu_button(
             },
             BackgroundColor(NORMAL_BUTTON),
             action,
+            MenuItem,
         ))
         .with_children(|parent| {
             parent.spawn((
@@ -122,16 +172,21 @@ fn spawn_menu_button(
                     ..default()
                 },
                 TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                MenuItem,
             ));
         });
 }
 
-fn cleanup_main_menu(mut commands: Commands, menu_items: Query<Entity, With<Node>>) {
+/// Safely cleans up menu entities when transitioning to another state
+fn cleanup_main_menu(mut commands: Commands, menu_items: Query<Entity, With<MenuItem>>) {
     for entity in menu_items.iter() {
-        commands.entity(entity).despawn_recursive();
+        if commands.get_entity(entity).is_some() {
+            commands.entity(entity).despawn_recursive();
+        }
     }
 }
 
+/// Handles button interactions and triggers appropriate actions
 fn menu_action(
     mut interaction_query: Query<
         (&Interaction, &MenuButtonAction, &mut BackgroundColor),
@@ -146,18 +201,21 @@ fn menu_action(
                 *color = PRESSED_BUTTON.into();
                 match menu_button_action {
                     MenuButtonAction::NewGame => {
+                        info!("Starting new game...");
                         next_state.set(GameState::Loading);
                     }
                     MenuButtonAction::LoadGame => {
+                        info!("Loading saved game...");
                         next_state.set(GameState::Loading);
                     }
                     MenuButtonAction::Multiplayer => {
-                        println!("Multiplayer not implemented yet");
+                        info!("Multiplayer not implemented yet");
                     }
                     MenuButtonAction::Settings => {
-                        println!("Settings not implemented yet");
+                        info!("Settings not implemented yet");
                     }
                     MenuButtonAction::Quit => {
+                        info!("Exiting game...");
                         let _ = app_exit_events.send(AppExit::default());
                     }
                 }
@@ -170,4 +228,17 @@ fn menu_action(
             }
         }
     }
+}
+
+/// Initiates the game loading sequence
+fn start_game_loading(mut next_state: ResMut<NextState<GameState>>) {
+    info!("Starting game loading sequence...");
+    // For now, immediately transition to InGame
+    // In the future, we can add actual loading logic here
+    next_state.set(GameState::InGame);
+}
+
+/// Performs cleanup and finalization after loading completes
+fn finish_loading() {
+    info!("Game loading complete!");
 }

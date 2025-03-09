@@ -1,18 +1,58 @@
+/// Player management and card spawning system.
+///
+/// This module handles:
+/// - Player state and resources
+/// - Initial hand setup
+/// - Card spawning and positioning
+/// - Text component creation for cards
+///
+/// # Card Layout
+/// Cards are spawned in a horizontal arrangement with:
+/// - Consistent spacing between cards
+/// - Proper z-indexing for overlapping
+/// - Centered alignment in the view
+///
+/// # Text Components
+/// Each spawned card includes several text components:
+/// - Card name (top left)
+/// - Mana cost (top right)
+/// - Type line (center)
+/// - Power/Toughness (bottom right, creatures only)
+/// - Rules text (center body)
+///
+/// Each text component is spawned as a child entity of the card,
+/// ensuring proper positioning and movement during drag operations.
 use crate::card::{Card, CardDetails, CardTextContent, CardTextType, Draggable};
 use crate::cards::get_example_cards;
 use crate::mana::{ManaPool, convert_rules_text_to_symbols};
 use bevy::prelude::*;
 use rand::seq::SliceRandom;
 
+/// Represents a player in the game with their associated state
 #[allow(dead_code)]
 #[derive(Component, Default, Debug, Clone)]
 pub struct Player {
+    /// Player's display name
     pub name: String,
+    /// Current life total
     pub life: i32,
+    /// Available mana pool
     pub mana_pool: ManaPool,
+    /// Cards in the player's possession
     pub cards: Vec<Card>,
 }
 
+/// Spawns the initial hand of cards for a player
+///
+/// This function:
+/// 1. Creates a new player entity
+/// 2. Generates and shuffles a deck of cards
+/// 3. Takes the first 7 cards for the initial hand
+/// 4. Spawns visual representations of the cards
+/// 5. Creates text components for each card
+///
+/// The cards are arranged in a horizontal line with proper spacing
+/// and z-indexing for visual clarity.
 pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
     // Create a new player
     let player = Player {

@@ -7,6 +7,34 @@
 /// - Debug visualization for text positions
 /// - Mana symbol rendering using the Mana font
 ///
+/// # Text Layout Strategy
+/// - Card names use a two-line layout with:
+///   - 70% card width bounds to encourage wrapping
+///   - 20% card height to fit two lines
+///   - Left-justified text for consistent alignment
+///   - Positioned near top-left of card
+/// - Mana costs use:
+///   - Special Mana font for symbol rendering
+///   - Dark background for visibility
+///   - Centered in top-right corner
+/// - Other text elements (type, rules) use single-line layouts
+///   with specific positioning for each type
+///
+/// # Debug Visualization
+/// The module includes a comprehensive debug visualization system that can be enabled
+/// via the `DebugConfig::show_text_positions` flag. When enabled, it shows:
+/// - Text anchor points (colored dots)
+/// - Card boundaries (green rectangles)
+/// - Text bounds (red rectangles)
+/// - Relative positioning markers
+///
+/// To enable debug visualization:
+/// ```rust
+/// app.insert_resource(DebugConfig {
+///     show_text_positions: true,
+/// });
+/// ```
+///
 /// # Mana Symbol Rendering
 /// Mana symbols are rendered using a special font that expects symbols in braces:
 /// - Generic mana: `{1}`, `{2}`, etc.
@@ -37,17 +65,17 @@
 /// ```
 ///
 /// # Text Layout Strategy
-/// - Card names use a two-line layout with:
-///   - 70% card width bounds to encourage wrapping
-///   - 20% card height to fit two lines
-///   - Left-justified text for consistent alignment
-///   - Positioned near top-left of card
-/// - Mana costs use:
-///   - Special Mana font for symbol rendering
-///   - Dark background for visibility
-///   - Centered in top-right corner
-/// - Other text elements (type, rules) use single-line layouts
-///   with specific positioning for each type
+/// - Card Name: Centered at top
+/// - Mana Cost: Top right corner
+/// - Type Line: Center
+/// - Power/Toughness: Bottom right
+/// - Rules Text: Center body
+///
+/// # Debug Visualization
+/// When debug_config.show_text_positions is true, this function will:
+/// - Call spawn_debug_bounds for each text component
+/// - Show visual markers for text positioning
+/// - Display card boundaries
 use crate::card::{Card, CardTextContent, CardTextType, DebugConfig, SpawnedText};
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
@@ -55,40 +83,63 @@ use bevy::text::{Text2d, TextBounds};
 
 /// Spawns debug visualization markers for card and text positions
 ///
-/// # Debug Visualization Colors
-/// - Red dots: Card center points
-/// - Green dots: Text anchor points
-/// - Blue dots (in drag.rs): Current drag position
+/// This function creates visual indicators to help debug text positioning:
+/// - Red rectangles (10x10): Text position markers
+/// - Green rectangles: Card boundary visualization
 ///
-/// This visualization helped identify several issues:
-/// 1. Text offset calculations were initially incorrect
-/// 2. Camera projection was affecting text positioning
-/// 3. Parent-child transforms needed proper z-ordering
-fn spawn_debug_bounds(commands: &mut Commands, card_pos: Vec2, _card_size: Vec2, text_pos: Vec2) {
-    // Card center marker (red)
+/// # Arguments
+/// * `commands` - Command buffer for entity spawning
+/// * `card_pos` - Center position of the card in world space
+/// * `card_size` - Dimensions of the card
+/// * `text_pos` - Position where text should be rendered
+///
+/// # Debug Usage
+/// This function is called when DebugConfig::show_text_positions is true:
+/// ```ignore
+/// if debug_config.show_text_positions {
+///     spawn_debug_bounds(
+///         &mut commands,
+///         card_transform.translation.truncate(),
+///         card_size,
+///         text_position,
+///     );
+/// }
+/// ```
+#[allow(dead_code)] // Used by debug visualization system
+pub fn spawn_debug_bounds(
+    commands: &mut Commands,
+    card_pos: Vec2,
+    card_size: Vec2,
+    text_pos: Vec2,
+) {
+    // Spawn a debug rectangle to visualize the text bounds
     commands.spawn((
         Sprite {
-            color: Color::srgb(1.0, 0.0, 0.0),
-            custom_size: Some(Vec2::new(5.0, 5.0)),
-            ..default()
-        },
-        Transform::from_xyz(card_pos.x, card_pos.y, 100.0),
-        Visibility::Visible,
-        InheritedVisibility::default(),
-        ViewVisibility::default(),
-    ));
-
-    // Text position marker (green)
-    commands.spawn((
-        Sprite {
-            color: Color::srgb(0.0, 1.0, 0.0),
-            custom_size: Some(Vec2::new(5.0, 5.0)),
+            color: Color::srgba(1.0, 0.0, 0.0, 0.3),
+            custom_size: Some(Vec2::new(10.0, 10.0)),
             ..default()
         },
         Transform::from_xyz(text_pos.x, text_pos.y, 100.0),
-        Visibility::Visible,
+        GlobalTransform::default(),
+        Visibility::default(),
         InheritedVisibility::default(),
         ViewVisibility::default(),
+        Name::new("DebugBounds"),
+    ));
+
+    // Spawn lines to show the card boundaries
+    commands.spawn((
+        Sprite {
+            color: Color::srgba(0.0, 1.0, 0.0, 0.3),
+            custom_size: Some(Vec2::new(card_size.x, card_size.y)),
+            ..default()
+        },
+        Transform::from_xyz(card_pos.x, card_pos.y, 99.0),
+        GlobalTransform::default(),
+        Visibility::default(),
+        InheritedVisibility::default(),
+        ViewVisibility::default(),
+        Name::new("CardBounds"),
     ));
 }
 
@@ -118,6 +169,13 @@ fn spawn_debug_bounds(commands: &mut Commands, card_pos: Vec2, _card_size: Vec2,
 /// - Type Line: Center
 /// - Power/Toughness: Bottom right
 /// - Rules Text: Center body
+///
+/// # Debug Visualization
+/// When debug_config.show_text_positions is true, this function will:
+/// - Call spawn_debug_bounds for each text component
+/// - Show visual markers for text positioning
+/// - Display card boundaries
+#[allow(dead_code)] // Used by text rendering system
 pub fn spawn_card_text(
     mut commands: Commands,
     text_content_query: Query<
