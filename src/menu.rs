@@ -1,27 +1,99 @@
 use crate::card::Card;
+
 use bevy::prelude::*;
-/// Menu system for the game, handling main menu state and interactions.
+
+/// Menu system for the game, handling state management and user interface.
 ///
-/// This module provides:
-/// - Menu state management (MainMenu, Loading, InGame)
-/// - Button components and interactions
-/// - Menu layout and styling
-/// - State transitions between menu and game
+/// This module provides a complete menu system including:
+/// - State Management:
+///   - Main Menu: Entry point with options for new game, load game, etc.
+///   - Loading: Transitional state for game setup and cleanup
+///   - In-Game: Active gameplay state
+///   - Paused Game: Overlay menu during gameplay
 ///
-/// # State Flow
+/// - Menu Components:
+///   - Buttons with hover and click interactions
+///   - Text elements with consistent styling
+///   - Camera management for menu and game views
+///   - State-specific cleanup systems
+///
+/// - State Transitions:
 /// ```plaintext
-/// MainMenu -> Loading -> InGame
-///     ^          |
-///     |          |
-///     +----------+
+///                    ┌─────────┐
+///                    │         │
+///                    ▼         │
+/// MainMenu ──► Loading ──► InGame ◄─┐
+///    ▲         │                    │
+///    │         │                    │
+///    └─────────┘              PausedGame
 /// ```
 ///
-/// # Menu Layout
-/// The menu is structured as a centered container with:
-/// - Vertical stack of buttons
-/// - Consistent button sizing and spacing
-/// - Hover and click interactions
-/// - Smooth state transitions
+/// - Cleanup Behavior:
+///   - Menu entities are cleaned up when exiting menu states
+///   - Game entities (cards, camera) are cleaned up when:
+///     - Entering Loading state (for restarts)
+///     - Entering MainMenu state (when exiting game)
+///
+/// - Camera Management:
+///   - MenuCamera: Used for menu UI rendering
+///   - GameCamera: Used for game view and pause menu overlay
+///
+/// # Examples
+///
+/// Basic usage in main game setup:
+/// ```no_run
+/// use bevy::prelude::*;
+/// use rummage::menu::MenuPlugin;
+///
+/// fn main() {
+///     App::new()
+///         .add_plugins(DefaultPlugins)
+///         .add_plugins(MenuPlugin)
+///         .run();
+/// }
+/// ```
+///
+/// # State Transitions
+///
+/// - New Game: MainMenu -> Loading -> InGame
+/// - Pause: InGame -> PausedGame
+/// - Resume: PausedGame -> InGame
+/// - Restart: PausedGame -> Loading -> InGame
+/// - Main Menu: PausedGame -> MainMenu
+///
+/// # Component Hierarchy
+///
+/// ```plaintext
+/// MainMenu
+/// ├── Camera2d + MenuCamera
+/// └── Root Container (MenuItem)
+///     └── Button Container
+///         ├── New Game Button
+///         ├── Load Game Button
+///         ├── Settings Button
+///         └── Quit Button
+///
+/// PauseMenu
+/// └── Overlay Container (MenuItem)
+///     ├── Title Text
+///     └── Button Container
+///         ├── Resume Button
+///         ├── Restart Button
+///         ├── Settings Button
+///         ├── Main Menu Button
+///         └── Exit Button
+/// ```
+///
+/// # Testing
+///
+/// The module includes comprehensive tests for:
+/// - State transitions
+/// - Button interactions
+/// - Entity cleanup
+/// - Camera management
+/// - Menu layout and styling
+///
+/// See the tests module for detailed examples.
 
 /// Game states for managing transitions between different parts of the game.
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
@@ -49,8 +121,8 @@ pub struct MenuCamera;
 #[derive(Component)]
 pub struct GameCamera;
 
-/// Actions associated with menu buttons
-#[derive(Component)]
+/// Button actions for different menu states
+#[derive(Component, Clone)]
 pub enum MenuButtonAction {
     /// Start a new game session
     NewGame,
@@ -315,13 +387,6 @@ fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
         });
 }
 
-/// Cleans up all cards in the game
-fn cleanup_cards(mut commands: Commands, cards: Query<Entity, With<Card>>) {
-    for card in cards.iter() {
-        commands.entity(card).despawn_recursive();
-    }
-}
-
 /// Handles pause menu button interactions and triggers appropriate actions
 fn pause_menu_action(
     mut interaction_query: Query<
@@ -403,5 +468,266 @@ fn cleanup_game(
     // Clean up game camera
     for camera in game_cameras.iter() {
         commands.entity(camera).despawn_recursive();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bevy::window::{PrimaryWindow, Window, WindowResolution};
+
+    fn setup_test_app() -> App {
+        let mut app = App::new();
+        app.add_plugins((
+            MinimalPlugins,
+            bevy::input::InputPlugin,
+            bevy::ui::UiPlugin::default(),
+            bevy::text::TextPlugin::default(),
+        ))
+        .init_state::<GameState>();
+
+        // Manually spawn a window entity for testing
+        app.world_mut().spawn((
+            Window {
+                resolution: WindowResolution::new(800.0, 600.0),
+                ..default()
+            },
+            PrimaryWindow,
+        ));
+
+        // Add menu plugin to set up all menu systems
+        app.add_plugins(MenuPlugin);
+
+        // Run startup systems
+        app.update();
+
+        app
+    }
+
+    // Mock test systems for button interactions
+    #[cfg(test)]
+
+    fn mock_button_system(mut query: Query<(&Interaction, &mut BackgroundColor), With<Button>>) {
+        for (interaction, mut color) in query.iter_mut() {
+            match *interaction {
+                Interaction::Pressed => {
+                    *color = BackgroundColor(PRESSED_BUTTON);
+                }
+                Interaction::Hovered => {
+                    *color = BackgroundColor(HOVERED_BUTTON);
+                }
+                Interaction::None => {
+                    *color = BackgroundColor(NORMAL_BUTTON);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_initial_state() {
+        let mut app = setup_test_app();
+        app.update();
+
+        let state = app.world().resource::<State<GameState>>();
+        assert_eq!(*state, GameState::MainMenu);
+    }
+
+    #[test]
+    fn test_main_menu_setup() {
+        let mut app = setup_test_app();
+        app.update();
+
+        // Check menu UI exists
+        let menu_count = {
+            let world = app.world_mut();
+            world
+                .query_filtered::<Entity, (With<Button>, With<MenuItem>)>()
+                .iter(&world)
+                .count()
+        };
+        assert!(menu_count > 0);
+    }
+
+    #[test]
+    fn test_new_game_transition() {
+        let mut app = setup_test_app();
+        app.update();
+
+        // Find the New Game button
+        let new_game_button = {
+            let world = app.world_mut();
+            let mut query = world
+                .query_filtered::<(Entity, &MenuButtonAction), (With<Button>, With<MenuItem>)>();
+            query
+                .iter(world)
+                .find(|(_, action)| matches!(**action, MenuButtonAction::NewGame))
+                .map(|(entity, _)| entity)
+                .expect("No New Game button found")
+        };
+
+        // Simulate clicking "New Game" button
+        app.world_mut()
+            .entity_mut(new_game_button)
+            .insert(Interaction::Pressed);
+        app.update();
+
+        // Should transition to Loading
+        let state = app.world().resource::<State<GameState>>();
+        assert_eq!(*state.get(), GameState::Loading);
+
+        // Update again to let the loading system run
+        app.update();
+
+        // Should transition to InGame
+        let state = app.world().resource::<State<GameState>>();
+        assert_eq!(*state.get(), GameState::InGame);
+    }
+
+    #[test]
+    fn test_pause_menu() {
+        let mut app = setup_test_app();
+
+        // Start game
+        {
+            let world = app.world_mut();
+            world
+                .resource_mut::<NextState<GameState>>()
+                .set(GameState::InGame);
+        }
+        app.update();
+
+        // Press escape to pause
+        {
+            let world = app.world_mut();
+            world
+                .resource_mut::<ButtonInput<KeyCode>>()
+                .press(KeyCode::Escape);
+        }
+        app.update();
+
+        // Check state changed to paused
+        let state = app.world().resource::<State<GameState>>();
+        assert_eq!(*state, GameState::PausedGame);
+
+        // Check pause menu UI exists
+        let menu_count = {
+            let world = app.world_mut();
+            world
+                .query_filtered::<Entity, (With<Button>, With<MenuItem>)>()
+                .iter(&world)
+                .count()
+        };
+        assert!(menu_count > 0);
+
+        // Press escape again to unpause
+        {
+            let world = app.world_mut();
+            world
+                .resource_mut::<ButtonInput<KeyCode>>()
+                .press(KeyCode::Escape);
+        }
+        app.update();
+
+        // Check returned to game state
+        let state = app.world().resource::<State<GameState>>();
+        assert_eq!(*state, GameState::InGame);
+    }
+
+    #[test]
+    fn test_cleanup() {
+        let mut app = setup_test_app();
+
+        // Start game then pause
+        {
+            let world = app.world_mut();
+            world
+                .resource_mut::<NextState<GameState>>()
+                .set(GameState::InGame);
+        }
+        app.update();
+        {
+            let world = app.world_mut();
+            world
+                .resource_mut::<ButtonInput<KeyCode>>()
+                .press(KeyCode::Escape);
+        }
+        app.update();
+
+        // Check menu exists
+        let menu_count = {
+            let world = app.world_mut();
+            world
+                .query_filtered::<Entity, With<MenuItem>>()
+                .iter(&world)
+                .count()
+        };
+        assert!(menu_count > 0);
+
+        // Unpause
+        {
+            let world = app.world_mut();
+            world
+                .resource_mut::<ButtonInput<KeyCode>>()
+                .press(KeyCode::Escape);
+        }
+        app.update();
+
+        // Check menu cleaned up
+        let menu_count = {
+            let world = app.world_mut();
+            world
+                .query_filtered::<Entity, With<MenuItem>>()
+                .iter(&world)
+                .count()
+        };
+        assert_eq!(menu_count, 0);
+    }
+
+    #[test]
+    fn test_button_interactions() {
+        let mut app = setup_test_app();
+
+        // Add our mock button system
+        app.add_systems(Update, mock_button_system);
+        app.update();
+
+        // Store the button entity and then modify its interaction state
+        let button_entity = {
+            let world = app.world_mut();
+            let mut query = world.query_filtered::<Entity, (With<Button>, With<MenuItem>)>();
+            query.iter(world).next().expect("No menu buttons found")
+        };
+
+        // Set to hover state
+        app.world_mut()
+            .entity_mut(button_entity)
+            .insert(Interaction::Hovered);
+        app.update();
+
+        // Check hover color
+        let has_hovered_button = {
+            let world = app.world_mut();
+            let mut query = world.query_filtered::<&BackgroundColor, With<Button>>();
+            query
+                .iter(world)
+                .any(|color| *color == BackgroundColor(HOVERED_BUTTON))
+        };
+        assert!(has_hovered_button, "No button with hover color found");
+
+        // Set to pressed state
+        app.world_mut()
+            .entity_mut(button_entity)
+            .insert(Interaction::Pressed);
+        app.update();
+
+        // Check pressed color
+        let has_pressed_button = {
+            let world = app.world_mut();
+            let mut query = world.query_filtered::<&BackgroundColor, With<Button>>();
+            query
+                .iter(world)
+                .any(|color| *color == BackgroundColor(PRESSED_BUTTON))
+        };
+        assert!(has_pressed_button, "No button with pressed color found");
     }
 }

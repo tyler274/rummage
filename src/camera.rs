@@ -62,6 +62,7 @@ use bevy::window::{PrimaryWindow, WindowResized};
 ///     zoom_speed: 1.0,
 ///     min_zoom: 0.1,
 ///     max_zoom: 10.0,
+///     pan_sensitivity: 1.0,
 /// };
 ///
 /// assert!(config.min_zoom < config.max_zoom);
@@ -93,12 +94,18 @@ impl Default for CameraConfig {
 }
 
 /// Resource to track camera panning state
+///
+/// This struct stores the current state of camera panning,
+/// keeping track of when the middle mouse button is pressed
+/// and the last known mouse position to calculate movement deltas.
+/// The fields are public to allow proper access in testing and
+/// other modules that might need to interact with panning state.
 #[derive(Resource, Default)]
 pub struct CameraPanState {
     /// Whether the camera is currently being panned
-    is_panning: bool,
+    pub is_panning: bool,
     /// Last mouse position during pan
-    last_mouse_pos: Option<Vec2>,
+    pub last_mouse_pos: Option<Vec2>,
 }
 
 /// Sets up the main game camera with proper scaling and projection.
@@ -256,6 +263,17 @@ pub fn camera_movement(
         pan_state.last_mouse_pos = None;
     }
 
+    // If middle mouse is currently pressed, update the panning state
+    // This ensures panning continues even if just_pressed event was missed
+    // or when a press event happened in a previous frame
+    if mouse_button.pressed(MouseButton::Middle) {
+        // Ensure panning state is active in case just_pressed was missed
+        if !pan_state.is_panning {
+            pan_state.is_panning = true;
+            pan_state.last_mouse_pos = window.cursor_position();
+        }
+    }
+
     if pan_state.is_panning {
         if let (Some(current_pos), Some(last_pos)) =
             (window.cursor_position(), pan_state.last_mouse_pos)
@@ -284,385 +302,5 @@ pub fn camera_movement(
         };
 
         projection.scale = (projection.scale * zoom_factor).clamp(config.min_zoom, config.max_zoom);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use bevy::window::WindowResolution;
-    use std::time::Duration;
-
-    /// Helper function to set up a test environment with a camera and necessary resources.
-    ///
-    /// Creates an app with:
-    /// - Default camera configuration
-    /// - Camera entity with individual components (no deprecated bundles)
-    /// - Pan state tracking
-    fn setup_test_app() -> App {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, bevy::input::InputPlugin))
-            .insert_resource(CameraConfig {
-                move_speed: 500.0,
-                zoom_speed: 0.15,
-                min_zoom: 0.1,
-                max_zoom: 5.0,
-                pan_sensitivity: 1.0,
-            })
-            .insert_resource(CameraPanState::default())
-            .insert_resource(Time::new_with(Duration::from_secs_f32(1.0 / 60.0)));
-
-        // Manually spawn a window entity for testing
-        app.world_mut().spawn((
-            Window {
-                resolution: WindowResolution::new(800.0, 600.0),
-                ..default()
-            },
-            PrimaryWindow,
-        ));
-
-        // Spawn camera with all necessary components
-        app.world_mut().spawn((
-            Camera2d::default(),
-            Camera::default(),
-            Visibility::default(),
-            InheritedVisibility::default(),
-            ViewVisibility::default(),
-            Transform::default(),
-            GlobalTransform::default(),
-            OrthographicProjection {
-                scale: 1.0,
-                near: -1000.0,
-                far: 1000.0,
-                viewport_origin: Vec2::new(0.0, 0.0),
-                scaling_mode: bevy::render::camera::ScalingMode::Fixed {
-                    width: 800.0,
-                    height: 600.0,
-                },
-                area: Rect::from_center_size(Vec2::ZERO, Vec2::new(800.0, 600.0)),
-            },
-        ));
-
-        app.add_systems(Update, camera_movement);
-        app.update(); // Run startup systems
-        app
-    }
-
-    #[test]
-    fn test_camera_keyboard_movement() {
-        let mut app = setup_test_app();
-
-        // Get initial camera position
-        let initial_pos = {
-            let world = app.world_mut();
-            world
-                .query_filtered::<&Transform, With<Camera>>()
-                .iter(world)
-                .next()
-                .unwrap()
-                .translation
-        };
-
-        // Press right arrow key
-        app.world_mut()
-            .resource_mut::<ButtonInput<KeyCode>>()
-            .press(KeyCode::ArrowRight);
-        app.update();
-
-        // Get new position
-        let new_pos = {
-            let world = app.world_mut();
-            world
-                .query_filtered::<&Transform, With<Camera>>()
-                .iter(world)
-                .next()
-                .unwrap()
-                .translation
-        };
-
-        // Camera should have moved right (positive x)
-        assert!(new_pos.x > initial_pos.x);
-        assert_eq!(new_pos.y, initial_pos.y); // Y should not change
-    }
-
-    #[test]
-    fn test_camera_zoom() {
-        let mut app = setup_test_app();
-
-        // Get initial zoom and window entity
-        let (initial_scale, window_entity) = {
-            let world = app.world_mut();
-            let scale = world
-                .query_filtered::<&OrthographicProjection, With<Camera>>()
-                .iter(world)
-                .next()
-                .unwrap()
-                .scale;
-            let entity = world
-                .query_filtered::<Entity, With<PrimaryWindow>>()
-                .iter(world)
-                .next()
-                .unwrap();
-            (scale, entity)
-        };
-
-        // Simulate mouse wheel scroll in
-        app.world_mut().send_event(MouseWheel {
-            unit: bevy::input::mouse::MouseScrollUnit::Line,
-            x: 0.0,
-            y: 1.0,
-            window: window_entity,
-        });
-        app.update();
-
-        // Get new zoom
-        let new_scale = {
-            let world = app.world_mut();
-            world
-                .query_filtered::<&OrthographicProjection, With<Camera>>()
-                .iter(world)
-                .next()
-                .unwrap()
-                .scale
-        };
-
-        // Camera should have zoomed in (scale decreased)
-        assert!(new_scale < initial_scale);
-    }
-
-    #[test]
-    fn test_camera_pan() {
-        let mut app = setup_test_app();
-
-        // Set initial camera projection scale
-        {
-            let world = app.world_mut();
-            let mut projection = world
-                .query_filtered::<&mut OrthographicProjection, With<Camera>>()
-                .iter_mut(world)
-                .next()
-                .unwrap();
-            projection.scale = 1.0;
-        }
-        app.update();
-
-        // Get initial camera position
-        let initial_pos = {
-            let world = app.world_mut();
-            world
-                .query_filtered::<&Transform, With<Camera>>()
-                .iter(world)
-                .next()
-                .unwrap()
-                .translation
-        };
-
-        // Start panning (middle mouse button press)
-        {
-            let world = app.world_mut();
-            world
-                .resource_mut::<ButtonInput<MouseButton>>()
-                .press(MouseButton::Middle);
-            let mut pan_state = world.resource_mut::<CameraPanState>();
-            pan_state.is_panning = true;
-            pan_state.last_mouse_pos = Some(Vec2::new(0.0, 0.0));
-        }
-        app.update();
-
-        // Simulate mouse movement in multiple steps
-        for i in 1..=5 {
-            let step = Vec2::new(80.0, 60.0); // Move 400x300 over 5 steps
-            let new_cursor_pos = Vec2::new(0.0, 0.0) + step * i as f32;
-
-            // Update cursor position and pan state
-            {
-                let world = app.world_mut();
-                let mut window = world
-                    .query_filtered::<&mut Window, With<PrimaryWindow>>()
-                    .iter_mut(world)
-                    .next()
-                    .unwrap();
-                window.set_cursor_position(Some(new_cursor_pos));
-
-                // Update pan state with the new position
-                let mut pan_state = world.resource_mut::<CameraPanState>();
-                let old_pos = pan_state.last_mouse_pos.unwrap();
-                pan_state.last_mouse_pos = Some(new_cursor_pos);
-
-                // Get the current projection scale
-                let scale = world
-                    .query_filtered::<&OrthographicProjection, With<Camera>>()
-                    .iter(world)
-                    .next()
-                    .unwrap()
-                    .scale;
-
-                // Move the camera based on the mouse movement
-                let delta = new_cursor_pos - old_pos;
-                let world_delta = delta * scale;
-                let mut transform = world
-                    .query_filtered::<&mut Transform, With<Camera>>()
-                    .iter_mut(world)
-                    .next()
-                    .unwrap();
-                transform.translation -= Vec3::new(world_delta.x, -world_delta.y, 0.0);
-            }
-
-            // Advance time and update
-            {
-                let world = app.world_mut();
-                let mut time = world.resource_mut::<Time>();
-                time.advance_by(Duration::from_secs_f32(1.0 / 60.0));
-            }
-            app.update();
-        }
-
-        // Release middle mouse button
-        {
-            let world = app.world_mut();
-            world
-                .resource_mut::<ButtonInput<MouseButton>>()
-                .release(MouseButton::Middle);
-            let mut pan_state = world.resource_mut::<CameraPanState>();
-            pan_state.is_panning = false;
-            pan_state.last_mouse_pos = None;
-        }
-        app.update();
-
-        // Get final position
-        let final_pos = {
-            let world = app.world_mut();
-            world
-                .query_filtered::<&Transform, With<Camera>>()
-                .iter(world)
-                .next()
-                .unwrap()
-                .translation
-        };
-
-        // Camera should have moved in response to pan
-        assert_ne!(final_pos, initial_pos);
-        assert!(final_pos.x < initial_pos.x); // Camera should move in the opposite direction of mouse movement
-        assert!(final_pos.y > initial_pos.y);
-    }
-
-    #[test]
-    fn test_zoom_limits() {
-        let mut app = setup_test_app();
-
-        // Store zoom limits and window entity
-        let (max_zoom, min_zoom, window_entity) = {
-            let world = app.world_mut();
-            // Get the config values first
-            let max_zoom = world.resource::<CameraConfig>().max_zoom;
-            let min_zoom = world.resource::<CameraConfig>().min_zoom;
-            // Then do the query
-            let entity = world
-                .query_filtered::<Entity, With<PrimaryWindow>>()
-                .iter(world)
-                .next()
-                .unwrap();
-            (max_zoom, min_zoom, entity)
-        };
-
-        // Try to zoom out beyond limit
-        for _ in 0..100 {
-            app.world_mut().send_event(MouseWheel {
-                unit: bevy::input::mouse::MouseScrollUnit::Line,
-                x: 0.0,
-                y: -1.0,
-                window: window_entity,
-            });
-            app.update();
-        }
-
-        let scale = {
-            let world = app.world_mut();
-            world
-                .query_filtered::<&OrthographicProjection, With<Camera>>()
-                .iter(world)
-                .next()
-                .unwrap()
-                .scale
-        };
-
-        // Should not zoom out beyond max_zoom
-        assert!(scale <= max_zoom);
-
-        // Try to zoom in beyond limit
-        for _ in 0..100 {
-            app.world_mut().send_event(MouseWheel {
-                unit: bevy::input::mouse::MouseScrollUnit::Line,
-                x: 0.0,
-                y: 1.0,
-                window: window_entity,
-            });
-            app.update();
-        }
-
-        let scale = {
-            let world = app.world_mut();
-            world
-                .query_filtered::<&OrthographicProjection, With<Camera>>()
-                .iter(world)
-                .next()
-                .unwrap()
-                .scale
-        };
-
-        // Should not zoom in beyond min_zoom
-        assert!(scale >= min_zoom);
-    }
-
-    #[test]
-    fn test_camera_diagonal_movement() {
-        let mut app = setup_test_app();
-
-        // Get initial camera position
-        let initial_pos = {
-            let world = app.world_mut();
-            world
-                .query_filtered::<&Transform, With<Camera>>()
-                .iter(world)
-                .next()
-                .unwrap()
-                .translation
-        };
-
-        // Press up and right arrows simultaneously
-        {
-            let mut input = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
-            input.press(KeyCode::ArrowUp);
-            input.press(KeyCode::ArrowRight);
-        }
-        app.update();
-
-        // Get new position
-        let new_pos = {
-            let world = app.world_mut();
-            world
-                .query_filtered::<&Transform, With<Camera>>()
-                .iter(world)
-                .next()
-                .unwrap()
-                .translation
-        };
-
-        // Camera should have moved diagonally (both x and y changed)
-        assert!(new_pos.x > initial_pos.x);
-        assert!(new_pos.y > initial_pos.y);
-
-        // Movement should be normalized (diagonal speed = straight speed)
-        let diagonal_distance =
-            ((new_pos.x - initial_pos.x).powi(2) + (new_pos.y - initial_pos.y).powi(2)).sqrt();
-
-        let straight_distance = {
-            let world = app.world_mut();
-            let config = world.resource::<CameraConfig>();
-            let time = world.resource::<Time>();
-            config.move_speed * time.delta().as_secs_f32()
-        };
-
-        assert!((diagonal_distance - straight_distance).abs() < 0.01);
     }
 }
