@@ -15,7 +15,10 @@ impl Plugin for MenuPlugin {
         app.init_state::<GameMenuState>()
             .insert_resource(GameMenuState::MainMenu)
             // Main Menu state
-            .add_systems(OnEnter(GameMenuState::MainMenu), setup_main_menu)
+            .add_systems(
+                OnEnter(GameMenuState::MainMenu),
+                (cleanup_game, cleanup_menu_camera, setup_main_menu).chain(),
+            )
             .add_systems(
                 OnExit(GameMenuState::MainMenu),
                 (cleanup_main_menu, cleanup_menu_camera).chain(),
@@ -44,12 +47,7 @@ impl Plugin for MenuPlugin {
                 Update,
                 pause_menu_action.run_if(in_state(GameMenuState::PausedGame)),
             )
-            .add_systems(Update, handle_pause_input)
-            // Add cleanup when entering main menu from game
-            .add_systems(
-                OnEnter(GameMenuState::MainMenu),
-                (cleanup_game, cleanup_menu_camera, setup_main_menu).chain(),
-            );
+            .add_systems(Update, handle_pause_input);
     }
 }
 
