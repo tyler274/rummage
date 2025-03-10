@@ -113,7 +113,6 @@ pub struct TurnEndEvent {
 /// System to handle the start of a new turn
 pub fn turn_start_system(
     mut commands: Commands,
-    game_state: Res<GameMenuState>,
     phase: Res<Phase>,
     player_query: Query<&Player>,
     mut turn_start_events: EventWriter<TurnStartEvent>,
@@ -137,7 +136,6 @@ pub fn turn_start_system(
 /// System to handle the end of a turn
 pub fn turn_end_system(
     mut commands: Commands,
-    game_state: Res<GameMenuState>,
     phase: Res<Phase>,
     player_query: Query<&Player>,
     mut turn_end_events: EventWriter<TurnEndEvent>,
@@ -161,7 +159,6 @@ pub fn turn_end_system(
 /// System to handle untapping permanents
 pub fn untap_system(
     mut commands: Commands,
-    game_state: Res<GameMenuState>,
     phase: Res<Phase>,
     turn_manager: Res<TurnManager>,
     // We would need queries for permanents to untap them
@@ -184,6 +181,6 @@ pub fn register_turn_systems(app: &mut App) {
         .add_systems(
             Update,
             (turn_start_system, turn_end_system, untap_system)
-                .run_if(crate::game_engine::game_state_condition),
+                .run_if(in_state(GameMenuState::InGame)),
         );
 }
