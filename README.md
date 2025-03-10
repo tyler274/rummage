@@ -3,6 +3,7 @@
 ![Magic: The Gathering](https://img.shields.io/badge/MTG-Commander-green)
 ![Bevy](https://img.shields.io/badge/Bevy-0.15.3-blue)
 ![Rust](https://img.shields.io/badge/Rust-2024-orange)
+[![Patreon](https://img.shields.io/badge/Patreon-Support-FF424D?logo=patreon)](https://www.patreon.com/c/DabneyEngineeringIncorporated)
 
 Rummage is a Magic: The Gathering game engine built with Bevy, focusing on the Commander format.
 
