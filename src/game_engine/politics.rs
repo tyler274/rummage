@@ -442,7 +442,7 @@ pub fn voting_system(
 
 impl PoliticsSystem {
     /// Check if a vote is decisive (has a clear winner that cannot be changed)
-    fn is_vote_decisive(&self) -> bool {
+    pub fn is_vote_decisive(&self) -> bool {
         if let Some(vote) = &self.active_vote {
             // Count current votes
             let mut vote_counts: HashMap<&VoteChoice, u32> = HashMap::new();
@@ -487,7 +487,7 @@ impl PoliticsSystem {
     }
 
     /// Count votes and determine the winner
-    fn tally_votes(&self) -> Option<(VoteChoice, u32)> {
+    pub fn tally_votes(&self) -> Option<(VoteChoice, u32)> {
         if self.votes_cast.is_empty() {
             return None;
         }

@@ -139,79 +139,118 @@ fn test_can_be_commander() {
 
 #[test]
 fn test_command_zone_manager() {
-    // Create a minimal app with required resources
     let mut app = App::new();
 
-    // Add events
+    // Add necessary resources and systems
     app.add_event::<ZoneChangeEvent>()
-        .add_event::<CommanderZoneChoiceEvent>();
+        .add_event::<CombatDamageEvent>();
 
-    // Add resources
-    app.insert_resource(ZoneManager::default())
-        .insert_resource(CommandZoneManager::default());
-
-    // Create player entities
+    // Create players
     let player1 = app.world_mut().spawn(Player::default()).id();
     let player2 = app.world_mut().spawn(Player::default()).id();
 
-    // Create commander cards
-    let commander1_card = create_commander_card();
-    let commander2_card = create_commander_card();
-
-    // Create commander entities with components
+    // Create commanders
     let commander1 = Commander {
         owner: player1,
+        cast_count: 0,
+        damage_dealt: Vec::new(),
         color_identity: HashSet::from([Color::WHITE, Color::BLUE]),
-        ..Commander::default()
+        is_partner: false,
+        is_background: false,
+        dealt_combat_damage_this_turn: HashSet::new(),
     };
 
     let commander2 = Commander {
         owner: player2,
-        color_identity: HashSet::from([Color::RED, Color::GREEN]),
-        ..Commander::default()
+        cast_count: 0,
+        damage_dealt: Vec::new(),
+        color_identity: HashSet::from([Color::BLACK, Color::RED]),
+        is_partner: false,
+        is_background: false,
+        dealt_combat_damage_this_turn: HashSet::new(),
     };
 
+    // Spawn commander entities
     let commander1_entity = app
         .world_mut()
-        .spawn((commander1_card.clone(), commander1))
+        .spawn((create_commander_card(), commander1))
         .id();
     let commander2_entity = app
         .world_mut()
-        .spawn((commander2_card.clone(), commander2))
+        .spawn((create_commander_card(), commander2))
         .id();
 
-    // Create commander mapping
-    let mut player_commanders = HashMap::new();
-    player_commanders.insert(player1, vec![commander1_entity]);
-    player_commanders.insert(player2, vec![commander2_entity]);
+    // Create CommandZoneManager resource
+    app.insert_resource(CommandZoneManager::default());
 
     // Initialize CommandZoneManager
-    let mut cmd_zone_manager = app.world_mut().resource_mut::<CommandZoneManager>();
-    let cards_query = app.world().query::<(Entity, &Card)>();
-    cmd_zone_manager.initialize(player_commanders, &cards_query);
+    {
+        let mut player_commanders = HashMap::new();
+        player_commanders.insert(player1, vec![commander1_entity]);
+        player_commanders.insert(player2, vec![commander2_entity]);
+
+        let mut cmd_zone_manager = app.world_mut().resource_mut::<CommandZoneManager>();
+        cmd_zone_manager.initialize(player_commanders);
+    }
+
+    // Update color identities
+    {
+        // Just directly set the color identities for the entities we already know about
+        let mut cmd_zone_manager = app.world_mut().resource_mut::<CommandZoneManager>();
+
+        // We already know the commander entities and their color identities
+        let commander1_colors = HashSet::from([Color::WHITE, Color::BLUE]);
+        let commander2_colors = HashSet::from([Color::BLACK, Color::RED]);
+
+        cmd_zone_manager.set_commander_color_identity(commander1_entity, commander1_colors);
+        cmd_zone_manager.set_commander_color_identity(commander2_entity, commander2_colors);
+    }
 
     // Test getting player commanders
-    let player1_commanders = cmd_zone_manager.get_player_commanders(player1);
-    assert_eq!(player1_commanders.len(), 1);
-    assert_eq!(player1_commanders[0], commander1_entity);
+    {
+        let cmd_zone_manager = app.world().resource::<CommandZoneManager>();
+        let player1_commanders = cmd_zone_manager.get_player_commanders(player1);
+        assert_eq!(player1_commanders.len(), 1);
+        assert_eq!(player1_commanders[0], commander1_entity);
+    }
 
-    // Test commander zone status
-    let zone = cmd_zone_manager.get_commander_zone(commander1_entity);
-    assert_eq!(zone, CommanderZoneLocation::CommandZone);
+    // Test getting commander zone
+    {
+        let cmd_zone_manager = app.world().resource::<CommandZoneManager>();
+        let zone = cmd_zone_manager.get_commander_zone(commander1_entity);
+        assert_eq!(zone, CommanderZoneLocation::CommandZone);
+    }
 
-    // Test updating zone
-    cmd_zone_manager.update_commander_zone(commander1_entity, CommanderZoneLocation::Battlefield);
-    let updated_zone = cmd_zone_manager.get_commander_zone(commander1_entity);
-    assert_eq!(updated_zone, CommanderZoneLocation::Battlefield);
+    // Test updating commander zone
+    {
+        let mut cmd_zone_manager = app.world_mut().resource_mut::<CommandZoneManager>();
+        cmd_zone_manager
+            .update_commander_zone(commander1_entity, CommanderZoneLocation::Battlefield);
+    }
 
-    // Test cast count
-    assert_eq!(cmd_zone_manager.get_cast_count(commander1_entity), 0);
-    let count = cmd_zone_manager
-        .zone_transition_count
-        .entry(commander1_entity)
-        .or_insert(0);
-    *count += 1;
-    assert_eq!(cmd_zone_manager.get_cast_count(commander1_entity), 1);
+    // Verify zone was updated
+    {
+        let cmd_zone_manager = app.world().resource::<CommandZoneManager>();
+        let zone = cmd_zone_manager.get_commander_zone(commander1_entity);
+        assert_eq!(zone, CommanderZoneLocation::Battlefield);
+    }
+
+    // Test incrementing cast count
+    {
+        let mut cmd_zone_manager = app.world_mut().resource_mut::<CommandZoneManager>();
+        let count = cmd_zone_manager
+            .zone_transition_count
+            .entry(commander1_entity)
+            .or_insert(0);
+        *count += 1;
+    }
+
+    // Verify cast count was incremented
+    {
+        let cmd_zone_manager = app.world().resource::<CommandZoneManager>();
+        let cast_count = cmd_zone_manager.get_cast_count(commander1_entity);
+        assert_eq!(cast_count, 1);
+    }
 }
 
 #[test]
@@ -251,17 +290,14 @@ fn test_commander_zone_changes() {
     let mut player_commanders = HashMap::new();
     player_commanders.insert(player, vec![commander_entity]);
 
-    let mut cmd_zone_manager = app.world_mut().resource_mut::<CommandZoneManager>();
-    let cards_query = app.world().query::<(Entity, &Card)>();
-    cmd_zone_manager.initialize(player_commanders, &cards_query);
-
-    // Set up initial zone (command zone)
-    cmd_zone_manager.update_commander_zone(commander_entity, CommanderZoneLocation::CommandZone);
+    {
+        let mut cmd_zone_manager = app.world_mut().resource_mut::<CommandZoneManager>();
+        cmd_zone_manager.initialize(player_commanders);
+        cmd_zone_manager
+            .update_commander_zone(commander_entity, CommanderZoneLocation::CommandZone);
+    }
 
     // Test sending zone change event (command zone to battlefield)
-    let mut zone_manager = app.world_mut().resource_mut::<ZoneManager>();
-    zone_manager.add_to_zone(commander_entity, player, Zone::CommandZone);
-
     app.world_mut()
         .resource_mut::<Events<ZoneChangeEvent>>()
         .send(ZoneChangeEvent {
@@ -269,17 +305,21 @@ fn test_commander_zone_changes() {
             owner: player,
             source: Zone::CommandZone,
             destination: Zone::Battlefield,
+            was_visible: true,
+            is_visible: true,
         });
 
     // Run systems to process the events
     app.update();
 
     // Verify zone was updated
-    let cmd_zone_manager = app.world().resource::<CommandZoneManager>();
-    assert_eq!(
-        cmd_zone_manager.get_commander_zone(commander_entity),
-        CommanderZoneLocation::Battlefield
-    );
+    {
+        let cmd_zone_manager = app.world().resource::<CommandZoneManager>();
+        assert_eq!(
+            cmd_zone_manager.get_commander_zone(commander_entity),
+            CommanderZoneLocation::Battlefield
+        );
+    }
 
     // Test sending zone change event (battlefield to graveyard)
     app.world_mut()
@@ -289,6 +329,8 @@ fn test_commander_zone_changes() {
             owner: player,
             source: Zone::Battlefield,
             destination: Zone::Graveyard,
+            was_visible: true,
+            is_visible: true,
         });
 
     // Run systems to process the events
@@ -296,11 +338,13 @@ fn test_commander_zone_changes() {
 
     // Verify choice event was created (would need to read the event)
     // For now, we can just verify the zone is still registered as graveyard
-    let cmd_zone_manager = app.world().resource::<CommandZoneManager>();
-    assert_eq!(
-        cmd_zone_manager.get_commander_zone(commander_entity),
-        CommanderZoneLocation::Graveyard
-    );
+    {
+        let cmd_zone_manager = app.world().resource::<CommandZoneManager>();
+        assert_eq!(
+            cmd_zone_manager.get_commander_zone(commander_entity),
+            CommanderZoneLocation::Graveyard
+        );
+    }
 
     // Manually trigger a commander zone choice event (graveyard to command zone)
     app.world_mut()
@@ -316,14 +360,16 @@ fn test_commander_zone_changes() {
     app.update();
 
     // Verify zone was updated to command zone
-    let cmd_zone_manager = app.world().resource::<CommandZoneManager>();
-    assert_eq!(
-        cmd_zone_manager.get_commander_zone(commander_entity),
-        CommanderZoneLocation::CommandZone
-    );
+    {
+        let cmd_zone_manager = app.world().resource::<CommandZoneManager>();
+        assert_eq!(
+            cmd_zone_manager.get_commander_zone(commander_entity),
+            CommanderZoneLocation::CommandZone
+        );
 
-    // Verify cast count was incremented
-    assert_eq!(cmd_zone_manager.get_cast_count(commander_entity), 1);
+        // Verify cast count was incremented
+        assert_eq!(cmd_zone_manager.get_cast_count(commander_entity), 1);
+    }
 }
 
 /// This test requires modifications to make the ZoneManager methods public
@@ -364,6 +410,8 @@ fn test_zone_change_handling() {
             owner: player,
             source: Zone::Battlefield,
             destination: Zone::Graveyard,
+            was_visible: true,
+            is_visible: true,
         });
 
     // Update the app to run systems

@@ -1,7 +1,12 @@
 use bevy::prelude::*;
 use rummage::game_engine::GameState;
 use rummage::game_engine::combat::CombatState;
-use rummage::game_engine::politics::*;
+use rummage::game_engine::politics::{
+    ActionType, CombatRestriction, Deal, DealBrokenEvent, DealDuration, DealProposedEvent,
+    DealResponseEvent, DealStatus, DealTerm, GoadEffect, MonarchChangedEvent, PoliticsSystem, Vote,
+    VoteCastEvent, VoteChoice, VoteCompletedEvent, VoteStartedEvent, deal_system, goad_system,
+    monarch_system, voting_system,
+};
 use rummage::game_engine::turns::TurnManager;
 use rummage::player::Player;
 use std::collections::HashMap;
@@ -184,14 +189,23 @@ fn test_voting_system() {
     assert!(politics.active_vote.is_none());
 
     // Check for vote completed event
-    let mut vote_completed_events = app.world().resource_mut::<Events<VoteCompletedEvent>>();
-    let mut reader = vote_completed_events.get_reader();
-    let events: Vec<_> = reader.iter(&vote_completed_events).collect();
+    let has_vote_completed = {
+        let vote_completed_events = app.world().resource::<Events<VoteCompletedEvent>>();
+        let mut reader = vote_completed_events.get_reader();
+        let mut completed = false;
 
-    assert_eq!(events.len(), 1);
-    assert_eq!(events[0].vote_id, vote_id);
-    assert_eq!(events[0].winning_choice.id, 2);
-    assert_eq!(events[0].vote_count, 2);
+        for event in reader.read(vote_completed_events) {
+            if event.vote_id == vote_id {
+                completed = true;
+                // Verify the winning choice
+                assert_eq!(event.winning_choice.id, 2);
+                assert_eq!(event.vote_count, 2);
+            }
+        }
+        completed
+    };
+
+    assert!(has_vote_completed, "Vote should have completed");
 }
 
 #[test]

@@ -109,11 +109,7 @@ pub struct CommandZoneManager {
 
 impl CommandZoneManager {
     /// Initialize with a list of players and their commanders
-    pub fn initialize(
-        &mut self,
-        player_commanders: HashMap<Entity, Vec<Entity>>,
-        cards: &Query<(Entity, &Card)>,
-    ) {
+    pub fn initialize(&mut self, player_commanders: HashMap<Entity, Vec<Entity>>) {
         self.player_commanders = player_commanders.clone();
 
         // Initialize all commanders as being in the command zone
@@ -122,14 +118,17 @@ impl CommandZoneManager {
                 self.commander_zone_status
                     .insert(commander, CommanderZoneLocation::CommandZone);
                 self.zone_transition_count.insert(commander, 0);
-
-                // Calculate and store color identity
-                if let Ok((_, card)) = cards.get(commander) {
-                    self.commander_colors
-                        .insert(commander, CommanderRules::extract_color_identity(card));
-                }
             }
         }
+    }
+
+    /// Set a commander's color identity
+    pub fn set_commander_color_identity(
+        &mut self,
+        commander: Entity,
+        color_identity: HashSet<Color>,
+    ) {
+        self.commander_colors.insert(commander, color_identity);
     }
 
     /// Get a player's commanders
@@ -341,28 +340,26 @@ pub fn record_commander_damage(
 ) {
     for event in damage_events.read() {
         // Only process commander combat damage
-        if !event.source_is_commander {
+        if !event.source_is_commander || !event.is_combat_damage || event.damage == 0 {
             continue;
         }
 
         if let Ok(mut commander) = commander_query.get_mut(event.source) {
-            if event.is_combat_damage && event.damage > 0 {
-                // Update the commander's damage tracking
-                if let Some(damage_entry) = commander
-                    .damage_dealt
-                    .iter_mut()
-                    .find(|(p, _)| *p == event.target)
-                {
-                    // Update existing damage entry
-                    damage_entry.1 += event.damage;
-                } else {
-                    // Add a new damage entry
-                    commander.damage_dealt.push((event.target, event.damage));
-                }
-
-                // Record that the commander dealt damage to this player this turn
-                commander.dealt_combat_damage_this_turn.insert(event.target);
+            // Update the commander's damage tracking
+            if let Some(damage_entry) = commander
+                .damage_dealt
+                .iter_mut()
+                .find(|(p, _)| *p == event.target)
+            {
+                // Update existing damage entry
+                damage_entry.1 += event.damage;
+            } else {
+                // Add a new damage entry
+                commander.damage_dealt.push((event.target, event.damage));
             }
+
+            // Record that the commander dealt damage to this player this turn
+            commander.dealt_combat_damage_this_turn.insert(event.target);
         }
     }
 }

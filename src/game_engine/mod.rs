@@ -5,11 +5,11 @@ mod actions;
 pub mod combat;
 pub mod commander;
 mod phase;
-mod politics;
+pub mod politics;
 mod priority;
 mod stack;
 pub mod state;
-mod turns;
+pub mod turns;
 pub mod zones;
 
 pub use actions::*;
