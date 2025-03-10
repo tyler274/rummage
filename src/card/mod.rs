@@ -1,9 +1,6 @@
 pub mod hdr;
 
-use bevy::{
-    prelude::*,
-    window::PrimaryWindow,
-};
+use bevy::{prelude::*, window::PrimaryWindow};
 use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
 use std::hash::Hash;
@@ -451,7 +448,10 @@ pub fn format_type_line(types: &CardTypes, card_details: &CardDetails) -> String
     }
 
     // Add enchantment subtypes if applicable
-    if types.contains(CardTypes::ENCHANTMENT) && !types.contains(CardTypes::AURA) && !types.contains(CardTypes::SAGA) {
+    if types.contains(CardTypes::ENCHANTMENT)
+        && !types.contains(CardTypes::AURA)
+        && !types.contains(CardTypes::SAGA)
+    {
         if let CardDetails::Enchantment(enchantment_card) = card_details {
             if let Some(enchantment_type) = &enchantment_card.enchantment_type {
                 type_line.push_str(" — ");
@@ -461,12 +461,13 @@ pub fn format_type_line(types: &CardTypes, card_details: &CardDetails) -> String
     }
 
     // Add artifact subtypes if applicable
-    if types.contains(CardTypes::ARTIFACT) 
-       && !types.contains(CardTypes::EQUIPMENT)
-       && !types.contains(CardTypes::VEHICLE)
-       && !types.contains(CardTypes::FOOD)
-       && !types.contains(CardTypes::CLUE)
-       && !types.contains(CardTypes::TREASURE) {
+    if types.contains(CardTypes::ARTIFACT)
+        && !types.contains(CardTypes::EQUIPMENT)
+        && !types.contains(CardTypes::VEHICLE)
+        && !types.contains(CardTypes::FOOD)
+        && !types.contains(CardTypes::CLUE)
+        && !types.contains(CardTypes::TREASURE)
+    {
         if let CardDetails::Artifact(artifact_card) = card_details {
             if let Some(artifact_type) = &artifact_card.artifact_type {
                 type_line.push_str(" — ");
@@ -499,7 +500,13 @@ pub struct Card {
 }
 
 impl Card {
-    pub fn new(name: &str, cost: Mana, types: CardTypes, details: CardDetails, rules_text: &str) -> Self {
+    pub fn new(
+        name: &str,
+        cost: Mana,
+        types: CardTypes,
+        details: CardDetails,
+        rules_text: &str,
+    ) -> Self {
         Card {
             name: name.to_string(),
             cost,
@@ -612,24 +619,24 @@ impl CreatureType {
     // Infer creature types from card name and rules text
     pub fn infer_from_name_and_text(text: &str, existing_types: Self) -> Self {
         let mut types = existing_types;
-        
+
         if text.contains("Human") || text.contains("human") {
             types |= Self::HUMAN;
         }
-        
+
         // Add other rules as needed
-        
+
         types
     }
-    
+
     pub fn apply_retroactive_types(name: &str, existing_types: Self) -> Self {
         let mut types = existing_types;
-        
+
         // Example: Cards with "Knight" in the name are Knights
         if name.contains("Knight") {
             types |= Self::KNIGHT;
         }
-        
+
         types
     }
 }
@@ -766,5 +773,16 @@ pub fn debug_render_text_positions(
         // Power/Toughness position (bottom right) - yellow dot
         let pt_pos = card_pos + Vec2::new(card_width * 0.35, -card_height * 0.35);
         gizmos.circle_2d(pt_pos, 3.0, Color::srgb(1.0, 1.0, 0.0));
+    }
+}
+
+/// Plugin for card management
+pub struct CardPlugin;
+
+impl Plugin for CardPlugin {
+    fn build(&self, app: &mut App) {
+        app.insert_resource(DebugConfig::default())
+            .add_systems(Update, handle_card_dragging)
+            .add_systems(Update, debug_render_text_positions);
     }
 }
