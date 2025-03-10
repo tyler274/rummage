@@ -27,7 +27,8 @@ pub fn cleanup_menu_camera(mut commands: Commands, menu_cameras: Query<Entity, W
     let count = menu_cameras.iter().count();
     info!("Cleaning up {} menu cameras", count);
     for entity in menu_cameras.iter() {
-        commands.entity(entity).despawn();
+        info!("Despawning menu camera entity: {:?}", entity);
+        commands.entity(entity).despawn_recursive();
     }
 }
 

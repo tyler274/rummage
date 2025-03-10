@@ -18,7 +18,7 @@ use camera::{
     components::GameCamera,
     systems::{camera_movement, handle_window_resize, set_initial_zoom, setup_camera},
 };
-use card::{DebugConfig, debug_render_text_positions, handle_card_dragging};
+use card::DebugConfig;
 use cards::CardsPlugin;
 use drag::DragPlugin;
 use game_engine::GameEnginePlugin;
@@ -42,17 +42,17 @@ impl Plugin for GamePlugin {
             .insert_resource(CameraPanState::default())
             .add_systems(
                 OnEnter(GameMenuState::InGame),
-                (setup_game, set_initial_zoom.after(setup_game)),
+                (
+                    setup_game,
+                    // Only set initial zoom when not coming from pause menu
+                    set_initial_zoom
+                        .run_if(|context: Res<StateTransitionContext>| !context.from_pause_menu)
+                        .after(setup_game),
+                ),
             )
             .add_systems(
                 Update,
-                (
-                    handle_card_dragging,
-                    handle_window_resize,
-                    debug_render_text_positions,
-                    camera_movement,
-                    spawn_card_text,
-                )
+                (handle_window_resize, camera_movement, spawn_card_text)
                     .run_if(in_state(GameMenuState::InGame)),
             );
     }

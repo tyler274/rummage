@@ -7,13 +7,18 @@ pub mod red;
 pub mod white;
 
 use crate::card::{Card, debug_render_text_positions, handle_card_dragging};
+use crate::menu::GameMenuState;
 use bevy::prelude::*;
 
 pub struct CardsPlugin;
 
 impl Plugin for CardsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (handle_card_dragging, debug_render_text_positions));
+        app.add_systems(
+            Update,
+            (handle_card_dragging, debug_render_text_positions)
+                .run_if(in_state(GameMenuState::InGame)),
+        );
     }
 }
 
