@@ -25,7 +25,7 @@ impl Plugin for MenuPlugin {
             // Loading state systems
             .add_systems(
                 OnEnter(GameMenuState::Loading),
-                (cleanup_game, start_game_loading).chain(),
+                (cleanup_game, cleanup_menu_camera, start_game_loading).chain(),
             )
             .add_systems(OnExit(GameMenuState::Loading), finish_loading)
             // Pause menu systems
@@ -37,7 +37,10 @@ impl Plugin for MenuPlugin {
             )
             .add_systems(Update, handle_pause_input)
             // Add cleanup when entering main menu from game
-            .add_systems(OnEnter(GameMenuState::MainMenu), cleanup_game);
+            .add_systems(
+                OnEnter(GameMenuState::MainMenu),
+                (cleanup_game, cleanup_menu_camera),
+            );
     }
 }
 
@@ -49,5 +52,5 @@ fn start_game_loading(mut next_state: ResMut<NextState<GameMenuState>>) {
 
 /// Finishes the game loading process
 fn finish_loading() {
-    // TODO: Implement any necessary cleanup or initialization
+    // TODO: Implement any final loading steps
 }
