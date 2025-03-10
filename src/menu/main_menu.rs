@@ -6,7 +6,14 @@ use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
 /// Sets up the main menu interface with buttons and layout
 pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     // Spawn camera with menu marker
-    commands.spawn((Camera2d::default(), MenuCamera));
+    commands.spawn((
+        Camera2d::default(),
+        MenuCamera,
+        Camera {
+            order: 1, // Higher priority than game camera (0)
+            ..default()
+        },
+    ));
 
     // Main menu container
     commands
