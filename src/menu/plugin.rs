@@ -70,9 +70,31 @@ fn start_game_loading(
         info!("Coming from pause menu, skipping loading process and going directly to InGame");
         // Reset the flag
         context.from_pause_menu = false;
-        // Go directly to InGame without performing cleanup
+
+        // When resuming from pause menu, we shouldn't spawn new cameras
+        // Go directly to InGame without performing cleanup that would remove game entities
         next_state.set(GameMenuState::InGame);
         return;
+    }
+
+    // Check for camera ambiguities and clean them up if found
+    let camera_count = game_cameras.iter().count();
+    if camera_count > 1 {
+        warn!(
+            "Found {} game cameras, cleaning up duplicates",
+            camera_count
+        );
+        // Keep only the first camera and despawn the rest
+        let mut first_found = false;
+        for entity in game_cameras.iter() {
+            if !first_found {
+                first_found = true;
+                info!("Keeping game camera entity: {:?}", entity);
+            } else {
+                info!("Removing duplicate game camera entity: {:?}", entity);
+                commands.entity(entity).despawn_recursive();
+            }
+        }
     }
 
     // Normal loading process

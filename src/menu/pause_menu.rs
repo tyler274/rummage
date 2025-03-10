@@ -149,10 +149,12 @@ pub fn handle_pause_input(
     if keyboard.just_pressed(KeyCode::Escape) {
         match current_state.get() {
             GameMenuState::InGame => {
+                info!("Escape key pressed: Pausing game");
                 next_state.set(GameMenuState::PausedGame);
             }
             GameMenuState::PausedGame => {
                 // Set the context flag to indicate we're coming from the pause menu
+                info!("Escape key pressed: Resuming game from pause menu");
                 context.from_pause_menu = true;
                 next_state.set(GameMenuState::InGame);
             }
