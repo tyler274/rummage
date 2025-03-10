@@ -15,13 +15,9 @@ use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
 
 /// Sets up the main menu interface with buttons and layout
 pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
-    // The camera is now spawned by setup_menu_camera in plugin.rs
-    // No need to spawn another camera here
+    info!("Setting up main menu");
 
-    // Spawn Star of David in world space with proper z-index
-    commands.spawn(create_star_of_david());
-
-    // Main menu container
+    // Create a root node for the main menu
     commands
         .spawn((
             Node {
@@ -32,76 +28,101 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
+            // Use a solid background color for better visibility in WSL2
+            BackgroundColor(Color::rgb(0.1, 0.1, 0.2)),
+            // Ensure the menu is visible
+            Visibility::Visible,
+            ZIndex::Global(100), // Ensure it's on top
             MenuItem,
-            AppLayer::Menu.layer(), // Add to menu layer
-            Visibility::Visible,    // Explicitly set to visible
+            Name::new("Main Menu Root"),
         ))
         .with_children(|parent| {
-            // Add the logo
+            // Title
+            parent.spawn((
+                Text::from_sections([TextSection {
+                    value: "Rummage".to_string(),
+                    style: TextStyle {
+                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font_size: 64.0,
+                        color: Color::WHITE,
+                    },
+                }]),
+                Node {
+                    margin: UiRect::all(Val::Px(20.0)),
+                    ..default()
+                },
+                MenuItem,
+                Name::new("Main Menu Title"),
+            ));
+
+            // Play button
             parent
                 .spawn((
-                    create_logo(),
-                    AppLayer::Menu.layer(), // Add to menu layer
-                    Visibility::Visible,    // Explicitly set to visible
+                    Button {},
+                    Node {
+                        width: Val::Px(200.0),
+                        height: Val::Px(65.0),
+                        margin: UiRect::all(Val::Px(20.0)),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        ..default()
+                    },
+                    BackgroundColor(Color::rgb(0.15, 0.15, 0.25)),
+                    Visibility::Visible,
+                    MenuItem,
+                    MenuButtonAction::NewGame,
+                    Interaction::default(),
+                    Name::new("Play Button"),
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        create_hebrew_text(&asset_server),
-                        AppLayer::Menu.layer(), // Add to menu layer
-                        Visibility::Visible,    // Explicitly set to visible
-                    ));
-                    parent.spawn((
-                        create_english_text(&asset_server),
-                        AppLayer::Menu.layer(), // Add to menu layer
-                        Visibility::Visible,    // Explicitly set to visible
-                    ));
-                    parent.spawn((
-                        create_decorative_elements(),
-                        AppLayer::Menu.layer(), // Add to menu layer
-                        Visibility::Visible,    // Explicitly set to visible
+                        Text::from_sections([TextSection {
+                            value: "Play".to_string(),
+                            style: TextStyle {
+                                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                                font_size: 40.0,
+                                color: Color::WHITE,
+                            },
+                        }]),
+                        MenuItem,
                     ));
                 });
 
-            // Menu buttons container
+            // Quit button
             parent
                 .spawn((
+                    Button {},
                     Node {
-                        width: Val::Px(300.0),
-                        height: Val::Px(400.0),
-                        flex_direction: FlexDirection::Column,
-                        justify_content: JustifyContent::SpaceAround,
+                        width: Val::Px(200.0),
+                        height: Val::Px(65.0),
+                        margin: UiRect::all(Val::Px(20.0)),
+                        justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
-                        margin: UiRect::top(Val::Px(50.0)),
                         ..default()
                     },
-                    BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
-                    AppLayer::Menu.layer(), // Add to menu layer
-                    Visibility::Visible,    // Explicitly set to visible
+                    BackgroundColor(Color::rgb(0.15, 0.15, 0.25)),
+                    Visibility::Visible,
+                    MenuItem,
+                    MenuButtonAction::Quit,
+                    Interaction::default(),
+                    Name::new("Quit Button"),
                 ))
                 .with_children(|parent| {
-                    spawn_menu_button(parent, "New Game", MenuButtonAction::NewGame, &asset_server);
-                    spawn_menu_button(
-                        parent,
-                        "Load Game",
-                        MenuButtonAction::LoadGame,
-                        &asset_server,
-                    );
-                    spawn_menu_button(
-                        parent,
-                        "Multiplayer",
-                        MenuButtonAction::Multiplayer,
-                        &asset_server,
-                    );
-                    spawn_menu_button(
-                        parent,
-                        "Settings",
-                        MenuButtonAction::Settings,
-                        &asset_server,
-                    );
-                    spawn_menu_button(parent, "Quit", MenuButtonAction::Quit, &asset_server);
+                    parent.spawn((
+                        Text::from_sections([TextSection {
+                            value: "Quit".to_string(),
+                            style: TextStyle {
+                                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                                font_size: 40.0,
+                                color: Color::WHITE,
+                            },
+                        }]),
+                        MenuItem,
+                    ));
                 });
         });
+
+    info!("Main menu setup complete");
 }
 
 /// Sets the initial zoom level for the menu camera
@@ -122,22 +143,31 @@ fn spawn_menu_button(
 ) {
     parent
         .spawn((
-            button_style(),
+            Node {
+                width: Val::Px(200.0),
+                height: Val::Px(50.0),
+                margin: UiRect::all(Val::Px(10.0)),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
             BackgroundColor(NORMAL_BUTTON),
-            Button,
+            Button {},
             action,
+            Interaction::default(),
             AppLayer::Menu.layer(), // Ensure it's on the menu layer
             Visibility::Visible,    // Explicitly set to visible
         ))
         .with_children(|parent| {
             parent.spawn((
-                Text(text.to_string()),
-                TextFont {
-                    font: asset_server.load("fonts/DejaVuSans.ttf"),
-                    font_size: 20.0,
-                    ..default()
-                },
-                TextColor(Color::WHITE),
+                Text::from_sections([TextSection {
+                    value: text.to_string(),
+                    style: TextStyle {
+                        font: asset_server.load("fonts/DejaVuSans.ttf"),
+                        font_size: 20.0,
+                        color: Color::WHITE,
+                    },
+                }]),
                 TextLayout::new_with_justify(JustifyText::Center),
                 Node::default(),
                 AppLayer::Menu.layer(), // Ensure it's on the menu layer

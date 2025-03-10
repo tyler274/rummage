@@ -29,16 +29,16 @@ impl Plugin for MenuPlugin {
             .init_state::<state::GameMenuState>()
             .add_systems(
                 OnEnter(state::GameMenuState::MainMenu),
-                simple_menu::setup_simple_menu,
+                main_menu::setup_main_menu,
             )
             .add_systems(
-                OnEnter(state::GameMenuState::PauseMenu),
+                OnEnter(state::GameMenuState::PausedGame),
                 pause_menu::setup_pause_menu,
             )
             .add_systems(
                 Update,
                 (
-                    simple_menu::simple_menu_action,
+                    main_menu::menu_action,
                     pause_menu::pause_menu_action,
                     pause_menu::handle_pause_input,
                 ),
@@ -48,7 +48,7 @@ impl Plugin for MenuPlugin {
                 cleanup::cleanup_main_menu,
             )
             .add_systems(
-                OnExit(state::GameMenuState::PauseMenu),
+                OnExit(state::GameMenuState::PausedGame),
                 cleanup::cleanup_pause_menu,
             )
             .add_systems(OnExit(state::GameMenuState::InGame), cleanup::cleanup_game);
