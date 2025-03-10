@@ -24,6 +24,7 @@ pub use turns::*;
 pub use zones::*;
 
 use crate::menu::GameMenuState;
+use crate::player::Player;
 use bevy::prelude::*;
 
 /// Plugin that sets up the MTG Commander game engine
@@ -146,8 +147,11 @@ fn game_state_condition(state: Res<State<GameMenuState>>) -> bool {
 }
 
 /// Initializes the core game engine resources
-fn setup_game_engine(mut commands: Commands) {
+fn setup_game_engine(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
     info!("Initializing game engine resources...");
+
+    // Get all player entities
+    let players: Vec<Entity> = player_query.iter().collect();
 
     // Initialize the phase system starting at Beginning::Untap
     commands.insert_resource(Phase::Beginning(BeginningStep::Untap));
@@ -164,8 +168,10 @@ fn setup_game_engine(mut commands: Commands) {
     // Initialize combat state
     commands.insert_resource(CombatState::default());
 
-    // Initialize turn manager
-    commands.insert_resource(TurnManager::default());
+    // Initialize turn manager with player list
+    let mut turn_manager = TurnManager::default();
+    turn_manager.initialize(players);
+    commands.insert_resource(turn_manager);
 
     // Initialize the commander zone and manager
     commands.insert_resource(CommandZone::default());
