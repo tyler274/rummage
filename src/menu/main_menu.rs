@@ -132,9 +132,15 @@ fn spawn_menu_button(
         ))
         .with_children(|parent| {
             parent.spawn((
-                Text::new(text),
-                text_style(),
+                Text(text.to_string()),
+                TextFont {
+                    font: asset_server.load("fonts/DejaVuSans.ttf"),
+                    font_size: 20.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
                 TextLayout::new_with_justify(JustifyText::Center),
+                Node::default(),
                 AppLayer::Menu.layer(), // Add to menu layer
             ));
         });

@@ -100,11 +100,9 @@ impl Plugin for MenuPlugin {
 /// Creates a menu camera with the proper configuration
 pub fn setup_menu_camera(mut commands: Commands) {
     commands.spawn((
-        Camera2dBundle {
-            camera: Camera {
-                order: 2, // Higher order to render on top of game camera
-                ..default()
-            },
+        Camera2d,
+        Camera {
+            order: 2, // Higher order to render on top of game camera
             ..default()
         },
         MenuCamera,
