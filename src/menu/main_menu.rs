@@ -91,6 +91,7 @@ pub fn menu_action(
         (Changed<Interaction>, With<Button>),
     >,
     mut next_state: ResMut<NextState<GameMenuState>>,
+    mut exit: EventWriter<bevy::app::AppExit>,
 ) {
     for (interaction, action, mut color) in &mut interaction_query {
         match *interaction {
@@ -110,7 +111,7 @@ pub fn menu_action(
                         // TODO: Implement settings functionality
                     }
                     MenuButtonAction::Quit => {
-                        // TODO: Implement quit functionality
+                        exit.send(bevy::app::AppExit::default());
                     }
                     _ => {}
                 }
