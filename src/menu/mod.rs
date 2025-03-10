@@ -6,6 +6,7 @@ pub mod pause_menu;
 pub mod plugin;
 pub mod state;
 pub mod styles;
+mod systems;
 
 pub use cleanup::*;
 pub use components::*;
@@ -14,3 +15,4 @@ pub use pause_menu::*;
 pub use plugin::MenuPlugin;
 pub use state::*;
 pub use styles::*;
+pub use systems::*;

@@ -4,7 +4,10 @@ use bevy::prelude::*;
 pub fn setup_menu_camera(mut commands: Commands) {
     commands.spawn((
         Camera2d::default(),
-        Camera::default(),
+        Camera {
+            order: 1,
+            ..default()
+        },
         Transform::default(),
         GlobalTransform::default(),
         Visibility::default(),

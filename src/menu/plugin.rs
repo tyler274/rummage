@@ -1,13 +1,15 @@
-use crate::menu::{
-    cleanup::{cleanup_game, cleanup_main_menu, cleanup_menu_camera, cleanup_pause_menu},
-    logo::{StarOfDavidPlugin, render_star_of_david},
-    main_menu::{menu_action, set_menu_camera_zoom, setup_main_menu},
-    pause_menu::{handle_pause_input, pause_menu_action, setup_pause_menu},
-    state::{GameMenuState, StateTransitionContext},
-};
 use crate::{
     camera::components::{GameCamera, MenuCamera},
     card::Card,
+    menu::{
+        cleanup::{cleanup_game, cleanup_main_menu, cleanup_menu_camera, cleanup_pause_menu},
+        components::*,
+        logo::{StarOfDavidPlugin, render_star_of_david},
+        main_menu::{menu_action, set_menu_camera_zoom, setup_main_menu},
+        pause_menu::{handle_pause_input, pause_menu_action, setup_pause_menu},
+        setup_menu_camera,
+        state::{GameMenuState, StateTransitionContext},
+    },
 };
 use bevy::prelude::*;
 
@@ -27,6 +29,7 @@ impl Plugin for MenuPlugin {
                     cleanup_game,
                     cleanup_menu_camera,
                     setup_main_menu,
+                    setup_menu_camera,
                     set_menu_camera_zoom,
                 )
                     .chain(),
@@ -50,7 +53,14 @@ impl Plugin for MenuPlugin {
             )
             .add_systems(OnExit(GameMenuState::Loading), finish_loading)
             // Pause menu systems
-            .add_systems(OnEnter(GameMenuState::PausedGame), setup_pause_menu)
+            .add_systems(
+                OnEnter(GameMenuState::PausedGame),
+                (
+                    setup_pause_menu,
+                    setup_menu_camera,
+                    manage_pause_camera_visibility,
+                ),
+            )
             .add_systems(OnExit(GameMenuState::PausedGame), cleanup_pause_menu)
             .add_systems(
                 Update,
@@ -151,5 +161,28 @@ fn manage_camera_visibility(
         game_cameras.iter().count(),
         menu_cameras.iter().count(),
         context.from_pause_menu
+    );
+}
+
+/// Ensures proper camera visibility when entering the PausedGame state
+fn manage_pause_camera_visibility(
+    mut game_cameras: Query<&mut Visibility, With<GameCamera>>,
+    mut menu_cameras: Query<&mut Visibility, (With<MenuCamera>, Without<GameCamera>)>,
+) {
+    // Set all game cameras to invisible
+    for mut visibility in game_cameras.iter_mut() {
+        *visibility = Visibility::Hidden;
+    }
+
+    // Make all menu cameras visible
+    for mut visibility in menu_cameras.iter_mut() {
+        *visibility = Visibility::Visible;
+    }
+
+    // Log the camera state for debugging
+    info!(
+        "Pause camera visibility managed: {} game cameras hidden, {} menu cameras visible",
+        game_cameras.iter().count(),
+        menu_cameras.iter().count(),
     );
 }
