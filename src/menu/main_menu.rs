@@ -25,7 +25,7 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
         GlobalTransform::default(),
     ));
 
-    // Spawn Star of David in world space
+    // Spawn Star of David in world space with proper z-index
     commands.spawn(create_star_of_david());
 
     // Main menu container
@@ -91,7 +91,9 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
 /// Sets the initial zoom level for the menu camera
 pub fn set_menu_camera_zoom(mut query: Query<&mut OrthographicProjection, With<MenuCamera>>) {
     if let Ok(mut projection) = query.get_single_mut() {
-        projection.scale = 0.02; // Zoom out more to see the Star of David
+        projection.scale = 0.1; // Zoom out more to see the Star of David
+        projection.near = -1000.0;
+        projection.far = 1000.0;
     }
 }
 

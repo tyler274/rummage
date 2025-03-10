@@ -22,7 +22,7 @@ pub fn render_star_of_david(
     mut commands: Commands,
     query: Query<Entity, With<StarOfDavid>>,
     children_query: Query<&Children>,
-    asset_server: Res<AssetServer>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     info!("StarOfDavid entities found: {}", query.iter().count());
 
@@ -41,22 +41,25 @@ pub fn render_star_of_david(
         if !has_children {
             info!("Adding children to StarOfDavid entity {:?}", entity);
 
+            // Create the material once
+            let material = materials.add(Color::srgb(1.0, 0.84, 0.0));
+
             // Spawn the child entities for the two triangles
             commands.entity(entity).with_children(|parent| {
                 // First triangle (pointing up)
-                let triangle1 = parent.spawn(SpriteBundle {
+                parent.spawn(SpriteBundle {
                     sprite: Sprite {
                         color: Color::srgb(1.0, 0.84, 0.0),
                         custom_size: Some(Vec2::new(80.0, 80.0)),
                         ..default()
                     },
-                    transform: Transform::from_xyz(0.0, 0.0, 1.0),
+                    transform: Transform::from_xyz(0.0, 0.0, 1.0)
+                        .with_rotation(Quat::from_rotation_z(0.0)),
                     ..default()
                 });
-                info!("Spawned first triangle: {:?}", triangle1.id());
 
                 // Second triangle (pointing down)
-                let triangle2 = parent.spawn(SpriteBundle {
+                parent.spawn(SpriteBundle {
                     sprite: Sprite {
                         color: Color::srgb(1.0, 0.84, 0.0),
                         custom_size: Some(Vec2::new(80.0, 80.0)),
@@ -66,7 +69,6 @@ pub fn render_star_of_david(
                         .with_rotation(Quat::from_rotation_z(std::f32::consts::PI)),
                     ..default()
                 });
-                info!("Spawned second triangle: {:?}", triangle2.id());
             });
         }
     }
