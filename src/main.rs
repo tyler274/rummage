@@ -22,7 +22,7 @@ use card::{DebugConfig, debug_render_text_positions, handle_card_dragging};
 use cards::CardsPlugin;
 use drag::DragPlugin;
 use game_engine::GameEnginePlugin;
-use menu::{GameMenuState, MenuPlugin};
+use menu::{GameMenuState, MenuPlugin, state::StateTransitionContext};
 use player::spawn_hand;
 use text::spawn_card_text;
 
@@ -62,12 +62,23 @@ fn setup_game(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     game_cameras: Query<Entity, With<GameCamera>>,
+    context: Res<StateTransitionContext>,
 ) {
     info!("Setting up game environment...");
 
-    // First set up the camera - this needs to happen before spawning cards
-    info!("Setting up game camera...");
-    setup_camera(&mut commands);
+    // Skip camera setup if we're coming from the pause menu and already have a camera
+    if context.from_pause_menu {
+        info!("Resuming from pause menu, skipping game camera setup");
+        // Only set up cards if needed here, but don't create another camera
+        if game_cameras.is_empty() {
+            info!("No game camera found despite coming from pause menu, setting up camera anyway");
+            setup_camera(&mut commands);
+        }
+    } else {
+        // Normal game setup - this is a fresh game
+        info!("Setting up game camera...");
+        setup_camera(&mut commands);
+    }
 
     // Then spawn the player's hand - this will create the card entities
     // We use the same Commands instance since setup_camera takes a reference
