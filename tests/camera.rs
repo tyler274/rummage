@@ -20,6 +20,7 @@ fn setup_test_app() -> App {
             zoom_speed: 0.15,
             min_zoom: 0.1,
             max_zoom: 5.0,
+            zoom_interpolation_speed: 5.0,
             pan_sensitivity: 1.0,
         })
         .insert_resource(CameraPanState::default())

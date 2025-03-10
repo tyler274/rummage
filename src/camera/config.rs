@@ -40,7 +40,7 @@ impl Default for CameraConfig {
     fn default() -> Self {
         Self {
             move_speed: 500.0,
-            zoom_speed: 0.05, // Reduced from 0.15 for smoother zooming
+            zoom_speed: 1.0, // Adjusted for smoother zooming
             // In OrthographicProjection, min_zoom limits how far you can zoom out (higher value)
             // and max_zoom limits how far you can zoom in (lower value)
             min_zoom: 0.1,                 // Most zoomed in
