@@ -1,4 +1,12 @@
-use crate::menu::{components::*, logo::create_logo, state::GameMenuState, styles::*};
+use crate::menu::{
+    components::*,
+    logo::{
+        create_decorative_elements, create_english_text, create_hebrew_text, create_logo,
+        create_star_of_david,
+    },
+    state::GameMenuState,
+    styles::*,
+};
 use bevy::prelude::*;
 use bevy::text::JustifyText;
 use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
@@ -31,7 +39,12 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
         ))
         .with_children(|parent| {
             // Add the logo
-            parent.spawn(create_logo());
+            parent.spawn(create_logo()).with_children(|parent| {
+                parent.spawn(create_star_of_david());
+                parent.spawn(create_hebrew_text(&asset_server));
+                parent.spawn(create_english_text(&asset_server));
+                parent.spawn(create_decorative_elements());
+            });
 
             // Menu buttons container
             parent

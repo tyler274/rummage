@@ -1,5 +1,6 @@
 use crate::menu::{
     cleanup::{cleanup_game, cleanup_main_menu, cleanup_menu_camera, cleanup_pause_menu},
+    logo::render_star_of_david,
     main_menu::{menu_action, setup_main_menu},
     pause_menu::{handle_pause_input, pause_menu_action, setup_pause_menu},
     state::GameMenuState,
@@ -25,7 +26,7 @@ impl Plugin for MenuPlugin {
             )
             .add_systems(
                 Update,
-                menu_action.run_if(in_state(GameMenuState::MainMenu)),
+                (menu_action, render_star_of_david).run_if(in_state(GameMenuState::MainMenu)),
             )
             // Loading state systems
             .add_systems(
