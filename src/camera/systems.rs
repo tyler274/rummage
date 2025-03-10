@@ -27,7 +27,10 @@ pub fn setup_camera(commands: &mut Commands) {
     // Set up the camera with normal defaults
     commands.spawn((
         Camera2d::default(),
-        Camera::default(),
+        Camera {
+            order: 0, // Explicitly set order to 0 for game camera
+            ..default()
+        },
         Visibility::default(),
         InheritedVisibility::default(),
         ViewVisibility::default(),
