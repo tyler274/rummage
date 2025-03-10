@@ -1,27 +1,4 @@
 use bevy::prelude::*;
-use bevy::render::mesh::Indices;
-use bevy::render::mesh::{Mesh, PrimitiveTopology};
-use bevy::render::render_asset::RenderAssetUsages;
-use bevy::render::{
-    Extract, Render, RenderApp, RenderSet,
-    render_phase::{
-        AddRenderCommand, DrawFunctions, PhaseItem, PhaseItemExtraIndex, RenderCommand,
-        RenderCommandResult, SetItemPipeline,
-    },
-    render_resource::{
-        BlendState, ColorTargetState, ColorWrites, CompareFunction, DepthBiasState,
-        DepthStencilState, Face, FragmentState, FrontFace, MultisampleState, PipelineCache,
-        PolygonMode, PrimitiveState, RenderPipelineDescriptor, SpecializedRenderPipeline,
-        SpecializedRenderPipelines, StencilFaceState, StencilState, TextureFormat,
-        VertexBufferLayout, VertexFormat, VertexState, VertexStepMode,
-    },
-    view::{ExtractedView, RenderVisibleEntities, ViewTarget},
-};
-use bevy::sprite::{
-    DrawMesh2d, Material2dBindGroupId, Mesh2dPipeline, Mesh2dPipelineKey, Mesh2dTransforms,
-    MeshFlags, MeshMaterial2d, RenderMesh2dInstance, SetMesh2dBindGroup, SetMesh2dViewBindGroup,
-};
-use bevy::ui::{PositionType, Val};
 
 /// Component for the Star of David shape
 #[derive(Component)]
@@ -41,24 +18,69 @@ impl Plugin for StarOfDavidPlugin {
 }
 
 /// System to create and render the Star of David
-pub fn render_star_of_david(mut commands: Commands, query: Query<Entity, With<StarOfDavid>>) {
+pub fn render_star_of_david(
+    mut commands: Commands,
+    query: Query<Entity, With<StarOfDavid>>,
+    children_query: Query<&Children>,
+    asset_server: Res<AssetServer>,
+) {
+    info!("StarOfDavid entities found: {}", query.iter().count());
+
     for entity in &query {
-        // Spawn the Star of David using a sprite
-        commands.entity(entity).with_children(|parent| {
-            // In Bevy 0.15, Sprite component automatically adds Transform and Visibility
-            parent.spawn((
-                Sprite {
-                    color: Color::srgb(1.0, 0.84, 0.0), // Gold color
-                    custom_size: Some(Vec2::new(100.0, 100.0)),
+        let has_children = children_query
+            .get(entity)
+            .map(|children| !children.is_empty())
+            .unwrap_or(false);
+
+        info!(
+            "StarOfDavid entity {:?} has children: {}",
+            entity, has_children
+        );
+
+        // Only spawn children if it doesn't have children yet
+        if !has_children {
+            info!("Adding children to StarOfDavid entity {:?}", entity);
+
+            // Spawn the child entities for the two triangles
+            commands.entity(entity).with_children(|parent| {
+                // First triangle (pointing up)
+                let triangle1 = parent.spawn(SpriteBundle {
+                    sprite: Sprite {
+                        color: Color::srgb(1.0, 0.84, 0.0),
+                        custom_size: Some(Vec2::new(80.0, 80.0)),
+                        ..default()
+                    },
+                    transform: Transform::from_xyz(0.0, 0.0, 1.0),
                     ..default()
-                },
-                Transform::from_scale(Vec3::splat(1.0)),
-            ));
-        });
+                });
+                info!("Spawned first triangle: {:?}", triangle1.id());
+
+                // Second triangle (pointing down)
+                let triangle2 = parent.spawn(SpriteBundle {
+                    sprite: Sprite {
+                        color: Color::srgb(1.0, 0.84, 0.0),
+                        custom_size: Some(Vec2::new(80.0, 80.0)),
+                        ..default()
+                    },
+                    transform: Transform::from_xyz(0.0, 0.0, 1.1)
+                        .with_rotation(Quat::from_rotation_z(std::f32::consts::PI)),
+                    ..default()
+                });
+                info!("Spawned second triangle: {:?}", triangle2.id());
+            });
+        }
     }
 }
 
 /// Create a Star of David bundle for spawning
 pub fn create_star_of_david() -> impl Bundle {
-    (Transform::default(), StarOfDavid)
+    info!("Creating StarOfDavid bundle");
+    (
+        Transform::from_xyz(0.0, 0.0, 1.0),
+        GlobalTransform::default(),
+        Visibility::default(),
+        InheritedVisibility::default(),
+        ViewVisibility::default(),
+        StarOfDavid,
+    )
 }

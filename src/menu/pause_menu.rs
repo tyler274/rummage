@@ -1,4 +1,8 @@
-use crate::menu::{components::*, state::GameMenuState, styles::*};
+use crate::menu::{
+    components::*,
+    state::{GameMenuState, StateTransitionContext},
+    styles::*,
+};
 use bevy::prelude::*;
 use bevy::text::JustifyText;
 use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
@@ -93,6 +97,7 @@ pub fn pause_menu_action(
         (Changed<Interaction>, With<Button>),
     >,
     mut next_state: ResMut<NextState<GameMenuState>>,
+    mut context: ResMut<StateTransitionContext>,
     mut exit: EventWriter<bevy::app::AppExit>,
 ) {
     for (interaction, action, mut color) in &mut interaction_query {
@@ -101,12 +106,18 @@ pub fn pause_menu_action(
                 *color = BackgroundColor(PRESSED_BUTTON);
                 match action {
                     MenuButtonAction::Resume => {
+                        // Set the context flag to indicate we're coming from the pause menu
+                        context.from_pause_menu = true;
                         next_state.set(GameMenuState::InGame);
                     }
                     MenuButtonAction::Restart => {
+                        // Reset the context flag since we want a full restart
+                        context.from_pause_menu = false;
                         next_state.set(GameMenuState::Loading);
                     }
                     MenuButtonAction::MainMenu => {
+                        // Reset the context flag since we're going to main menu
+                        context.from_pause_menu = false;
                         next_state.set(GameMenuState::MainMenu);
                     }
                     MenuButtonAction::Settings => {
@@ -132,6 +143,7 @@ pub fn pause_menu_action(
 pub fn handle_pause_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut next_state: ResMut<NextState<GameMenuState>>,
+    mut context: ResMut<StateTransitionContext>,
     current_state: Res<State<GameMenuState>>,
 ) {
     if keyboard.just_pressed(KeyCode::Escape) {
@@ -140,6 +152,8 @@ pub fn handle_pause_input(
                 next_state.set(GameMenuState::PausedGame);
             }
             GameMenuState::PausedGame => {
+                // Set the context flag to indicate we're coming from the pause menu
+                context.from_pause_menu = true;
                 next_state.set(GameMenuState::InGame);
             }
             _ => {}

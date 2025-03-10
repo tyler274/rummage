@@ -30,3 +30,10 @@ pub enum GameMenuState {
     /// Game is paused, showing pause menu
     PausedGame,
 }
+
+/// Resource to track the origin state when transitioning between states
+#[derive(Resource, Default, Debug)]
+pub struct StateTransitionContext {
+    /// Whether this state transition comes from the pause menu
+    pub from_pause_menu: bool,
+}

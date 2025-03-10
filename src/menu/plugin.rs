@@ -1,9 +1,9 @@
 use crate::menu::{
     cleanup::{cleanup_game, cleanup_main_menu, cleanup_menu_camera, cleanup_pause_menu},
-    logo::render_star_of_david,
-    main_menu::{menu_action, setup_main_menu},
+    logo::{StarOfDavidPlugin, render_star_of_david},
+    main_menu::{menu_action, set_menu_camera_zoom, setup_main_menu},
     pause_menu::{handle_pause_input, pause_menu_action, setup_pause_menu},
-    state::GameMenuState,
+    state::{GameMenuState, StateTransitionContext},
 };
 use crate::{camera::GameCamera, card::Card};
 use bevy::prelude::*;
@@ -15,10 +15,18 @@ impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<GameMenuState>()
             .insert_resource(GameMenuState::MainMenu)
+            .insert_resource(StateTransitionContext::default())
+            .add_plugins(StarOfDavidPlugin)
             // Main Menu state
             .add_systems(
                 OnEnter(GameMenuState::MainMenu),
-                (cleanup_game, cleanup_menu_camera, setup_main_menu).chain(),
+                (
+                    cleanup_game,
+                    cleanup_menu_camera,
+                    setup_main_menu,
+                    set_menu_camera_zoom,
+                )
+                    .chain(),
             )
             .add_systems(
                 OnExit(GameMenuState::MainMenu),
@@ -40,10 +48,7 @@ impl Plugin for MenuPlugin {
             .add_systems(OnExit(GameMenuState::Loading), finish_loading)
             // Pause menu systems
             .add_systems(OnEnter(GameMenuState::PausedGame), setup_pause_menu)
-            .add_systems(
-                OnExit(GameMenuState::PausedGame),
-                (cleanup_pause_menu, cleanup_menu_camera).chain(),
-            )
+            .add_systems(OnExit(GameMenuState::PausedGame), cleanup_pause_menu)
             .add_systems(
                 Update,
                 pause_menu_action.run_if(in_state(GameMenuState::PausedGame)),
@@ -56,10 +61,21 @@ impl Plugin for MenuPlugin {
 fn start_game_loading(
     mut commands: Commands,
     mut next_state: ResMut<NextState<GameMenuState>>,
+    mut context: ResMut<StateTransitionContext>,
     cards: Query<Entity, With<Card>>,
     game_cameras: Query<Entity, With<GameCamera>>,
 ) {
-    // Log the current state
+    // Check if we're coming from the pause menu
+    if context.from_pause_menu {
+        info!("Coming from pause menu, skipping loading process and going directly to InGame");
+        // Reset the flag
+        context.from_pause_menu = false;
+        // Go directly to InGame without performing cleanup
+        next_state.set(GameMenuState::InGame);
+        return;
+    }
+
+    // Normal loading process
     info!("Checking game state for transition...");
     info!("Number of cards: {}", cards.iter().count());
     info!("Number of game cameras: {}", game_cameras.iter().count());
