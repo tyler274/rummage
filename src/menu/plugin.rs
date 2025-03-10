@@ -1,5 +1,5 @@
 use crate::{
-    camera::components::{GameCamera, MenuCamera},
+    camera::components::{AppLayer, GameCamera, MenuCamera},
     card::Card,
     menu::{
         cleanup::{
@@ -49,7 +49,8 @@ impl Plugin for MenuPlugin {
             )
             .add_systems(
                 Update,
-                (menu_action, render_star_of_david).run_if(in_state(GameMenuState::MainMenu)),
+                (menu_action, render_star_of_david, debug_menu_visibility)
+                    .run_if(in_state(GameMenuState::MainMenu)),
             )
             // Loading state systems
             .add_systems(
@@ -106,6 +107,9 @@ pub fn setup_menu_camera(mut commands: Commands) {
             ..default()
         },
         MenuCamera,
+        Transform::from_xyz(0.0, 0.0, 999.0), // Position camera to see all elements
+        GlobalTransform::default(),
+        AppLayer::Menu.with_shared(), // Add both Menu and Shared layers to the camera
     ));
 }
 
@@ -246,23 +250,36 @@ fn manage_pause_camera_visibility(
         (With<MenuCamera>, Without<GameCamera>),
     >,
 ) {
-    // Set all game cameras to invisible
+    // Set all game cameras to hidden
     for (mut visibility, _) in game_cameras.iter_mut() {
         *visibility = Visibility::Hidden;
     }
 
-    // Make all menu cameras visible with unique orders
-    let mut order = 0;
+    // Set all menu cameras to visible
     for (mut visibility, mut camera) in menu_cameras.iter_mut() {
         *visibility = Visibility::Visible;
-        camera.order = order;
-        order += 1;
+        camera.order = 2; // Higher order to render on top of game camera
+    }
+}
+
+/// Debug system to check visibility of menu elements
+fn debug_menu_visibility(
+    menu_cameras: Query<(Entity, &Visibility), With<MenuCamera>>,
+    menu_items: Query<(Entity, &Visibility), With<MenuItem>>,
+) {
+    // Log camera and menu item visibility
+    for (entity, visibility) in menu_cameras.iter() {
+        info!("Menu camera {:?} visibility: {:?}", entity, visibility);
     }
 
-    // Log the camera state for debugging
-    info!(
-        "Pause camera visibility managed: {} game cameras hidden, {} menu cameras visible",
-        game_cameras.iter().count(),
-        menu_cameras.iter().count(),
-    );
+    let menu_item_count = menu_items.iter().count();
+    info!("Total menu items: {}", menu_item_count);
+
+    // Count visible items
+    let visible_items = menu_items
+        .iter()
+        .filter(|(_, visibility)| matches!(visibility, Visibility::Visible))
+        .count();
+
+    info!("Visible menu items: {}/{}", visible_items, menu_item_count);
 }

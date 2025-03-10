@@ -15,17 +15,8 @@ use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
 
 /// Sets up the main menu interface with buttons and layout
 pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
-    // Spawn camera with menu marker
-    commands.spawn((
-        Camera2d::default(),
-        MenuCamera,
-        Camera {
-            order: 1, // Higher priority than game camera (0)
-            ..default()
-        },
-        Transform::from_xyz(0.0, 0.0, 999.0), // Position camera to see all elements
-        GlobalTransform::default(),
-    ));
+    // The camera is now spawned by setup_menu_camera in plugin.rs
+    // No need to spawn another camera here
 
     // Spawn Star of David in world space with proper z-index
     commands.spawn(create_star_of_david());
@@ -44,6 +35,7 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
             BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
             MenuItem,
             AppLayer::Menu.layer(), // Add to menu layer
+            Visibility::Visible,    // Explicitly set to visible
         ))
         .with_children(|parent| {
             // Add the logo
@@ -51,19 +43,23 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 .spawn((
                     create_logo(),
                     AppLayer::Menu.layer(), // Add to menu layer
+                    Visibility::Visible,    // Explicitly set to visible
                 ))
                 .with_children(|parent| {
                     parent.spawn((
                         create_hebrew_text(&asset_server),
                         AppLayer::Menu.layer(), // Add to menu layer
+                        Visibility::Visible,    // Explicitly set to visible
                     ));
                     parent.spawn((
                         create_english_text(&asset_server),
                         AppLayer::Menu.layer(), // Add to menu layer
+                        Visibility::Visible,    // Explicitly set to visible
                     ));
                     parent.spawn((
                         create_decorative_elements(),
                         AppLayer::Menu.layer(), // Add to menu layer
+                        Visibility::Visible,    // Explicitly set to visible
                     ));
                 });
 
@@ -81,6 +77,7 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                     },
                     BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
                     AppLayer::Menu.layer(), // Add to menu layer
+                    Visibility::Visible,    // Explicitly set to visible
                 ))
                 .with_children(|parent| {
                     spawn_menu_button(parent, "New Game", MenuButtonAction::NewGame, &asset_server);
@@ -111,7 +108,7 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
 pub fn set_menu_camera_zoom(mut query: Query<&mut OrthographicProjection, With<MenuCamera>>) {
     if let Ok(mut projection) = query.get_single_mut() {
         projection.scale = 0.1; // Zoom out more to see the Star of David
-        projection.near = 0.0;
+        projection.near = -1000.0;
         projection.far = 1000.0;
     }
 }
@@ -129,7 +126,8 @@ fn spawn_menu_button(
             BackgroundColor(NORMAL_BUTTON),
             Button,
             action,
-            AppLayer::Menu.layer(), // Add to menu layer
+            AppLayer::Menu.layer(), // Ensure it's on the menu layer
+            Visibility::Visible,    // Explicitly set to visible
         ))
         .with_children(|parent| {
             parent.spawn((
@@ -142,7 +140,8 @@ fn spawn_menu_button(
                 TextColor(Color::WHITE),
                 TextLayout::new_with_justify(JustifyText::Center),
                 Node::default(),
-                AppLayer::Menu.layer(), // Add to menu layer
+                AppLayer::Menu.layer(), // Ensure it's on the menu layer
+                Visibility::Visible,    // Explicitly set to visible
             ));
         });
 }
