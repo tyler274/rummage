@@ -3,22 +3,17 @@ use bevy::{app::AppExit, ecs::system::ParamSet, prelude::*};
 use crate::{
     camera::components::{AppLayer, GameCamera, MenuCamera},
     card::Card,
-    debug::components::DebugRenderEachPosition,
-    interactions::draggable::Draggable,
     menu::{
         cleanup::{
             cleanup_game, cleanup_main_menu, cleanup_menu_camera, cleanup_pause_menu,
             cleanup_star_of_david, cleanup_star_of_david_thoroughly,
         },
         components::MenuItem,
-        layout::spawn_menu_layout,
         logo::{StarOfDavidPlugin, render_star_of_david},
         main_menu::{menu_action, set_menu_camera_zoom, setup_main_menu},
         pause_menu::{handle_pause_input, pause_menu_action, setup_pause_menu},
         state::{GameMenuState, StateTransitionContext},
     },
-    simulation::components::Simulation,
-    utils::TryCommands,
 };
 
 /// Plugin that sets up the menu system and its related systems
@@ -261,21 +256,21 @@ fn finish_loading() {
 
 /// Ensures proper camera visibility when entering the InGame state
 fn manage_camera_visibility(
-    mut game_cameras: Query<(Entity, &mut Visibility, &mut Camera), With<GameCamera>>,
-    mut camera_params: ParamSet<(
+    mut params: ParamSet<(
+        Query<(Entity, &mut Visibility, &mut Camera), With<GameCamera>>,
         Query<(Entity, &mut Visibility), With<MenuCamera>>,
         Query<(Entity, &mut Camera), With<MenuCamera>>,
     )>,
     context: Res<StateTransitionContext>,
 ) {
     info!("Managing camera visibility in InGame state");
-    info!("Found {} game cameras", game_cameras.iter().count());
-    info!("Found {} menu cameras", camera_params.p0().iter().count());
+    info!("Found {} game cameras", params.p0().iter().count());
+    info!("Found {} menu cameras", params.p1().iter().count());
     info!("Coming from pause menu: {}", context.from_pause_menu);
 
     // Set all game cameras to visible and ensure they have a unique order
     let mut current_order = 0;
-    for (entity, mut visibility, mut camera) in game_cameras.iter_mut() {
+    for (entity, mut visibility, mut camera) in params.p0().iter_mut() {
         *visibility = Visibility::Inherited;
         if camera.order != current_order {
             info!(
@@ -288,7 +283,7 @@ fn manage_camera_visibility(
     }
 
     // Hide all menu cameras
-    for (entity, mut visibility) in camera_params.p0().iter_mut() {
+    for (entity, mut visibility) in params.p1().iter_mut() {
         info!("Setting menu camera {:?} to Hidden", entity);
         *visibility = Visibility::Hidden;
     }
@@ -296,23 +291,23 @@ fn manage_camera_visibility(
 
 /// Ensures proper camera visibility when entering the PausedGame state
 fn manage_pause_camera_visibility(
-    mut game_cameras: Query<(&mut Visibility, &mut Camera), With<GameCamera>>,
-    mut camera_params: ParamSet<(
+    mut params: ParamSet<(
+        Query<(Entity, &mut Visibility, &mut Camera), With<GameCamera>>,
         Query<(Entity, &mut Visibility), With<MenuCamera>>,
         Query<(Entity, &mut Camera), With<MenuCamera>>,
     )>,
 ) {
     info!("Managing camera visibility in PausedGame state");
-    info!("Found {} game cameras", game_cameras.iter().count());
-    info!("Found {} menu cameras", camera_params.p0().iter().count());
+    info!("Found {} game cameras", params.p0().iter().count());
+    info!("Found {} menu cameras", params.p1().iter().count());
 
     // Set all game cameras to hidden
-    for (mut visibility, _) in game_cameras.iter_mut() {
+    for (_, mut visibility, _) in params.p0().iter_mut() {
         *visibility = Visibility::Hidden;
     }
 
     // Check if we have multiple menu cameras (warning condition)
-    let menu_camera_count = camera_params.p0().iter().count();
+    let menu_camera_count = params.p1().iter().count();
     if menu_camera_count > 1 {
         warn!(
             "Found {} menu cameras when there should only be one!",
@@ -321,13 +316,13 @@ fn manage_pause_camera_visibility(
     }
 
     // Set all menu cameras to visible and ensure they have order = 2
-    for (entity, mut visibility) in camera_params.p0().iter_mut() {
+    for (entity, mut visibility) in params.p1().iter_mut() {
         info!("Setting menu camera {:?} to Visible", entity);
         *visibility = Visibility::Inherited;
     }
 
     // Set all menu camera orders to 2
-    for (entity, mut camera) in camera_params.p1().iter_mut() {
+    for (entity, mut camera) in params.p2().iter_mut() {
         if camera.order != 2 {
             info!(
                 "Setting menu camera {:?} order from {} to 2",
