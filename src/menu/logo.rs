@@ -1,10 +1,11 @@
 use bevy::prelude::*;
-use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
+use bevy::text::JustifyText;
+use bevy::ui::{AlignItems, JustifyContent, PositionType, UiRect, Val};
 
 /// Creates a vectorized Star of David with Hebrew text
-pub fn create_logo() -> NodeBundle {
-    NodeBundle {
-        style: Style {
+pub fn create_logo() -> impl Bundle {
+    (
+        Node {
             width: Val::Px(200.0),
             height: Val::Px(200.0),
             flex_direction: FlexDirection::Column,
@@ -13,64 +14,71 @@ pub fn create_logo() -> NodeBundle {
             margin: UiRect::bottom(Val::Px(40.0)),
             ..default()
         },
-        ..default()
-    }
+        BackgroundColor(Color::NONE),
+        Interaction::None,
+    )
 }
 
 /// Creates the Star of David shape
-fn create_star_of_david() -> NodeBundle {
-    NodeBundle {
-        style: Style {
+fn create_star_of_david() -> impl Bundle {
+    (
+        Node {
             width: Val::Px(120.0),
             height: Val::Px(120.0),
             position_type: PositionType::Relative,
             ..default()
         },
-        ..default()
-    }
+        BackgroundColor(Color::NONE),
+        Interaction::None,
+    )
 }
 
 /// Creates the Hebrew text "Rummage" (רומאג')
-fn create_hebrew_text() -> TextBundle {
-    TextBundle::from_sections([TextSection::new(
-        "רומאג'",
-        TextStyle {
-            font_size: 48.0,
-            color: Color::GOLD,
+fn create_hebrew_text() -> impl Bundle {
+    (
+        Node {
+            margin: UiRect::top(Val::Px(20.0)),
             ..default()
         },
-    )])
-    .with_style(Style {
-        margin: UiRect::top(Val::Px(20.0)),
-        ..default()
-    })
+        Text::new("רומאג'"),
+        TextFont {
+            font_size: 48.0,
+            ..default()
+        },
+        TextLayout::new_with_justify(JustifyText::Center),
+        BackgroundColor(Color::rgb(1.0, 0.84, 0.0)), // Gold color
+        Interaction::None,
+    )
 }
 
 /// Creates the English text "Rummage"
-fn create_english_text() -> TextBundle {
-    TextBundle::from_sections([TextSection::new(
-        "Rummage",
-        TextStyle {
-            font_size: 24.0,
-            color: Color::GOLD,
+fn create_english_text() -> impl Bundle {
+    (
+        Node {
+            margin: UiRect::top(Val::Px(10.0)),
             ..default()
         },
-    )])
-    .with_style(Style {
-        margin: UiRect::top(Val::Px(10.0)),
-        ..default()
-    })
+        Text::new("Rummage"),
+        TextFont {
+            font_size: 24.0,
+            ..default()
+        },
+        TextLayout::new_with_justify(JustifyText::Center),
+        BackgroundColor(Color::rgb(1.0, 0.84, 0.0)), // Gold color
+        Interaction::None,
+    )
 }
 
 /// Creates the decorative elements around the logo
-fn create_decorative_elements() -> NodeBundle {
-    NodeBundle {
-        style: Style {
+fn create_decorative_elements() -> impl Bundle {
+    (
+        Node {
             width: Val::Px(200.0),
             height: Val::Px(200.0),
             position_type: PositionType::Absolute,
             ..default()
         },
-        ..default()
-    }
+        BackgroundColor(Color::NONE),
+        Interaction::None,
+    )
 }
