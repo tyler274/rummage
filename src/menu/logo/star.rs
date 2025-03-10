@@ -2,7 +2,6 @@ use crate::camera::components::AppLayer;
 use crate::menu::state::GameMenuState;
 use bevy::prelude::*;
 use bevy::render::render_asset::RenderAssetUsages;
-use std::time::Duration;
 
 /// Component for the Star of David shape
 #[derive(Component)]
@@ -12,9 +11,9 @@ pub struct StarOfDavid;
 #[derive(Resource)]
 pub struct StarOfDavidLogState {
     /// When we last logged star debug info
-    last_log_time: f64,
+    last_log_time: f32,
     /// Minimum time between logs in seconds
-    log_interval: f64,
+    log_interval: f32,
     /// Last recorded number of stars
     last_star_count: usize,
     /// Whether any changes were made to stars since last log
@@ -67,7 +66,7 @@ pub fn render_star_of_david(
     let star_count = query.iter().count();
 
     // Check if we need to log based on time interval or state changes
-    let current_time = time.elapsed_seconds();
+    let current_time = time.elapsed_secs();
     let should_log = current_time - log_state.last_log_time > log_state.log_interval
         || star_count != log_state.last_star_count
         || log_state.changes_made;

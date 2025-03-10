@@ -1,5 +1,4 @@
 use bevy::{app::AppExit, ecs::system::ParamSet, prelude::*};
-use std::time::Duration;
 
 use crate::{
     camera::components::{AppLayer, GameCamera, MenuCamera},
@@ -20,8 +19,8 @@ use crate::{
 /// Resource to control logging frequency for menu visibility
 #[derive(Resource)]
 struct MenuVisibilityLogState {
-    last_log_time: f64,
-    log_interval: f64,
+    last_log_time: f32,
+    log_interval: f32,
     last_camera_count: usize,
     last_item_count: usize,
     last_visible_items: usize,
@@ -373,7 +372,7 @@ fn debug_menu_visibility(
         .count();
 
     // Check if we need to log based on time interval or state changes
-    let current_time = time.elapsed_seconds();
+    let current_time = time.elapsed_secs();
     let state_changed = camera_count != log_state.last_camera_count
         || menu_item_count != log_state.last_item_count
         || visible_items != log_state.last_visible_items;
