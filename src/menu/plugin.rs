@@ -46,12 +46,16 @@ impl Plugin for MenuPlugin {
             )
             .add_systems(Update, handle_pause_input)
             // Add cleanup when entering main menu from game
-            .add_systems(OnEnter(GameMenuState::MainMenu), cleanup_game);
+            .add_systems(
+                OnEnter(GameMenuState::MainMenu),
+                (cleanup_game, cleanup_menu_camera).chain(),
+            );
     }
 }
 
 /// Starts the game loading process
 fn start_game_loading(
+    mut commands: Commands,
     mut next_state: ResMut<NextState<GameMenuState>>,
     cards: Query<Entity, With<Card>>,
     game_cameras: Query<Entity, With<GameCamera>>,
@@ -67,6 +71,14 @@ fn start_game_loading(
         next_state.set(GameMenuState::InGame);
     } else {
         info!("Cleanup not complete yet, waiting...");
+        // Force cleanup if stuck
+        if game_cameras.iter().count() > 0 {
+            warn!("Forcing cleanup of remaining game cameras...");
+            for entity in game_cameras.iter() {
+                info!("Force despawning game camera entity: {:?}", entity);
+                commands.entity(entity).despawn_recursive();
+            }
+        }
     }
 }
 
