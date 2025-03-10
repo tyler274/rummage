@@ -1,6 +1,8 @@
 use bevy::core_pipeline::core_2d::Camera2d;
+use bevy::core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping};
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
+use bevy::render::view::ColorGrading;
 use bevy::render::view::RenderLayers;
 use bevy::window::{PrimaryWindow, WindowResized};
 
@@ -33,9 +35,16 @@ pub fn setup_camera(commands: &mut Commands) {
     commands.spawn((
         Camera2d::default(),
         Camera {
-            order: 0, // Explicitly set order to 0 for game camera
+            order: 0,  // Explicitly set order to 0 for game camera
+            hdr: true, // Enable HDR rendering for better visual quality and bloom effects
             ..default()
         },
+        // Configure tonemapping for HDR
+        Tonemapping::TonyMcMapface, // The default - good balance for most scenes
+        // Add bloom effect for bright areas (subtle by default)
+        BloomSettings::default(),
+        // Configure color grading
+        ColorGrading::default(),
         Visibility::default(),
         InheritedVisibility::default(),
         ViewVisibility::default(),
