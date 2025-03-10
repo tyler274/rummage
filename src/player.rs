@@ -71,7 +71,7 @@ pub fn spawn_hand(
     let player_entity = commands
         .spawn((
             player.clone(),
-            AppLayer::Game.layer(), // Add to game layer
+            AppLayer::game_layers(), // Add to all game layers
         ))
         .id();
 
@@ -125,7 +125,7 @@ pub fn spawn_hand(
                     drag_offset: Vec2::ZERO,
                     z_index: z,
                 },
-                AppLayer::Game.layer(), // Add to game layer
+                AppLayer::Cards.layer(), // Use the specific Cards layer
             ))
             .id();
 
@@ -137,7 +137,7 @@ pub fn spawn_hand(
                     text_type: CardTextType::Name,
                 },
                 Transform::from_xyz(-card_size.x * 0.20, card_size.y * 0.3, z + 0.1),
-                AppLayer::Game.layer(), // Add to game layer
+                AppLayer::Cards.layer(), // Use the specific Cards layer
             ))
             .set_parent(card_entity);
 
@@ -149,7 +149,7 @@ pub fn spawn_hand(
                     text_type: CardTextType::Cost,
                 },
                 Transform::from_xyz(card_size.x * 0.35, card_size.y * 0.3, z + 0.1),
-                AppLayer::Game.layer(), // Add to game layer
+                AppLayer::Cards.layer(), // Use the specific Cards layer
             ))
             .set_parent(card_entity);
 
@@ -161,7 +161,7 @@ pub fn spawn_hand(
                     text_type: CardTextType::Type,
                 },
                 Transform::from_xyz(0.0, 0.0, z + 0.1),
-                AppLayer::Game.layer(), // Add to game layer
+                AppLayer::Cards.layer(), // Use the specific Cards layer
             ))
             .set_parent(card_entity);
 
@@ -174,7 +174,7 @@ pub fn spawn_hand(
                         text_type: CardTextType::PowerToughness,
                     },
                     Transform::from_xyz(card_size.x * 0.4, -card_size.y * 0.4, z + 0.1),
-                    AppLayer::Game.layer(), // Add to game layer
+                    AppLayer::Cards.layer(), // Use the specific Cards layer
                 ))
                 .set_parent(card_entity);
         }
@@ -187,7 +187,7 @@ pub fn spawn_hand(
                     text_type: CardTextType::RulesText,
                 },
                 Transform::from_xyz(-card_size.x * 0.35, -card_size.y * 0.15, z + 0.1),
-                AppLayer::Game.layer(), // Add to game layer
+                AppLayer::Cards.layer(), // Use the specific Cards layer
             ))
             .set_parent(card_entity);
     }

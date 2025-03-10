@@ -42,7 +42,7 @@ pub fn setup_camera(commands: &mut Commands) {
         Transform::default(),
         GlobalTransform::default(),
         GameCamera,
-        AppLayer::Game.with_shared(), // Game camera can see Game and Shared layers
+        AppLayer::game_layers(), // Use combined game layers to see all game elements including cards
     ));
 
     // Initialize camera pan state
