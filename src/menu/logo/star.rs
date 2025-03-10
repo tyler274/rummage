@@ -120,7 +120,8 @@ fn create_equilateral_triangle_mesh(size: f32) -> Mesh {
 pub fn create_star_of_david() -> impl Bundle {
     info!("Creating StarOfDavid bundle");
     (
-        Transform::from_xyz(0.0, 0.0, -20.0),
+        // Use a very large negative z value to ensure it's behind UI
+        Transform::from_xyz(0.0, 0.0, -1000.0),
         GlobalTransform::default(),
         Visibility::default(),
         InheritedVisibility::default(),
