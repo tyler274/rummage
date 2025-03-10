@@ -16,7 +16,10 @@ use bevy_rand::prelude::*;
 use camera::{
     CameraConfig, CameraPanState,
     components::GameCamera,
-    systems::{camera_movement, handle_window_resize, set_initial_zoom, setup_camera},
+    systems::{
+        camera_movement, handle_window_resize, safe_wsl2_resize_handler, set_initial_zoom,
+        setup_camera,
+    },
 };
 use card::DebugConfig;
 use cards::CardsPlugin;
@@ -130,6 +133,9 @@ fn main() {
                     ..default()
                 }),
         )
+        // Add the WSL2-safe resize handler system with high priority
+        // This system needs to run before Bevy's internal systems that would process the WindowResized events
+        .add_systems(First, safe_wsl2_resize_handler)
         .add_plugins(MenuPlugin)
         .add_plugins(GamePlugin)
         .add_systems(Update, handle_exit)
