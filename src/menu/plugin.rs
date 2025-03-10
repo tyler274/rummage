@@ -48,7 +48,7 @@ impl Plugin for MenuPlugin {
             // Add cleanup when entering main menu from game
             .add_systems(
                 OnEnter(GameMenuState::MainMenu),
-                (cleanup_game, cleanup_menu_camera).chain(),
+                (cleanup_game, cleanup_menu_camera, setup_main_menu).chain(),
             );
     }
 }
