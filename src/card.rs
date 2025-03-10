@@ -613,7 +613,7 @@ pub fn handle_card_dragging(
     mut card_query: Query<(Entity, &mut Transform, &mut Draggable, &GlobalTransform), With<Card>>,
     mouse_button: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window>,
-    camera_q: Query<(&Camera, &GlobalTransform)>,
+    camera_q: Query<(&Camera, &GlobalTransform), With<crate::camera::components::GameCamera>>,
 ) {
     // Safely get window and camera
     let Ok(window) = windows.get_single() else {

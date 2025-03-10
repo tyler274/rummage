@@ -33,7 +33,7 @@ pub fn drag_system(
     mut draggable_query: Query<(&mut Transform, &mut Draggable)>,
     mouse_button: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window, With<PrimaryWindow>>,
-    camera_q: Query<(&Camera, &GlobalTransform)>,
+    camera_q: Query<(&Camera, &GlobalTransform), With<crate::camera::components::GameCamera>>,
 ) {
     // Get the primary window
     let Ok(window) = windows.get_single() else {
