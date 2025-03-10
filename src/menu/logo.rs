@@ -46,7 +46,7 @@ fn create_hebrew_text() -> impl Bundle {
             ..default()
         },
         TextLayout::new_with_justify(JustifyText::Center),
-        BackgroundColor(Color::rgb(1.0, 0.84, 0.0)), // Gold color
+        BackgroundColor(Color::srgb(1.0, 0.84, 0.0)), // Gold color
         Interaction::None,
     )
 }
@@ -64,7 +64,7 @@ fn create_english_text() -> impl Bundle {
             ..default()
         },
         TextLayout::new_with_justify(JustifyText::Center),
-        BackgroundColor(Color::rgb(1.0, 0.84, 0.0)), // Gold color
+        BackgroundColor(Color::srgb(1.0, 0.84, 0.0)), // Gold color
         Interaction::None,
     )
 }
