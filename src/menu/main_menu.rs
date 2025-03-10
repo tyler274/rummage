@@ -1,4 +1,4 @@
-use crate::menu::{components::*, state::GameMenuState, styles::*};
+use crate::menu::{components::*, logo::create_logo, state::GameMenuState, styles::*};
 use bevy::prelude::*;
 use bevy::text::JustifyText;
 use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
@@ -30,6 +30,9 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
             MenuItem,
         ))
         .with_children(|parent| {
+            // Add the logo
+            parent.spawn(create_logo());
+
             // Menu buttons container
             parent
                 .spawn((

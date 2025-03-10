@@ -1,10 +1,11 @@
-mod cleanup;
-mod components;
-mod main_menu;
-mod pause_menu;
-mod plugin;
-mod state;
-mod styles;
+pub mod cleanup;
+pub mod components;
+pub mod logo;
+pub mod main_menu;
+pub mod pause_menu;
+pub mod plugin;
+pub mod state;
+pub mod styles;
 
 pub use cleanup::*;
 pub use components::*;
