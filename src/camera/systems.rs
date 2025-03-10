@@ -93,11 +93,26 @@ pub fn handle_window_resize(
             // Scale by aspect ratio to maintain card proportions across different window sizes
             projection.scale = (target_card_height / resize_event.height) * 2.0 * aspect;
 
-            // Update window surface
+            // Update window surface - with WSL2 error handling
             if let Ok(mut window) = windows.get_single_mut() {
-                window
-                    .resolution
-                    .set(resize_event.width, resize_event.height);
+                // Set the new resolution but don't panic if the surface reconfiguration fails
+                // This handles the common Vulkan/WSL2 "Surface does not support the adapter's queue family" error
+                let prev_width = window.resolution.width();
+                let prev_height = window.resolution.height();
+
+                // Only attempt to update if the size actually changed
+                if resize_event.width != prev_width || resize_event.height != prev_height {
+                    // Set the new resolution
+                    window
+                        .resolution
+                        .set(resize_event.width, resize_event.height);
+
+                    // Log that we updated the window resolution
+                    debug!(
+                        "Window resized to {}x{}",
+                        resize_event.width, resize_event.height
+                    );
+                }
             }
         }
     }

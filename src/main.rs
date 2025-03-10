@@ -95,21 +95,41 @@ fn handle_exit(mut exit_events: EventReader<AppExit>) {
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Rummage".to_string(),
-                resolution: WindowResolution::new(1920.0, 1080.0),
-                present_mode: bevy::window::PresentMode::AutoNoVsync,
-                resizable: true,
-                resize_constraints: bevy::window::WindowResizeConstraints {
-                    min_width: 960.0,  // Half of 1920
-                    min_height: 540.0, // Half of 1080
+        .add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "Rummage".to_string(),
+                        resolution: WindowResolution::new(1920.0, 1080.0),
+                        present_mode: bevy::window::PresentMode::AutoNoVsync,
+                        resizable: true,
+                        resize_constraints: bevy::window::WindowResizeConstraints {
+                            min_width: 960.0,  // Half of 1920
+                            min_height: 540.0, // Half of 1080
+                            ..default()
+                        },
+                        ..default()
+                    }),
                     ..default()
-                },
-                ..default()
-            }),
-            ..default()
-        }))
+                })
+                .set(bevy::render::RenderPlugin {
+                    // Configure rendering to be more resilient in WSL2 environments
+                    render_creation: bevy::render::settings::RenderCreation::Automatic(
+                        bevy::render::settings::WgpuSettings {
+                            // Try multiple backends if needed for WSL2 compatibility
+                            backends: Some(bevy::render::settings::Backends::all()),
+                            // Use low power preference for better WSL2 compatibility
+                            power_preference: bevy::render::settings::PowerPreference::LowPower,
+                            // Don't require all features, adapt to what's available in WSL2
+                            features: bevy::render::settings::WgpuFeatures::empty(),
+                            ..default()
+                        },
+                    ),
+                    // Don't wait for pipelines to compile, which can hang under certain conditions
+                    synchronous_pipeline_compilation: false,
+                    ..default()
+                }),
+        )
         .add_plugins(MenuPlugin)
         .add_plugins(GamePlugin)
         .add_systems(Update, handle_exit)
