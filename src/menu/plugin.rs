@@ -31,6 +31,7 @@ impl Plugin for MenuPlugin {
                     setup_main_menu,
                     setup_menu_camera,
                     set_menu_camera_zoom,
+                    ensure_single_menu_camera,
                 )
                     .chain(),
             )
@@ -56,8 +57,10 @@ impl Plugin for MenuPlugin {
             .add_systems(
                 OnEnter(GameMenuState::PausedGame),
                 (
+                    cleanup_menu_camera,
                     setup_pause_menu,
                     setup_menu_camera,
+                    ensure_single_menu_camera,
                     manage_pause_camera_visibility,
                 ),
             )
@@ -69,6 +72,31 @@ impl Plugin for MenuPlugin {
             // InGame state systems
             .add_systems(OnEnter(GameMenuState::InGame), manage_camera_visibility)
             .add_systems(Update, handle_pause_input);
+    }
+}
+
+/// Ensures only one menu camera exists
+fn ensure_single_menu_camera(
+    mut commands: Commands,
+    menu_cameras: Query<Entity, With<MenuCamera>>,
+) {
+    let camera_count = menu_cameras.iter().count();
+    if camera_count > 1 {
+        warn!(
+            "Found {} menu cameras, cleaning up duplicates",
+            camera_count
+        );
+        // Keep only the first camera and despawn the rest
+        let mut first_found = false;
+        for entity in menu_cameras.iter() {
+            if !first_found {
+                first_found = true;
+                info!("Keeping menu camera entity: {:?}", entity);
+            } else {
+                info!("Removing duplicate menu camera entity: {:?}", entity);
+                commands.entity(entity).despawn_recursive();
+            }
+        }
     }
 }
 

@@ -5,7 +5,7 @@ pub fn setup_menu_camera(mut commands: Commands) {
     commands.spawn((
         Camera2d::default(),
         Camera {
-            order: 1,
+            order: 2,
             ..default()
         },
         Transform::default(),
