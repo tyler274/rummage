@@ -1,3 +1,7 @@
+use crate::game_engine::GameStack;
+use crate::game_engine::Phase;
+use crate::game_engine::state::GameState;
+use crate::menu::GameMenuState;
 use bevy::prelude::*;
 use std::collections::VecDeque;
 
@@ -103,9 +107,9 @@ impl PrioritySystem {
 pub fn priority_system(
     mut commands: Commands,
     mut priority: ResMut<PrioritySystem>,
-    mut game_state: ResMut<crate::game_engine::GameState>,
-    stack: Res<crate::game_engine::GameStack>,
-    phase: Res<crate::game_engine::Phase>,
+    mut game_state: ResMut<GameState>,
+    stack: Res<GameStack>,
+    phase: Res<Phase>,
     // This would also interact with any pending game actions
 ) {
     // Update stack empty status

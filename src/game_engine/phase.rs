@@ -1,3 +1,5 @@
+use crate::game_engine::state::GameState;
+use crate::menu::GameMenuState;
 use crate::player::Player;
 use bevy::prelude::*;
 
@@ -119,7 +121,7 @@ impl Default for Phase {
 /// System to handle phase transitions
 pub fn phase_transition_system(
     mut commands: Commands,
-    mut game_state: ResMut<crate::game_engine::GameState>,
+    mut game_state: ResMut<GameState>,
     mut phase: ResMut<Phase>,
     priority_system: Res<crate::game_engine::PrioritySystem>,
     stack: Res<crate::game_engine::GameStack>,

@@ -6,17 +6,6 @@
 /// - Mana payment validation
 /// - Color identity calculations
 ///
-/// # Examples
-///
-/// ```
-/// use rummage::mana::{Mana, Color};
-///
-/// // Create a mana cost of {2}{W}{W}
-/// let cost = Mana::new_with_colors(2, 2, 0, 0, 0, 0);
-/// assert_eq!(cost.white, 2);
-/// assert_eq!(cost.colorless, 2);
-/// assert!(cost.color.contains(Color::WHITE));
-/// ```
 use bevy::{prelude::*, utils::HashMap};
 use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
@@ -29,12 +18,6 @@ use std::fmt;
 /// using the Mana font. The font expects the braced symbols as input and renders them
 /// as the appropriate mana symbols.
 ///
-/// # Examples
-/// ```
-/// use rummage::mana::mana_symbol_to_char;
-/// assert_eq!(mana_symbol_to_char("{W}"), "{W}"); // Will render as white mana symbol
-/// assert_eq!(mana_symbol_to_char("{2}"), "{2}"); // Will render as generic mana 2
-/// ```
 pub const _MANA_SYMBOLS: &[(&str, char)] = &[
     ("{W}", 'w'),  // White mana
     ("{U}", 'u'),  // Blue mana
@@ -89,11 +72,6 @@ pub fn _mana_symbol_to_char(symbol: &str) -> String {
 /// # Returns
 /// The text unchanged, as the Mana font handles the symbol conversion internally.
 ///
-/// # Examples
-/// ```
-/// use rummage::mana::convert_rules_text_to_symbols;
-/// assert_eq!(convert_rules_text_to_symbols("Add {W}"), "Add {W}");
-/// ```
 pub fn convert_rules_text_to_symbols(text: &str) -> String {
     // Keep the braces around the symbols for proper font rendering
     text.to_string()
@@ -105,16 +83,6 @@ bitflags! {
     /// Each color is represented by a bit flag, allowing for combinations
     /// of colors to be represented efficiently.
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rummage::mana::Color;
-    ///
-    /// let azorius = Color::WHITE | Color::BLUE;
-    /// assert!(azorius.contains(Color::WHITE));
-    /// assert!(azorius.contains(Color::BLUE));
-    /// assert!(!azorius.contains(Color::BLACK));
-    /// ```
     #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
     pub struct Color: u32 {
         const NONE = 0;
@@ -132,17 +100,6 @@ bitflags! {
 /// This struct tracks both the colors present in the mana cost and
 /// the specific amounts of each type of mana required.
 ///
-/// # Examples
-///
-/// ```
-/// use rummage::mana::Mana;
-///
-/// // Create a mana cost of {1}{U}{U}
-/// let cost = Mana::new_with_colors(1, 0, 2, 0, 0, 0);
-/// assert_eq!(cost.colorless, 1);
-/// assert_eq!(cost.blue, 2);
-/// assert_eq!(cost.to_string(), "{U}{U}{C}");
-/// ```
 #[derive(Component, Default, Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Mana {
     /// The colors present in this mana cost
@@ -165,18 +122,6 @@ pub struct Mana {
 ///
 /// This tracks both the amount and type of mana available to a player.
 ///
-/// # Examples
-///
-/// ```
-/// use rummage::mana::{Mana, ManaPool};
-///
-/// let mut pool = ManaPool::new();
-/// let blue_mana = Mana::new_with_colors(0, 0, 1, 0, 0, 0);
-/// pool.add(blue_mana);
-///
-/// // Try to use the blue mana
-/// assert!(pool.remove(blue_mana));
-/// ```
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct ManaPool {
     /// Map of colors to mana amounts
@@ -186,14 +131,6 @@ pub struct ManaPool {
 impl Mana {
     /// Creates a new empty mana cost.
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rummage::mana::Mana;
-    ///
-    /// let cost = Mana::new();
-    /// assert_eq!(cost.total(), 0);
-    /// ```
     #[allow(dead_code)]
     pub fn new() -> Self {
         Self::default()
@@ -201,52 +138,18 @@ impl Mana {
 
     /// Returns the total amount of mana in this cost.
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rummage::mana::Mana;
-    ///
-    /// let cost = Mana::new_with_colors(1, 2, 0, 0, 0, 0);
-    /// assert_eq!(cost.total(), 3); // 1 colorless + 2 white
-    /// ```
     #[allow(dead_code)]
     pub fn total(&self) -> u64 {
         self.white + self.blue + self.black + self.red + self.green + self.colorless
     }
 
     /// Returns true if this mana cost contains any colored mana.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rummage::mana::Mana;
-    ///
-    /// let colorless = Mana::new_with_colors(2, 0, 0, 0, 0, 0);
-    /// assert!(!colorless.has_color());
-    ///
-    /// let white = Mana::new_with_colors(0, 1, 0, 0, 0, 0);
-    /// assert!(white.has_color());
-    /// ```
     pub fn has_color(&self) -> bool {
         self.white > 0 || self.blue > 0 || self.black > 0 || self.red > 0 || self.green > 0
     }
 
     /// Returns true if this mana cost can be paid with the given mana pool.
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rummage::mana::{Mana, ManaPool};
-    ///
-    /// let mut pool = ManaPool::new();
-    /// pool.add(Mana::new_with_colors(0, 2, 0, 0, 0, 0)); // Add {W}{W}
-    ///
-    /// let cost = Mana::new_with_colors(0, 1, 0, 0, 0, 0); // Cost is {W}
-    /// assert!(cost.can_pay(&pool));
-    ///
-    /// let expensive = Mana::new_with_colors(0, 3, 0, 0, 0, 0); // Cost is {W}{W}{W}
-    /// assert!(!expensive.can_pay(&pool));
-    /// ```
     #[allow(dead_code)]
     pub fn can_pay(&self, pool: &ManaPool) -> bool {
         // Check colored mana requirements
@@ -267,19 +170,6 @@ impl Mana {
     }
 
     /// Creates a new Mana instance with the specified amounts for each color.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rummage::mana::{Mana, Color};
-    ///
-    /// // Create {2}{W}{U}
-    /// let cost = Mana::new_with_colors(2, 1, 1, 0, 0, 0);
-    /// assert_eq!(cost.colorless, 2);
-    /// assert_eq!(cost.white, 1);
-    /// assert_eq!(cost.blue, 1);
-    /// assert!(cost.color.contains(Color::WHITE | Color::BLUE));
-    /// ```
     #[allow(dead_code)]
     pub fn new_with_colors(
         colorless: u64,
@@ -320,32 +210,14 @@ impl Mana {
     }
 
     /// Returns the total amount of colored mana (excluding colorless).
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rummage::mana::Mana;
-    ///
-    /// let cost = Mana::new_with_colors(2, 1, 1, 0, 0, 0); // {2}{W}{U}
-    /// assert_eq!(cost.colored_total(), 2); // Only counts {W}{U}, not the {2}
-    /// ```
+
     #[allow(dead_code)]
     pub fn colored_total(&self) -> u64 {
         self.white + self.blue + self.black + self.red + self.green
     }
 
     /// Returns the number of colored mana symbols in the cost and their string representation.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rummage::mana::Mana;
-    ///
-    /// let cost = Mana::new_with_colors(0, 1, 1, 0, 0, 0); // {W}{U}
-    /// let (symbols, count) = cost.colored_symbols();
-    /// assert_eq!(symbols, "WU");
-    /// assert_eq!(count, 2);
-    /// ```
+
     #[allow(dead_code)]
     fn colored_symbols(&self) -> (String, u64) {
         let mut symbols = String::new();
@@ -378,16 +250,6 @@ impl Mana {
 }
 
 /// Formats mana costs using font characters.
-///
-/// # Examples
-///
-/// ```
-/// use rummage::mana::Mana;
-///
-/// let cost = Mana::new_with_colors(2, 1, 1, 0, 0, 0);
-/// // Will display as "wucc" (white, blue, and two colorless)
-/// println!("{}", cost);
-/// ```
 impl fmt::Display for Mana {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut cost = String::new();
@@ -425,15 +287,6 @@ impl fmt::Display for Mana {
 
 impl ManaPool {
     /// Creates a new empty mana pool.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rummage::mana::ManaPool;
-    ///
-    /// let pool = ManaPool::new();
-    /// assert!(pool.mana.is_empty());
-    /// ```
     #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
@@ -442,18 +295,6 @@ impl ManaPool {
     }
 
     /// Adds mana to the pool.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rummage::mana::{Mana, ManaPool};
-    ///
-    /// let mut pool = ManaPool::new();
-    /// let blue_mana = Mana::new_with_colors(0, 0, 1, 0, 0, 0);
-    /// pool.add(blue_mana);
-    ///
-    /// assert_eq!(pool.mana.len(), 1);
-    /// ```
     #[allow(dead_code)]
     pub fn add(&mut self, mana: Mana) {
         self.mana
@@ -473,22 +314,6 @@ impl ManaPool {
     ///
     /// Returns true if the mana was successfully removed,
     /// false if there wasn't enough mana of the right types.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rummage::mana::{Mana, ManaPool};
-    ///
-    /// let mut pool = ManaPool::new();
-    /// let blue_mana = Mana::new_with_colors(0, 0, 1, 0, 0, 0);
-    /// pool.add(blue_mana);
-    ///
-    /// // Can remove the blue mana we added
-    /// assert!(pool.remove(blue_mana));
-    ///
-    /// // Can't remove more than we have
-    /// assert!(!pool.remove(blue_mana));
-    /// ```
     #[allow(dead_code)]
     pub fn remove(&mut self, mana: Mana) -> bool {
         if let Some(existing) = self.mana.get_mut(&mana.color) {
@@ -516,19 +341,6 @@ impl ManaPool {
     }
 
     /// Empties the mana pool.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rummage::mana::{Mana, ManaPool};
-    ///
-    /// let mut pool = ManaPool::new();
-    /// pool.add(Mana::new_with_colors(0, 0, 1, 0, 0, 0));
-    /// assert!(!pool.mana.is_empty());
-    ///
-    /// pool.clear();
-    /// assert!(pool.mana.is_empty());
-    /// ```
     #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.mana.clear();

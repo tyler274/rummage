@@ -315,5 +315,5 @@ pub fn setup_zone_manager(mut commands: Commands, player_query: Query<Entity, Wi
 // Register zones-related systems and events
 pub fn register_zone_systems(app: &mut App) {
     app.add_event::<ZoneChangeEvent>()
-        .add_systems(Startup, setup_zone_manager);
+        .add_systems(OnEnter(crate::menu::GameMenuState::InGame), setup_zone_manager);
 }

@@ -21,7 +21,7 @@ use card::{DebugConfig, debug_render_text_positions, handle_card_dragging};
 use cards::CardsPlugin;
 use drag::DragPlugin;
 use game_engine::GameEnginePlugin;
-use menu::{GameState, MenuPlugin};
+use menu::{GameMenuState, MenuPlugin};
 use player::spawn_hand;
 use text::spawn_card_text;
 
@@ -40,7 +40,7 @@ impl Plugin for GamePlugin {
             .insert_resource(CameraConfig::default())
             .insert_resource(CameraPanState::default())
             .add_systems(
-                OnExit(GameState::Loading),
+                OnExit(GameMenuState::Loading),
                 (setup_game, set_initial_zoom.after(setup_game)),
             )
             .add_systems(
@@ -52,7 +52,7 @@ impl Plugin for GamePlugin {
                     camera_movement,
                     spawn_card_text,
                 )
-                    .run_if(in_state(GameState::InGame)),
+                    .run_if(in_state(GameMenuState::InGame)),
             );
     }
 }

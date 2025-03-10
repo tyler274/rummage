@@ -23,6 +23,7 @@ pub use state::*;
 pub use turns::*;
 pub use zones::*;
 
+use crate::menu::GameMenuState;
 use bevy::prelude::*;
 
 /// Plugin that sets up the MTG Commander game engine
@@ -33,42 +34,120 @@ impl Plugin for GameEnginePlugin {
         // Register events
         app.add_event::<StackItemResolvedEvent>()
             .add_event::<CheckStateBasedActionsEvent>()
-            .add_event::<PlayerEliminatedEvent>();
+            .add_event::<PlayerEliminatedEvent>()
+            .add_event::<CommanderZoneChoiceEvent>()
+            .add_event::<CombatDamageEvent>()
+            .add_event::<ZoneChangeEvent>()
+            .add_event::<TurnStartEvent>()
+            .add_event::<TurnEndEvent>()
+            .add_event::<DeclareAttackersEvent>()
+            .add_event::<DeclareBlockersEvent>()
+            .add_event::<AssignCombatDamageEvent>()
+            .add_event::<AttackerDeclaredEvent>()
+            .add_event::<BlockerDeclaredEvent>()
+            .add_event::<CombatBeginEvent>()
+            .add_event::<CombatEndEvent>()
+            .add_event::<DeclareAttackersStepBeginEvent>()
+            .add_event::<DeclareAttackersStepEndEvent>()
+            .add_event::<DeclareBlockersStepBeginEvent>()
+            .add_event::<DeclareBlockersStepEndEvent>()
+            .add_event::<CreatureAttacksEvent>()
+            .add_event::<CreatureBlocksEvent>()
+            .add_event::<CreatureBlockedEvent>()
+            .add_event::<CombatDamageCompleteEvent>();
 
-        // Add core systems
-        app.add_systems(Startup, setup_game_engine).add_systems(
+        // Add game resources initialization during OnEnter(GameMenuState::InGame)
+        app.add_systems(OnEnter(GameMenuState::InGame), setup_game_engine);
+
+        // Register each system individually with the condition
+        // Core systems
+        app.add_systems(
             Update,
-            (
-                phase_transition_system,
-                priority_system,
-                stack_resolution_system,
-                state_based_actions_system,
-                trigger_state_based_actions_system,
-                process_game_actions,
-            ),
+            phase_transition_system.run_if(in_state(GameMenuState::InGame)),
+        );
+        app.add_systems(
+            Update,
+            priority_system.run_if(in_state(GameMenuState::InGame)),
+        );
+        app.add_systems(
+            Update,
+            stack_resolution_system.run_if(in_state(GameMenuState::InGame)),
+        );
+        app.add_systems(
+            Update,
+            state_based_actions_system.run_if(in_state(GameMenuState::InGame)),
+        );
+        app.add_systems(
+            Update,
+            trigger_state_based_actions_system.run_if(in_state(GameMenuState::InGame)),
+        );
+        app.add_systems(
+            Update,
+            process_game_actions.run_if(in_state(GameMenuState::InGame)),
         );
 
-        // Register turn-related systems and events
-        turns::register_turn_systems(app);
+        // Turn systems
+        app.add_systems(
+            Update,
+            turn_start_system.run_if(in_state(GameMenuState::InGame)),
+        );
+        app.add_systems(
+            Update,
+            turn_end_system.run_if(in_state(GameMenuState::InGame)),
+        );
+        app.add_systems(Update, untap_system.run_if(in_state(GameMenuState::InGame)));
 
-        // Register zone-related systems and events
-        zones::register_zone_systems(app);
+        // Commander systems
+        app.add_systems(
+            Update,
+            track_commander_damage.run_if(in_state(GameMenuState::InGame)),
+        );
+        app.add_systems(
+            Update,
+            handle_commander_zone_change.run_if(in_state(GameMenuState::InGame)),
+        );
+        app.add_systems(
+            Update,
+            process_commander_zone_choices.run_if(in_state(GameMenuState::InGame)),
+        );
+        app.add_systems(
+            Update,
+            check_commander_damage_loss.run_if(in_state(GameMenuState::InGame)),
+        );
+        app.add_systems(
+            Update,
+            record_commander_damage.run_if(in_state(GameMenuState::InGame)),
+        );
 
-        // Register commander-related systems and events
-        commander::register_commander_systems(app);
+        // Combat systems
+        app.add_systems(
+            Update,
+            (
+                initialize_combat_phase,
+                handle_declare_attackers_event.after(initialize_combat_phase),
+                declare_attackers_system.after(handle_declare_attackers_event),
+                handle_declare_blockers_event.after(declare_attackers_system),
+                declare_blockers_system.after(handle_declare_blockers_event),
+                assign_combat_damage_system.after(declare_blockers_system),
+                process_combat_damage_system.after(assign_combat_damage_system),
+                end_combat_system.after(process_combat_damage_system),
+            )
+                .run_if(in_state(GameMenuState::InGame)),
+        );
 
-        // Register combat-related systems and events
-        combat::register_combat_systems(app);
-
-        // Register politics-related systems and events
+        // Allow politics systems to register additional systems
         politics::register_politics_systems(app);
     }
 }
 
+/// Condition function to check if the game state is InGame
+fn game_state_condition(state: Res<State<GameMenuState>>) -> bool {
+    *state.get() == GameMenuState::InGame
+}
+
 /// Initializes the core game engine resources
 fn setup_game_engine(mut commands: Commands) {
-    // Initialize the game state with default values
-    commands.insert_resource(GameState::default());
+    info!("Initializing game engine resources...");
 
     // Initialize the phase system starting at Beginning::Untap
     commands.insert_resource(Phase::Beginning(BeginningStep::Untap));
@@ -78,4 +157,20 @@ fn setup_game_engine(mut commands: Commands) {
 
     // Initialize an empty stack
     commands.insert_resource(GameStack::default());
+
+    // Initialize zone manager
+    commands.insert_resource(ZoneManager::default());
+
+    // Initialize combat state
+    commands.insert_resource(CombatState::default());
+
+    // Initialize turn manager
+    commands.insert_resource(TurnManager::default());
+
+    // Initialize the commander zone and manager
+    commands.insert_resource(CommandZone::default());
+    commands.insert_resource(CommandZoneManager::default());
+
+    // Initialize game state
+    commands.insert_resource(GameState::default());
 }

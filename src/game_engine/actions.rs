@@ -1,6 +1,8 @@
 use crate::card::{Card, CardDetails, CardTypes};
-use crate::game_engine::{GameStack, GameState, Phase, PrioritySystem};
+use crate::game_engine::state::GameState;
+use crate::game_engine::{GameStack, Phase, PrioritySystem};
 use crate::mana::Mana;
+use crate::menu::GameMenuState;
 use crate::player::Player;
 use bevy::prelude::*;
 

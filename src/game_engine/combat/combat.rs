@@ -1,0 +1,354 @@
+use crate::card::{Card, CardDetails, CardTypes, CreatureType};
+use crate::game_engine::commander::{CombatDamageEvent, Commander, CommanderRules};
+use crate::game_engine::phase::{CombatStep, Phase};
+use crate::game_engine::state::GameState;
+use crate::game_engine::turns::TurnManager;
+use crate::game_engine::zones::{Zone, ZoneManager};
+use crate::mana::Color;
+use crate::menu::GameMenuState;
+use crate::player::Player;
+use bevy::prelude::*;
+use std::collections::{HashMap, HashSet};
+
+// Event types
+#[derive(Event)]
+pub struct DeclareAttackersEvent {
+    pub player: Entity,
+}
+
+#[derive(Event)]
+pub struct DeclareBlockersEvent {
+    pub player: Entity,
+}
+
+#[derive(Event)]
+pub struct AssignCombatDamageEvent {
+    pub is_first_strike: bool,
+}
+
+#[derive(Event)]
+pub struct AttackerDeclaredEvent {
+    pub attacker: Entity,
+    pub defender: Entity,
+}
+
+#[derive(Event)]
+pub struct BlockerDeclaredEvent {
+    pub blocker: Entity,
+    pub attacker: Entity,
+}
+
+#[derive(Event)]
+pub struct CombatBeginEvent {
+    pub player: Entity,
+}
+
+#[derive(Event)]
+pub struct CombatEndEvent {
+    pub player: Entity,
+}
+
+#[derive(Event)]
+pub struct DeclareAttackersStepBeginEvent {
+    pub player: Entity,
+}
+
+#[derive(Event)]
+pub struct DeclareAttackersStepEndEvent {
+    pub player: Entity,
+}
+
+#[derive(Event)]
+pub struct DeclareBlockersStepBeginEvent {
+    pub player: Entity,
+}
+
+#[derive(Event)]
+pub struct DeclareBlockersStepEndEvent {
+    pub player: Entity,
+}
+
+#[derive(Event)]
+pub struct CreatureAttacksEvent {
+    pub attacker: Entity,
+    pub defender: Entity,
+}
+
+#[derive(Event)]
+pub struct CreatureBlocksEvent {
+    pub blocker: Entity,
+    pub attacker: Entity,
+}
+
+#[derive(Event)]
+pub struct CreatureBlockedEvent {
+    pub attacker: Entity,
+    pub blocker: Entity,
+}
+
+#[derive(Event)]
+pub struct CombatDamageCompleteEvent {
+    pub player: Entity,
+}
+
+// Combat state enums
+#[derive(PartialEq, Eq, Clone, Copy)]
+pub enum BlockedStatus {
+    Blocked,
+    Unblocked,
+}
+
+#[derive(PartialEq, Eq, Clone)]
+pub enum BlockRestriction {
+    CreatureType(CreatureType),
+    Color(Color),
+    Power(Comparison, i32),
+    Toughness(Comparison, i32),
+}
+
+#[derive(PartialEq, Eq, Clone)]
+pub enum Comparison {
+    LessThan,
+    LessThanOrEqual,
+    Equal,
+    GreaterThanOrEqual,
+    GreaterThan,
+}
+
+/// Resource tracking the state of combat during a turn
+#[derive(Resource)]
+pub struct CombatState {
+    /// Current attackers and defenders - maps attacker creature to defending player
+    pub attackers: HashMap<Entity, Entity>,
+
+    /// Maps attacking creature to its blocking creatures
+    pub blockers: HashMap<Entity, Vec<Entity>>,
+
+    /// Tracks whether each attacking creature is blocked or not
+    pub blocked_status: HashMap<Entity, BlockedStatus>,
+
+    /// Combat damage assignment - maps attacker to list of (target, damage) entries
+    pub assigned_combat_damage: HashMap<Entity, Vec<(Entity, u32)>>,
+
+    /// Pending combat damage events to be processed
+    pub pending_combat_damage: Vec<CombatDamageEvent>,
+
+    /// Tracks which players have been attacked this turn
+    pub players_attacked_this_turn: HashSet<Entity>,
+
+    /// Maps players to creatures attacking them
+    pub creatures_attacking_each_player: HashMap<Entity, Vec<Entity>>,
+
+    /// Combat restrictions - maps creatures to players they must attack
+    pub must_attack: HashMap<Entity, Vec<Entity>>,
+
+    /// Combat restrictions - maps creatures to players they cannot attack
+    pub cannot_attack: HashMap<Entity, Vec<Entity>>,
+
+    /// Combat restrictions - maps creatures to what cannot block them
+    pub cannot_be_blocked_by: HashMap<Entity, Vec<BlockRestriction>>,
+
+    /// Commander damage tracking for this combat
+    pub commander_damage_this_combat: HashMap<Entity, HashMap<Entity, u32>>,
+
+    /// Tracks current phase of combat
+    pub in_declare_attackers: bool,
+    pub in_declare_blockers: bool,
+    pub in_combat_damage: bool,
+
+    /// For first strike/regular damage steps
+    pub combat_damage_step_number: u8,
+}
+
+impl Default for CombatState {
+    fn default() -> Self {
+        Self {
+            attackers: HashMap::new(),
+            blockers: HashMap::new(),
+            blocked_status: HashMap::new(),
+            assigned_combat_damage: HashMap::new(),
+            pending_combat_damage: Vec::new(),
+            players_attacked_this_turn: HashSet::new(),
+            creatures_attacking_each_player: HashMap::new(),
+            must_attack: HashMap::new(),
+            cannot_attack: HashMap::new(),
+            cannot_be_blocked_by: HashMap::new(),
+            commander_damage_this_combat: HashMap::new(),
+            in_declare_attackers: false,
+            in_declare_blockers: false,
+            in_combat_damage: false,
+            combat_damage_step_number: 0,
+        }
+    }
+}
+
+// Combat systems
+pub fn initialize_combat_phase(
+    mut commands: Commands,
+    mut combat_state: ResMut<CombatState>,
+    turn_manager: Res<TurnManager>,
+) {
+    // Clear previous combat state
+    *combat_state = CombatState::default();
+
+    // Emit combat begin event
+    commands.spawn(CombatBeginEvent {
+        player: turn_manager.active_player,
+    });
+}
+
+pub fn handle_declare_attackers_event(
+    mut commands: Commands,
+    mut combat_state: ResMut<CombatState>,
+    mut events: EventReader<DeclareAttackersEvent>,
+) {
+    for event in events.read() {
+        combat_state.in_declare_attackers = true;
+        commands.spawn(DeclareAttackersStepBeginEvent {
+            player: event.player,
+        });
+    }
+}
+
+pub fn declare_attackers_system(
+    mut commands: Commands,
+    mut combat_state: ResMut<CombatState>,
+    mut events: EventReader<AttackerDeclaredEvent>,
+) {
+    for event in events.read() {
+        combat_state
+            .attackers
+            .insert(event.attacker, event.defender);
+        combat_state
+            .blocked_status
+            .insert(event.attacker, BlockedStatus::Unblocked);
+        commands.spawn(CreatureAttacksEvent {
+            attacker: event.attacker,
+            defender: event.defender,
+        });
+    }
+}
+
+pub fn handle_declare_blockers_event(
+    mut commands: Commands,
+    mut combat_state: ResMut<CombatState>,
+    mut events: EventReader<DeclareBlockersEvent>,
+) {
+    for event in events.read() {
+        combat_state.in_declare_blockers = true;
+        commands.spawn(DeclareBlockersStepBeginEvent {
+            player: event.player,
+        });
+    }
+}
+
+pub fn declare_blockers_system(
+    mut commands: Commands,
+    mut combat_state: ResMut<CombatState>,
+    mut events: EventReader<BlockerDeclaredEvent>,
+) {
+    for event in events.read() {
+        if combat_state.attackers.contains_key(&event.attacker) {
+            combat_state
+                .blocked_status
+                .insert(event.attacker, BlockedStatus::Blocked);
+            combat_state
+                .blockers
+                .entry(event.attacker)
+                .or_default()
+                .push(event.blocker);
+            commands.spawn(CreatureBlocksEvent {
+                blocker: event.blocker,
+                attacker: event.attacker,
+            });
+            commands.spawn(CreatureBlockedEvent {
+                attacker: event.attacker,
+                blocker: event.blocker,
+            });
+        }
+    }
+}
+
+pub fn assign_combat_damage_system(
+    mut commands: Commands,
+    mut combat_state: ResMut<CombatState>,
+    mut events: EventReader<AssignCombatDamageEvent>,
+) {
+    for event in events.read() {
+        combat_state.in_combat_damage = true;
+        // Handle damage assignment logic here
+    }
+}
+
+pub fn process_combat_damage_system(
+    mut commands: Commands,
+    mut combat_state: ResMut<CombatState>,
+    mut game_state: ResMut<GameState>,
+    mut players: Query<&mut Player>,
+) {
+    // Clone the pending events to avoid borrow issues
+    let pending_events = combat_state.pending_combat_damage.clone();
+
+    // Track which players we've processed to avoid double-processing
+    let mut processed_players = HashSet::new();
+
+    for event in pending_events {
+        // Check if target is a player
+        if let Ok(mut player) = players.get_mut(event.target) {
+            if processed_players.contains(&event.target) {
+                continue; // Skip already processed players
+            }
+
+            // Apply damage
+            player.life -= event.damage as i32;
+            processed_players.insert(event.target);
+
+            // Debug output
+            info!(
+                "Player {:?} took {} damage, life now {}",
+                event.target, event.damage, player.life
+            );
+
+            // For commander damage, make sure it's tracked correctly
+            if event.source_is_commander && event.is_combat_damage {
+                info!(
+                    "Tracking commander damage: {:?} -> {:?}: {}",
+                    event.source, event.target, event.damage
+                );
+            }
+        }
+    }
+
+    // Clear after processing
+    combat_state.pending_combat_damage.clear();
+    combat_state.in_combat_damage = false;
+}
+
+pub fn end_combat_system(
+    mut commands: Commands,
+    mut combat_state: ResMut<CombatState>,
+    turn_manager: Res<TurnManager>,
+) {
+    // Clear all combat data
+    combat_state.attackers.clear();
+    combat_state.blockers.clear();
+    combat_state.blocked_status.clear();
+    combat_state.assigned_combat_damage.clear();
+    combat_state.pending_combat_damage.clear();
+
+    // In a complete implementation, we would update persistent commander damage here
+    // but for now, we'll just clear the combat-specific tracking
+    combat_state.commander_damage_this_combat.clear();
+
+    // Reset combat flags
+    combat_state.in_declare_attackers = false;
+    combat_state.in_declare_blockers = false;
+    combat_state.in_combat_damage = false;
+    combat_state.combat_damage_step_number = 0;
+
+    // Emit combat end event for triggered abilities
+    let active_player = turn_manager.active_player;
+    commands.spawn(CombatEndEvent {
+        player: active_player,
+    });
+}

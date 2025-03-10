@@ -1,3 +1,6 @@
+use crate::game_engine::PrioritySystem;
+use crate::game_engine::state::GameState;
+use crate::menu::GameMenuState;
 use bevy::prelude::*;
 use std::fmt::Debug;
 
@@ -106,8 +109,8 @@ impl Default for GameStack {
 pub fn stack_resolution_system(
     mut commands: Commands,
     mut stack: ResMut<GameStack>,
-    mut priority: ResMut<crate::game_engine::PrioritySystem>,
-    mut game_state: ResMut<crate::game_engine::GameState>,
+    mut priority: ResMut<PrioritySystem>,
+    mut game_state: ResMut<GameState>,
     mut stack_resolution_events: EventWriter<StackItemResolvedEvent>,
     // Other resources and queries needed for stack resolution
 ) {

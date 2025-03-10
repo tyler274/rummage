@@ -1,9 +1,9 @@
 use crate::card::{Card, CardTypes};
-use crate::game_engine::GameState;
 use crate::game_engine::Phase;
 use crate::game_engine::zones::{Zone, ZoneChangeEvent, ZoneManager};
 use crate::mana::Color;
 use crate::mana::Mana;
+use crate::menu::GameMenuState;
 use crate::player::Player;
 use bevy::prelude::*;
 use std::collections::{HashMap, HashSet};
@@ -499,7 +499,7 @@ pub fn validate_commander_deck(
 /// System to handle Commander damage tracking
 pub fn track_commander_damage(
     mut commands: Commands,
-    mut game_state: ResMut<GameState>,
+    mut game_state: ResMut<GameMenuState>,
     commanders: Query<(Entity, &Commander)>,
     players: Query<Entity, With<Player>>,
     cmd_zone_manager: Res<CommandZoneManager>,
@@ -524,6 +524,7 @@ pub fn register_commander_systems(app: &mut App) {
                 process_commander_zone_choices,
                 check_commander_damage_loss,
                 record_commander_damage,
-            ),
+            )
+                .run_if(crate::game_engine::game_state_condition),
         );
 }

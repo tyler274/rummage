@@ -631,6 +631,7 @@ pub fn register_politics_systems(app: &mut App) {
         .add_event::<DealBrokenEvent>()
         .add_systems(
             Update,
-            (monarch_system, voting_system, goad_system, deal_system),
+            (monarch_system, voting_system, goad_system, deal_system)
+                .run_if(crate::game_engine::game_state_condition),
         );
 }

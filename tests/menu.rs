@@ -34,18 +34,18 @@ fn setup_mock_window(mut commands: Commands) {
 }
 
 // Common helper function to track state changes
-fn track_state_change(old_state: GameState, new_state: GameState, tracker: &mut StateTracker) {
+fn track_state_change(old_state: GameMenuState, new_state: GameMenuState, tracker: &mut StateTracker) {
     // Handle exit events first
     match old_state {
-        GameState::MainMenu => tracker.main_menu_exited = true,
-        GameState::PausedGame => tracker.paused_exited = true,
+        GameMenuState::MainMenu => tracker.main_menu_exited = true,
+        GameMenuState::PausedGame => tracker.paused_exited = true,
         _ => {}
     }
 
     // Then handle enter events
     match new_state {
-        GameState::InGame => tracker.in_game_entered = true,
-        GameState::PausedGame => tracker.paused_entered = true,
+        GameMenuState::InGame => tracker.in_game_entered = true,
+        GameMenuState::PausedGame => tracker.paused_entered = true,
         _ => {}
     }
 }
@@ -53,7 +53,7 @@ fn track_state_change(old_state: GameState, new_state: GameState, tracker: &mut 
 #[test]
 fn test_initial_state() {
     // No need to set up app just to test default state
-    assert_eq!(GameState::default(), GameState::MainMenu);
+    assert_eq!(GameMenuState::default(), GameMenuState::MainMenu);
 }
 
 #[test]
@@ -61,9 +61,9 @@ fn test_game_transition() {
     let mut app = setup_test_app();
 
     // Manually track transitions in test directly
-    let initial_state = GameState::MainMenu;
-    let intermediate_state = GameState::Loading;
-    let final_state = GameState::InGame;
+    let initial_state = GameMenuState::MainMenu;
+    let intermediate_state = GameMenuState::Loading;
+    let final_state = GameMenuState::InGame;
 
     let mut tracker = app.world_mut().resource_mut::<StateTracker>();
 
@@ -86,8 +86,8 @@ fn test_pause_unpause() {
     let mut app = setup_test_app();
 
     // Manually track transitions in test
-    let in_game_state = GameState::InGame;
-    let paused_state = GameState::PausedGame;
+    let in_game_state = GameMenuState::InGame;
+    let paused_state = GameMenuState::PausedGame;
 
     let mut tracker = app.world_mut().resource_mut::<StateTracker>();
 
@@ -116,8 +116,8 @@ fn test_return_to_main_menu() {
     let mut app = setup_test_app();
 
     // Manually track transitions in test
-    let main_menu_state = GameState::MainMenu;
-    let paused_state = GameState::PausedGame;
+    let main_menu_state = GameMenuState::MainMenu;
+    let paused_state = GameMenuState::PausedGame;
 
     let mut tracker = app.world_mut().resource_mut::<StateTracker>();
 
@@ -134,10 +134,10 @@ fn test_state_cycle() {
     let mut tracker = app.world_mut().resource_mut::<StateTracker>();
 
     // Test full cycle of state transitions
-    let initial_state = GameState::MainMenu;
-    let loading_state = GameState::Loading;
-    let in_game_state = GameState::InGame;
-    let paused_state = GameState::PausedGame;
+    let initial_state = GameMenuState::MainMenu;
+    let loading_state = GameMenuState::Loading;
+    let in_game_state = GameMenuState::InGame;
+    let paused_state = GameMenuState::PausedGame;
 
     // MainMenu -> Loading -> InGame
     track_state_change(initial_state, loading_state, &mut tracker);

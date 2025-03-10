@@ -458,8 +458,13 @@ pub fn format_type_line(types: &CardTypes, card_details: &CardDetails) -> String
 
 #[derive(Bundle)]
 pub struct CardBundle {
-    pub sprite_bundle: Sprite,
+    pub sprite: Sprite,
     pub card: Card,
+    pub transform: Transform,
+    pub global_transform: GlobalTransform,
+    pub visibility: Visibility,
+    pub inherited_visibility: InheritedVisibility,
+    pub view_visibility: ViewVisibility,
 }
 
 #[derive(Component, Debug, Clone, Serialize, Deserialize)]

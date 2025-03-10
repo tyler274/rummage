@@ -95,6 +95,10 @@ pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
                     ..default()
                 },
                 transform,
+                GlobalTransform::default(),
+                Visibility::default(),
+                InheritedVisibility::default(),
+                ViewVisibility::default(),
                 Draggable {
                     dragging: false,
                     drag_offset: Vec2::ZERO,

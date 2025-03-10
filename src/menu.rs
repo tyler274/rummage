@@ -96,8 +96,8 @@ use bevy::prelude::*;
 /// See the tests module for detailed examples.
 
 /// Game states for managing transitions between different parts of the game.
-#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
-pub enum GameState {
+#[derive(States, Resource, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
+pub enum GameMenuState {
     /// Initial state, showing the main menu
     #[default]
     MainMenu,
@@ -147,29 +147,32 @@ pub struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<GameState>()
-            .add_systems(OnEnter(GameState::MainMenu), setup_main_menu)
+        app.init_state::<GameMenuState>()
+            .add_systems(OnEnter(GameMenuState::MainMenu), setup_main_menu)
             .add_systems(
-                OnExit(GameState::MainMenu),
+                OnExit(GameMenuState::MainMenu),
                 (cleanup_main_menu, cleanup_menu_camera),
             )
-            .add_systems(Update, menu_action.run_if(in_state(GameState::MainMenu)))
-            // Loading state systems
-            .add_systems(
-                OnEnter(GameState::Loading),
-                (cleanup_game, start_game_loading).chain(),
-            )
-            .add_systems(OnExit(GameState::Loading), finish_loading)
-            // Pause menu systems
-            .add_systems(OnEnter(GameState::PausedGame), setup_pause_menu)
-            .add_systems(OnExit(GameState::PausedGame), cleanup_pause_menu)
             .add_systems(
                 Update,
-                pause_menu_action.run_if(in_state(GameState::PausedGame)),
+                menu_action.run_if(in_state(GameMenuState::MainMenu)),
+            )
+            // Loading state systems
+            .add_systems(
+                OnEnter(GameMenuState::Loading),
+                (cleanup_game, start_game_loading).chain(),
+            )
+            .add_systems(OnExit(GameMenuState::Loading), finish_loading)
+            // Pause menu systems
+            .add_systems(OnEnter(GameMenuState::PausedGame), setup_pause_menu)
+            .add_systems(OnExit(GameMenuState::PausedGame), cleanup_pause_menu)
+            .add_systems(
+                Update,
+                pause_menu_action.run_if(in_state(GameMenuState::PausedGame)),
             )
             .add_systems(Update, handle_pause_input)
             // Add cleanup when entering main menu from game
-            .add_systems(OnEnter(GameState::MainMenu), cleanup_game);
+            .add_systems(OnEnter(GameMenuState::MainMenu), cleanup_game);
     }
 }
 
@@ -279,7 +282,7 @@ fn menu_action(
         (&Interaction, &MenuButtonAction, &mut BackgroundColor),
         (Changed<Interaction>, With<Button>),
     >,
-    mut next_state: ResMut<NextState<GameState>>,
+    mut next_state: ResMut<NextState<GameMenuState>>,
 ) {
     for (interaction, action, mut color) in interaction_query.iter_mut() {
         match *interaction {
@@ -287,10 +290,10 @@ fn menu_action(
                 *color = BackgroundColor(PRESSED_BUTTON);
                 match action {
                     MenuButtonAction::NewGame => {
-                        next_state.set(GameState::Loading);
+                        next_state.set(GameMenuState::Loading);
                     }
                     MenuButtonAction::LoadGame => {
-                        next_state.set(GameState::Loading);
+                        next_state.set(GameMenuState::Loading);
                     }
                     MenuButtonAction::Settings => {
                         info!("Settings menu not implemented yet");
@@ -317,11 +320,11 @@ fn menu_action(
 }
 
 /// Initiates the game loading sequence
-fn start_game_loading(mut next_state: ResMut<NextState<GameState>>) {
+fn start_game_loading(mut next_state: ResMut<NextState<GameMenuState>>) {
     info!("Starting game loading sequence...");
     // For now, immediately transition to InGame
     // In the future, we can add actual loading logic here
-    next_state.set(GameState::InGame);
+    next_state.set(GameMenuState::InGame);
 }
 
 /// Performs cleanup and finalization after loading completes
@@ -396,17 +399,17 @@ fn pause_menu_action(
         (&Interaction, &MenuButtonAction, &mut BackgroundColor),
         (Changed<Interaction>, With<Button>),
     >,
-    mut next_state: ResMut<NextState<GameState>>,
+    mut next_state: ResMut<NextState<GameMenuState>>,
 ) {
     for (interaction, action, mut color) in interaction_query.iter_mut() {
         match *interaction {
             Interaction::Pressed => {
                 *color = BackgroundColor(PRESSED_BUTTON);
                 match action {
-                    MenuButtonAction::Resume => next_state.set(GameState::InGame),
-                    MenuButtonAction::Restart => next_state.set(GameState::Loading),
+                    MenuButtonAction::Resume => next_state.set(GameMenuState::InGame),
+                    MenuButtonAction::Restart => next_state.set(GameMenuState::Loading),
                     MenuButtonAction::Settings => info!("Settings menu not implemented yet"),
-                    MenuButtonAction::MainMenu => next_state.set(GameState::MainMenu),
+                    MenuButtonAction::MainMenu => next_state.set(GameMenuState::MainMenu),
                     MenuButtonAction::Quit => std::process::exit(0),
                     _ => {}
                 }
@@ -420,13 +423,13 @@ fn pause_menu_action(
 /// Handles escape key input to toggle pause menu
 fn handle_pause_input(
     keyboard: Res<ButtonInput<KeyCode>>,
-    mut next_state: ResMut<NextState<GameState>>,
-    current_state: Res<State<GameState>>,
+    mut next_state: ResMut<NextState<GameMenuState>>,
+    current_state: Res<State<GameMenuState>>,
 ) {
     if keyboard.just_pressed(KeyCode::Escape) {
         match current_state.get() {
-            GameState::InGame => next_state.set(GameState::PausedGame),
-            GameState::PausedGame => next_state.set(GameState::InGame),
+            GameMenuState::InGame => next_state.set(GameMenuState::PausedGame),
+            GameMenuState::PausedGame => next_state.set(GameMenuState::InGame),
             _ => (), // Do nothing for other states
         }
     }

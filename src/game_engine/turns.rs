@@ -1,4 +1,6 @@
-use crate::game_engine::{BeginningStep, EndingStep, GameState, Phase};
+use crate::game_engine::state::GameState;
+use crate::game_engine::{BeginningStep, EndingStep, Phase};
+use crate::menu::GameMenuState;
 use crate::player::Player;
 use bevy::prelude::*;
 
@@ -111,58 +113,47 @@ pub struct TurnEndEvent {
 /// System to handle the start of a new turn
 pub fn turn_start_system(
     mut commands: Commands,
-    game_state: Res<GameState>,
+    game_state: Res<GameMenuState>,
     phase: Res<Phase>,
     player_query: Query<&Player>,
     mut turn_start_events: EventWriter<TurnStartEvent>,
+    turn_manager: Res<TurnManager>,
 ) {
     // Only trigger at the beginning of the untap step
     if *phase == Phase::Beginning(BeginningStep::Untap) {
-        // Emit a turn start event
+        // Create a turn start event
         turn_start_events.send(TurnStartEvent {
-            player: game_state.active_player,
-            turn_number: game_state.turn_number,
+            player: turn_manager.active_player,
+            turn_number: turn_manager.turn_number,
         });
-
-        // At the start of a turn, perform these actions:
-        // - Untap all permanents controlled by the active player
-        // - Reset "until end of turn" effects
-        // - Reset damage on creatures
 
         info!(
             "Turn {} started for player {:?}",
-            game_state.turn_number, game_state.active_player
+            turn_manager.turn_number, turn_manager.active_player
         );
-
-        // For Commander specifically:
-        // - Check if any Commander tax needs to be applied
-        // - Check for Commander damage thresholds (21 damage from same commander)
     }
 }
 
 /// System to handle the end of a turn
 pub fn turn_end_system(
     mut commands: Commands,
-    game_state: Res<GameState>,
+    game_state: Res<GameMenuState>,
     phase: Res<Phase>,
     player_query: Query<&Player>,
     mut turn_end_events: EventWriter<TurnEndEvent>,
+    turn_manager: Res<TurnManager>,
 ) {
-    // Only trigger during the end step
+    // Only trigger at the beginning of the end step
     if *phase == Phase::Ending(EndingStep::End) {
-        // Emit a turn end event
+        // Create a turn end event
         turn_end_events.send(TurnEndEvent {
-            player: game_state.active_player,
-            turn_number: game_state.turn_number,
+            player: turn_manager.active_player,
+            turn_number: turn_manager.turn_number,
         });
-
-        // At the end of a turn, perform these actions:
-        // - Discard down to hand size
-        // - End "until end of turn" effects
 
         info!(
             "Turn {} ended for player {:?}",
-            game_state.turn_number, game_state.active_player
+            turn_manager.turn_number, turn_manager.active_player
         );
     }
 }
@@ -170,18 +161,18 @@ pub fn turn_end_system(
 /// System to handle untapping permanents
 pub fn untap_system(
     mut commands: Commands,
-    game_state: Res<GameState>,
+    game_state: Res<GameMenuState>,
     phase: Res<Phase>,
+    turn_manager: Res<TurnManager>,
     // We would need queries for permanents to untap them
 ) {
-    // Only run during the untap step
+    // Only trigger at the beginning of the untap step
     if *phase == Phase::Beginning(BeginningStep::Untap) {
-        // Untap all permanents controlled by active player
-        // The specifics would depend on how we represent and track permanents
         info!(
             "Untapping permanents for player {:?}",
-            game_state.active_player
+            turn_manager.active_player
         );
+        // Here we would untap all permanents for the active player
     }
 }
 
@@ -190,5 +181,9 @@ pub fn register_turn_systems(app: &mut App) {
     app.add_event::<TurnStartEvent>()
         .add_event::<TurnEndEvent>()
         .insert_resource(TurnManager::default())
-        .add_systems(Update, (turn_start_system, turn_end_system, untap_system));
+        .add_systems(
+            Update,
+            (turn_start_system, turn_end_system, untap_system)
+                .run_if(crate::game_engine::game_state_condition),
+        );
 }

@@ -385,7 +385,8 @@ fn test_zone_change_handling() {
         .add_event::<CommanderZoneChoiceEvent>();
 
     // Add resources
-    app.insert_resource(ZoneManager::default());
+    app.insert_resource(ZoneManager::default())
+        .insert_resource(CommandZoneManager::default());
 
     // Add systems
     app.add_systems(Update, handle_commander_zone_change);

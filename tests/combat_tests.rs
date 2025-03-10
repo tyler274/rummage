@@ -1,6 +1,13 @@
 use bevy::prelude::*;
-use rummage::card::{Card, CardDetails, CardTypes, CreatureCard, CreatureOnField, CreatureType};
-use rummage::game_engine::combat::*;
+use rummage::card::{Card, CardDetails, CardTypes, CreatureCard, CreatureType};
+use rummage::game_engine::combat::test_utils::*;
+use rummage::game_engine::combat::{
+    AssignCombatDamageEvent, AttackerDeclaredEvent, BlockedStatus, BlockerDeclaredEvent,
+    CombatBeginEvent, CombatDamageCompleteEvent, CombatEndEvent, CombatState, CreatureAttacksEvent,
+    CreatureBlockedEvent, CreatureBlocksEvent, DeclareAttackersEvent,
+    DeclareAttackersStepBeginEvent, DeclareAttackersStepEndEvent, DeclareBlockersEvent,
+    DeclareBlockersStepBeginEvent, DeclareBlockersStepEndEvent,
+};
 use rummage::game_engine::commander::{
     CombatDamageEvent, CommandZone, CommandZoneManager, Commander,
 };
@@ -10,7 +17,6 @@ use rummage::game_engine::zones::{ZoneChangeEvent, ZoneManager};
 use rummage::mana::Mana;
 use rummage::player::Player;
 use std::collections::HashMap;
-use crate::game_engine::combat::test_utils::*;
 
 // Helper function to create a test creature card
 fn create_test_creature(name: &str, power: i32, toughness: i32) -> Card {
@@ -54,13 +60,21 @@ fn setup_test_app() -> App {
         .add_event::<BlockerDeclaredEvent>()
         .add_event::<CombatBeginEvent>()
         .add_event::<CombatEndEvent>()
-        .add_event::<CombatDamageEvent>()
+        .add_event::<DeclareAttackersStepBeginEvent>()
+        .add_event::<DeclareAttackersStepEndEvent>()
+        .add_event::<DeclareBlockersStepBeginEvent>()
+        .add_event::<DeclareBlockersStepEndEvent>()
+        .add_event::<CreatureAttacksEvent>()
+        .add_event::<CreatureBlocksEvent>()
+        .add_event::<CreatureBlockedEvent>()
+        .add_event::<CombatDamageCompleteEvent>()
         .add_event::<ZoneChangeEvent>();
 
     // Add resources
     app.insert_resource(CombatState::default())
         .insert_resource(GameState::default())
         .insert_resource(ZoneManager::default())
+        .insert_resource(TurnManager::default())
         .insert_resource(CommandZoneManager::default())
         .insert_resource(CommandZone::default());
 
@@ -71,11 +85,11 @@ fn setup_test_app() -> App {
             initialize_combat_phase,
             declare_attackers_system,
             declare_blockers_system,
-            assign_combat_damage_system,
-            process_combat_damage_system,
-            end_combat_system,
-            rummage::game_engine::commander::record_commander_damage,
-        ),
+            assign_combat_damage_system.after(declare_blockers_system),
+            process_combat_damage_system.after(assign_combat_damage_system),
+            end_combat_system.after(process_combat_damage_system),
+        )
+            .run_if(crate::game_engine::game_state_condition),
     );
 
     // Setup TurnManager
@@ -172,14 +186,21 @@ fn test_declaring_attackers() {
         &mut app,
         vec![(attacker1, player2), (attacker2, player2)],
         vec![],
-        vec![]
+        vec![],
     );
-    
+
     // Skip app.update() since we've directly set the state
-    
+
     // Check results - this should now pass consistently
-    let combat_state = app.world.resource::<CombatState>();
-    assert_eq!(combat_state.creatures_attacking_each_player.get(&player2).unwrap().len(), 2);
+    let combat_state = app.world().resource::<CombatState>();
+    assert_eq!(
+        combat_state
+            .creatures_attacking_each_player
+            .get(&player2)
+            .unwrap()
+            .len(),
+        2
+    );
 }
 
 #[test]
@@ -214,11 +235,11 @@ fn test_declaring_blockers() {
         &mut app,
         vec![(attacker, player2)],
         vec![(blocker, attacker)],
-        vec![]
+        vec![],
     );
-    
+
     // Check results - this should now pass consistently
-    let combat_state = app.world.resource::<CombatState>();
+    let combat_state = app.world().resource::<CombatState>();
     assert_eq!(combat_state.blockers.get(&attacker).unwrap().len(), 1);
 }
 
@@ -254,34 +275,29 @@ fn test_combat_damage_to_player() {
     let attacker = app.world_mut().spawn(attacker_card).id();
 
     // Set up the combat state directly
-    setup_test_combat(
-        &mut app,
-        vec![(attacker, player2)],
-        vec![],
-        vec![]
-    );
-    
+    setup_test_combat(&mut app, vec![(attacker, player2)], vec![], vec![]);
+
     // Apply damage directly
     apply_combat_damage(
         &mut app,
-        vec![
-            CombatDamageEvent {
-                source: attacker,
-                target: player2,
-                damage: 2, // Adjust to match expected test value
-                is_combat_damage: true,
-                source_is_commander: false,
-            }
-        ]
+        vec![CombatDamageEvent {
+            source: attacker,
+            target: player2,
+            damage: 2, // Adjust to match expected test value
+            is_combat_damage: true,
+            source_is_commander: false,
+        }],
     );
-    
+
     // Check player life total
-    let player_query = app.world.query::<&Player>();
-    let player = player_query.iter(&app.world)
-        .find(|p| p.entity() == player2)
+    let mut world = app.world_mut();
+    let mut player_query = world.query::<(Entity, &Player)>();
+    let player = player_query
+        .iter(&world)
+        .find(|(id, _)| *id == player2)
         .expect("Player not found");
-    
-    assert_eq!(player.life, 38); // Adjust to match expected value in test
+
+    assert_eq!(player.1.life, 38); // Adjust to match expected value in test
 }
 
 #[test]
@@ -327,40 +343,42 @@ fn test_commander_combat_damage() {
         &mut app,
         vec![(commander, player2)],
         vec![],
-        vec![commander]
+        vec![commander],
     );
-    
-    // Apply damage directly
+
+    // Apply combat damage
     apply_combat_damage(
         &mut app,
-        vec![
-            CombatDamageEvent {
-                source: commander,
-                target: player2,
-                damage: 3, // Adjust to match expected test value
-                is_combat_damage: true,
-                source_is_commander: true,
-            }
-        ]
+        vec![CombatDamageEvent {
+            source: commander,
+            target: player2,
+            damage: 3,
+            is_combat_damage: true,
+            source_is_commander: true,
+        }],
     );
-    
-    // Check player life total
-    let player_query = app.world.query::<&Player>();
-    let player = player_query.iter(&app.world)
-        .find(|p| p.entity() == player2)
+
+    // Verify damage was applied
+    let mut world = app.world_mut();
+    let mut player_query = world.query::<(Entity, &Player)>();
+    let player = player_query
+        .iter(&world)
+        .find(|(id, _)| *id == player2)
         .expect("Player not found");
-    
-    assert_eq!(player.life, 37); // Adjust to match expected value in test
-    
+
+    assert_eq!(player.1.life, 37); // 40 - 3 damage
+
     // Check commander damage tracking
-    let combat_state = app.world.resource::<CombatState>();
-    let damage = combat_state.commander_damage_this_combat
-        .get(&player2)
-        .and_then(|map| map.get(&commander))
-        .cloned()
+    let mut commander_query = world.query::<&Commander>();
+    let commander = commander_query.get(&mut world, commander).unwrap();
+    let damage = commander
+        .damage_dealt
+        .iter()
+        .find(|(p, _)| *p == player2)
+        .map(|(_, d)| *d)
         .unwrap_or(0);
-    
-    assert_eq!(damage, 3); // Adjust to match expected value in test
+
+    assert_eq!(damage, 3);
 }
 
 #[test]
@@ -445,6 +463,59 @@ fn test_full_combat_sequence() {
     assert_eq!(combat_state.pending_combat_damage.len(), 0);
 
     // Verify player's life total is still 40 (since the attacker was blocked)
-    let player2_component = app.world().get::<Player>(player2).unwrap();
-    assert_eq!(player2_component.life, 40);
+    let mut world = app.world_mut();
+    let mut player_query = world.query::<(Entity, &Player)>();
+    let player = player_query
+        .iter(&world)
+        .find(|(id, _)| *id == player2)
+        .expect("Player not found");
+
+    assert_eq!(player.1.life, 40);
+}
+
+#[test]
+fn test_combat_damage() {
+    let mut app = setup_test_app();
+
+    // Create test entities
+    let mut world = app.world_mut();
+    let attacker = world.spawn_empty().id();
+    let defender = world.spawn_empty().id();
+    let commander = world.spawn_empty().id();
+
+    // Setup test combat
+    setup_test_combat(
+        &mut app,
+        vec![(attacker, defender)],
+        vec![],
+        vec![commander],
+    );
+
+    // Apply combat damage
+    apply_combat_damage(
+        &mut app,
+        vec![CombatDamageEvent {
+            source: attacker,
+            target: defender,
+            damage: 5,
+            is_combat_damage: true,
+            source_is_commander: true,
+        }],
+    );
+
+    // Verify damage was applied
+    let mut player_query = world.query::<&mut Player>();
+    let mut commander_query = world.query::<&Commander>();
+    let mut player = player_query.get_mut(&mut world, defender).unwrap();
+    let commander = commander_query.get(&mut world, attacker).unwrap();
+    assert_eq!(player.life, 35); // 40 - 5 damage
+    assert_eq!(
+        commander
+            .damage_dealt
+            .iter()
+            .find(|(p, _)| *p == defender)
+            .unwrap()
+            .1,
+        5
+    );
 }
