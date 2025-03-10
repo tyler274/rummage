@@ -50,9 +50,9 @@ impl Plugin for MenuPlugin {
             .add_systems(
                 OnEnter(GameMenuState::MainMenu),
                 (
-                    cleanup_game,
-                    cleanup_menu_camera,
-                    cleanup_star_of_david_thoroughly,
+                    cleanup_game.before(cleanup_menu_camera),
+                    cleanup_menu_camera.before(cleanup_star_of_david_thoroughly),
+                    cleanup_star_of_david_thoroughly.before(setup_main_menu),
                     setup_main_menu,
                     setup_menu_camera,
                     set_menu_camera_zoom,

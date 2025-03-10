@@ -127,46 +127,101 @@ pub fn handle_window_resize(
     }
 }
 
-/// Safely handles window resize events, preventing crashes in WSL2
-/// This system intercepts WindowResized events before they reach the render backend
-/// and performs additional error handling to prevent crashes during window resize operations
+/// Safely handles WindowResized events in WSL2 environments to prevent surface reconfiguration errors
+/// and performs additional error handling to prevent crashes during window resize operations.
+/// This is especially important for WSL2 where window handling can be unstable.
 pub fn safe_wsl2_resize_handler(
     mut resize_events: EventReader<WindowResized>,
     mut window_query: Query<(Entity, &mut Window)>,
 ) {
-    for resize_event in resize_events.read() {
-        debug!(
-            "Processing resize event: {}x{}",
-            resize_event.width, resize_event.height
+    // Under WSL2, we need to be extremely cautious with resize events, as they can lead to
+    // "Broken pipe" errors if handled incorrectly
+
+    // Count events - too many could indicate a storm of events that might crash the app
+    let event_count = resize_events.read().count();
+
+    // If we're getting too many events at once, this is a red flag
+    if event_count > 3 {
+        warn!(
+            "Received {} resize events in a single frame - throttling to prevent WSL2 crashes",
+            event_count
         );
+        // Just clear the events and return - this prevents overwhelming the window system
+        resize_events.clear();
+        return;
+    }
+
+    // Buffer a small amount of time between resize operations to let the window system stabilize
+    static mut LAST_RESIZE_TIME: Option<std::time::Instant> = None;
+    let now = std::time::Instant::now();
+
+    // Unsafe block to access the static variable - this is simple enough to be safe in our context
+    let should_process = unsafe {
+        if let Some(last_time) = LAST_RESIZE_TIME {
+            // Only process resize events if sufficient time has passed (50ms)
+            if now.duration_since(last_time).as_millis() > 50 {
+                LAST_RESIZE_TIME = Some(now);
+                true
+            } else {
+                false
+            }
+        } else {
+            // First resize event, so process it
+            LAST_RESIZE_TIME = Some(now);
+            true
+        }
+    };
+
+    if !should_process {
+        // Skip processing if we recently handled a resize
+        resize_events.clear();
+        return;
+    }
+
+    // Process at most one resize event per frame to prevent overwhelming the window system
+    if let Some(resize_event) = resize_events.read().next() {
+        let new_size = Vec2::new(resize_event.width, resize_event.height);
+
+        // Validate size - don't allow degenerate dimensions
+        if new_size.x <= 10.0 || new_size.y <= 10.0 || new_size.x >= 8000.0 || new_size.y >= 8000.0
+        {
+            warn!("Ignoring extreme window size: {:?}", new_size);
+            return;
+        }
 
         // Find the window that triggered this event
         for (entity, mut window) in &mut window_query {
             if entity == resize_event.window {
-                // Only update the window's logical size property, which doesn't trigger surface reconfiguration
-                let new_size = Vec2::new(resize_event.width, resize_event.height);
-
-                // Check if this is actually a change
+                // Get current size to see if there's a meaningful change
                 let current_size = Vec2::new(window.resolution.width(), window.resolution.height());
-                if (new_size - current_size).length_squared() > 1.0 {
-                    // In WSL2, sudden/rapid resizes can cause surface errors
-                    // Update size in a safer way that avoids triggering those errors
-                    debug!(
+
+                // Only react to significant changes to avoid unnecessary surface reconfiguration
+                if (new_size - current_size).length_squared() > 100.0 {
+                    info!(
                         "Updating window size from {:?} to {:?}",
                         current_size, new_size
                     );
-                    window
-                        .resolution
-                        .set(resize_event.width, resize_event.height);
+
+                    // Use a try/catch pattern to handle potential errors from the resize
+                    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        window.resolution.set(new_size.x, new_size.y);
+                    })) {
+                        Ok(_) => debug!("Window resize successful"),
+                        Err(_) => error!("Failed to resize window - ignoring to prevent crash"),
+                    }
+                } else {
+                    // Change too small to care about
+                    debug!("Ignoring minor resize event: change too small");
                 }
 
-                // Don't allow the event to propagate further to avoid triggering the crash
-                // The resize is handled here safely without letting Bevy's internal surface
-                // reconfiguration system see it, which would cause the crash
+                // Only process one window to avoid overwhelming the system
                 break;
             }
         }
     }
+
+    // Clear any remaining events
+    resize_events.clear();
 }
 
 /// Updates camera position and zoom based on user input.
