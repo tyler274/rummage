@@ -56,13 +56,21 @@ fn start_game_loading(
     cards: Query<Entity, With<Card>>,
     game_cameras: Query<Entity, With<GameCamera>>,
 ) {
+    // Log the current state
+    info!("Checking game state for transition...");
+    info!("Number of cards: {}", cards.iter().count());
+    info!("Number of game cameras: {}", game_cameras.iter().count());
+
     // Only transition if cleanup is complete
     if cards.is_empty() && game_cameras.is_empty() {
+        info!("Cleanup complete, transitioning to InGame state...");
         next_state.set(GameMenuState::InGame);
+    } else {
+        info!("Cleanup not complete yet, waiting...");
     }
 }
 
 /// Finishes the game loading process
 fn finish_loading() {
-    // TODO: Implement any final loading steps
+    info!("Loading state finished");
 }

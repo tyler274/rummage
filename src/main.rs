@@ -61,12 +61,14 @@ fn setup_game(mut commands: Commands, asset_server: Res<AssetServer>) {
     info!("Setting up game environment...");
 
     // First set up the camera - this needs to happen before spawning cards
+    info!("Setting up game camera...");
     setup_camera(&mut commands);
 
     // Then spawn the player's hand - this will create the card entities
     // We use the same Commands instance since setup_camera takes a reference
     info!("Spawning initial hand...");
     spawn_hand(commands, asset_server);
+    info!("Game setup complete!");
 }
 
 fn handle_exit(mut exit_events: EventReader<AppExit>) {
