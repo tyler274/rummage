@@ -1,9 +1,11 @@
+use crate::camera::components::AppLayer;
 use crate::menu::{
     components::*,
     state::{GameMenuState, StateTransitionContext},
     styles::*,
 };
 use bevy::prelude::*;
+use bevy::render::view::RenderLayers;
 use bevy::text::JustifyText;
 use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
 
@@ -21,6 +23,7 @@ pub fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) 
             },
             BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.5)),
             MenuItem,
+            AppLayer::Menu.layer(),
         ))
         .with_children(|parent| {
             // Pause menu container
@@ -35,6 +38,7 @@ pub fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) 
                         ..default()
                     },
                     BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
+                    AppLayer::Menu.layer(),
                 ))
                 .with_children(|parent| {
                     // Title
@@ -45,6 +49,7 @@ pub fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) 
                             ..default()
                         },
                         TextLayout::new_with_justify(JustifyText::Center),
+                        AppLayer::Menu.layer(),
                     ));
 
                     // Menu buttons
@@ -80,12 +85,14 @@ fn spawn_menu_button(
             BackgroundColor(NORMAL_BUTTON),
             Button,
             action,
+            AppLayer::Menu.layer(),
         ))
         .with_children(|parent| {
             parent.spawn((
                 Text::new(text),
                 text_style(),
                 TextLayout::new_with_justify(JustifyText::Center),
+                AppLayer::Menu.layer(),
             ));
         });
 }

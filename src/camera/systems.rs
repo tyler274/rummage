@@ -1,9 +1,14 @@
 use bevy::core_pipeline::core_2d::Camera2d;
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
+use bevy::render::view::RenderLayers;
 use bevy::window::{PrimaryWindow, WindowResized};
 
-use crate::camera::{components::GameCamera, config::CameraConfig, state::CameraPanState};
+use crate::camera::{
+    components::{AppLayer, GameCamera},
+    config::CameraConfig,
+    state::CameraPanState,
+};
 
 /// Sets up the main game camera with proper scaling and projection.
 ///
@@ -37,6 +42,7 @@ pub fn setup_camera(commands: &mut Commands) {
         Transform::default(),
         GlobalTransform::default(),
         GameCamera,
+        AppLayer::Game.with_shared(), // Game camera can see Game and Shared layers
     ));
 
     // Initialize camera pan state

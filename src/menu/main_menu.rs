@@ -1,3 +1,4 @@
+use crate::camera::components::AppLayer;
 use crate::menu::{
     components::*,
     logo::{
@@ -8,6 +9,7 @@ use crate::menu::{
     styles::*,
 };
 use bevy::prelude::*;
+use bevy::render::view::RenderLayers;
 use bevy::text::JustifyText;
 use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
 
@@ -41,14 +43,29 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
             },
             BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
             MenuItem,
+            AppLayer::Menu.layer(), // Add to menu layer
         ))
         .with_children(|parent| {
             // Add the logo
-            parent.spawn(create_logo()).with_children(|parent| {
-                parent.spawn(create_hebrew_text(&asset_server));
-                parent.spawn(create_english_text(&asset_server));
-                parent.spawn(create_decorative_elements());
-            });
+            parent
+                .spawn((
+                    create_logo(),
+                    AppLayer::Menu.layer(), // Add to menu layer
+                ))
+                .with_children(|parent| {
+                    parent.spawn((
+                        create_hebrew_text(&asset_server),
+                        AppLayer::Menu.layer(), // Add to menu layer
+                    ));
+                    parent.spawn((
+                        create_english_text(&asset_server),
+                        AppLayer::Menu.layer(), // Add to menu layer
+                    ));
+                    parent.spawn((
+                        create_decorative_elements(),
+                        AppLayer::Menu.layer(), // Add to menu layer
+                    ));
+                });
 
             // Menu buttons container
             parent
@@ -62,6 +79,7 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                         ..default()
                     },
                     BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
+                    AppLayer::Menu.layer(), // Add to menu layer
                 ))
                 .with_children(|parent| {
                     spawn_menu_button(parent, "New Game", MenuButtonAction::NewGame, &asset_server);
@@ -110,12 +128,14 @@ fn spawn_menu_button(
             BackgroundColor(NORMAL_BUTTON),
             Button,
             action,
+            AppLayer::Menu.layer(), // Add to menu layer
         ))
         .with_children(|parent| {
             parent.spawn((
                 Text::new(text),
                 text_style(),
                 TextLayout::new_with_justify(JustifyText::Center),
+                AppLayer::Menu.layer(), // Add to menu layer
             ));
         });
 }

@@ -1,5 +1,7 @@
+use crate::camera::components::AppLayer;
 use crate::menu::state::GameMenuState;
 use bevy::prelude::*;
+use bevy::render::view::RenderLayers;
 
 /// Component for the Star of David shape
 #[derive(Component)]
@@ -93,7 +95,6 @@ pub fn create_star_of_david() -> impl Bundle {
         InheritedVisibility::default(),
         ViewVisibility::default(),
         StarOfDavid,
-        // Set the RenderTarget to a specific camera window
-        Camera::from_target(Default::default()),
+        AppLayer::Menu.layer(), // Only visible on menu layer
     )
 }

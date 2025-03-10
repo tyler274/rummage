@@ -1,5 +1,6 @@
-use crate::camera::components::MenuCamera;
+use crate::camera::components::{AppLayer, MenuCamera};
 use bevy::prelude::*;
+use bevy::render::view::RenderLayers;
 
 pub fn setup_menu_camera(mut commands: Commands) {
     commands.spawn((
@@ -14,5 +15,6 @@ pub fn setup_menu_camera(mut commands: Commands) {
         InheritedVisibility::default(),
         ViewVisibility::default(),
         MenuCamera,
+        AppLayer::Menu.with_shared(), // Menu camera can see Menu and Shared layers
     ));
 }
