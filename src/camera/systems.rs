@@ -156,7 +156,7 @@ pub fn camera_movement(
 
     // Apply movement speed and delta time
     if movement != Vec3::ZERO {
-        movement = movement.normalize() * config.move_speed * time.delta_seconds();
+        movement = movement.normalize() * config.move_speed * time.delta_secs();
         // Scale movement by current zoom level to maintain consistent speed
         movement *= projection.scale;
         transform.translation += movement;
@@ -188,10 +188,17 @@ pub fn camera_movement(
         }
     }
 
-    // Handle zoom
+    // Handle zoom with smooth interpolation
+    let mut target_scale = projection.scale;
     for ev in scroll_events.read() {
         let zoom_delta = ev.y * config.zoom_speed;
-        let new_scale = projection.scale * (1.0 - zoom_delta);
-        projection.scale = new_scale.clamp(config.min_zoom, config.max_zoom);
+        target_scale *= (1.0 - zoom_delta);
     }
+    // Clamp the target scale
+    target_scale = target_scale.clamp(config.min_zoom, config.max_zoom);
+
+    // Smoothly interpolate to the target scale
+    let delta = target_scale - projection.scale;
+    let interpolation_factor = (config.zoom_interpolation_speed * time.delta_secs()).min(1.0);
+    projection.scale += delta * interpolation_factor;
 }

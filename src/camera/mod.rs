@@ -3,11 +3,6 @@ mod config;
 mod state;
 mod systems;
 
-pub use components::*;
-pub use config::*;
-pub use state::*;
-pub use systems::*;
-
 /// Camera management for the game's 2D view.
 ///
 /// This module provides functionality for:
@@ -50,4 +45,8 @@ pub use systems::*;
 ///         .add_systems(Update, camera_movement)
 ///         .run();
 /// }
-/// ``` 
+/// ```
+pub use components::*;
+pub use config::*;
+pub use state::*;
+pub use systems::*;
