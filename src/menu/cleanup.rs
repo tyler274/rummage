@@ -1,4 +1,7 @@
-use crate::{card::Card, menu::components::*};
+use crate::{
+    card::Card,
+    menu::{components::*, logo::StarOfDavid},
+};
 use bevy::prelude::*;
 
 /// Cleans up main menu entities
@@ -25,6 +28,15 @@ pub fn cleanup_menu_camera(mut commands: Commands, menu_cameras: Query<Entity, W
     info!("Cleaning up {} menu cameras", count);
     for entity in menu_cameras.iter() {
         commands.entity(entity).despawn();
+    }
+}
+
+/// Cleans up Star of David entities
+pub fn cleanup_star_of_david(mut commands: Commands, stars: Query<Entity, With<StarOfDavid>>) {
+    let count = stars.iter().count();
+    info!("Cleaning up {} Star of David entities", count);
+    for entity in stars.iter() {
+        commands.entity(entity).despawn_recursive();
     }
 }
 

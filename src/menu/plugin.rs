@@ -2,7 +2,10 @@ use crate::{
     camera::components::{GameCamera, MenuCamera},
     card::Card,
     menu::{
-        cleanup::{cleanup_game, cleanup_main_menu, cleanup_menu_camera, cleanup_pause_menu},
+        cleanup::{
+            cleanup_game, cleanup_main_menu, cleanup_menu_camera, cleanup_pause_menu,
+            cleanup_star_of_david,
+        },
         components::*,
         logo::{StarOfDavidPlugin, render_star_of_david},
         main_menu::{menu_action, set_menu_camera_zoom, setup_main_menu},
@@ -37,7 +40,12 @@ impl Plugin for MenuPlugin {
             )
             .add_systems(
                 OnExit(GameMenuState::MainMenu),
-                (cleanup_main_menu, cleanup_menu_camera).chain(),
+                (
+                    cleanup_main_menu,
+                    cleanup_menu_camera,
+                    cleanup_star_of_david,
+                )
+                    .chain(),
             )
             .add_systems(
                 Update,
@@ -46,7 +54,7 @@ impl Plugin for MenuPlugin {
             // Loading state systems
             .add_systems(
                 OnEnter(GameMenuState::Loading),
-                (cleanup_game, cleanup_menu_camera).chain(),
+                (cleanup_game, cleanup_menu_camera, cleanup_star_of_david).chain(),
             )
             .add_systems(
                 Update,
@@ -58,21 +66,36 @@ impl Plugin for MenuPlugin {
                 OnEnter(GameMenuState::PausedGame),
                 (
                     cleanup_menu_camera,
+                    cleanup_star_of_david,
                     setup_pause_menu,
                     setup_menu_camera,
                     ensure_single_menu_camera,
                     manage_pause_camera_visibility,
+                    setup_pause_star,
                 ),
             )
-            .add_systems(OnExit(GameMenuState::PausedGame), cleanup_pause_menu)
+            .add_systems(
+                OnExit(GameMenuState::PausedGame),
+                (cleanup_pause_menu, cleanup_star_of_david).chain(),
+            )
             .add_systems(
                 Update,
-                pause_menu_action.run_if(in_state(GameMenuState::PausedGame)),
+                (pause_menu_action, render_star_of_david)
+                    .run_if(in_state(GameMenuState::PausedGame)),
             )
             // InGame state systems
-            .add_systems(OnEnter(GameMenuState::InGame), manage_camera_visibility)
+            .add_systems(
+                OnEnter(GameMenuState::InGame),
+                (manage_camera_visibility, cleanup_star_of_david),
+            )
             .add_systems(Update, handle_pause_input);
     }
+}
+
+/// Setup Star of David for pause menu
+fn setup_pause_star(mut commands: Commands) {
+    use crate::menu::logo::create_star_of_david;
+    commands.spawn(create_star_of_david());
 }
 
 /// Ensures only one menu camera exists
