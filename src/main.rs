@@ -15,9 +15,7 @@ use bevy::{
     window::{WindowPlugin, WindowResolution},
 };
 use bevy_rand::prelude::*;
-
 use camera::{
-    CameraConfig, CameraPanState,
     components::GameCamera,
     systems::{camera_movement, handle_window_resize, safe_wsl2_resize_handler, setup_camera},
 };
@@ -41,9 +39,10 @@ impl Plugin for GamePlugin {
             .add_plugins(HDRCardsPlugin)
             .add_plugins(MenuPlugin)
             .init_resource::<StateTransitionContext>()
-            .insert_resource(CameraConfig::default())
-            .insert_resource(CameraPanState::default())
+            .insert_resource(camera::CameraConfig::default())
+            .insert_resource(camera::CameraPanState::default())
             .init_state::<GameMenuState>()
+            .insert_resource(NextState(GameMenuState::MainMenu))
             .add_systems(OnEnter(GameMenuState::InGame), setup_game)
             .add_systems(First, safe_wsl2_resize_handler)
             .add_systems(

@@ -43,9 +43,7 @@ pub struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<GameMenuState>()
-            .insert_resource(GameMenuState::MainMenu)
-            .insert_resource(StateTransitionContext::default())
+        app.insert_resource(StateTransitionContext::default())
             .init_resource::<MenuVisibilityLogState>()
             .add_plugins(StarOfDavidPlugin)
             // Main Menu state
