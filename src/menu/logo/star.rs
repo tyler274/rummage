@@ -65,7 +65,7 @@ pub fn render_star_of_david(
                 parent.spawn((
                     Mesh2d::from(triangle_mesh.clone()),
                     MeshMaterial2d(material.clone()),
-                    Transform::from_xyz(0.0, 0.0, -10.0),
+                    Transform::from_xyz(0.0, 0.0, 901.0),
                     GlobalTransform::default(),
                     Visibility::default(),
                     InheritedVisibility::default(),
@@ -76,7 +76,7 @@ pub fn render_star_of_david(
                 parent.spawn((
                     Mesh2d::from(triangle_mesh),
                     MeshMaterial2d(material),
-                    Transform::from_xyz(0.0, 0.0, -10.0)
+                    Transform::from_xyz(0.0, 0.0, 901.0)
                         .with_rotation(Quat::from_rotation_z(std::f32::consts::PI)),
                     GlobalTransform::default(),
                     Visibility::default(),
@@ -120,8 +120,8 @@ fn create_equilateral_triangle_mesh(size: f32) -> Mesh {
 pub fn create_star_of_david() -> impl Bundle {
     info!("Creating StarOfDavid bundle");
     (
-        // Use a very large negative z value to ensure it's behind UI
-        Transform::from_xyz(0.0, 0.0, -1000.0),
+        // Position behind UI but still within camera view
+        Transform::from_xyz(0.0, 0.0, 900.0),
         GlobalTransform::default(),
         Visibility::default(),
         InheritedVisibility::default(),

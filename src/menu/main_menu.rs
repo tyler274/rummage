@@ -23,7 +23,7 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
             order: 1, // Higher priority than game camera (0)
             ..default()
         },
-        Transform::from_xyz(0.0, 0.0, 50.0), // Move camera closer
+        Transform::from_xyz(0.0, 0.0, 999.0), // Position camera to see all elements
         GlobalTransform::default(),
     ));
 
@@ -111,7 +111,7 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
 pub fn set_menu_camera_zoom(mut query: Query<&mut OrthographicProjection, With<MenuCamera>>) {
     if let Ok(mut projection) = query.get_single_mut() {
         projection.scale = 0.1; // Zoom out more to see the Star of David
-        projection.near = -1000.0;
+        projection.near = 0.0;
         projection.far = 1000.0;
     }
 }
