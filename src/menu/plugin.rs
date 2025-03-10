@@ -1,4 +1,5 @@
 use bevy::{app::AppExit, ecs::system::ParamSet, prelude::*};
+use std::time::Duration;
 
 use crate::{
     camera::components::{AppLayer, GameCamera, MenuCamera},
@@ -16,6 +17,28 @@ use crate::{
     },
 };
 
+/// Resource to control logging frequency for menu visibility
+#[derive(Resource)]
+struct MenuVisibilityLogState {
+    last_log_time: f64,
+    log_interval: f64,
+    last_camera_count: usize,
+    last_item_count: usize,
+    last_visible_items: usize,
+}
+
+impl Default for MenuVisibilityLogState {
+    fn default() -> Self {
+        Self {
+            last_log_time: 0.0,
+            log_interval: 5.0, // Log every 5 seconds at most
+            last_camera_count: 0,
+            last_item_count: 0,
+            last_visible_items: 0,
+        }
+    }
+}
+
 /// Plugin that sets up the menu system and its related systems
 pub struct MenuPlugin;
 
@@ -24,6 +47,7 @@ impl Plugin for MenuPlugin {
         app.init_state::<GameMenuState>()
             .insert_resource(GameMenuState::MainMenu)
             .insert_resource(StateTransitionContext::default())
+            .init_resource::<MenuVisibilityLogState>()
             .add_plugins(StarOfDavidPlugin)
             // Main Menu state
             .add_systems(
@@ -337,20 +361,39 @@ fn manage_pause_camera_visibility(
 fn debug_menu_visibility(
     menu_cameras: Query<(Entity, &Visibility), With<MenuCamera>>,
     menu_items: Query<(Entity, &Visibility), With<MenuItem>>,
+    time: Res<Time>,
+    mut log_state: ResMut<MenuVisibilityLogState>,
 ) {
-    // Log camera and menu item visibility
-    for (entity, visibility) in menu_cameras.iter() {
-        info!("Menu camera {:?} visibility: {:?}", entity, visibility);
-    }
-
+    // Count cameras and menu items
+    let camera_count = menu_cameras.iter().count();
     let menu_item_count = menu_items.iter().count();
-    info!("Total menu items: {}", menu_item_count);
-
-    // Count visible items
     let visible_items = menu_items
         .iter()
         .filter(|(_, visibility)| matches!(visibility, Visibility::Visible))
         .count();
 
-    info!("Visible menu items: {}/{}", visible_items, menu_item_count);
+    // Check if we need to log based on time interval or state changes
+    let current_time = time.elapsed_seconds();
+    let state_changed = camera_count != log_state.last_camera_count
+        || menu_item_count != log_state.last_item_count
+        || visible_items != log_state.last_visible_items;
+
+    let should_log =
+        current_time - log_state.last_log_time > log_state.log_interval || state_changed;
+
+    // If we need to log, update state and output logs
+    if should_log {
+        log_state.last_log_time = current_time;
+        log_state.last_camera_count = camera_count;
+        log_state.last_item_count = menu_item_count;
+        log_state.last_visible_items = visible_items;
+
+        // Log camera visibility (at debug level to reduce spam)
+        for (entity, visibility) in menu_cameras.iter() {
+            debug!("Menu camera {:?} visibility: {:?}", entity, visibility);
+        }
+
+        debug!("Total menu items: {}", menu_item_count);
+        debug!("Visible menu items: {}/{}", visible_items, menu_item_count);
+    }
 }

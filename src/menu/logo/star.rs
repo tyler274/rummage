@@ -2,17 +2,42 @@ use crate::camera::components::AppLayer;
 use crate::menu::state::GameMenuState;
 use bevy::prelude::*;
 use bevy::render::render_asset::RenderAssetUsages;
+use std::time::Duration;
 
 /// Component for the Star of David shape
 #[derive(Component)]
 pub struct StarOfDavid;
+
+/// Resource to control logging frequency and track entity state
+#[derive(Resource)]
+pub struct StarOfDavidLogState {
+    /// When we last logged star debug info
+    last_log_time: f64,
+    /// Minimum time between logs in seconds
+    log_interval: f64,
+    /// Last recorded number of stars
+    last_star_count: usize,
+    /// Whether any changes were made to stars since last log
+    changes_made: bool,
+}
+
+impl Default for StarOfDavidLogState {
+    fn default() -> Self {
+        Self {
+            last_log_time: 0.0,
+            log_interval: 5.0, // Only log once every 5 seconds
+            last_star_count: 0,
+            changes_made: false,
+        }
+    }
+}
 
 /// Plugin that renders the Star of David
 pub struct StarOfDavidPlugin;
 
 impl Plugin for StarOfDavidPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
+        app.init_resource::<StarOfDavidLogState>().add_systems(
             Update,
             render_star_of_david.run_if(|state: Res<State<GameMenuState>>| {
                 matches!(
@@ -35,23 +60,50 @@ pub fn render_star_of_david(
     children_query: Query<&Children>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    time: Res<Time>,
+    mut log_state: ResMut<StarOfDavidLogState>,
 ) {
-    info!("StarOfDavid entities found: {}", query.iter().count());
+    // Count stars
+    let star_count = query.iter().count();
 
+    // Check if we need to log based on time interval or state changes
+    let current_time = time.elapsed_seconds();
+    let should_log = current_time - log_state.last_log_time > log_state.log_interval
+        || star_count != log_state.last_star_count
+        || log_state.changes_made;
+
+    // If we're going to log, reset the state tracking
+    if should_log {
+        log_state.last_log_time = current_time;
+        log_state.last_star_count = star_count;
+        log_state.changes_made = false;
+
+        debug!("StarOfDavid entities found: {}", star_count);
+    }
+
+    // Process stars and create any missing children
     for entity in &query {
         let has_children = children_query
             .get(entity)
             .map(|children| !children.is_empty())
             .unwrap_or(false);
 
-        info!(
-            "StarOfDavid entity {:?} has children: {}",
-            entity, has_children
-        );
+        // Only log detailed entity info when we're already logging
+        if should_log {
+            debug!(
+                "StarOfDavid entity {:?} has children: {}",
+                entity, has_children
+            );
+        }
 
         // Only spawn children if it doesn't have children yet
         if !has_children {
-            info!("Adding children to StarOfDavid entity {:?}", entity);
+            // Track that we made changes for next frame's logging
+            log_state.changes_made = true;
+
+            if should_log {
+                debug!("Adding children to StarOfDavid entity {:?}", entity);
+            }
 
             // Create the material once - gold color
             let material = materials.add(Color::srgb(1.0, 0.84, 0.0));
@@ -118,7 +170,8 @@ fn create_equilateral_triangle_mesh(size: f32) -> Mesh {
 
 /// Create a Star of David bundle for spawning
 pub fn create_star_of_david() -> impl Bundle {
-    info!("Creating StarOfDavid bundle");
+    // Use debug level to reduce log spam
+    debug!("Creating StarOfDavid bundle");
     (
         // Position behind UI but still within camera view
         Transform::from_xyz(0.0, 0.0, 900.0),
