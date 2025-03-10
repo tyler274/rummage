@@ -40,7 +40,7 @@ impl Plugin for GamePlugin {
             .insert_resource(CameraConfig::default())
             .insert_resource(CameraPanState::default())
             .add_systems(
-                OnExit(GameMenuState::Loading),
+                OnEnter(GameMenuState::InGame),
                 (setup_game, set_initial_zoom.after(setup_game)),
             )
             .add_systems(
