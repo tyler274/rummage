@@ -10,7 +10,6 @@ use crate::{
         logo::{StarOfDavidPlugin, render_star_of_david},
         main_menu::{menu_action, set_menu_camera_zoom, setup_main_menu},
         pause_menu::{handle_pause_input, pause_menu_action, setup_pause_menu},
-        setup_menu_camera,
         state::{GameMenuState, StateTransitionContext},
     },
 };
@@ -96,6 +95,20 @@ impl Plugin for MenuPlugin {
             )
             .add_systems(Update, handle_pause_input);
     }
+}
+
+/// Creates a menu camera with the proper configuration
+pub fn setup_menu_camera(mut commands: Commands) {
+    commands.spawn((
+        Camera2dBundle {
+            camera: Camera {
+                order: 2, // Higher order to render on top of game camera
+                ..default()
+            },
+            ..default()
+        },
+        MenuCamera,
+    ));
 }
 
 /// Setup Star of David for pause menu
@@ -198,17 +211,23 @@ fn finish_loading() {
 
 /// Ensures proper camera visibility when entering the InGame state
 fn manage_camera_visibility(
-    mut game_cameras: Query<&mut Visibility, With<GameCamera>>,
-    mut menu_cameras: Query<&mut Visibility, (With<MenuCamera>, Without<GameCamera>)>,
+    mut game_cameras: Query<(&mut Visibility, &mut Camera), With<GameCamera>>,
+    mut menu_cameras: Query<
+        (&mut Visibility, &mut Camera),
+        (With<MenuCamera>, Without<GameCamera>),
+    >,
     context: Res<StateTransitionContext>,
 ) {
-    // Set all game cameras to visible
-    for mut visibility in game_cameras.iter_mut() {
+    // Set all game cameras to visible and ensure they have unique orders
+    let mut order = 0;
+    for (mut visibility, mut camera) in game_cameras.iter_mut() {
         *visibility = Visibility::Visible;
+        camera.order = order;
+        order += 1;
     }
 
     // Hide all menu cameras
-    for mut visibility in menu_cameras.iter_mut() {
+    for (mut visibility, _) in menu_cameras.iter_mut() {
         *visibility = Visibility::Hidden;
     }
 
@@ -223,17 +242,23 @@ fn manage_camera_visibility(
 
 /// Ensures proper camera visibility when entering the PausedGame state
 fn manage_pause_camera_visibility(
-    mut game_cameras: Query<&mut Visibility, With<GameCamera>>,
-    mut menu_cameras: Query<&mut Visibility, (With<MenuCamera>, Without<GameCamera>)>,
+    mut game_cameras: Query<(&mut Visibility, &mut Camera), With<GameCamera>>,
+    mut menu_cameras: Query<
+        (&mut Visibility, &mut Camera),
+        (With<MenuCamera>, Without<GameCamera>),
+    >,
 ) {
     // Set all game cameras to invisible
-    for mut visibility in game_cameras.iter_mut() {
+    for (mut visibility, _) in game_cameras.iter_mut() {
         *visibility = Visibility::Hidden;
     }
 
-    // Make all menu cameras visible
-    for mut visibility in menu_cameras.iter_mut() {
+    // Make all menu cameras visible with unique orders
+    let mut order = 0;
+    for (mut visibility, mut camera) in menu_cameras.iter_mut() {
         *visibility = Visibility::Visible;
+        camera.order = order;
+        order += 1;
     }
 
     // Log the camera state for debugging

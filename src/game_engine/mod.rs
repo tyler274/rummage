@@ -23,7 +23,7 @@ pub use state::*;
 pub use turns::*;
 pub use zones::*;
 
-use crate::menu::GameMenuState;
+use crate::menu::{GameMenuState, state::StateTransitionContext};
 use crate::player::Player;
 use bevy::prelude::*;
 
@@ -147,7 +147,18 @@ fn game_state_condition(state: Res<State<GameMenuState>>) -> bool {
 }
 
 /// Initializes the core game engine resources
-fn setup_game_engine(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
+fn setup_game_engine(
+    mut commands: Commands,
+    player_query: Query<Entity, With<Player>>,
+    context: Res<StateTransitionContext>,
+    turn_manager: Option<Res<TurnManager>>,
+) {
+    // Skip initialization if we're coming from the pause menu and already have a turn manager
+    if context.from_pause_menu && turn_manager.is_some() {
+        info!("Resuming from pause menu, skipping game engine initialization");
+        return;
+    }
+
     info!("Initializing game engine resources...");
 
     // Get all player entities
