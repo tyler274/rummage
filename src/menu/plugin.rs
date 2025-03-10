@@ -5,7 +5,10 @@ use crate::menu::{
     pause_menu::{handle_pause_input, pause_menu_action, setup_pause_menu},
     state::{GameMenuState, StateTransitionContext},
 };
-use crate::{camera::GameCamera, card::Card};
+use crate::{
+    camera::components::{GameCamera, MenuCamera},
+    card::Card,
+};
 use bevy::prelude::*;
 
 /// Plugin that sets up the menu system and its related systems
@@ -53,6 +56,8 @@ impl Plugin for MenuPlugin {
                 Update,
                 pause_menu_action.run_if(in_state(GameMenuState::PausedGame)),
             )
+            // InGame state systems
+            .add_systems(OnEnter(GameMenuState::InGame), manage_camera_visibility)
             .add_systems(Update, handle_pause_input);
     }
 }
@@ -122,4 +127,29 @@ fn start_game_loading(
 /// Finishes the game loading process
 fn finish_loading() {
     info!("Loading state finished");
+}
+
+/// Ensures proper camera visibility when entering the InGame state
+fn manage_camera_visibility(
+    mut game_cameras: Query<&mut Visibility, With<GameCamera>>,
+    mut menu_cameras: Query<&mut Visibility, (With<MenuCamera>, Without<GameCamera>)>,
+    context: Res<StateTransitionContext>,
+) {
+    // Set all game cameras to visible
+    for mut visibility in game_cameras.iter_mut() {
+        *visibility = Visibility::Visible;
+    }
+
+    // Hide all menu cameras
+    for mut visibility in menu_cameras.iter_mut() {
+        *visibility = Visibility::Hidden;
+    }
+
+    // Log the camera state for debugging
+    info!(
+        "Camera visibility managed: {} game cameras, {} menu cameras, from_pause_menu: {}",
+        game_cameras.iter().count(),
+        menu_cameras.iter().count(),
+        context.from_pause_menu
+    );
 }

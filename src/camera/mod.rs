@@ -1,7 +1,5 @@
-mod components;
 mod config;
 mod state;
-mod systems;
 
 /// Camera management for the game's 2D view.
 ///
@@ -46,7 +44,7 @@ mod systems;
 ///         .run();
 /// }
 /// ```
-pub use components::*;
+pub mod components;
+pub mod systems;
 pub use config::*;
 pub use state::*;
-pub use systems::*;
