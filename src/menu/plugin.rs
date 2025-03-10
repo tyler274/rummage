@@ -4,6 +4,7 @@ use crate::menu::{
     pause_menu::{handle_pause_input, pause_menu_action, setup_pause_menu},
     state::GameMenuState,
 };
+use crate::{camera::GameCamera, card::Card};
 use bevy::prelude::*;
 
 /// Plugin that sets up the menu system and its related systems
@@ -46,9 +47,15 @@ impl Plugin for MenuPlugin {
 }
 
 /// Starts the game loading process
-fn start_game_loading(mut next_state: ResMut<NextState<GameMenuState>>) {
-    // TODO: Implement game loading logic
-    next_state.set(GameMenuState::InGame);
+fn start_game_loading(
+    mut next_state: ResMut<NextState<GameMenuState>>,
+    cards: Query<Entity, With<Card>>,
+    game_cameras: Query<Entity, With<GameCamera>>,
+) {
+    // Only transition if cleanup is complete
+    if cards.is_empty() && game_cameras.is_empty() {
+        next_state.set(GameMenuState::InGame);
+    }
 }
 
 /// Finishes the game loading process
