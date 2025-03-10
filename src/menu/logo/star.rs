@@ -57,7 +57,7 @@ pub fn render_star_of_david(
             let material = materials.add(Color::srgb(1.0, 0.84, 0.0));
 
             // Create a triangle mesh
-            let triangle_mesh = meshes.add(create_equilateral_triangle_mesh(150.0));
+            let triangle_mesh = meshes.add(create_equilateral_triangle_mesh(75.0));
 
             // Spawn the child entities for the two triangles
             commands.entity(entity).with_children(|parent| {

@@ -41,7 +41,7 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
+            BackgroundColor(Color::srgb(0.05, 0.05, 0.05)),
             MenuItem,
             AppLayer::Menu.layer(), // Add to menu layer
         ))
@@ -76,9 +76,11 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                         flex_direction: FlexDirection::Column,
                         justify_content: JustifyContent::SpaceAround,
                         align_items: AlignItems::Center,
+                        margin: UiRect::top(Val::Px(80.0)),
+                        position_type: PositionType::Relative,
                         ..default()
                     },
-                    BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
+                    BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
                     AppLayer::Menu.layer(), // Add to menu layer
                 ))
                 .with_children(|parent| {
@@ -135,7 +137,7 @@ fn spawn_menu_button(
                 Text(text.to_string()),
                 TextFont {
                     font: asset_server.load("fonts/DejaVuSans.ttf"),
-                    font_size: 20.0,
+                    font_size: 24.0,
                     ..default()
                 },
                 TextColor(Color::WHITE),
