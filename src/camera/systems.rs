@@ -44,7 +44,9 @@ pub fn setup_camera(commands: &mut Commands) {
 }
 
 /// Sets the initial zoom level for the camera - called after camera is created
-pub fn set_initial_zoom(mut query: Query<&mut OrthographicProjection, With<Camera>>) {
+pub fn set_initial_zoom(
+    mut query: Query<&mut OrthographicProjection, (With<Camera>, With<GameCamera>)>,
+) {
     if let Ok(mut projection) = query.get_single_mut() {
         // Set to 2.0 for a view that's twice as zoomed out
         // In OrthographicProjection, higher scale = more zoomed out
@@ -73,7 +75,7 @@ pub fn set_initial_zoom(mut query: Query<&mut OrthographicProjection, With<Camer
 /// ```
 pub fn handle_window_resize(
     mut resize_events: EventReader<WindowResized>,
-    mut projection_query: Query<&mut OrthographicProjection, With<Camera2d>>,
+    mut projection_query: Query<&mut OrthographicProjection, (With<Camera2d>, With<GameCamera>)>,
     mut windows: Query<&mut Window>,
 ) {
     for resize_event in resize_events.read() {
@@ -128,7 +130,10 @@ pub fn camera_movement(
     keyboard: Res<ButtonInput<KeyCode>>,
     mouse_button: Res<ButtonInput<MouseButton>>,
     mut scroll_events: EventReader<MouseWheel>,
-    mut camera_query: Query<(&mut Transform, &mut OrthographicProjection), With<Camera>>,
+    mut camera_query: Query<
+        (&mut Transform, &mut OrthographicProjection),
+        (With<Camera>, With<GameCamera>),
+    >,
     windows: Query<&Window, With<PrimaryWindow>>,
     time: Res<Time>,
     config: Res<CameraConfig>,
