@@ -68,8 +68,8 @@ fn setup_game(
 
     // Skip camera setup if we're coming from the pause menu and already have a camera
     if context.from_pause_menu {
-        info!("Resuming from pause menu, skipping game camera setup");
-        // Only set up cards if needed here, but don't create another camera
+        info!("Resuming from pause menu, skipping game setup");
+        // Only set up camera if needed here, but don't create cards
         if game_cameras.is_empty() {
             info!("No game camera found despite coming from pause menu, setting up camera anyway");
             setup_camera(&mut commands);
@@ -78,12 +78,12 @@ fn setup_game(
         // Normal game setup - this is a fresh game
         info!("Setting up game camera...");
         setup_camera(&mut commands);
+
+        // Spawn the player's hand only for a new game
+        info!("Spawning initial hand...");
+        spawn_hand(commands, asset_server, game_cameras);
     }
 
-    // Then spawn the player's hand - this will create the card entities
-    // We use the same Commands instance since setup_camera takes a reference
-    info!("Spawning initial hand...");
-    spawn_hand(commands, asset_server, game_cameras);
     info!("Game setup complete!");
 }
 
