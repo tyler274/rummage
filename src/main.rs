@@ -8,24 +8,24 @@ mod menu;
 mod player;
 mod text;
 
-use bevy::DefaultPlugins;
-use bevy::app::AppExit;
-use bevy::prelude::*;
-use bevy::window::WindowResolution;
+use bevy::{
+    app::AppExit,
+    log::info,
+    prelude::*,
+    window::{WindowPlugin, WindowResolution},
+};
 use bevy_rand::prelude::*;
+
 use camera::{
     CameraConfig, CameraPanState,
     components::GameCamera,
-    systems::{
-        camera_movement, handle_window_resize, safe_wsl2_resize_handler, set_initial_zoom,
-        setup_camera,
-    },
+    systems::{camera_movement, handle_window_resize, safe_wsl2_resize_handler, setup_camera},
 };
-use card::DebugConfig;
+use card::hdr::HDRCardsPlugin;
 use cards::CardsPlugin;
 use drag::DragPlugin;
 use game_engine::GameEnginePlugin;
-use menu::{GameMenuState, MenuPlugin, state::StateTransitionContext};
+use menu::{GameMenuState, MenuPlugin, StateTransitionContext};
 use player::spawn_hand;
 use text::spawn_card_text;
 
@@ -38,21 +38,14 @@ impl Plugin for GamePlugin {
             .add_plugins(EntropyPlugin::<WyRand>::default())
             .add_plugins(CardsPlugin)
             .add_plugins(GameEnginePlugin)
-            .insert_resource(DebugConfig {
-                show_text_positions: false,
-            })
+            .add_plugins(HDRCardsPlugin)
+            .add_plugins(MenuPlugin)
+            .init_resource::<StateTransitionContext>()
             .insert_resource(CameraConfig::default())
             .insert_resource(CameraPanState::default())
-            .add_systems(
-                OnEnter(GameMenuState::InGame),
-                (
-                    setup_game,
-                    // Only set initial zoom when not coming from pause menu
-                    set_initial_zoom
-                        .run_if(|context: Res<StateTransitionContext>| !context.from_pause_menu)
-                        .after(setup_game),
-                ),
-            )
+            .init_state::<GameMenuState>()
+            .add_systems(OnEnter(GameMenuState::InGame), setup_game)
+            .add_systems(First, safe_wsl2_resize_handler)
             .add_systems(
                 Update,
                 (handle_window_resize, camera_movement, spawn_card_text)
@@ -92,51 +85,20 @@ fn setup_game(
 
 fn handle_exit(mut exit_events: EventReader<AppExit>) {
     for _exit_event in exit_events.read() {
-        info!("Received exit event, cleaning up...");
+        info!("Exit event received. Shutting down.");
     }
 }
 
 fn main() {
     App::new()
-        .add_plugins(
-            DefaultPlugins
-                .set(WindowPlugin {
-                    primary_window: Some(Window {
-                        title: "Rummage".to_string(),
-                        resolution: WindowResolution::new(1920.0, 1080.0),
-                        present_mode: bevy::window::PresentMode::AutoNoVsync,
-                        resizable: true,
-                        resize_constraints: bevy::window::WindowResizeConstraints {
-                            min_width: 960.0,  // Half of 1920
-                            min_height: 540.0, // Half of 1080
-                            ..default()
-                        },
-                        ..default()
-                    }),
-                    ..default()
-                })
-                .set(bevy::render::RenderPlugin {
-                    // Configure rendering to be more resilient in WSL2 environments
-                    render_creation: bevy::render::settings::RenderCreation::Automatic(
-                        bevy::render::settings::WgpuSettings {
-                            // Try multiple backends if needed for WSL2 compatibility
-                            backends: Some(bevy::render::settings::Backends::all()),
-                            // Use low power preference for better WSL2 compatibility
-                            power_preference: bevy::render::settings::PowerPreference::LowPower,
-                            // Don't require all features, adapt to what's available in WSL2
-                            features: bevy::render::settings::WgpuFeatures::empty(),
-                            ..default()
-                        },
-                    ),
-                    // Don't wait for pipelines to compile, which can hang under certain conditions
-                    synchronous_pipeline_compilation: false,
-                    ..default()
-                }),
-        )
-        // Add the WSL2-safe resize handler system with high priority
-        // This system needs to run before Bevy's internal systems that would process the WindowResized events
-        .add_systems(First, safe_wsl2_resize_handler)
-        .add_plugins(MenuPlugin)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "Rummage".into(),
+                resolution: WindowResolution::new(1024.0, 768.0),
+                ..default()
+            }),
+            ..default()
+        }))
         .add_plugins(GamePlugin)
         .add_systems(Update, handle_exit)
         .run();
