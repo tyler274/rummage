@@ -27,7 +27,11 @@ impl Plugin for MenuPlugin {
             // Loading state systems
             .add_systems(
                 OnEnter(GameMenuState::Loading),
-                (cleanup_game, cleanup_menu_camera, start_game_loading).chain(),
+                (cleanup_game, cleanup_menu_camera).chain(),
+            )
+            .add_systems(
+                Update,
+                start_game_loading.run_if(in_state(GameMenuState::Loading)),
             )
             .add_systems(OnExit(GameMenuState::Loading), finish_loading)
             // Pause menu systems
