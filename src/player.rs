@@ -1,3 +1,4 @@
+use crate::camera::components::GameCamera;
 /// Player management and card spawning system.
 ///
 /// This module handles:
@@ -53,7 +54,11 @@ pub struct Player {
 ///
 /// The cards are arranged in a horizontal line with proper spacing
 /// and z-indexing for visual clarity.
-pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
+pub fn spawn_hand(
+    mut commands: Commands,
+    _asset_server: Res<AssetServer>,
+    game_cameras: Query<Entity, With<GameCamera>>,
+) {
     // Create a new player
     let player = Player {
         name: "Player 1".to_string(),
@@ -80,6 +85,17 @@ pub fn spawn_hand(mut commands: Commands, _asset_server: Res<AssetServer>) {
     let card_size = Vec2::new(672.0, 936.0);
     let spacing = card_size.x * 1.1; // Reduced spacing multiplier for tighter layout
     let start_x = -(display_cards.len() as f32 * spacing) / 2.0 + spacing / 2.0;
+
+    // Get game camera entity to set render target
+    let game_camera_entities: Vec<Entity> = game_cameras.iter().collect();
+    if !game_camera_entities.is_empty() {
+        info!(
+            "Found game camera for card rendering: {:?}",
+            game_camera_entities[0]
+        );
+    } else {
+        info!("No game camera found, using default camera");
+    }
 
     // Spawn visual cards
     for (i, card) in display_cards.into_iter().enumerate() {

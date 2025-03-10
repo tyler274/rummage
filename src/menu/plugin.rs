@@ -4,7 +4,7 @@ use crate::{
     menu::{
         cleanup::{
             cleanup_game, cleanup_main_menu, cleanup_menu_camera, cleanup_pause_menu,
-            cleanup_star_of_david,
+            cleanup_star_of_david, cleanup_star_of_david_thoroughly,
         },
         components::*,
         logo::{StarOfDavidPlugin, render_star_of_david},
@@ -31,6 +31,7 @@ impl Plugin for MenuPlugin {
                 (
                     cleanup_game,
                     cleanup_menu_camera,
+                    cleanup_star_of_david_thoroughly,
                     setup_main_menu,
                     setup_menu_camera,
                     set_menu_camera_zoom,
@@ -43,7 +44,7 @@ impl Plugin for MenuPlugin {
                 (
                     cleanup_main_menu,
                     cleanup_menu_camera,
-                    cleanup_star_of_david,
+                    cleanup_star_of_david_thoroughly,
                 )
                     .chain(),
             )
@@ -54,7 +55,12 @@ impl Plugin for MenuPlugin {
             // Loading state systems
             .add_systems(
                 OnEnter(GameMenuState::Loading),
-                (cleanup_game, cleanup_menu_camera, cleanup_star_of_david).chain(),
+                (
+                    cleanup_game,
+                    cleanup_menu_camera,
+                    cleanup_star_of_david_thoroughly,
+                )
+                    .chain(),
             )
             .add_systems(
                 Update,
@@ -66,7 +72,7 @@ impl Plugin for MenuPlugin {
                 OnEnter(GameMenuState::PausedGame),
                 (
                     cleanup_menu_camera,
-                    cleanup_star_of_david,
+                    cleanup_star_of_david_thoroughly,
                     setup_pause_menu,
                     setup_menu_camera,
                     ensure_single_menu_camera,
@@ -76,7 +82,7 @@ impl Plugin for MenuPlugin {
             )
             .add_systems(
                 OnExit(GameMenuState::PausedGame),
-                (cleanup_pause_menu, cleanup_star_of_david).chain(),
+                (cleanup_pause_menu, cleanup_star_of_david_thoroughly).chain(),
             )
             .add_systems(
                 Update,
@@ -86,7 +92,7 @@ impl Plugin for MenuPlugin {
             // InGame state systems
             .add_systems(
                 OnEnter(GameMenuState::InGame),
-                (manage_camera_visibility, cleanup_star_of_david),
+                (manage_camera_visibility, cleanup_star_of_david_thoroughly),
             )
             .add_systems(Update, handle_pause_input);
     }

@@ -1,3 +1,4 @@
+use crate::menu::state::GameMenuState;
 use bevy::prelude::*;
 
 /// Component for the Star of David shape
@@ -9,7 +10,15 @@ pub struct StarOfDavidPlugin;
 
 impl Plugin for StarOfDavidPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, render_star_of_david);
+        app.add_systems(
+            Update,
+            render_star_of_david.run_if(|state: Res<State<GameMenuState>>| {
+                matches!(
+                    state.get(),
+                    GameMenuState::MainMenu | GameMenuState::PausedGame
+                )
+            }),
+        );
     }
 
     fn finish(&self, _app: &mut App) {
@@ -84,5 +93,7 @@ pub fn create_star_of_david() -> impl Bundle {
         InheritedVisibility::default(),
         ViewVisibility::default(),
         StarOfDavid,
+        // Set the RenderTarget to a specific camera window
+        Camera::from_target(Default::default()),
     )
 }

@@ -57,7 +57,11 @@ impl Plugin for GamePlugin {
     }
 }
 
-fn setup_game(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup_game(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    game_cameras: Query<Entity, With<rummage::camera::components::GameCamera>>,
+) {
     info!("Setting up game environment...");
 
     // First set up the camera - this needs to happen before spawning cards
@@ -67,7 +71,7 @@ fn setup_game(mut commands: Commands, asset_server: Res<AssetServer>) {
     // Then spawn the player's hand - this will create the card entities
     // We use the same Commands instance since setup_camera takes a reference
     info!("Spawning initial hand...");
-    spawn_hand(commands, asset_server);
+    spawn_hand(commands, asset_server, game_cameras);
     info!("Game setup complete!");
 }
 

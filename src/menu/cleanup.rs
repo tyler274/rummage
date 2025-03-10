@@ -40,6 +40,44 @@ pub fn cleanup_star_of_david(mut commands: Commands, stars: Query<Entity, With<S
     }
 }
 
+/// Cleans up Star of David entities more thoroughly
+pub fn cleanup_star_of_david_thoroughly(
+    mut commands: Commands,
+    stars_query: Query<Entity, With<StarOfDavid>>,
+    children_query: Query<&Children>,
+    star_components: Query<(Entity, &StarOfDavid), Without<Children>>,
+) {
+    // Clean up complete entities with children
+    let count = stars_query.iter().count();
+    info!("Cleaning up {} Star of David entities thoroughly", count);
+
+    // First, find all StarOfDavid entities that have children
+    for entity in &stars_query {
+        if let Ok(children) = children_query.get(entity) {
+            info!(
+                "Found StarOfDavid entity {:?} with {} children",
+                entity,
+                children.len()
+            );
+
+            // Despawn the entity and all of its children
+            commands.entity(entity).despawn_recursive();
+        } else {
+            // No children, just despawn the entity itself
+            commands.entity(entity).despawn();
+        }
+    }
+
+    // Look for any detached StarOfDavid components
+    for (entity, _) in star_components.iter() {
+        info!(
+            "Found detached StarOfDavid component on entity {:?}",
+            entity
+        );
+        commands.entity(entity).despawn_recursive();
+    }
+}
+
 /// Cleans up game entities (cards and game camera)
 pub fn cleanup_game(
     mut commands: Commands,
