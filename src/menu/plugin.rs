@@ -125,34 +125,47 @@ impl Plugin for MenuPlugin {
     }
 }
 
-/// Creates a menu camera with the proper configuration
+/// Creates a menu camera with the proper configuration for WSL2 compatibility
 pub fn setup_menu_camera(
     mut commands: Commands,
     existing_cameras: Query<Entity, With<MenuCamera>>,
 ) {
-    // Check if any menu cameras already exist
-    if !existing_cameras.is_empty() {
-        info!("Menu camera already exists, not creating a new one");
-        return;
+    // Clean up any existing menu cameras first
+    for entity in existing_cameras.iter() {
+        commands.entity(entity).despawn_recursive();
     }
 
-    info!("Setting up menu camera");
-    let entity = commands
+    info!("Setting up menu camera - WSL2 optimized");
+
+    // Create a simpler camera setup for WSL2 compatibility
+    let camera_entity = commands
         .spawn((
-            Camera2dBundle {
-                camera: Camera {
-                    order: 1,
-                    ..default()
-                },
+            // Core camera components
+            Camera2d::default(),
+            Camera {
+                // Ensure this camera renders on top
+                order: 0,
+                // Use a clear background color
+                clear_color: ClearColorConfig::Default,
+                // Disable HDR which can cause issues in WSL2
+                hdr: false,
                 ..default()
             },
+            // Standard transform components
+            Transform::default(),
+            GlobalTransform::default(),
+            // Visibility components
+            Visibility::Visible,
+            InheritedVisibility::default(),
+            ViewVisibility::default(),
+            // Menu camera marker
             MenuCamera,
-            AppLayer::menu_layers(),
+            // Add a name for debugging
             Name::new("Menu Camera"),
         ))
         .id();
 
-    info!("Spawned menu camera: {:?}", entity);
+    info!("Spawned menu camera: {}", camera_entity);
 }
 
 /// Setup Star of David for pause menu
