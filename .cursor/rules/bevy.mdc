@@ -3,8 +3,58 @@ description: Knowing what parts of Bevy are deprecated
 globs: 
 alwaysApply: false
 ---
+# Bevy 0.15.x Deprecation Guidelines
 
-# Your rule content
+## Deprecated Bundle Types
 
-- You can @ files here
-- You can use markdown but dont have to
+Several bundle types have been deprecated in Bevy 0.15.x. Use the replacement patterns below:
+
+### UI and Rendering
+- ❌ `Text2dBundle` is deprecated -> ✅ Use `Text2d` component directly
+- ❌ `SpriteBundle` is deprecated -> ✅ Use `Sprite` component directly
+- ❌ `NodeBundle` is deprecated -> ✅ Use `Node` component directly
+
+### Camera
+- ❌ `Camera2dBundle` is deprecated -> ✅ Use `Camera2d` component
+- ❌ `Camera3dBundle` is deprecated -> ✅ Use `Camera3d` component
+
+### Transform
+- ❌ `SpatialBundle` is deprecated -> ✅ Use `(Transform::default(), Visibility::default())` directly
+- ❌ `TransformBundle` is deprecated -> ✅ Use `Transform` component alone
+- ❌ Explicit `GlobalTransform` insertions -> ✅ Just insert `Transform` (GlobalTransform is automatically added)
+
+### Other Common Patterns
+- ❌ `FogVolumeBundle` is deprecated -> ✅ Use `Visibility` component (other components added automatically)
+- ❌ `Handle<T>` as components -> ✅ Use semantic wrapper types for handles
+
+## Required Component Pattern
+
+Bevy 0.15.x uses a "required component" pattern where inserting a component will automatically insert its prerequisites:
+
+```rust
+// BEFORE (0.14.x):
+commands.spawn(SpatialBundle::default());
+
+// AFTER (0.15.x):
+commands.spawn((Transform::default(), Visibility::default()));
+
+// BEFORE (0.14.x):
+commands.spawn(Camera2dBundle::default());
+
+// AFTER (0.15.x):
+commands.spawn(Camera2d::default());
+```
+
+## Other API Changes
+
+- ❌ `Events::get_reader()` is deprecated -> ✅ Use `Events::get_cursor()`
+- ❌ `ManualEventReader` is deprecated -> ✅ Use `EventCursor` instead
+- ❌ `Commands.get_or_spawn()` is deprecated -> ✅ Use either `Commands.entity()` or `Commands.spawn()` explicitly
+- ❌ `World.get_or_spawn()` is deprecated -> ✅ Use either `World.entity()` or `World.spawn()` explicitly
+- ❌ `CursorIcon` as field in `Window` -> ✅ Use as separate component inserted on window entity
+
+## Node Access Changes
+
+- ❌ `Node::logical_rect()` and `Node::physical_rect()` methods are removed -> ✅ Use `Rect::from_center_size` with translation and node size
+
+Always check for compiler warnings after making changes, as they will indicate usage of deprecated APIs.
