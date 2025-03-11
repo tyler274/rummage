@@ -137,6 +137,9 @@ fn render_inline_mana_symbols(
 
     // Special handling for compact rendering of activated abilities
     if is_activated_ability {
+        // Starting position should be at the far left for proper alignment
+        let mut current_x = 0.0;
+
         // For activated abilities, we'll use a simpler approach:
         // Just render each segment sequentially with proper spacing
         for (segment_text, is_mana_symbol) in segments {
@@ -177,7 +180,7 @@ fn render_inline_mana_symbols(
                         vertical_alignment_offset: 0.0,
                         z_index: 0.2, // Render above regular text
                         with_shadow: true,
-                        alignment: JustifyText::Left,
+                        alignment: JustifyText::Left, // Ensure left alignment
                     },
                     parent_entity,
                 );
@@ -192,7 +195,7 @@ fn render_inline_mana_symbols(
 
                 // Add spacing after a colon if present
                 if segment_text.contains(':') {
-                    current_x += font_size * 0.15; // Extra spacing after colon
+                    current_x += font_size * 0.3; // Increased spacing after colon for better readability
                 }
             } else {
                 // Render regular text segment
