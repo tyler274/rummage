@@ -4,7 +4,7 @@ use bevy::prelude::*;
 /// Spawn debug bounds visualization for text
 pub fn spawn_debug_bounds(
     commands: &mut Commands,
-    card_pos: Vec2,
+    _card_pos: Vec2,
     card_size: Vec2,
     text_pos: Vec2,
 ) -> Entity {

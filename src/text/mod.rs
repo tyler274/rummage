@@ -13,7 +13,6 @@ pub mod utils;
 
 pub use components::*;
 pub use systems::*;
-pub use utils::*;
 
 use bevy::prelude::*;
 
