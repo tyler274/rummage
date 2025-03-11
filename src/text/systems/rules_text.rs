@@ -128,6 +128,95 @@ fn render_inline_mana_symbols(
     let segments = extract_mana_symbol_segments(line);
     let mut current_x = 0.0;
 
+    // Check if this is an activated ability line (contains {T}: or other mana symbol followed by colon)
+    let is_activated_ability = line.contains("{T}:")
+        || (line.contains(':')
+            && segments
+                .iter()
+                .any(|(text, is_symbol)| *is_symbol && text.contains('{')));
+
+    // Special handling for compact rendering of activated abilities
+    if is_activated_ability {
+        let mut ability_text = String::new();
+        let mut symbol_positions = Vec::new();
+        let mut current_pos = 0;
+
+        // Process each segment to build a combined text with symbol placeholders
+        for (segment_text, is_mana_symbol) in &segments {
+            if *is_mana_symbol {
+                // Add a placeholder character for the symbol
+                ability_text.push('█'); // Placeholder for mana symbol
+                symbol_positions.push((current_pos, segment_text.clone()));
+            } else {
+                ability_text.push_str(segment_text);
+                current_pos += segment_text.len();
+            }
+        }
+
+        // Create the base text without symbols
+        let text_entity = commands
+            .spawn((
+                TextSpan::default(),
+                Text2d::new(ability_text),
+                TextFont {
+                    font: regular_font.clone(),
+                    font_size,
+                    ..default()
+                },
+                TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
+                Transform::from_translation(Vec3::new(0.0, y_pos, 0.0)),
+                TextLayout::new_with_justify(JustifyText::Left),
+            ))
+            .set_parent(parent_entity)
+            .id();
+
+        // Overlay the mana symbols at the correct positions
+        for (i, (_, symbol)) in symbol_positions.iter().enumerate() {
+            let char_width = font_size * 0.5; // Approximate width of a character
+            let symbol_x = i as f32 * char_width;
+
+            // Create symbol-specific vertical adjustment
+            let symbol_specific_offset = match symbol.trim() {
+                "{T}" => font_size * 0.12, // Tap symbol adjusted for better alignment with text
+                "{G}" => font_size * 0.04, // Green mana
+                "{R}" => font_size * 0.04, // Red mana
+                "{B}" => font_size * 0.05, // Black mana
+                "{W}" => font_size * 0.03, // White mana
+                "{U}" => font_size * 0.03, // Blue mana
+                "{C}" => font_size * 0.04, // Colorless mana
+                s if s.len() >= 3 && s.starts_with('{') && s.ends_with('}') => {
+                    // Generic mana cost symbols
+                    let inner = &s[1..s.len() - 1];
+                    if inner.parse::<u32>().is_ok() || inner == "X" {
+                        font_size * 0.05
+                    } else {
+                        0.0
+                    }
+                }
+                _ => 0.0,
+            };
+
+            // Render the mana symbol
+            render_mana_symbol(
+                commands,
+                symbol,
+                Vec2::new(symbol_x, y_pos + symbol_specific_offset),
+                mana_font.clone(),
+                ManaSymbolOptions {
+                    font_size,
+                    vertical_alignment_offset: 0.0,
+                    z_index: 0.2, // Render above the text
+                    with_shadow: true,
+                    alignment: JustifyText::Left,
+                },
+                parent_entity,
+            );
+        }
+
+        return; // Skip the standard rendering for activated abilities
+    }
+
+    // Standard rendering for non-activated ability text
     for (segment_text, is_mana_symbol) in segments {
         if segment_text.is_empty() {
             continue;
