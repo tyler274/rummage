@@ -54,7 +54,7 @@ pub fn spawn_rules_text(
             ..default()
         },
         text_color: TextColor(Color::rgba(0.0, 0.0, 0.0, 0.9)),
-        text_layout: TextLayout::new_with_justify(JustifyText::Center),
+        text_layout: TextLayout::new_with_justify(JustifyText::Left),
     };
 
     // Create text with CardTextBundle
@@ -68,7 +68,7 @@ pub fn spawn_rules_text(
             TextLayoutInfo {
                 position: card_pos + local_offset,
                 size: text_size,
-                alignment: JustifyText::Center,
+                alignment: JustifyText::Left,
             },
             Name::new(format!("Rules Text: {}", formatted_text.replace('\n', " "))),
         ))

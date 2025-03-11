@@ -29,8 +29,8 @@ pub fn spawn_type_line_text(
 
     let text_size = calculate_text_size(card_size, layout.type_line_width, layout.type_line_height);
 
-    // Make the type line a bit larger and bolder for better readability
-    let font_size = get_card_font_size(card_size, 20.0);
+    // Smaller font size for type line to better match MTG card proportions
+    let font_size = get_card_font_size(card_size, 16.0);
 
     // Format type line consistently (match MTG style with em-dash between types)
     let formatted_type_line = format_type_line(&content.type_line);
@@ -43,7 +43,7 @@ pub fn spawn_type_line_text(
             ..default()
         },
         text_color: TextColor(Color::rgba(0.0, 0.0, 0.0, 0.9)),
-        text_layout: TextLayout::new_with_justify(JustifyText::Center),
+        text_layout: TextLayout::new_with_justify(JustifyText::Left),
     };
 
     // Create text with CardTextBundle
@@ -57,7 +57,7 @@ pub fn spawn_type_line_text(
             TextLayoutInfo {
                 position: card_pos + local_offset,
                 size: text_size,
-                alignment: JustifyText::Center,
+                alignment: JustifyText::Left,
             },
             Name::new(format!("Type Line: {}", formatted_type_line)),
         ))

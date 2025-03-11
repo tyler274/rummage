@@ -68,13 +68,13 @@ impl Default for CardTextLayout {
             pt_y_offset: -0.35,
             pt_width: 0.15,
             pt_height: 0.08,
-            // Type line positioning
+            // Type line positioning - moved down to leave space for art
             type_line_x_offset: -0.3,
-            type_line_y_offset: 0.25,
+            type_line_y_offset: 0.05, // Moved down from 0.25 to make space for card art
             type_line_width: 0.8,
             type_line_height: 0.08,
-            // Text box positioning
-            text_box_y_offset: 0.0,
+            // Text box positioning - moved down to follow type line
+            text_box_y_offset: -0.15, // Moved down from 0.0 to position below type line
             text_box_width: 0.8,
             text_box_height: 0.35,
             text_box_padding: 0.025,
