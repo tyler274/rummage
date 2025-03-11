@@ -53,8 +53,8 @@ impl Default for CardTextLayout {
         Self {
             card_width: 63.0 * 1.4,
             card_height: 88.0 * 1.4,
-            // Position name slightly inside the left edge of the card frame
-            name_x_offset: -0.38, // Less extreme offset to keep it inside card frame
+            // Position name with a small margin from the left edge of the card frame
+            name_x_offset: -0.32, // Moved more toward center to provide proper left margin
             name_y_offset: 0.41,
             // Widened to accommodate most card names
             name_width: 0.65,
