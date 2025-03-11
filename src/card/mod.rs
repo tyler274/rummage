@@ -1,19 +1,29 @@
 pub mod hdr;
+
 // Add modules from cards
 pub mod artifacts;
 pub mod black;
 pub mod blue;
 pub mod green;
 pub mod mtgjson;
+pub mod penacony;
 pub mod red;
 pub mod white;
 
-use crate::menu::GameMenuState;
-use crate::text::{CardTextContent, CardTextType, SpawnedText};
+// Import external crates
 use bevy::prelude::*;
+use bevy::sprite::Sprite;
+use bevy::text::JustifyText;
+use bevy::utils::HashMap;
 use bitflags::bitflags;
+use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::hash::Hash;
+
+// Import internal modules
+use crate::mana::Mana;
+use crate::menu::GameMenuState;
+use crate::text::{self, CardTextContent, CardTextType, SpawnedText};
 
 bitflags! {
     #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, Hash)]
@@ -86,9 +96,6 @@ bitflags! {
         const SPIDER = 1 << 63;
     }
 }
-
-// Import components and mana from other modules
-use crate::mana::Mana;
 
 impl std::fmt::Display for CreatureType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -594,19 +601,6 @@ pub struct Draggable {
     pub z_index: f32,
 }
 
-#[derive(Resource)]
-pub struct DebugConfig {
-    pub show_text_positions: bool,
-}
-
-impl Default for DebugConfig {
-    fn default() -> Self {
-        DebugConfig {
-            show_text_positions: false,
-        }
-    }
-}
-
 impl CreatureType {
     // Infer creature types from card name and rules text
     pub fn infer_from_name_and_text(text: &str, existing_types: Self) -> Self {
@@ -737,7 +731,7 @@ pub fn handle_card_dragging(
 pub fn debug_render_text_positions(
     mut gizmos: Gizmos,
     card_query: Query<(&Transform, &Card), With<Card>>,
-    config: Res<crate::text::DebugConfig>,
+    config: Res<text::DebugConfig>,
 ) {
     if !config.show_text_positions {
         return;
@@ -773,7 +767,7 @@ pub struct CardPlugin;
 
 impl Plugin for CardPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(DebugConfig::default()).add_systems(
+        app.add_systems(
             Update,
             (handle_card_dragging, debug_render_text_positions)
                 .run_if(in_state(GameMenuState::InGame)),

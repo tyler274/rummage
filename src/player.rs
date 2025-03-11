@@ -130,7 +130,7 @@ pub fn spawn_hand(
             .id();
 
         // Spawn card text content
-        commands
+        let text_entity = commands
             .spawn((
                 CardTextContent {
                     name: card.name.clone(),
@@ -146,6 +146,12 @@ pub fn spawn_hand(
                 Transform::default(),
                 AppLayer::Cards.layer(), // Use the specific Cards layer
             ))
-            .set_parent(card_entity);
+            .set_parent(card_entity)
+            .id();
+
+        info!(
+            "Spawned CardTextContent entity {:?} as child of card entity {:?}",
+            text_entity, card_entity
+        );
     }
 }
