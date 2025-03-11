@@ -65,3 +65,25 @@ impl Default for TextLayoutInfo {
         }
     }
 }
+
+/// Bundle for card text components to avoid having too many components in a tuple
+#[derive(Bundle)]
+pub struct CardTextBundle {
+    pub text_2d: Text2d,
+    pub transform: Transform,
+    pub global_transform: GlobalTransform,
+    pub text_font: TextFont,
+    pub text_color: TextColor,
+    pub text_layout: TextLayout,
+    pub card_text_type: CardTextType,
+    pub text_layout_info: TextLayoutInfo,
+    pub name: Name,
+}
+
+/// Bundle for text style components
+#[derive(Bundle)]
+pub struct CardTextStyleBundle {
+    pub text_font: TextFont,
+    pub text_color: TextColor,
+    pub text_layout: TextLayout,
+}
