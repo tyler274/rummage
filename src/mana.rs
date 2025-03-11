@@ -143,6 +143,11 @@ impl Mana {
         self.white + self.blue + self.black + self.red + self.green + self.colorless
     }
 
+    /// Returns true if this mana cost is empty (has no mana of any color or colorless).
+    pub fn is_empty(&self) -> bool {
+        self.total() == 0
+    }
+
     /// Returns true if this mana cost contains any colored mana.
     pub fn has_color(&self) -> bool {
         self.white > 0 || self.blue > 0 || self.black > 0 || self.red > 0 || self.green > 0

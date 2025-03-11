@@ -22,6 +22,30 @@ pub struct CardTextLayout {
     pub vertical_margin: f32,
     /// The horizontal margin for text relative to the card edge (normalized)
     pub horizontal_margin: f32,
+    /// X offset of power/toughness from right edge of card (normalized -0.5 to 0.5)
+    pub pt_x_offset: f32,
+    /// Y offset of power/toughness from bottom edge of card (normalized -0.5 to 0.5)
+    pub pt_y_offset: f32,
+    /// Width constraint for power/toughness as percentage of card width
+    pub pt_width: f32,
+    /// Height constraint for power/toughness as percentage of card height
+    pub pt_height: f32,
+    /// X offset of type line from left edge of card (normalized -0.5 to 0.5)
+    pub type_line_x_offset: f32,
+    /// Y offset of type line from top edge of card (normalized -0.5 to 0.5)
+    pub type_line_y_offset: f32,
+    /// Width constraint for type line as percentage of card width
+    pub type_line_width: f32,
+    /// Height constraint for type line as percentage of card height
+    pub type_line_height: f32,
+    /// Y offset of text box from top edge of card (normalized -0.5 to 0.5)
+    pub text_box_y_offset: f32,
+    /// Width constraint for text box as percentage of card width
+    pub text_box_width: f32,
+    /// Height constraint for text box as percentage of card height
+    pub text_box_height: f32,
+    /// Padding inside the text box (normalized)
+    pub text_box_padding: f32,
 }
 
 impl Default for CardTextLayout {
@@ -29,16 +53,31 @@ impl Default for CardTextLayout {
         Self {
             card_width: 63.0 * 1.4,
             card_height: 88.0 * 1.4,
-            // Adjusted name positioning to be more center-left
-            name_x_offset: -0.3,
-            name_y_offset: -0.41,
-            // Reduced name width to make room for mana cost
-            name_width: 0.5,
-            // Adjusted mana cost to be more right-aligned
-            mana_cost_x_offset: 0.35,
-            mana_cost_y_offset: -0.41,
+            // Position name slightly inside the left edge of the card frame
+            name_x_offset: -0.38, // Less extreme offset to keep it inside card frame
+            name_y_offset: 0.41,
+            // Widened to accommodate most card names
+            name_width: 0.65,
+            // Keep mana cost in the top right, but position it more visibly
+            mana_cost_x_offset: 0.33, // Adjusted position to be more visible
+            mana_cost_y_offset: 0.41,
             vertical_margin: 0.05,
             horizontal_margin: 0.1,
+            // Power/toughness positioning
+            pt_x_offset: 0.35,
+            pt_y_offset: -0.35,
+            pt_width: 0.15,
+            pt_height: 0.08,
+            // Type line positioning
+            type_line_x_offset: -0.3,
+            type_line_y_offset: 0.25,
+            type_line_width: 0.8,
+            type_line_height: 0.08,
+            // Text box positioning
+            text_box_y_offset: 0.0,
+            text_box_width: 0.8,
+            text_box_height: 0.35,
+            text_box_padding: 0.025,
         }
     }
 }

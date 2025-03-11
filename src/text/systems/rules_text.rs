@@ -49,34 +49,29 @@ pub fn spawn_rules_text(
     // Create text style bundle with justified text for a more MTG-like appearance
     let text_style = CardTextStyleBundle {
         text_font: TextFont {
-            // Use a regular font rather than bold for rules text like MTG cards
             font: asset_server.load("fonts/DejaVuSans.ttf"),
             font_size,
             ..default()
         },
-        text_color: TextColor(Color::BLACK),
-        // Center-justify the text like MTG cards
+        text_color: TextColor(Color::rgba(0.0, 0.0, 0.0, 0.9)),
         text_layout: TextLayout::new_with_justify(JustifyText::Center),
     };
 
-    // Create text with Text2d component
+    // Create text with CardTextBundle
     let entity = commands
-        .spawn(CardTextBundle {
-            text_2d: Text2d::new(formatted_text),
-            transform: Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.1)),
-            global_transform: GlobalTransform::default(),
-            text_font: text_style.text_font,
-            text_color: text_style.text_color,
-            text_layout: text_style.text_layout,
-            card_text_type: CardTextType::RulesText,
-            text_layout_info: TextLayoutInfo {
-                position: card_pos + local_offset, // Store absolute position for reference
+        .spawn((
+            Text2d::new(formatted_text.clone()),
+            text_style,
+            Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.2)),
+            GlobalTransform::default(),
+            CardTextType::RulesText,
+            TextLayoutInfo {
+                position: card_pos + local_offset,
                 size: text_size,
-                // Match the alignment from the text_layout
                 alignment: JustifyText::Center,
             },
-            name: Name::new(format!("Rules Text: {}", content.rules_text)),
-        })
+            Name::new(format!("Rules Text: {}", formatted_text.replace('\n', " "))),
+        ))
         .id();
 
     entity

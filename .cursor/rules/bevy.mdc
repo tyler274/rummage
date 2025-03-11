@@ -1,0 +1,10 @@
+---
+description: Knowing what parts of Bevy are deprecated
+globs: 
+alwaysApply: false
+---
+
+# Your rule content
+
+- You can @ files here
+- You can use markdown but dont have to

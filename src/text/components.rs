@@ -44,6 +44,12 @@ pub enum CardTextType {
     Debug,
 }
 
+impl Default for CardTextType {
+    fn default() -> Self {
+        Self::Name
+    }
+}
+
 /// Component for storing text layout information
 #[derive(Component, Debug, Clone)]
 pub struct TextLayoutInfo {

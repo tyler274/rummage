@@ -40,27 +40,25 @@ pub fn spawn_power_toughness_text(
             font_size,
             ..default()
         },
-        text_color: TextColor(Color::BLACK),
+        text_color: TextColor(Color::rgba(0.0, 0.0, 0.0, 0.9)),
         text_layout: TextLayout::new_with_justify(JustifyText::Center),
     };
 
     // Create text with CardTextBundle
     let entity = commands
-        .spawn(CardTextBundle {
-            text_2d: Text2d::new(pt.to_string()),
-            transform: Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.1)),
-            global_transform: GlobalTransform::default(),
-            text_font: text_style.text_font,
-            text_color: text_style.text_color,
-            text_layout: text_style.text_layout,
-            card_text_type: CardTextType::PowerToughness,
-            text_layout_info: TextLayoutInfo {
-                position: card_pos + local_offset, // Store absolute position for reference
+        .spawn((
+            Text2d::new(pt.to_string()),
+            text_style,
+            Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.2)),
+            GlobalTransform::default(),
+            CardTextType::PowerToughness,
+            TextLayoutInfo {
+                position: card_pos + local_offset,
                 size: text_size,
                 alignment: JustifyText::Center,
             },
-            name: Name::new(format!("P/T: {}", pt)),
-        })
+            Name::new(format!("Power/Toughness: {}", pt)),
+        ))
         .id();
 
     entity
