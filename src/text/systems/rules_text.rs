@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::text::{
     components::{CardTextContent, CardTextType, TextLayoutInfo},
-    utils::{calculate_text_position, calculate_text_size, get_card_font_size, get_card_layout},
+    utils::{calculate_text_size, get_card_font_size, get_card_layout},
 };
 
 /// Spawn rules text for a card
@@ -15,12 +15,14 @@ pub fn spawn_rules_text(
 ) -> Entity {
     let layout = get_card_layout();
 
-    // Position the rules text in the lower middle of the card
-    let text_pos = calculate_text_position(
-        card_pos,
-        card_size,
-        0.0, // Centered horizontally
-        layout.text_box_y_offset,
+    // Calculate relative position offsets
+    let horizontal_offset = 0.0; // Centered horizontally
+    let vertical_offset = layout.text_box_y_offset;
+
+    // Calculate the relative position in local space
+    let local_offset = Vec2::new(
+        card_size.x * horizontal_offset,
+        card_size.y * vertical_offset,
     );
 
     let text_size = calculate_text_size(card_size, layout.text_box_width, layout.text_box_height);
@@ -32,8 +34,9 @@ pub fn spawn_rules_text(
         .spawn((
             // Text2d component
             Text2d::new(content.rules_text.clone()),
-            // Add transform for positioning - use z=10 to ensure text is above the card
-            Transform::from_translation(text_pos.extend(10.0)),
+            // Use a relative transform instead of absolute world position
+            // The z value is relative to the parent (card)
+            Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.1)),
             GlobalTransform::default(),
             // Add text styling
             TextFont {
@@ -46,7 +49,7 @@ pub fn spawn_rules_text(
             // Add our custom components
             CardTextType::RulesText,
             TextLayoutInfo {
-                position: text_pos,
+                position: card_pos + local_offset, // Store absolute position for reference
                 size: text_size,
                 alignment: JustifyText::Center,
             },

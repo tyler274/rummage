@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::text::{
     components::{CardTextType, TextLayoutInfo},
-    utils::{calculate_text_position, calculate_text_size, get_card_layout},
+    utils::{calculate_text_size, get_card_layout},
 };
 
 /// Spawn debug visualization for text boundaries
@@ -16,66 +16,64 @@ pub fn spawn_debug_visualization(
     let parent_entity = commands.spawn(CardTextType::Debug).id();
 
     // Visualize name text area
-    let name_pos = calculate_text_position(
-        card_pos,
-        card_size,
-        layout.name_x_offset,
-        layout.title_y_offset,
+    let name_offset = Vec2::new(
+        card_size.x * layout.name_x_offset,
+        card_size.y * layout.title_y_offset,
     );
     let name_size = calculate_text_size(card_size, layout.name_width, layout.title_height);
     spawn_debug_box(
         commands,
-        name_pos,
+        name_offset,
         name_size,
         Color::srgba(1.0, 0.0, 0.0, 0.2),
         parent_entity,
     );
 
     // Visualize mana cost text area
-    let mana_pos = calculate_text_position(
-        card_pos,
-        card_size,
-        layout.mana_cost_x_offset,
-        layout.title_y_offset,
+    let mana_offset = Vec2::new(
+        card_size.x * layout.mana_cost_x_offset,
+        card_size.y * layout.title_y_offset,
     );
     let mana_size = calculate_text_size(card_size, layout.mana_cost_width, layout.title_height);
     spawn_debug_box(
         commands,
-        mana_pos,
+        mana_offset,
         mana_size,
         Color::srgba(0.0, 1.0, 0.0, 0.2),
         parent_entity,
     );
 
     // Visualize type line text area
-    let type_pos = calculate_text_position(card_pos, card_size, 0.0, layout.type_line_y_offset);
+    let type_offset = Vec2::new(0.0, card_size.y * layout.type_line_y_offset);
     let type_size = calculate_text_size(card_size, layout.type_line_width, layout.type_line_height);
     spawn_debug_box(
         commands,
-        type_pos,
+        type_offset,
         type_size,
         Color::srgba(0.0, 0.0, 1.0, 0.2),
         parent_entity,
     );
 
     // Visualize rules text area
-    let rules_pos = calculate_text_position(card_pos, card_size, 0.0, layout.text_box_y_offset);
+    let rules_offset = Vec2::new(0.0, card_size.y * layout.text_box_y_offset);
     let rules_size = calculate_text_size(card_size, layout.text_box_width, layout.text_box_height);
     spawn_debug_box(
         commands,
-        rules_pos,
+        rules_offset,
         rules_size,
         Color::srgba(1.0, 1.0, 0.0, 0.2),
         parent_entity,
     );
 
     // Visualize power/toughness text area
-    let pt_pos =
-        calculate_text_position(card_pos, card_size, layout.pt_x_offset, layout.pt_y_offset);
+    let pt_offset = Vec2::new(
+        card_size.x * layout.pt_x_offset,
+        card_size.y * layout.pt_y_offset,
+    );
     let pt_size = calculate_text_size(card_size, layout.pt_width, layout.pt_height);
     spawn_debug_box(
         commands,
-        pt_pos,
+        pt_offset,
         pt_size,
         Color::srgba(1.0, 0.0, 1.0, 0.2),
         parent_entity,
@@ -88,7 +86,7 @@ pub fn spawn_debug_visualization(
 /// Helper function to spawn a debug box
 fn spawn_debug_box(
     commands: &mut Commands,
-    position: Vec2,
+    local_offset: Vec2,
     size: Vec2,
     color: Color,
     parent: Entity,
@@ -100,11 +98,12 @@ fn spawn_debug_box(
                 custom_size: Some(size),
                 ..default()
             },
-            Transform::from_translation(position.extend(6.0)),
+            // Use relative transform
+            Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.05)),
             GlobalTransform::default(),
             CardTextType::Debug,
             TextLayoutInfo {
-                position,
+                position: local_offset, // Store local position
                 size,
                 alignment: JustifyText::Center,
             },
@@ -121,7 +120,8 @@ fn spawn_debug_box(
                 custom_size: Some(Vec2::new(3.0, 3.0)),
                 ..default()
             },
-            Transform::from_translation(position.extend(7.0)),
+            // Use relative transform
+            Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.06)),
             GlobalTransform::default(),
             CardTextType::Debug,
         ))

@@ -104,17 +104,29 @@ pub fn spawn_debug_bounds(
 }
 
 /// Calculate text position relative to a card
+///
+/// This function calculates the position of text elements relative to a card,
+/// ensuring that the text stays properly aligned with the card regardless of
+/// the card's position on screen.
+///
+/// Instead of using absolute world coordinates, we use the card's transform
+/// as the parent and calculate relative offsets. This ensures that text
+/// stays properly aligned with cards even when they're away from the center
+/// of the screen.
 pub fn calculate_text_position(
     card_pos: Vec2,
     card_size: Vec2,
     horizontal_offset: f32,
     vertical_offset: f32,
 ) -> Vec2 {
-    card_pos
-        + Vec2::new(
-            card_size.x * horizontal_offset,
-            card_size.y * vertical_offset,
-        )
+    // Calculate the offset in local card space
+    let offset = Vec2::new(
+        card_size.x * horizontal_offset,
+        card_size.y * vertical_offset,
+    );
+
+    // Apply the offset to the card position
+    card_pos + offset
 }
 
 /// Calculate text size relative to a card

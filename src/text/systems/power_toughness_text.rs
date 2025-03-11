@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::text::{
     components::{CardTextType, TextLayoutInfo},
-    utils::{calculate_text_position, calculate_text_size, get_card_font_size, get_card_layout},
+    utils::{calculate_text_size, get_card_font_size, get_card_layout},
 };
 
 /// Spawn power/toughness text for a card
@@ -14,13 +14,23 @@ pub fn spawn_power_toughness_text(
     asset_server: &AssetServer,
 ) -> Entity {
     let layout = get_card_layout();
-
-    // Position the power/toughness text at the bottom right of the card
-    let text_pos =
-        calculate_text_position(card_pos, card_size, layout.pt_x_offset, layout.pt_y_offset);
-
-    let text_size = calculate_text_size(card_size, layout.pt_width, layout.pt_height);
-
+    
+    // Calculate relative position offsets
+    let horizontal_offset = layout.pt_x_offset;
+    let vertical_offset = layout.pt_y_offset;
+    
+    // Calculate the relative position in local space
+    let local_offset = Vec2::new(
+        card_size.x * horizontal_offset,
+        card_size.y * vertical_offset,
+    );
+    
+    let text_size = calculate_text_size(
+        card_size,
+        layout.pt_width,
+        layout.pt_height,
+    );
+    
     let font_size = get_card_font_size(card_size, 24.0);
 
     // Create text with Text2d component
@@ -28,8 +38,9 @@ pub fn spawn_power_toughness_text(
         .spawn((
             // Text2d component
             Text2d::new(pt.to_string()),
-            // Add transform for positioning - use z=10 to ensure text is above the card
-            Transform::from_translation(text_pos.extend(10.0)),
+            // Use a relative transform instead of absolute world position
+            // The z value is relative to the parent (card)
+            Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.1)),
             GlobalTransform::default(),
             // Add text styling
             TextFont {
@@ -42,7 +53,7 @@ pub fn spawn_power_toughness_text(
             // Add our custom components
             CardTextType::PowerToughness,
             TextLayoutInfo {
-                position: text_pos,
+                position: card_pos + local_offset, // Store absolute position for reference
                 size: text_size,
                 alignment: JustifyText::Right,
             },
