@@ -68,69 +68,149 @@ pub fn spawn_rules_text(
         ))
         .id();
 
-    // Instead of complex parsing, we'll just render the full text with regular font
-    // and then add colored mana symbols as overlays
+    // Special case handling for rules text with mana symbols
+    // This time we'll create a system that renders the text in segments with appropriate styling
 
-    // First add the regular text
-    commands
-        .spawn((
-            TextSpan::default(),
-            Text2d::new(formatted_text.clone()),
-            TextFont {
-                font: regular_font.clone(),
-                font_size,
-                ..default()
-            },
-            TextColor(Color::rgba(0.0, 0.0, 0.0, 0.9)),
-        ))
-        .set_parent(parent_entity);
+    // Parse formatted_text into segments (regular text and mana symbols)
+    let segments = parse_text_with_mana_symbols(&formatted_text);
 
-    // Now scan for mana symbols and overlay them
-    let mut symbol_index = 0;
-    while let Some(start) = formatted_text[symbol_index..].find('{') {
-        // Find the starting position of the symbol
-        let real_start = symbol_index + start;
+    // Current X position tracker for aligning text segments
+    let mut current_x = 0.0;
+    let mut current_line = 0;
+    let line_height = font_size * 1.2; // Line height with some spacing
 
-        // Look for the end of the symbol
-        if let Some(end) = formatted_text[real_start..].find('}') {
-            let real_end = real_start + end + 1; // +1 to include the closing brace
-            let symbol = &formatted_text[real_start..real_end];
+    for (segment, is_mana_symbol) in segments {
+        // Skip empty segments
+        if segment.is_empty() {
+            continue;
+        }
 
-            // Only process if the symbol is a valid mana symbol
-            if is_valid_mana_symbol(symbol) {
-                let symbol_color = get_mana_symbol_color(symbol);
+        // Reset X position and increment Y position for new lines
+        if segment == "\n" {
+            current_x = 0.0;
+            current_line += 1;
+            continue;
+        }
 
-                // Calculate the approximate position for this symbol
-                // This is a rough estimate - in a real implementation,
-                // you'd need more precise text metrics
-                let chars_before = real_start;
-                let estimated_x_pos = (chars_before as f32) * (font_size * 0.5);
+        // Calculate Y position based on current line
+        let y_pos = -current_line as f32 * line_height;
 
-                commands
-                    .spawn((
-                        TextSpan::default(),
-                        Text2d::new(symbol.to_string()),
-                        TextFont {
-                            font: mana_font.clone(),
-                            font_size,
-                            ..default()
-                        },
-                        TextColor(symbol_color),
-                        // Use precise positioning
-                        Transform::from_translation(Vec3::new(estimated_x_pos, 0.0, 0.1)),
-                    ))
-                    .set_parent(parent_entity);
-            }
+        if is_mana_symbol {
+            // This is a mana symbol - use mana font and appropriate color
+            let symbol_color = get_mana_symbol_color(&segment);
 
-            // Move past this symbol
-            symbol_index = real_end;
+            commands
+                .spawn((
+                    TextSpan::default(),
+                    Text2d::new(segment.clone()),
+                    TextFont {
+                        font: mana_font.clone(),
+                        font_size,
+                        ..default()
+                    },
+                    TextColor(symbol_color),
+                    // Position at current_x, with y offset based on line number
+                    Transform::from_translation(Vec3::new(current_x, y_pos, 0.1)),
+                ))
+                .set_parent(parent_entity);
+
+            // Advance X position - mana symbols are roughly square
+            current_x += font_size * 0.8;
         } else {
-            // No closing brace found, exit the loop
-            break;
+            // This is regular text - use regular font
+            commands
+                .spawn((
+                    TextSpan::default(),
+                    Text2d::new(segment.clone()),
+                    TextFont {
+                        font: regular_font.clone(),
+                        font_size,
+                        ..default()
+                    },
+                    TextColor(Color::rgba(0.0, 0.0, 0.0, 0.9)),
+                    // Position at current_x
+                    Transform::from_translation(Vec3::new(current_x, y_pos, 0.0)),
+                ))
+                .set_parent(parent_entity);
+
+            // Approximately calculate width based on character count and font size
+            // This is imprecise but works for a rough layout
+            current_x += segment.chars().count() as f32 * (font_size * 0.5);
         }
     }
 
     parent_entity
+}
+
+/// Parse text into segments, identifying mana symbols and regular text
+fn parse_text_with_mana_symbols(text: &str) -> Vec<(String, bool)> {
+    let mut segments = Vec::new();
+    let mut current_text = String::new();
+    let mut i = 0;
+
+    // Special case for known MTG symbols in text, like {R}:
+    // Look for pattern like "{R}:" which is a cost symbol followed by colon
+
+    while i < text.len() {
+        if i + 1 < text.len() && text[i..i + 1] == *"{" {
+            // Possible start of a mana symbol
+
+            // First, add any accumulated text
+            if !current_text.is_empty() {
+                segments.push((current_text.clone(), false));
+                current_text.clear();
+            }
+
+            // Find the end of the potential symbol
+            let mut j = i + 1;
+            let mut valid_symbol = false;
+
+            while j < text.len() && text[j..j + 1] != *"}" {
+                j += 1;
+            }
+
+            if j < text.len() {
+                // We found a closing brace
+                let symbol = &text[i..=j];
+
+                if is_valid_mana_symbol(symbol) {
+                    // This is a valid mana symbol
+                    segments.push((symbol.to_string(), true));
+                    valid_symbol = true;
+                    i = j + 1;
+                }
+            }
+
+            if !valid_symbol {
+                // Not a valid symbol, just add the opening brace as text
+                current_text.push('{');
+                i += 1;
+            }
+        } else if text[i..i + 1] == *"\n" {
+            // Handle line breaks specially
+
+            // Add any accumulated text first
+            if !current_text.is_empty() {
+                segments.push((current_text.clone(), false));
+                current_text.clear();
+            }
+
+            // Add the line break as a special segment
+            segments.push(("\n".to_string(), false));
+            i += 1;
+        } else {
+            // Regular character, add to current text
+            current_text.push_str(&text[i..i + 1]);
+            i += 1;
+        }
+    }
+
+    // Add any remaining text
+    if !current_text.is_empty() {
+        segments.push((current_text, false));
+    }
+
+    segments
 }
 
 /// Check if a string is a valid mana symbol

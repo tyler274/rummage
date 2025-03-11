@@ -83,7 +83,7 @@ pub fn create_mana_cost_text(
         .id();
 
     // The spacing value between mana symbols
-    let symbol_width = font_size * 0.8;
+    let symbol_width = font_size * 1.2;
     let num_symbols = symbols.len() as f32;
     let total_width = symbol_width * num_symbols;
 
