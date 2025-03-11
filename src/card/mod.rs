@@ -1,5 +1,14 @@
 pub mod hdr;
+// Add modules from cards
+pub mod artifacts;
+pub mod black;
+pub mod blue;
+pub mod green;
+pub mod mtgjson;
+pub mod red;
+pub mod white;
 
+use crate::menu::GameMenuState;
 use crate::text::{CardTextContent, CardTextType, SpawnedText};
 use bevy::prelude::*;
 use bitflags::bitflags;
@@ -728,7 +737,7 @@ pub fn handle_card_dragging(
 pub fn debug_render_text_positions(
     mut gizmos: Gizmos,
     card_query: Query<(&Transform, &Card), With<Card>>,
-    config: Res<DebugConfig>,
+    config: Res<crate::text::DebugConfig>,
 ) {
     if !config.show_text_positions {
         return;
@@ -764,8 +773,22 @@ pub struct CardPlugin;
 
 impl Plugin for CardPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(DebugConfig::default())
-            .add_systems(Update, handle_card_dragging)
-            .add_systems(Update, debug_render_text_positions);
+        app.insert_resource(DebugConfig::default()).add_systems(
+            Update,
+            (handle_card_dragging, debug_render_text_positions)
+                .run_if(in_state(GameMenuState::InGame)),
+        );
     }
+}
+
+// Add get_example_cards function from cards module
+pub fn get_example_cards(owner: Entity) -> Vec<Card> {
+    let mut cards = Vec::new();
+    cards.extend(artifacts::get_artifact_cards());
+    cards.extend(black::get_black_cards());
+    cards.extend(blue::get_blue_cards());
+    cards.extend(green::get_green_cards());
+    cards.extend(red::get_red_cards());
+    cards.extend(white::get_white_cards());
+    cards
 }

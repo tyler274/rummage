@@ -1,6 +1,5 @@
 mod camera;
 mod card;
-mod cards;
 mod drag;
 mod game_engine;
 mod mana;
@@ -18,13 +17,12 @@ use camera::{
     components::GameCamera,
     systems::{camera_movement, handle_window_resize, set_initial_zoom, setup_camera},
 };
-use card::DebugConfig;
-use cards::CardsPlugin;
+use card::CardPlugin;
 use drag::DragPlugin;
 use game_engine::GameEnginePlugin;
 use menu::{GameMenuState, MenuPlugin, state::StateTransitionContext};
 use player::spawn_hand;
-use text::spawn_card_text;
+use text::{DebugConfig, spawn_card_text};
 
 // Plugin for the actual game systems
 pub struct GamePlugin;
@@ -33,8 +31,9 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(DragPlugin)
             .add_plugins(EntropyPlugin::<WyRand>::default())
-            .add_plugins(CardsPlugin)
+            .add_plugins(CardPlugin)
             .add_plugins(GameEnginePlugin)
+            .add_plugins(text::TextPlugin)
             .insert_resource(DebugConfig {
                 show_text_positions: false,
             })

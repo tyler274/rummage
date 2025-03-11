@@ -23,8 +23,7 @@ use crate::camera::components::{AppLayer, GameCamera};
 ///
 /// Each text component is spawned as a child entity of the card,
 /// ensuring proper positioning and movement during drag operations.
-use crate::card::{Card, CardDetails, Draggable};
-use crate::cards::get_example_cards;
+use crate::card::{Card, CardDetails, Draggable, get_example_cards};
 use crate::mana::{ManaPool, convert_rules_text_to_symbols};
 use crate::text::{CardTextContent, CardTextType};
 use bevy::prelude::*;
