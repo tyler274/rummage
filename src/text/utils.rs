@@ -54,10 +54,10 @@ impl Default for CardTextLayout {
             card_width: 63.0 * 1.4,
             card_height: 88.0 * 1.4,
             // Position name with a proper margin from the left edge of the card frame
-            name_x_offset: -0.24, // Further increased right margin
+            name_x_offset: -0.20, // Further increased right margin for long card names
             name_y_offset: 0.41,
-            // Widened to accommodate most card names
-            name_width: 0.65,
+            // Adjusted width to prevent long names from extending beyond card boundaries
+            name_width: 0.60, // Slightly reduced width to ensure text stays within bounds
             // Keep mana cost in the top right, but position it more visibly
             mana_cost_x_offset: 0.33, // Adjusted position to be more visible
             mana_cost_y_offset: 0.41,

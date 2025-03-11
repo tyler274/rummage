@@ -110,8 +110,8 @@ fn format_card_name(name: &str, font_size: f32, max_width: f32) -> String {
     // Calculate max chars that fit in the available width
     let max_chars = (max_width / avg_char_width).floor() as usize;
 
-    // Use a reasonable max
-    let max_chars = max_chars.min(22); // Adjusted max characters
+    // Use a reasonable max - reduced to ensure long names fit properly
+    let max_chars = max_chars.min(20); // Reduced from 22 for better boundary control
 
     if name.len() <= max_chars {
         name.to_string()
