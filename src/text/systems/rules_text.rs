@@ -99,6 +99,27 @@ pub fn spawn_rules_text(
             // This is a mana symbol - use mana font and appropriate color
             let symbol_color = get_mana_symbol_color(&segment);
 
+            // Drop shadow parameters - more subtle for rules text
+            let shadow_offset = Vec3::new(0.6, -0.6, 0.0); // Reduced offset for more subtle shadow
+            let shadow_color = Color::rgba(0.0, 0.0, 0.0, 0.35); // More transparent for subtlety
+
+            // First spawn the shadow copy
+            commands
+                .spawn((
+                    TextSpan::default(),
+                    Text2d::new(segment.clone()),
+                    TextFont {
+                        font: mana_font.clone(),
+                        font_size,
+                        ..default()
+                    },
+                    TextColor(shadow_color),
+                    // Position with shadow offset
+                    Transform::from_translation(Vec3::new(current_x, y_pos, 0.0) + shadow_offset),
+                ))
+                .set_parent(parent_entity);
+
+            // Then spawn the actual colored symbol on top
             commands
                 .spawn((
                     TextSpan::default(),
@@ -109,7 +130,7 @@ pub fn spawn_rules_text(
                         ..default()
                     },
                     TextColor(symbol_color),
-                    // Position at current_x, with y offset based on line number
+                    // Position at current_x, with y offset based on line number and slightly elevated z
                     Transform::from_translation(Vec3::new(current_x, y_pos, 0.1)),
                 ))
                 .set_parent(parent_entity);

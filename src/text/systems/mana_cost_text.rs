@@ -87,6 +87,10 @@ pub fn create_mana_cost_text(
     let num_symbols = symbols.len() as f32;
     let total_width = symbol_width * num_symbols;
 
+    // Drop shadow parameters - more subtle like rules text
+    let shadow_offset = Vec3::new(0.8, -0.8, 0.0); // Slightly larger than rules text but still subtle
+    let shadow_color = Color::rgba(0.0, 0.0, 0.0, 0.35); // Semi-transparent black for subtle shadow
+
     // Add each mana symbol as its own entity with correct positioning
     for (i, symbol) in symbols.iter().enumerate() {
         let symbol_color = get_mana_symbol_color(symbol);
@@ -96,6 +100,23 @@ pub fn create_mana_cost_text(
         let horizontal_offset =
             -(total_width / 2.0) + (i as f32 * symbol_width) + (symbol_width / 2.0);
 
+        // First, spawn the shadow copy of the symbol
+        commands
+            .spawn((
+                TextSpan::default(),
+                Text2d::new(symbol.clone()),
+                TextColor(shadow_color),
+                TextFont {
+                    font: mana_font.clone(),
+                    font_size,
+                    ..default()
+                },
+                // Position shadow with an offset to create the drop shadow effect
+                Transform::from_translation(Vec3::new(horizontal_offset, 0.0, 0.0) + shadow_offset),
+            ))
+            .set_parent(parent_entity);
+
+        // Then spawn the actual colored symbol on top
         commands
             .spawn((
                 TextSpan::default(),
@@ -107,7 +128,7 @@ pub fn create_mana_cost_text(
                     ..default()
                 },
                 // Position each symbol with a specific offset
-                Transform::from_translation(Vec3::new(horizontal_offset, 0.0, 0.0)),
+                Transform::from_translation(Vec3::new(horizontal_offset, 0.0, 0.1)),
             ))
             .set_parent(parent_entity);
     }
