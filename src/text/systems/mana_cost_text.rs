@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 
 use crate::text::{
-    components::{CardTextContent, CardTextType, TextLayoutInfo},
+    components::{
+        CardTextBundle, CardTextContent, CardTextStyleBundle, CardTextType, TextLayoutInfo,
+    },
     utils::{calculate_text_size, get_card_font_size, get_card_layout},
 };
 
@@ -15,7 +17,7 @@ pub fn spawn_mana_cost_text(
 ) -> Entity {
     let layout = get_card_layout();
 
-    // Calculate relative position offsets
+    // Calculate relative position offsets - align to the right side of the card title area
     let horizontal_offset = layout.mana_cost_x_offset;
     let vertical_offset = layout.title_y_offset;
 
@@ -27,36 +29,48 @@ pub fn spawn_mana_cost_text(
 
     let text_size = calculate_text_size(card_size, layout.mana_cost_width, layout.title_height);
 
+    // Keep mana cost text prominent for readability
     let font_size = get_card_font_size(card_size, 24.0);
 
-    // Create text with Text2d component
+    // Format the mana cost for better display
+    let mana_text = format_mana_cost(&content.mana_cost);
+
+    // Create text style bundle
+    let text_style = CardTextStyleBundle {
+        text_font: TextFont {
+            font: asset_server.load("fonts/DejaVuSans-Bold.ttf"),
+            font_size,
+            ..default()
+        },
+        text_color: TextColor(Color::BLACK),
+        text_layout: TextLayout::new_with_justify(JustifyText::Right),
+    };
+
+    // Create text with CardTextBundle
     let entity = commands
-        .spawn((
-            // Text2d component
-            Text2d::new(content.mana_cost.clone()),
-            // Use a relative transform instead of absolute world position
-            // The z value is relative to the parent (card)
-            Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.1)),
-            GlobalTransform::default(),
-            // Add text styling
-            TextFont {
-                font: asset_server.load("fonts/DejaVuSans-Bold.ttf"),
-                font_size,
-                ..default()
-            },
-            TextColor(Color::BLACK),
-            TextLayout::new_with_justify(JustifyText::Right),
-            // Add our custom components
-            CardTextType::ManaCost,
-            TextLayoutInfo {
-                position: card_pos + local_offset, // Store absolute position for reference
+        .spawn(CardTextBundle {
+            text_2d: Text2d::new(mana_text.clone()),
+            transform: Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.1)),
+            global_transform: GlobalTransform::default(),
+            text_font: text_style.text_font,
+            text_color: text_style.text_color,
+            text_layout: text_style.text_layout,
+            card_text_type: CardTextType::ManaCost,
+            text_layout_info: TextLayoutInfo {
+                position: card_pos + local_offset,
                 size: text_size,
                 alignment: JustifyText::Right,
             },
-            // Add a name for debugging
-            Name::new(format!("Mana Cost: {}", content.mana_cost)),
-        ))
+            name: Name::new(format!("Mana Cost: {}", mana_text)),
+        })
         .id();
 
     entity
+}
+
+/// Format mana cost for better display
+fn format_mana_cost(mana_cost: &str) -> String {
+    // For now, just return the mana cost as is
+    // In future, this could be enhanced to handle special mana symbols
+    mana_cost.to_string()
 }

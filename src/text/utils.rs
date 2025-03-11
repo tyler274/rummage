@@ -35,31 +35,31 @@ pub struct CardTextLayout {
 impl Default for CardTextLayout {
     fn default() -> Self {
         Self {
-            // Title bar (top ~12% of card)
-            title_y_offset: 0.42,
-            title_height: 0.1,
-            name_x_offset: -0.2,
-            name_width: 0.6,
-            mana_cost_x_offset: 0.35,
+            // Title bar (top ~10% of card)
+            title_y_offset: 0.43,     // Slightly adjusted for better positioning
+            title_height: 0.09,       // Slightly reduced height
+            name_x_offset: -0.35,     // Move name more to the left to match MTG cards
+            name_width: 0.7,          // Wider to accommodate full card names
+            mana_cost_x_offset: 0.38, // More right-aligned
             mana_cost_width: 0.25,
 
             // Type line (middle divider, ~8% of card)
-            type_line_y_offset: 0.15,
+            type_line_y_offset: 0.16, // Adjusted position
             type_line_height: 0.08,
-            type_line_width: 0.85,
+            type_line_width: 0.9, // Wider to match MTG cards
 
             // Text box (middle ~55% of card)
             // Adjusted to better match standard Magic card layout
-            text_box_y_offset: -0.05, // Moved up slightly
-            text_box_height: 0.45,    // Increased height for more text space
-            text_box_width: 0.75,     // Narrower to ensure text stays within card boundaries
-            text_box_padding: 0.05,   // Increased padding for better margins
+            text_box_y_offset: -0.08, // Move up slightly to center better
+            text_box_height: 0.48,    // Increased for more text space like MTG cards
+            text_box_width: 0.85,     // Wider to match MTG text boxes
+            text_box_padding: 0.04,   // Better edge margins
 
             // Power/toughness box (bottom right corner)
-            pt_x_offset: 0.35,
-            pt_y_offset: -0.42,
-            pt_width: 0.2,
-            pt_height: 0.1,
+            pt_x_offset: 0.37, // Adjusted to match MTG cards
+            pt_y_offset: -0.43,
+            pt_width: 0.15, // More compact like MTG cards
+            pt_height: 0.09,
 
             // Margins
             horizontal_margin: 0.05,
