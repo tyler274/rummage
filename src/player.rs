@@ -111,7 +111,7 @@ pub fn spawn_hand(
             .spawn((
                 card.clone(),
                 Sprite {
-                    color: Color::rgb(0.95, 0.95, 0.95),
+                    color: Color::rgb(0.85, 0.85, 0.85),
                     custom_size: Some(card_size),
                     ..default()
                 },

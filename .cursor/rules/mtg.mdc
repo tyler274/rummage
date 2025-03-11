@@ -1,0 +1,7 @@
+---
+description: Magic the Gathering Rules
+globs: 
+alwaysApply: false
+---
+[MagicCompRules 20250207.txt](mdc:docs/MagicCompRules 20250207.txt) Refer to this as the source of truth for all Magic the
+Gathering rules and edge cases that need to be handled robustly in the game engine. 

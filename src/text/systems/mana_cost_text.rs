@@ -1,10 +1,12 @@
+use bevy::prelude::*;
+use bevy::text::JustifyText;
+
 use crate::card::Card;
 use crate::text::{
     components::{CardTextBundle, CardTextType, TextLayoutInfo},
     mana_symbols::{ManaSymbolOptions, render_mana_symbol},
     utils::{calculate_text_position, calculate_text_size, get_card_font_size, get_card_layout},
 };
-use bevy::prelude::*;
 
 /// Creates a text entity for mana cost with colored mana symbols
 pub fn create_mana_cost_text(
@@ -91,6 +93,7 @@ pub fn create_mana_cost_text(
         vertical_alignment_offset: 0.0, // No baseline adjustment needed for mana cost
         z_index: 0.1,
         with_shadow: true,
+        alignment: JustifyText::Center,
     };
 
     // Add each mana symbol as its own entity with correct positioning

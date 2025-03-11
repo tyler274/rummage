@@ -1,6 +1,7 @@
 use crate::mana::mana_symbol_to_char;
 use crate::text::utils::get_mana_symbol_color;
 use bevy::prelude::*;
+use bevy::text::JustifyText;
 
 /// Represents rendering options for mana symbols
 #[derive(Clone)]
@@ -13,6 +14,8 @@ pub struct ManaSymbolOptions {
     pub z_index: f32,
     /// Whether to render with drop shadow
     pub with_shadow: bool,
+    /// Text alignment for the mana symbol
+    pub alignment: JustifyText,
 }
 
 impl Default for ManaSymbolOptions {
@@ -22,6 +25,7 @@ impl Default for ManaSymbolOptions {
             vertical_alignment_offset: 0.0,
             z_index: 0.1,
             with_shadow: true,
+            alignment: JustifyText::Center,
         }
     }
 }
@@ -41,21 +45,26 @@ pub fn render_mana_symbol(
     // Convert the symbol to the appropriate character for the Mana font
     let display_symbol = mana_symbol_to_char(symbol);
 
-    // Apply vertical alignment offset if specified
-    let aligned_pos = if options.vertical_alignment_offset != 0.0 {
-        Vec3::new(
-            pos_3d.x,
-            pos_3d.y + options.vertical_alignment_offset,
-            pos_3d.z,
-        )
-    } else {
-        pos_3d
+    // Calculate a symbol-specific vertical alignment adjustment
+    let symbol_specific_offset = match symbol.trim() {
+        "{B}" => options.font_size * 0.05, // Slight adjustment for black mana
+        "{W}" => options.font_size * 0.03, // Slight adjustment for white mana
+        "{R}" => options.font_size * 0.04, // Slight adjustment for red mana
+        "{T}" => options.font_size * 0.08, // More significant adjustment for tap symbol
+        _ => 0.0,
     };
+
+    // Apply vertical alignment offset if specified
+    let aligned_pos = Vec3::new(
+        pos_3d.x,
+        pos_3d.y + options.vertical_alignment_offset + symbol_specific_offset,
+        pos_3d.z,
+    );
 
     // Render drop shadow if enabled
     if options.with_shadow {
         let shadow_offset = Vec3::new(1.5, -1.5, 0.0);
-        let shadow_color = Color::srgba(0.0, 0.0, 0.0, 0.8);
+        let shadow_color = Color::srgba(0.0, 0.0, 0.0, 0.7);
 
         commands
             .spawn((
@@ -67,6 +76,7 @@ pub fn render_mana_symbol(
                     ..default()
                 },
                 TextColor(shadow_color),
+                TextLayout::new_with_justify(options.alignment),
                 Transform::from_translation(
                     aligned_pos + shadow_offset - Vec3::new(0.0, 0.0, 0.05),
                 ),
@@ -85,6 +95,7 @@ pub fn render_mana_symbol(
                 ..default()
             },
             TextColor(symbol_color),
+            TextLayout::new_with_justify(options.alignment),
             Transform::from_translation(aligned_pos),
         ))
         .set_parent(parent_entity);

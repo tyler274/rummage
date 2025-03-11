@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::text::JustifyText;
 
 use crate::text::{
     components::{
@@ -104,6 +105,7 @@ pub fn spawn_rules_text(
                 vertical_alignment_offset: font_size * 0.2, // Adjusted for better baseline alignment
                 z_index: 0.1,
                 with_shadow: true,
+                alignment: JustifyText::Center,
             };
 
             // Special alignment adjustment for different mana symbols
@@ -111,8 +113,20 @@ pub fn spawn_rules_text(
                 font_size * 0.1 // Adjusted offset for red mana
             } else if segment == "{G}" {
                 font_size * 0.05 // Small adjustment for green mana
+            } else if segment == "{T}" {
+                font_size * 0.06 // Special adjustment for tap symbol
             } else {
                 0.0
+            };
+
+            // For tap symbol, add additional vertical alignment adjustment
+            let tap_symbol_options = if segment == "{T}" {
+                ManaSymbolOptions {
+                    vertical_alignment_offset: font_size * 0.25, // Increased vertical alignment for tap
+                    ..mana_options
+                }
+            } else {
+                mana_options
             };
 
             render_mana_symbol(
@@ -120,23 +134,40 @@ pub fn spawn_rules_text(
                 segment,
                 Vec2::new(current_x + extra_horizontal_offset, y_pos),
                 mana_font.clone(),
-                mana_options,
+                tap_symbol_options,
                 parent_entity,
             );
+
+            // Add special spacing for tap symbol
+            let symbol_spacing = if segment == "{T}" {
+                // More spacing after tap symbol for better readability
+                font_size * 0.15
+            } else {
+                0.0
+            };
 
             // Advance X position using our standardized function
             current_x += get_mana_symbol_width(font_size) + extra_horizontal_offset;
             new_line_started = false;
 
+            // Check if the next segment is also a mana symbol
+            let next_is_mana_symbol = segments
+                .get(idx + 1)
+                .map(|(_, is_symbol)| *is_symbol)
+                .unwrap_or(false);
+
             // Check if next segment starts with a colon (part of an activated ability)
-            // We won't add extra spacing in that case
             let is_part_of_ability = segments
                 .get(idx + 1)
                 .map(|(next_text, _)| next_text.starts_with(':'))
                 .unwrap_or(false);
 
-            if !is_part_of_ability {
-                current_x += font_size * 0.05; // Small spacing after standalone mana symbols
+            // Add spacing after mana symbols, unless it's followed by a colon or another mana symbol
+            if !is_part_of_ability && !next_is_mana_symbol {
+                current_x += font_size * 0.1 + symbol_spacing; // Small spacing after standalone mana symbols
+            } else if next_is_mana_symbol {
+                // Smaller spacing between consecutive mana symbols
+                current_x += font_size * 0.05 + symbol_spacing * 0.5;
             }
         } else {
             // This is regular text - use regular font
@@ -425,7 +456,31 @@ fn split_regular_text(text: &str) -> Vec<(String, bool)> {
         }
     }
 
-    segments
+    // Post-process segments to ensure proper spacing between consecutive mana symbols
+    let mut result = Vec::new();
+    let mut prev_was_symbol = false;
+
+    for (segment, is_symbol) in segments {
+        if is_symbol {
+            result.push((segment, true));
+            prev_was_symbol = true;
+        } else {
+            // If this is regular text but the previous segment was a symbol,
+            // we need to ensure proper spacing
+            if prev_was_symbol
+                && !segment.starts_with(' ')
+                && !segment.starts_with('.')
+                && !segment.starts_with(':')
+            {
+                // Insert a small space between mana symbols and text
+                result.push((" ".to_string(), false));
+            }
+            result.push((segment, false));
+            prev_was_symbol = false;
+        }
+    }
+
+    result
 }
 
 /// Format rules text with proper line breaks, spacing, and wrapping

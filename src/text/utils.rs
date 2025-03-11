@@ -9,7 +9,7 @@ pub fn get_mana_symbol_color(symbol: &str) -> Color {
     let color = match clean_symbol {
         "{W}" => Color::srgb(0.95, 0.95, 0.85), // White mana (off-white)
         "{U}" => Color::srgb(0.0, 0.4, 0.8),    // Blue mana - more vibrant
-        "{B}" => Color::srgb(0.2, 0.2, 0.2),    // Black mana (darker gray)
+        "{B}" => Color::srgb(0.65, 0.65, 0.65), // Black mana - lighter for better visibility of skull
         "{R}" => Color::srgb(0.9, 0.1, 0.1),    // Red mana - more vivid red
         "{G}" => Color::srgb(0.0, 0.6, 0.0),    // Green mana - brighter green
         "{C}" => Color::srgb(0.7, 0.7, 0.8),    // Colorless mana - slight blue tint
