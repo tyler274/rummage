@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::text::{
     components::{CardTextType, TextLayoutInfo},
-    utils::{calculate_text_size, get_card_layout},
+    utils::CardTextLayout,
 };
 
 /// Spawn debug visualization for text boundaries
@@ -12,15 +12,18 @@ pub fn spawn_debug_visualization(
     card_size: Vec2,
     _asset_server: &AssetServer,
 ) -> Entity {
-    let layout = get_card_layout();
+    let layout = CardTextLayout::default();
     let parent_entity = commands.spawn(CardTextType::Debug).id();
 
     // Visualize name text area
     let name_offset = Vec2::new(
         card_size.x * layout.name_x_offset,
-        card_size.y * layout.title_y_offset,
+        card_size.y * layout.name_y_offset,
     );
-    let name_size = calculate_text_size(card_size, layout.name_width, layout.title_height);
+    let name_size = Vec2::new(
+        card_size.x * layout.name_width,
+        card_size.y * 0.08, // Approximate height for name
+    );
     spawn_debug_box(
         commands,
         name_offset,
@@ -32,9 +35,12 @@ pub fn spawn_debug_visualization(
     // Visualize mana cost text area
     let mana_offset = Vec2::new(
         card_size.x * layout.mana_cost_x_offset,
-        card_size.y * layout.title_y_offset,
+        card_size.y * layout.mana_cost_y_offset,
     );
-    let mana_size = calculate_text_size(card_size, layout.mana_cost_width, layout.title_height);
+    let mana_size = Vec2::new(
+        card_size.x * 0.15, // Approximate width for mana cost
+        card_size.y * 0.08, // Approximate height for mana cost
+    );
     spawn_debug_box(
         commands,
         mana_offset,
@@ -43,58 +49,39 @@ pub fn spawn_debug_visualization(
         parent_entity,
     );
 
-    // Visualize type line text area
-    let type_offset = Vec2::new(0.0, card_size.y * layout.type_line_y_offset);
-    let type_size = calculate_text_size(card_size, layout.type_line_width, layout.type_line_height);
-    spawn_debug_box(
-        commands,
-        type_offset,
-        type_size,
-        Color::srgba(0.0, 0.0, 1.0, 0.2),
-        parent_entity,
+    // Rules text area visualization replaced with simpler version
+    let rules_offset = Vec2::new(
+        0.0, 0.0, // Center of card
     );
-
-    // Visualize rules text area - outer box (full text box)
-    let rules_offset = Vec2::new(0.0, card_size.y * layout.text_box_y_offset);
-    let rules_size = calculate_text_size(card_size, layout.text_box_width, layout.text_box_height);
+    let rules_size = Vec2::new(
+        card_size.x * 0.8, // 80% of card width
+        card_size.y * 0.4, // 40% of card height
+    );
     spawn_debug_box(
         commands,
         rules_offset,
         rules_size,
-        Color::srgba(1.0, 1.0, 0.0, 0.2),
+        Color::srgba(0.0, 0.0, 1.0, 0.2),
         parent_entity,
     );
 
-    // Visualize rules text area - inner box (with padding)
-    let rules_inner_offset = Vec2::new(0.0, card_size.y * layout.text_box_y_offset);
-    let rules_inner_size = calculate_text_size(
-        card_size,
-        layout.text_box_width - (layout.text_box_padding * 2.0),
-        layout.text_box_height - (layout.text_box_padding * 2.0),
-    );
-    spawn_debug_box(
-        commands,
-        rules_inner_offset,
-        rules_inner_size,
-        Color::srgba(0.0, 0.5, 0.5, 0.3),
-        parent_entity,
-    );
-
-    // Visualize power/toughness text area
+    // P/T box visualization simplified
     let pt_offset = Vec2::new(
-        card_size.x * layout.pt_x_offset,
-        card_size.y * layout.pt_y_offset,
+        card_size.x * 0.3,  // Bottom right
+        card_size.y * -0.4, // Bottom right
     );
-    let pt_size = calculate_text_size(card_size, layout.pt_width, layout.pt_height);
+    let pt_size = Vec2::new(
+        card_size.x * 0.15, // Small box
+        card_size.y * 0.08, // Small box
+    );
     spawn_debug_box(
         commands,
         pt_offset,
         pt_size,
-        Color::srgba(1.0, 0.0, 1.0, 0.2),
+        Color::srgba(1.0, 1.0, 0.0, 0.2),
         parent_entity,
     );
 
-    // Return the parent entity
     parent_entity
 }
 

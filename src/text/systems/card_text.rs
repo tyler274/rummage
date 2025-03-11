@@ -4,8 +4,8 @@ use crate::card::{Card, CardDetails};
 use crate::text::{
     components::{CardTextContent, CardTextType, DebugConfig, SpawnedText, TextLayoutInfo},
     systems::{
-        debug_visualization::spawn_debug_visualization, mana_cost_text::spawn_mana_cost_text,
-        name_text::spawn_name_text, power_toughness_text::spawn_power_toughness_text,
+        debug_visualization::spawn_debug_visualization, mana_cost_text::create_mana_cost_text,
+        name_text::create_name_text, power_toughness_text::spawn_power_toughness_text,
         rules_text::spawn_rules_text, type_line_text::spawn_type_line_text,
     },
 };
@@ -54,7 +54,7 @@ pub fn spawn_card_text(
             };
 
             // Spawn name text
-            let name_entity = spawn_name_text(
+            let name_entity = create_name_text(
                 &mut commands,
                 &text_content,
                 card_pos,
@@ -64,7 +64,7 @@ pub fn spawn_card_text(
             commands.entity(card_entity).add_child(name_entity);
 
             // Spawn mana cost text
-            let mana_cost_entity = spawn_mana_cost_text(
+            let mana_cost_entity = create_mana_cost_text(
                 &mut commands,
                 &text_content,
                 card_pos,
@@ -132,12 +132,12 @@ pub fn spawn_card_text(
 
             // Spawn name text
             let name_entity =
-                spawn_name_text(&mut commands, content, card_pos, card_size, &asset_server);
+                create_name_text(&mut commands, content, card_pos, card_size, &asset_server);
             commands.entity(parent_entity).add_child(name_entity);
 
             // Spawn mana cost text
             let mana_cost_entity =
-                spawn_mana_cost_text(&mut commands, content, card_pos, card_size, &asset_server);
+                create_mana_cost_text(&mut commands, content, card_pos, card_size, &asset_server);
             commands.entity(parent_entity).add_child(mana_cost_entity);
 
             // Spawn type line text

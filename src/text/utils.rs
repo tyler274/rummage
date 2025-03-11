@@ -2,67 +2,43 @@ use crate::text::components::CardTextType;
 use bevy::prelude::*;
 
 /// Standard Magic card text layout constants
+#[derive(Debug, Clone)]
 pub struct CardTextLayout {
-    // Title bar region (for name and mana cost)
-    pub title_y_offset: f32,
-    pub title_height: f32,
+    /// The width of the card
+    pub card_width: f32,
+    /// The height of the card
+    pub card_height: f32,
+    /// X offset of name text from left edge of card (normalized -0.5 to 0.5)
     pub name_x_offset: f32,
+    /// Y offset of name text from top edge of card (normalized -0.5 to 0.5)
+    pub name_y_offset: f32,
+    /// Width constraint for name as percentage of card width
     pub name_width: f32,
+    /// X offset of mana cost from right edge of card (normalized -0.5 to 0.5)
     pub mana_cost_x_offset: f32,
-    pub mana_cost_width: f32,
-
-    // Type line region
-    pub type_line_y_offset: f32,
-    pub type_line_height: f32,
-    pub type_line_width: f32,
-
-    // Text box region (for rules text)
-    pub text_box_y_offset: f32,
-    pub text_box_height: f32,
-    pub text_box_width: f32,
-    pub text_box_padding: f32,
-
-    // Power/toughness box region
-    pub pt_x_offset: f32,
-    pub pt_y_offset: f32,
-    pub pt_width: f32,
-    pub pt_height: f32,
-
-    // Margins
+    /// Y offset of mana cost from top edge of card (normalized -0.5 to 0.5)
+    pub mana_cost_y_offset: f32,
+    /// The margin between text and the edge of the card for rules text (normalized)
+    pub vertical_margin: f32,
+    /// The horizontal margin for text relative to the card edge (normalized)
     pub horizontal_margin: f32,
 }
 
 impl Default for CardTextLayout {
     fn default() -> Self {
         Self {
-            // Title bar (top ~10% of card)
-            title_y_offset: 0.43,     // Slightly adjusted for better positioning
-            title_height: 0.09,       // Slightly reduced height
-            name_x_offset: -0.1,      // Moved right to stay within card boundaries
-            name_width: 0.7,          // Wider to accommodate full card names
-            mana_cost_x_offset: 0.38, // More right-aligned
-            mana_cost_width: 0.25,
-
-            // Type line (middle divider, ~8% of card)
-            type_line_y_offset: 0.16, // Adjusted position
-            type_line_height: 0.08,
-            type_line_width: 0.9, // Wider to match MTG cards
-
-            // Text box (middle ~55% of card)
-            // Adjusted to better match standard Magic card layout
-            text_box_y_offset: -0.08, // Move up slightly to center better
-            text_box_height: 0.48,    // Increased for more text space like MTG cards
-            text_box_width: 0.85,     // Wider to match MTG text boxes
-            text_box_padding: 0.04,   // Better edge margins
-
-            // Power/toughness box (bottom right corner)
-            pt_x_offset: 0.37, // Adjusted to match MTG cards
-            pt_y_offset: -0.43,
-            pt_width: 0.15, // More compact like MTG cards
-            pt_height: 0.09,
-
-            // Margins
-            horizontal_margin: 0.05,
+            card_width: 63.0 * 1.4,
+            card_height: 88.0 * 1.4,
+            // Adjusted name positioning to be more center-left
+            name_x_offset: -0.3,
+            name_y_offset: -0.41,
+            // Reduced name width to make room for mana cost
+            name_width: 0.5,
+            // Adjusted mana cost to be more right-aligned
+            mana_cost_x_offset: 0.35,
+            mana_cost_y_offset: -0.41,
+            vertical_margin: 0.05,
+            horizontal_margin: 0.1,
         }
     }
 }

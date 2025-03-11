@@ -80,6 +80,39 @@ pub struct CardTextBundle {
     pub name: Name,
 }
 
+impl CardTextBundle {
+    /// Create a new text bundle for cards with standard configuration
+    pub fn new(
+        text: String,
+        font: Handle<Font>,
+        font_size: f32,
+        color: Color,
+        card_position: Vec3,
+        local_offset: Vec2,
+        alignment: JustifyText,
+    ) -> Self {
+        Self {
+            text_2d: Text2d::new(text.clone()),
+            transform: Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.1)),
+            global_transform: GlobalTransform::default(),
+            text_font: TextFont {
+                font,
+                font_size,
+                ..default()
+            },
+            text_color: TextColor(color),
+            text_layout: TextLayout::new_with_justify(alignment),
+            card_text_type: CardTextType::default(),
+            text_layout_info: TextLayoutInfo {
+                position: card_position.truncate() + local_offset,
+                size: Vec2::new(100.0, 50.0),
+                alignment,
+            },
+            name: Name::new(format!("Card Text: {}", text)),
+        }
+    }
+}
+
 /// Bundle for text style components
 #[derive(Bundle)]
 pub struct CardTextStyleBundle {
