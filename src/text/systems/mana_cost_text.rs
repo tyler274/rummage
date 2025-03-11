@@ -29,7 +29,7 @@ pub fn spawn_mana_cost_text(
 
     let text_size = calculate_text_size(card_size, layout.mana_cost_width, layout.title_height);
 
-    // Keep mana cost text prominent for readability
+    // Adjust font size for better alignment with the card name
     let font_size = get_card_font_size(card_size, 24.0);
 
     // Format the mana cost for better display

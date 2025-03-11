@@ -38,7 +38,7 @@ impl Default for CardTextLayout {
             // Title bar (top ~10% of card)
             title_y_offset: 0.43,     // Slightly adjusted for better positioning
             title_height: 0.09,       // Slightly reduced height
-            name_x_offset: -0.35,     // Move name more to the left to match MTG cards
+            name_x_offset: -0.1,      // Moved right to stay within card boundaries
             name_width: 0.7,          // Wider to accommodate full card names
             mana_cost_x_offset: 0.38, // More right-aligned
             mana_cost_width: 0.25,

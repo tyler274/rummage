@@ -31,9 +31,10 @@ pub fn spawn_name_text(
     let text_size = calculate_text_size(card_size, layout.name_width, layout.title_height);
 
     // Use a more prominent font size for card names like real MTG cards
-    let font_size = get_card_font_size(card_size, 28.0);
+    // Reduce font size slightly to keep names within bounds
+    let font_size = get_card_font_size(card_size, 24.0);
 
-    // Truncate very long card names to fit in the available space
+    // Apply strict bounds on name length to ensure it stays within card boundaries
     let name_text = format_card_name(&content.name, text_size.x, font_size);
 
     // Create text style bundle
@@ -45,6 +46,7 @@ pub fn spawn_name_text(
             ..default()
         },
         text_color: TextColor(Color::BLACK),
+        // Keep left alignment but ensure text stays within bounds
         text_layout: TextLayout::new_with_justify(JustifyText::Left),
     };
 
@@ -71,18 +73,21 @@ pub fn spawn_name_text(
     entity
 }
 
-/// Format card name to fit within available space
+/// Format card name to fit within available space with stricter bounds
 fn format_card_name(name: &str, max_width: f32, font_size: f32) -> String {
-    // Estimate max characters that will fit in the available space
-    let avg_char_width = font_size * 0.5; // Approximate width per character
+    // Use a more conservative estimate for character width to prevent overflow
+    let avg_char_width = font_size * 0.6; // Increased estimate to ensure text stays within bounds
     let max_chars = (max_width / avg_char_width).floor() as usize;
 
-    if name.len() <= max_chars {
+    // Use a minimum truncation threshold to prevent very short names
+    let safe_max_chars = max_chars.min(20).max(10); // No more than 20 chars, at least 10
+
+    if name.len() <= safe_max_chars {
         // Name fits, return as is
         name.to_string()
     } else {
-        // Name is too long, truncate and add ellipsis
-        let truncated = &name[0..max_chars.saturating_sub(3)];
+        // Name is too long, truncate more aggressively and add ellipsis
+        let truncated = &name[0..safe_max_chars.saturating_sub(3)];
         format!("{}...", truncated)
     }
 }
