@@ -99,145 +99,101 @@ pub fn spawn_rules_text(
 
         let y_pos = -(line_idx as f32) * line_height;
 
-        // For tap symbol and activated abilities, use the mixed approach
-        if line.contains("{T}:")
-            || line.contains("{R}:")
-            || line.contains("{G}:")
-            || line.contains("{B}:")
-            || line.contains("{U}:")
-            || line.contains("{W}:")
-        {
-            // Extract the ability part and the rest
-            let mut parts = line.splitn(2, ':');
-            let ability_part = parts.next().unwrap_or("");
-            let effect_part = parts.next().unwrap_or("");
-
-            // Find the mana symbol
-            let mut symbol_start = 0;
-            let mut symbol_end = 0;
-            let mut symbol = "";
-
-            for (i, c) in ability_part.char_indices() {
-                if c == '{' {
-                    symbol_start = i;
-                }
-                if c == '}' {
-                    symbol_end = i + 1;
-                    symbol = &ability_part[symbol_start..symbol_end];
-                    break;
-                }
-            }
-
-            // Render the mana symbol with proper alignment
-            if !symbol.is_empty() {
-                // Create ability cost (mana symbol + colon)
-                let ability_x = 0.0;
-
-                commands
-                    .spawn((
-                        TextSpan::default(),
-                        Text2d::new(mana_symbol_to_char(symbol)),
-                        TextFont {
-                            font: mana_font.clone(),
-                            font_size,
-                            ..default()
-                        },
-                        TextColor(get_mana_symbol_color(symbol)),
-                        Transform::from_translation(Vec3::new(ability_x, y_pos, 0.1)),
-                        TextLayout::new_with_justify(JustifyText::Left),
-                    ))
-                    .set_parent(parent_entity);
-
-                // Add colon after symbol
-                let colon_x = ability_x + get_mana_symbol_width(font_size);
-
-                commands
-                    .spawn((
-                        TextSpan::default(),
-                        Text2d::new(": "),
-                        TextFont {
-                            font: regular_font.clone(),
-                            font_size,
-                            ..default()
-                        },
-                        TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
-                        Transform::from_translation(Vec3::new(colon_x, y_pos, 0.0)),
-                        TextLayout::new_with_justify(JustifyText::Left),
-                    ))
-                    .set_parent(parent_entity);
-
-                // Render the effect text
-                let effect_x = colon_x + font_size * 0.5;
-
-                commands
-                    .spawn((
-                        TextSpan::default(),
-                        Text2d::new(effect_part.trim()),
-                        TextFont {
-                            font: regular_font.clone(),
-                            font_size,
-                            ..default()
-                        },
-                        TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
-                        Transform::from_translation(Vec3::new(effect_x, y_pos, 0.0)),
-                        TextLayout::new_with_justify(JustifyText::Left),
-                    ))
-                    .set_parent(parent_entity);
-            }
-        } else {
-            // For regular text with mana symbols, use the segment extraction approach
-            let segments = extract_mana_symbol_segments(line);
-            let mut current_x = 0.0;
-
-            for (segment, is_mana_symbol) in segments {
-                if segment.is_empty() {
-                    continue;
-                }
-
-                if is_mana_symbol {
-                    // Render this segment with the mana font
-                    commands
-                        .spawn((
-                            TextSpan::default(),
-                            Text2d::new(mana_symbol_to_char(&segment)),
-                            TextFont {
-                                font: mana_font.clone(),
-                                font_size,
-                                ..default()
-                            },
-                            TextColor(get_mana_symbol_color(&segment)),
-                            Transform::from_translation(Vec3::new(current_x, y_pos, 0.1)),
-                            TextLayout::new_with_justify(JustifyText::Left),
-                        ))
-                        .set_parent(parent_entity);
-
-                    // Advance x position by mana symbol width
-                    current_x += get_mana_symbol_width(font_size);
-                } else {
-                    // Render this segment with the regular font
-                    commands
-                        .spawn((
-                            TextSpan::default(),
-                            Text2d::new(segment),
-                            TextFont {
-                                font: regular_font.clone(),
-                                font_size,
-                                ..default()
-                            },
-                            TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
-                            Transform::from_translation(Vec3::new(current_x, y_pos, 0.0)),
-                            TextLayout::new_with_justify(JustifyText::Left),
-                        ))
-                        .set_parent(parent_entity);
-
-                    // Advance x position based on text width
-                    current_x += segment.len() as f32 * (font_size * 0.5);
-                }
-            }
-        }
+        // Use our improved inline mana symbol renderer for all lines
+        render_inline_mana_symbols(
+            commands,
+            line,
+            y_pos,
+            font_size,
+            &regular_font,
+            &mana_font,
+            parent_entity,
+        );
     }
 
     parent_entity
+}
+
+/// Renders a line of text with inline mana symbols
+fn render_inline_mana_symbols(
+    commands: &mut Commands,
+    line: &str,
+    y_pos: f32,
+    font_size: f32,
+    regular_font: &Handle<Font>,
+    mana_font: &Handle<Font>,
+    parent_entity: Entity,
+) {
+    // Extract segments of text, separating mana symbols from regular text
+    let segments = extract_mana_symbol_segments(line);
+    let mut current_x = 0.0;
+
+    for (segment_text, is_mana_symbol) in segments {
+        if segment_text.is_empty() {
+            continue;
+        }
+
+        if is_mana_symbol {
+            // Create mana symbol options with appropriate vertical alignment
+            let symbol_specific_offset = match segment_text.trim() {
+                "{T}" => font_size * 0.15, // Tap symbol needs more adjustment
+                "{B}" => font_size * 0.05, // Black mana
+                "{W}" => font_size * 0.03, // White mana
+                "{R}" => font_size * 0.04, // Red mana
+                "{U}" => font_size * 0.03, // Blue mana
+                "{C}" => font_size * 0.04, // Colorless mana
+                s if s.len() >= 3 && s.starts_with('{') && s.ends_with('}') => {
+                    // Generic mana cost symbols
+                    let inner = &s[1..s.len() - 1];
+                    if inner.parse::<u32>().is_ok() || inner == "X" {
+                        font_size * 0.05
+                    } else {
+                        0.0
+                    }
+                }
+                _ => 0.0,
+            };
+
+            // Use the mana symbol renderer for consistent appearance
+            render_mana_symbol(
+                commands,
+                &segment_text,
+                Vec2::new(current_x, y_pos + symbol_specific_offset),
+                mana_font.clone(),
+                ManaSymbolOptions {
+                    font_size,
+                    vertical_alignment_offset: 0.0, // We're applying it directly to position
+                    z_index: 0.1,
+                    with_shadow: true,
+                    alignment: JustifyText::Left,
+                },
+                parent_entity,
+            );
+
+            // Advance x position by mana symbol width
+            current_x += get_mana_symbol_width(font_size);
+        } else {
+            // Render regular text segment
+            let segment_clone = segment_text.clone();
+            commands
+                .spawn((
+                    TextSpan::default(),
+                    Text2d::new(segment_clone.clone()),
+                    TextFont {
+                        font: regular_font.clone(),
+                        font_size,
+                        ..default()
+                    },
+                    TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
+                    Transform::from_translation(Vec3::new(current_x, y_pos, 0.0)),
+                    TextLayout::new_with_justify(JustifyText::Left),
+                ))
+                .set_parent(parent_entity);
+
+            // Advance x position based on text width (approximate)
+            current_x += segment_clone.len() as f32 * (font_size * 0.5);
+        }
+    }
 }
 
 /// Extract segments of text, separating mana symbols from regular text
