@@ -13,7 +13,7 @@ pub fn spawn_card_text(
         (Entity, &CardTextContent, &Parent),
         (Without<SpawnedText>, With<CardTextContent>),
     >,
-    card_query: Query<(Entity, &Transform, &Sprite), With<Card>>,
+    card_query: Query<(Entity, &Transform, &Sprite, &Card), With<Card>>,
     asset_server: Res<AssetServer>,
     debug_config: Option<Res<DebugConfig>>,
 ) {
@@ -27,136 +27,67 @@ pub fn spawn_card_text(
     if text_content_query.iter().count() == 0 && card_query.iter().count() > 0 {
         info!("No text content entities found, spawning text directly for cards");
 
-        for (card_entity, card_transform, card_sprite) in card_query.iter() {
-            // Get the card component
-            if let Ok(card) = commands.get_entity(card_entity).unwrap().get::<Card>() {
-                info!("Spawning text for card: {}", card.name);
+        for (card_entity, card_transform, card_sprite, card) in card_query.iter() {
+            info!("Spawning text for card: {}", card.name);
 
-                let card_size = card_sprite.custom_size.unwrap_or(Vec2::ONE);
-                let card_pos = card_transform.translation.truncate();
-
-                // Create text content
-                let text_content = CardTextContent {
-                    name: card.name.clone(),
-                    mana_cost: card.cost.to_string(),
-                    type_line: card.type_line(),
-                    rules_text: card.rules_text.clone(),
-                    power_toughness: if let CardDetails::Creature(creature) = &card.card_details {
-                        Some(format!("{}/{}", creature.power, creature.toughness))
-                    } else {
-                        None
-                    },
-                };
-
-                // Spawn name text
-                let name_entity = spawn_name_text(
-                    &mut commands,
-                    &text_content,
-                    card_pos,
-                    card_size,
-                    &asset_server,
-                );
-                commands.entity(card_entity).add_child(name_entity);
-
-                // Spawn mana cost text
-                let mana_cost_entity = spawn_mana_cost_text(
-                    &mut commands,
-                    &text_content,
-                    card_pos,
-                    card_size,
-                    &asset_server,
-                );
-                commands.entity(card_entity).add_child(mana_cost_entity);
-
-                // Spawn type line text
-                let type_line_entity = spawn_type_line_text(
-                    &mut commands,
-                    &text_content,
-                    card_pos,
-                    card_size,
-                    &asset_server,
-                );
-                commands.entity(card_entity).add_child(type_line_entity);
-
-                // Spawn rules text
-                let rules_text_entity = spawn_rules_text(
-                    &mut commands,
-                    &text_content,
-                    card_pos,
-                    card_size,
-                    &asset_server,
-                );
-                commands.entity(card_entity).add_child(rules_text_entity);
-
-                // Spawn power/toughness text if applicable
-                if let Some(pt) = &text_content.power_toughness {
-                    let pt_entity = spawn_power_toughness_text(
-                        &mut commands,
-                        pt,
-                        card_pos,
-                        card_size,
-                        &asset_server,
-                    );
-                    commands.entity(card_entity).add_child(pt_entity);
-                }
-
-                // Spawn debug visualization if enabled
-                if let Some(debug_config) = &debug_config {
-                    if debug_config.show_text_positions {
-                        let debug_entity = spawn_debug_visualization(
-                            &mut commands,
-                            card_pos,
-                            card_size,
-                            &asset_server,
-                        );
-                        commands.entity(card_entity).add_child(debug_entity);
-                    }
-                }
-            }
-        }
-    }
-
-    // Original logic for handling CardTextContent entities
-    for (entity, content, parent) in text_content_query.iter() {
-        let parent_entity = parent.get();
-        info!(
-            "Processing text content for entity {:?} with parent {:?}",
-            entity, parent_entity
-        );
-
-        if let Ok((card_entity, card_transform, card_sprite)) = card_query.get(parent_entity) {
-            info!(
-                "Found card transform and sprite for parent entity {:?}",
-                card_entity
-            );
             let card_size = card_sprite.custom_size.unwrap_or(Vec2::ONE);
             let card_pos = card_transform.translation.truncate();
 
-            // Mark this entity as having spawned text
-            commands.entity(entity).insert(SpawnedText);
+            // Create text content
+            let text_content = CardTextContent {
+                name: card.name.clone(),
+                mana_cost: card.cost.to_string(),
+                type_line: card.type_line(),
+                rules_text: card.rules_text.clone(),
+                power_toughness: if let CardDetails::Creature(creature) = &card.card_details {
+                    Some(format!("{}/{}", creature.power, creature.toughness))
+                } else {
+                    None
+                },
+            };
 
             // Spawn name text
-            let name_entity =
-                spawn_name_text(&mut commands, content, card_pos, card_size, &asset_server);
-            commands.entity(parent_entity).add_child(name_entity);
+            let name_entity = spawn_name_text(
+                &mut commands,
+                &text_content,
+                card_pos,
+                card_size,
+                &asset_server,
+            );
+            commands.entity(card_entity).add_child(name_entity);
 
             // Spawn mana cost text
-            let mana_cost_entity =
-                spawn_mana_cost_text(&mut commands, content, card_pos, card_size, &asset_server);
-            commands.entity(parent_entity).add_child(mana_cost_entity);
+            let mana_cost_entity = spawn_mana_cost_text(
+                &mut commands,
+                &text_content,
+                card_pos,
+                card_size,
+                &asset_server,
+            );
+            commands.entity(card_entity).add_child(mana_cost_entity);
 
             // Spawn type line text
-            let type_line_entity =
-                spawn_type_line_text(&mut commands, content, card_pos, card_size, &asset_server);
-            commands.entity(parent_entity).add_child(type_line_entity);
+            let type_line_entity = spawn_type_line_text(
+                &mut commands,
+                &text_content,
+                card_pos,
+                card_size,
+                &asset_server,
+            );
+            commands.entity(card_entity).add_child(type_line_entity);
 
             // Spawn rules text
-            let rules_text_entity =
-                spawn_rules_text(&mut commands, content, card_pos, card_size, &asset_server);
-            commands.entity(parent_entity).add_child(rules_text_entity);
+            let rules_text_entity = spawn_rules_text(
+                &mut commands,
+                &text_content,
+                card_pos,
+                card_size,
+                &asset_server,
+            );
+            commands.entity(card_entity).add_child(rules_text_entity);
 
             // Spawn power/toughness text if applicable
-            if let Some(pt) = &content.power_toughness {
+            if let Some(pt) = &text_content.power_toughness {
                 let pt_entity = spawn_power_toughness_text(
                     &mut commands,
                     pt,
@@ -164,7 +95,7 @@ pub fn spawn_card_text(
                     card_size,
                     &asset_server,
                 );
-                commands.entity(parent_entity).add_child(pt_entity);
+                commands.entity(card_entity).add_child(pt_entity);
             }
 
             // Spawn debug visualization if enabled
@@ -176,9 +107,102 @@ pub fn spawn_card_text(
                         card_size,
                         &asset_server,
                     );
-                    commands.entity(parent_entity).add_child(debug_entity);
+                    commands.entity(card_entity).add_child(debug_entity);
                 }
             }
+        }
+    }
+
+    // Process text content entities with parents
+    for (text_entity, text_content, parent) in text_content_query.iter() {
+        let parent_entity = parent.get();
+        info!(
+            "Processing text content entity {:?} with parent {:?}",
+            text_entity, parent_entity
+        );
+
+        if let Ok((card_entity, card_transform, card_sprite, _card)) = card_query.get(parent_entity)
+        {
+            info!(
+                "Found card transform and sprite for parent entity {:?}",
+                parent_entity
+            );
+
+            let card_size = card_sprite.custom_size.unwrap_or(Vec2::ONE);
+            let card_pos = card_transform.translation.truncate();
+
+            // Spawn name text
+            let name_entity = spawn_name_text(
+                &mut commands,
+                text_content,
+                card_pos,
+                card_size,
+                &asset_server,
+            );
+            commands.entity(text_entity).add_child(name_entity);
+
+            // Spawn mana cost text
+            let mana_cost_entity = spawn_mana_cost_text(
+                &mut commands,
+                text_content,
+                card_pos,
+                card_size,
+                &asset_server,
+            );
+            commands.entity(text_entity).add_child(mana_cost_entity);
+
+            // Spawn type line text
+            let type_line_entity = spawn_type_line_text(
+                &mut commands,
+                text_content,
+                card_pos,
+                card_size,
+                &asset_server,
+            );
+            commands.entity(text_entity).add_child(type_line_entity);
+
+            // Spawn rules text
+            let rules_text_entity = spawn_rules_text(
+                &mut commands,
+                text_content,
+                card_pos,
+                card_size,
+                &asset_server,
+            );
+            commands.entity(text_entity).add_child(rules_text_entity);
+
+            // Spawn power/toughness text if it exists
+            if let Some(pt) = &text_content.power_toughness {
+                let pt_entity = spawn_power_toughness_text(
+                    &mut commands,
+                    pt,
+                    card_pos,
+                    card_size,
+                    &asset_server,
+                );
+                commands.entity(text_entity).add_child(pt_entity);
+            }
+
+            // Mark as spawned
+            commands.entity(text_entity).insert(SpawnedText);
+
+            // Add debug visualization if enabled
+            if let Some(debug_config) = &debug_config {
+                if debug_config.show_text_positions {
+                    let debug_entity = spawn_debug_visualization(
+                        &mut commands,
+                        card_pos,
+                        card_size,
+                        &asset_server,
+                    );
+                    commands.entity(card_entity).add_child(debug_entity);
+                }
+            }
+        } else {
+            warn!(
+                "Could not find card transform and sprite for parent entity {:?}",
+                parent_entity
+            );
         }
     }
 }

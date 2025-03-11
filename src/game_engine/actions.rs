@@ -31,13 +31,13 @@ pub enum GameAction {
 
 /// System for validating and processing game actions
 pub fn process_game_actions(
-    commands: Commands,
+    _commands: Commands,
     mut game_state: ResMut<GameState>,
-    stack: ResMut<GameStack>,
+    _stack: ResMut<GameStack>,
     mut priority: ResMut<PrioritySystem>,
     phase: Res<Phase>,
     // Add an event reader for GameAction events when you implement the event system
-    player_query: Query<&Player>,
+    _player_query: Query<&Player>,
     card_query: Query<&Card>,
 ) {
     // This would normally read actions from an event queue or similar
@@ -53,24 +53,17 @@ pub fn process_game_actions(
         GameAction::PlayLand { player, land_card } => {
             // Check if it's a valid time to play a land
             if valid_time_to_play_land(&game_state, &phase, player) {
-                // Check if the player has already played their land for the turn
+                // Check if the player has already played a land this turn
                 if game_state.can_play_land(player) {
                     // Check if the card is actually a land
                     if let Ok(card) = card_query.get(land_card) {
                         if card.types.contains(CardTypes::LAND) {
-                            // Process playing the land
-                            // This would involve adding it to the battlefield, etc.
-
-                            // Record that a land was played
+                            // Mark that the player has played a land this turn
                             game_state.record_land_played(player);
-
-                            // No priority is passed when playing a land
-                        } else {
-                            warn!("Attempted to play a non-land card as a land");
+                            // In a full implementation, you would move the land from hand to battlefield
+                            info!("Land played successfully");
                         }
                     }
-                } else {
-                    warn!("Player has already played their land for this turn");
                 }
             } else {
                 warn!("Not a valid time to play a land");
@@ -80,36 +73,19 @@ pub fn process_game_actions(
         GameAction::CastSpell {
             player,
             spell_card,
-            targets,
-            mana_payment,
+            targets: _,
+            mana_payment: _,
         } => {
-            // Check if it's this player's priority
-            if priority.active_player == player && priority.has_priority {
-                // Check if it's a valid time to cast this spell
-                if let Ok(card) = card_query.get(spell_card) {
-                    let is_sorcery_speed = card.types.contains(CardTypes::SORCERY)
-                        || (card.types.contains(CardTypes::CREATURE) && !is_instant_cast(&card));
-
-                    // Check timing restrictions
-                    if is_sorcery_speed
-                        && !valid_time_for_sorcery(&game_state, &phase, &stack, player)
-                    {
-                        warn!("Not a valid time to cast a sorcery-speed spell");
-                        return;
-                    }
-
-                    // Check mana payment
-                    if let Ok(player_entity) = player_query.get(player) {
-                        if !can_pay_mana(&player_entity, &mana_payment) {
-                            warn!("Player cannot pay the mana cost for this spell");
-                            return;
+            // Check if it's a valid time to cast this spell
+            if let Ok(card) = card_query.get(spell_card) {
+                let is_instant = is_instant_cast(card);
+                if is_instant || valid_time_for_sorcery(&game_state, &phase, &_stack, player) {
+                    // In a full implementation, check if the player can pay the cost
+                    if let Ok(player_entity) = _player_query.get(player) {
+                        if can_pay_mana(player_entity, &card.cost) {
+                            // In a full implementation, you would move the spell to the stack
+                            info!("Spell cast successfully");
                         }
-
-                        // Process casting the spell (would add to stack, etc.)
-
-                        // Reset priority system after spell is cast
-                        let players: Vec<Entity> = game_state.turn_order.iter().copied().collect();
-                        priority.reset_after_stack_action(&players, game_state.active_player);
                     }
                 }
             }
@@ -184,8 +160,7 @@ fn is_instant_cast(card: &Card) -> bool {
 }
 
 /// Checks if a player can pay a mana cost
-fn can_pay_mana(player: &Player, cost: &Mana) -> bool {
-    // In a full implementation, this would check the player's mana pool
-    // For now, assume the player can pay
+fn can_pay_mana(_player: &Player, _cost: &Mana) -> bool {
+    // Placeholder implementation
     true
 }
