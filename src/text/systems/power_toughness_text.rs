@@ -40,7 +40,7 @@ pub fn spawn_power_toughness_text(
             font_size,
             ..default()
         },
-        text_color: TextColor(Color::rgba(0.0, 0.0, 0.0, 0.9)),
+        text_color: TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
         text_layout: TextLayout::new_with_justify(JustifyText::Center),
     };
 

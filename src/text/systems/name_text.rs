@@ -47,7 +47,7 @@ pub fn create_name_text(
                 font_size,
                 ..default()
             },
-            text_color: TextColor(Color::rgba(0.0, 0.0, 0.0, 1.0)), // Black text
+            text_color: TextColor(Color::srgba(0.0, 0.0, 0.0, 1.0)), // Black text
             text_layout: TextLayout::new_with_justify(JustifyText::Left), // Left justified
             card_text_type: CardTextType::Name,
             text_layout_info: TextLayoutInfo {

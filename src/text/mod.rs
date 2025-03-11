@@ -8,6 +8,7 @@
 //! - Mana symbol rendering using the Mana font
 
 pub mod components;
+pub mod mana_symbols;
 pub mod systems;
 pub mod utils;
 

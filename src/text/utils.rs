@@ -7,26 +7,26 @@ pub fn get_mana_symbol_color(symbol: &str) -> Color {
     let clean_symbol = symbol.trim();
 
     let color = match clean_symbol {
-        "{W}" => Color::rgb(0.95, 0.95, 0.85), // White mana (off-white)
-        "{U}" => Color::rgb(0.0, 0.4, 0.8),    // Blue mana - more vibrant
-        "{B}" => Color::rgb(0.2, 0.2, 0.2),    // Black mana (darker gray)
-        "{R}" => Color::rgb(0.9, 0.1, 0.1),    // Red mana - more vivid red
-        "{G}" => Color::rgb(0.0, 0.6, 0.0),    // Green mana - brighter green
-        "{C}" => Color::rgb(0.7, 0.7, 0.8),    // Colorless mana - slight blue tint
+        "{W}" => Color::srgb(0.95, 0.95, 0.85), // White mana (off-white)
+        "{U}" => Color::srgb(0.0, 0.4, 0.8),    // Blue mana - more vibrant
+        "{B}" => Color::srgb(0.2, 0.2, 0.2),    // Black mana (darker gray)
+        "{R}" => Color::srgb(0.9, 0.1, 0.1),    // Red mana - more vivid red
+        "{G}" => Color::srgb(0.0, 0.6, 0.0),    // Green mana - brighter green
+        "{C}" => Color::srgb(0.7, 0.7, 0.8),    // Colorless mana - slight blue tint
         _ => {
             // Generic/numeric mana or other symbols
             if clean_symbol.starts_with("{") && clean_symbol.ends_with("}") {
                 let inner = &clean_symbol[1..clean_symbol.len() - 1];
                 if inner.parse::<u32>().is_ok() || inner == "X" {
                     // Generic mana is light gray with a slight brown tint
-                    Color::rgb(0.75, 0.73, 0.71)
+                    Color::srgb(0.75, 0.73, 0.71)
                 } else {
                     // Other symbols like tap
-                    Color::rgb(0.3, 0.3, 0.3)
+                    Color::srgb(0.3, 0.3, 0.3)
                 }
             } else {
                 // Default to black for other text
-                Color::rgb(0.0, 0.0, 0.0)
+                Color::srgb(0.0, 0.0, 0.0)
             }
         }
     };

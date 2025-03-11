@@ -4,7 +4,10 @@ use crate::text::{
     components::{
         CardTextBundle, CardTextContent, CardTextStyleBundle, CardTextType, TextLayoutInfo,
     },
-    utils::{calculate_text_size, get_card_font_size, get_card_layout, get_mana_symbol_color},
+    mana_symbols::{
+        ManaSymbolOptions, get_mana_symbol_width, is_valid_mana_symbol, render_mana_symbol,
+    },
+    utils::{calculate_text_size, get_card_font_size, get_card_layout},
 };
 
 /// Spawn rules text for a card
@@ -68,9 +71,6 @@ pub fn spawn_rules_text(
         ))
         .id();
 
-    // Special case handling for rules text with mana symbols
-    // This time we'll create a system that renders the text in segments with appropriate styling
-
     // Parse formatted_text into segments (regular text and mana symbols)
     let segments = parse_text_with_mana_symbols(&formatted_text);
 
@@ -96,47 +96,25 @@ pub fn spawn_rules_text(
         let y_pos = -current_line as f32 * line_height;
 
         if is_mana_symbol {
-            // This is a mana symbol - use mana font and appropriate color
-            let symbol_color = get_mana_symbol_color(&segment);
+            // This is a mana symbol - use our unified rendering function
+            let mana_options = ManaSymbolOptions {
+                font_size,
+                vertical_alignment_offset: font_size * 0.15, // Adjust to align with text baseline
+                z_index: 0.1,
+                with_shadow: true,
+            };
 
-            // Drop shadow parameters - more subtle for rules text
-            let shadow_offset = Vec3::new(0.6, -0.6, 0.0); // Reduced offset for more subtle shadow
-            let shadow_color = Color::rgba(0.0, 0.0, 0.0, 0.35); // More transparent for subtlety
+            render_mana_symbol(
+                commands,
+                &segment,
+                Vec2::new(current_x, y_pos),
+                mana_font.clone(),
+                mana_options,
+                parent_entity,
+            );
 
-            // First spawn the shadow copy
-            commands
-                .spawn((
-                    TextSpan::default(),
-                    Text2d::new(segment.clone()),
-                    TextFont {
-                        font: mana_font.clone(),
-                        font_size,
-                        ..default()
-                    },
-                    TextColor(shadow_color),
-                    // Position with shadow offset
-                    Transform::from_translation(Vec3::new(current_x, y_pos, 0.0) + shadow_offset),
-                ))
-                .set_parent(parent_entity);
-
-            // Then spawn the actual colored symbol on top
-            commands
-                .spawn((
-                    TextSpan::default(),
-                    Text2d::new(segment.clone()),
-                    TextFont {
-                        font: mana_font.clone(),
-                        font_size,
-                        ..default()
-                    },
-                    TextColor(symbol_color),
-                    // Position at current_x, with y offset based on line number and slightly elevated z
-                    Transform::from_translation(Vec3::new(current_x, y_pos, 0.1)),
-                ))
-                .set_parent(parent_entity);
-
-            // Advance X position - mana symbols are roughly square
-            current_x += font_size * 0.8;
+            // Advance X position using our standardized function
+            current_x += get_mana_symbol_width(font_size);
         } else {
             // This is regular text - use regular font
             commands
@@ -148,15 +126,21 @@ pub fn spawn_rules_text(
                         font_size,
                         ..default()
                     },
-                    TextColor(Color::rgba(0.0, 0.0, 0.0, 0.9)),
+                    TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
                     // Position at current_x
                     Transform::from_translation(Vec3::new(current_x, y_pos, 0.0)),
                 ))
                 .set_parent(parent_entity);
 
             // Approximately calculate width based on character count and font size
-            // This is imprecise but works for a rough layout
-            current_x += segment.chars().count() as f32 * (font_size * 0.5);
+            // Add a bit more precision for different character widths
+            let char_width_factor = if segment.contains(':') {
+                0.4 // Make colons narrower for better spacing in "{R}: effect" constructs
+            } else {
+                0.5 // Standard spacing for regular text
+            };
+
+            current_x += segment.chars().count() as f32 * (font_size * char_width_factor);
         }
     }
 
@@ -234,23 +218,6 @@ fn parse_text_with_mana_symbols(text: &str) -> Vec<(String, bool)> {
     segments
 }
 
-/// Check if a string is a valid mana symbol
-fn is_valid_mana_symbol(symbol: &str) -> bool {
-    if symbol.len() < 3 || !symbol.starts_with('{') || !symbol.ends_with('}') {
-        return false;
-    }
-
-    let inner = &symbol[1..symbol.len() - 1];
-    match inner {
-        "W" | "U" | "B" | "R" | "G" | "C" | "T" => true,
-        "X" => true,
-        _ => {
-            // Check if it's a numeric generic mana cost
-            inner.parse::<u32>().is_ok()
-        }
-    }
-}
-
 /// Format rules text with proper line breaks, spacing, and wrapping
 /// Now includes better paragraph separation and support for flavor text
 fn format_rules_text(text: &str, max_width: f32, font_size: f32) -> String {
@@ -269,81 +236,81 @@ fn format_rules_text(text: &str, max_width: f32, font_size: f32) -> String {
     // Split rules by existing line breaks
     let paragraphs: Vec<&str> = rules_part.split('\n').collect();
 
-    // Process each paragraph to ensure proper width
-    let mut formatted_paragraphs = Vec::new();
+    // Process each paragraph for proper wrapping
+    let mut result = String::new();
+    let avg_char_width = font_size * 0.5; // Approximate character width
+    let chars_per_line = (max_width / avg_char_width) as usize;
 
-    for paragraph in paragraphs {
-        // Skip empty paragraphs
-        if paragraph.trim().is_empty() {
-            formatted_paragraphs.push(String::new());
-            continue;
+    for (i, paragraph) in paragraphs.iter().enumerate() {
+        if i > 0 {
+            result.push('\n');
         }
 
-        // Estimate characters per line based on font size and max width
-        // This is an approximation - actual text rendering may vary
-        let avg_char_width = font_size * 0.5; // Approximate width of a character
-        let chars_per_line = (max_width / avg_char_width).floor() as usize;
-
-        if chars_per_line <= 0 {
-            // If the line is too narrow, just add the paragraph as is
-            formatted_paragraphs.push(paragraph.trim().to_string());
-            continue;
-        }
-
-        // Perform manual word wrapping
+        // Simple word wrap algorithm
         let words: Vec<&str> = paragraph.split_whitespace().collect();
         let mut current_line = String::new();
-        let mut current_line_length = 0;
+        let mut current_line_len = 0;
 
         for word in words {
-            let word_length = word.len();
+            let word_len = word.len();
 
-            // Check if adding this word would exceed the line length
-            if current_line_length + word_length + 1 > chars_per_line && !current_line.is_empty() {
-                // Line would be too long, add the current line to formatted lines
-                formatted_paragraphs.push(current_line.trim().to_string());
+            // Check if adding this word would exceed line width
+            if current_line_len + word_len + 1 > chars_per_line && !current_line.is_empty() {
+                // Line would be too long, add a line break
+                result.push_str(&current_line);
+                result.push('\n');
                 current_line = word.to_string();
-                current_line_length = word_length;
+                current_line_len = word_len;
             } else {
-                // Add word to current line
+                // Add space before word (except at beginning of line)
                 if !current_line.is_empty() {
                     current_line.push(' ');
-                    current_line_length += 1;
+                    current_line_len += 1;
                 }
                 current_line.push_str(word);
-                current_line_length += word_length;
+                current_line_len += word_len;
             }
         }
 
-        // Add the last line if it's not empty
-        if !current_line.is_empty() {
-            formatted_paragraphs.push(current_line.trim().to_string());
-        }
+        // Add the last line of the paragraph
+        result.push_str(&current_line);
     }
 
-    // Format the result with proper MTG-style paragraph spacing
-    let rules_text = formatted_paragraphs.join("\n");
-
-    // Add flavor text if present (with proper formatting and separator)
+    // Add flavor text if present
     if let Some(flavor) = flavor_part {
-        // Format the flavor text with the same line wrapping logic
-        let flavor_paragraphs: Vec<&str> = flavor.split('\n').collect();
-        let mut formatted_flavor = Vec::new();
+        // Add a blank line and the separator
+        result.push_str("\n\n—");
 
-        for paragraph in flavor_paragraphs {
-            if paragraph.trim().is_empty() {
-                formatted_flavor.push(String::new());
-                continue;
+        // Simple word wrap for flavor text
+        let words: Vec<&str> = flavor.split_whitespace().collect();
+        let mut current_line = String::new();
+        let mut current_line_len = 0;
+        let flavor_chars_per_line = chars_per_line - 2; // Slight indent for flavor text
+
+        for word in words {
+            let word_len = word.len();
+
+            // Check if adding this word would exceed line width
+            if current_line_len + word_len + 1 > flavor_chars_per_line && !current_line.is_empty() {
+                // Line would be too long, add a line break
+                result.push_str(&current_line);
+                result.push('\n');
+                current_line = word.to_string();
+                current_line_len = word_len;
+            } else {
+                // Add space before word (except at beginning of line)
+                if !current_line.is_empty() {
+                    current_line.push(' ');
+                    current_line_len += 1;
+                }
+                current_line.push_str(word);
+                current_line_len += word_len;
             }
-
-            // Italicize flavor text by adding markdown-style indicators
-            // Note: This assumes your text rendering supports these markers
-            formatted_flavor.push(format!("*{}*", paragraph.trim()));
         }
 
-        // Join with double line break to separate rules text from flavor text
-        format!("{}\n\n—{}", rules_text, formatted_flavor.join("\n"))
-    } else {
-        rules_text
+        // Add the last line of the flavor text
+        result.push_str(&current_line);
     }
+
+    result
 }
