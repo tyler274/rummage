@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use crate::text::components::{CardTextContent, CardTextType, TextLayoutInfo};
+use crate::text::{
+    components::{CardTextContent, CardTextType, TextLayoutInfo},
+    utils::{calculate_text_position, calculate_text_size, get_card_font_size, get_card_layout},
+};
 
 /// Spawn type line text for a card
 pub fn spawn_type_line_text(
@@ -10,9 +13,19 @@ pub fn spawn_type_line_text(
     card_size: Vec2,
     asset_server: &AssetServer,
 ) -> Entity {
+    let layout = get_card_layout();
+
     // Position the type line text in the middle of the card
-    let text_pos = card_pos + Vec2::new(0.0, card_size.y * 0.15);
-    let text_size = Vec2::new(card_size.x * 0.85, card_size.y * 0.1);
+    let text_pos = calculate_text_position(
+        card_pos,
+        card_size,
+        0.0, // Centered horizontally
+        layout.type_line_y_offset,
+    );
+
+    let text_size = calculate_text_size(card_size, layout.type_line_width, layout.type_line_height);
+
+    let font_size = get_card_font_size(card_size, 22.0);
 
     // Create text with Text2d component
     let entity = commands
@@ -25,7 +38,7 @@ pub fn spawn_type_line_text(
             // Add text styling
             TextFont {
                 font: asset_server.load("fonts/DejaVuSans-Bold.ttf"),
-                font_size: card_size.y * 0.08,
+                font_size,
                 ..default()
             },
             TextColor(Color::BLACK),

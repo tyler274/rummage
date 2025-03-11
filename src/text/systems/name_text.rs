@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use crate::text::components::{CardTextContent, CardTextType, TextLayoutInfo};
+use crate::text::{
+    components::{CardTextContent, CardTextType, TextLayoutInfo},
+    utils::{calculate_text_position, calculate_text_size, get_card_font_size, get_card_layout},
+};
 
 /// Spawn name text for a card
 pub fn spawn_name_text(
@@ -10,9 +13,19 @@ pub fn spawn_name_text(
     card_size: Vec2,
     asset_server: &AssetServer,
 ) -> Entity {
+    let layout = get_card_layout();
+
     // Position the name text at the top of the card, slightly to the left
-    let text_pos = card_pos + Vec2::new(-card_size.x * 0.25, card_size.y * 0.42);
-    let text_size = Vec2::new(card_size.x * 0.7, card_size.y * 0.1);
+    let text_pos = calculate_text_position(
+        card_pos,
+        card_size,
+        layout.name_x_offset,
+        layout.title_y_offset,
+    );
+
+    let text_size = calculate_text_size(card_size, layout.name_width, layout.title_height);
+
+    let font_size = get_card_font_size(card_size, 24.0);
 
     // Create text with Text2d component
     let entity = commands
@@ -25,7 +38,7 @@ pub fn spawn_name_text(
             // Add text styling
             TextFont {
                 font: asset_server.load("fonts/DejaVuSans-Bold.ttf"),
-                font_size: card_size.y * 0.09, // Slightly larger font for the name
+                font_size,
                 ..default()
             },
             TextColor(Color::BLACK),
