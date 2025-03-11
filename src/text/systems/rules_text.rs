@@ -115,6 +115,14 @@ pub fn spawn_rules_text(
                 font_size * 0.05 // Small adjustment for green mana
             } else if segment == "{T}" {
                 font_size * 0.06 // Special adjustment for tap symbol
+            } else if segment.len() >= 3 && segment.starts_with('{') && segment.ends_with('}') {
+                // Check if this is a generic/numeric mana symbol
+                let inner = &segment[1..segment.len() - 1];
+                if inner.parse::<u32>().is_ok() || inner == "X" || inner == "C" {
+                    -font_size * 0.05 // Negative offset to shift generic mana symbols left
+                } else {
+                    0.0
+                }
             } else {
                 0.0
             };
@@ -142,6 +150,14 @@ pub fn spawn_rules_text(
             let symbol_spacing = if segment == "{T}" {
                 // More spacing after tap symbol for better readability
                 font_size * 0.15
+            } else if segment.len() >= 3 && segment.starts_with('{') && segment.ends_with('}') {
+                // Check if this is a generic/numeric mana symbol
+                let inner = &segment[1..segment.len() - 1];
+                if inner.parse::<u32>().is_ok() || inner == "X" || inner == "C" {
+                    font_size * 0.08 // Better spacing after generic mana symbols
+                } else {
+                    0.0
+                }
             } else {
                 0.0
             };

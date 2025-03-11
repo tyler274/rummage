@@ -52,6 +52,16 @@ pub fn render_mana_symbol(
         "{R}" => options.font_size * 0.04, // Slight adjustment for red mana
         "{U}" => options.font_size * 0.03, // Adjustment for blue mana
         "{T}" => options.font_size * 0.15, // Increased adjustment for tap symbol
+        "{C}" => options.font_size * 0.04, // Adjustment for colorless mana
+        s if s.len() >= 3 && s.starts_with('{') && s.ends_with('}') => {
+            // Check if this is a generic/numeric mana symbol
+            let inner = &s[1..s.len() - 1];
+            if inner.parse::<u32>().is_ok() || inner == "X" {
+                options.font_size * 0.05 // Vertical adjustment for generic mana
+            } else {
+                0.0
+            }
+        }
         _ => 0.0,
     };
 
