@@ -1,6 +1,7 @@
 pub mod hdr;
 
-use bevy::{prelude::*, window::PrimaryWindow};
+use crate::text::{CardTextContent, CardTextType, SpawnedText};
+use bevy::prelude::*;
 use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
 use std::hash::Hash;
@@ -479,7 +480,7 @@ pub fn format_type_line(types: &CardTypes, card_details: &CardDetails) -> String
     type_line
 }
 
-#[derive(Bundle)]
+#[derive(Component, Debug, Clone)]
 pub struct CardBundle {
     pub sprite: Sprite,
     pub card: Card,
@@ -490,7 +491,8 @@ pub struct CardBundle {
     pub view_visibility: ViewVisibility,
 }
 
-#[derive(Component, Debug, Clone, Serialize, Deserialize)]
+/// Represents a Magic: The Gathering card with all its properties
+#[derive(Component, Debug, Clone)]
 pub struct Card {
     pub name: String,
     pub cost: Mana,
@@ -581,25 +583,6 @@ pub struct Draggable {
     pub dragging: bool,
     pub drag_offset: Vec2,
     pub z_index: f32,
-}
-
-#[derive(Component, Debug)]
-#[allow(dead_code)] // These fields are used for text rendering and may be needed later
-pub struct CardTextContent {
-    pub text: String,
-    pub text_type: CardTextType,
-}
-
-#[derive(Component)]
-pub struct SpawnedText;
-
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
-pub enum CardTextType {
-    Name,
-    Cost,
-    Type,
-    PowerToughness,
-    RulesText,
 }
 
 #[derive(Resource)]

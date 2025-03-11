@@ -1,11 +1,8 @@
-use crate::card::{Card, CardDetails, CardTypes, CreatureType};
-use crate::game_engine::commander::{CombatDamageEvent, Commander, CommanderRules};
-use crate::game_engine::phase::{CombatStep, Phase};
+use crate::card::CreatureType;
+use crate::game_engine::commander::CombatDamageEvent;
 use crate::game_engine::state::GameState;
 use crate::game_engine::turns::TurnManager;
-use crate::game_engine::zones::{Zone, ZoneManager};
 use crate::mana::Color;
-use crate::menu::GameMenuState;
 use crate::player::Player;
 use bevy::prelude::*;
 use std::collections::{HashMap, HashSet};
@@ -270,7 +267,7 @@ pub fn declare_blockers_system(
 }
 
 pub fn assign_combat_damage_system(
-    mut commands: Commands,
+    commands: Commands,
     mut combat_state: ResMut<CombatState>,
     mut events: EventReader<AssignCombatDamageEvent>,
 ) {
@@ -281,9 +278,9 @@ pub fn assign_combat_damage_system(
 }
 
 pub fn process_combat_damage_system(
-    mut commands: Commands,
+    commands: Commands,
     mut combat_state: ResMut<CombatState>,
-    mut game_state: ResMut<GameState>,
+    game_state: ResMut<GameState>,
     mut players: Query<&mut Player>,
 ) {
     // Clone the pending events to avoid borrow issues

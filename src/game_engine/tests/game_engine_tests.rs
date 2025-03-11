@@ -26,8 +26,7 @@ fn test_phase_transitions() {
 
     // Add resources to the app
     app.insert_resource(game_state)
-        .insert_resource(PhaseState::default())
-        .add_event::<PhaseTransitionEvent>()
+        .insert_resource(Phase::Beginning(BeginningStep::Untap))
         .insert_resource(PrioritySystem::default())
         .insert_resource(GameStack::default());
 
@@ -35,27 +34,21 @@ fn test_phase_transitions() {
     app.add_systems(Update, phase_transition_system);
 
     // Get the initial phase
-    let initial_phase = app.world().resource::<PhaseState>().current_phase;
+    let initial_phase = app.world().resource::<Phase>().clone();
     assert_eq!(initial_phase, Phase::Beginning(BeginningStep::Untap));
 
-    // Send a phase transition event
-    let mut events = app
-        .world_mut()
-        .resource_mut::<Events<PhaseTransitionEvent>>();
-    events.send(PhaseTransitionEvent {
-        new_phase: Phase::Beginning(BeginningStep::Upkeep),
-        new_step: Some(Step::Beginning(BeginningStep::Upkeep)),
-    });
+    // Set up priority system to test phase progression
+    {
+        let mut priority_system = app.world_mut().resource_mut::<PrioritySystem>();
+        priority_system.all_players_passed = true;
+    }
 
-    // Run the systems to process the event
+    // Run the systems to advance the phase
     app.update();
 
     // Verify the phase has advanced
-    let new_phase_state = app.world().resource::<PhaseState>();
-    assert_eq!(
-        new_phase_state.current_phase,
-        Phase::Beginning(BeginningStep::Upkeep)
-    );
+    let new_phase = app.world().resource::<Phase>();
+    assert_eq!(*new_phase, Phase::Beginning(BeginningStep::Upkeep));
 }
 
 /// Test to verify the priority system works correctly
@@ -79,10 +72,7 @@ fn test_priority_handling() {
 
     // Add resources to the app
     app.insert_resource(game_state)
-        .insert_resource(PhaseState {
-            current_phase: Phase::Precombat(PrecombatStep::Main),
-            current_step: Some(Step::Precombat(PrecombatStep::Main)),
-        })
+        .insert_resource(Phase::Precombat(PrecombatStep::Main))
         .insert_resource(priority_system_res)
         .insert_resource(GameStack::default());
 
@@ -150,10 +140,7 @@ fn test_stack_resolution() {
 
     // Add resources to the app
     app.insert_resource(game_state)
-        .insert_resource(PhaseState {
-            current_phase: Phase::Precombat(PrecombatStep::Main),
-            current_step: Some(Step::Precombat(PrecombatStep::Main)),
-        })
+        .insert_resource(Phase::Precombat(PrecombatStep::Main))
         .insert_resource(priority_system)
         .insert_resource(stack);
 
@@ -212,11 +199,7 @@ fn test_turn_progression() {
 
     // Add resources to the app
     app.insert_resource(game_state)
-        .insert_resource(PhaseState {
-            current_phase: Phase::Ending(EndingStep::Cleanup),
-            current_step: Some(Step::Ending(EndingStep::Cleanup)),
-        })
-        .add_event::<PhaseTransitionEvent>()
+        .insert_resource(Phase::Ending(EndingStep::Cleanup))
         .insert_resource(PrioritySystem {
             all_players_passed: true,
             ..PrioritySystem::default()
@@ -231,22 +214,15 @@ fn test_turn_progression() {
     assert_eq!(initial_game_state.turn_number, 1);
     assert_eq!(initial_game_state.active_player, player1);
 
-    // Send a phase transition event to move to the next turn
-    let mut events = app
-        .world_mut()
-        .resource_mut::<Events<PhaseTransitionEvent>>();
-    events.send(PhaseTransitionEvent {
-        new_phase: Phase::Beginning(BeginningStep::Untap),
-        new_step: Some(Step::Beginning(BeginningStep::Untap)),
-    });
-
-    // Run systems to process the event
+    // Run systems to advance to the next turn
     app.update();
 
-    // Verify the phase has changed
-    let new_phase_state = app.world().resource::<PhaseState>();
-    assert_eq!(
-        new_phase_state.current_phase,
-        Phase::Beginning(BeginningStep::Untap)
-    );
+    // Verify the turn has advanced
+    let new_game_state = app.world().resource::<GameState>();
+    assert_eq!(new_game_state.turn_number, 2);
+    assert_eq!(new_game_state.active_player, player2);
+
+    // Verify the phase has reset to Untap
+    let new_phase = app.world().resource::<Phase>();
+    assert_eq!(*new_phase, Phase::Beginning(BeginningStep::Untap));
 }

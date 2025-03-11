@@ -1,8 +1,7 @@
-use crate::card::{Card, CardDetails, CardTypes};
+use crate::card::{Card, CardTypes};
 use crate::game_engine::state::GameState;
-use crate::game_engine::{GameStack, Phase, PhaseState, PrioritySystem};
+use crate::game_engine::{GameStack, Phase, PrioritySystem};
 use crate::mana::Mana;
-use crate::menu::state::GameMenuState;
 use crate::player::Player;
 use bevy::prelude::*;
 
@@ -32,11 +31,11 @@ pub enum GameAction {
 
 /// System for validating and processing game actions
 pub fn process_game_actions(
-    mut commands: Commands,
+    commands: Commands,
     mut game_state: ResMut<GameState>,
-    mut stack: ResMut<GameStack>,
+    stack: ResMut<GameStack>,
     mut priority: ResMut<PrioritySystem>,
-    phase_state: Res<PhaseState>,
+    phase: Res<Phase>,
     // Add an event reader for GameAction events when you implement the event system
     player_query: Query<&Player>,
     card_query: Query<&Card>,
@@ -53,7 +52,7 @@ pub fn process_game_actions(
     match action {
         GameAction::PlayLand { player, land_card } => {
             // Check if it's a valid time to play a land
-            if valid_time_to_play_land(&game_state, &phase_state.current_phase, player) {
+            if valid_time_to_play_land(&game_state, &phase, player) {
                 // Check if the player has already played their land for the turn
                 if game_state.can_play_land(player) {
                     // Check if the card is actually a land
@@ -93,12 +92,7 @@ pub fn process_game_actions(
 
                     // Check timing restrictions
                     if is_sorcery_speed
-                        && !valid_time_for_sorcery(
-                            &game_state,
-                            &phase_state.current_phase,
-                            &stack,
-                            player,
-                        )
+                        && !valid_time_for_sorcery(&game_state, &phase, &stack, player)
                     {
                         warn!("Not a valid time to cast a sorcery-speed spell");
                         return;

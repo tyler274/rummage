@@ -1,9 +1,9 @@
-use crate::card::{Card, CardTypes, CreatureOnField};
+use crate::card::{Card, CreatureOnField};
 use crate::game_engine::commander::{Commander, EliminationReason, PlayerEliminatedEvent};
 use crate::game_engine::zones::{Zone, ZoneChangeEvent, ZoneManager};
 use crate::player::Player;
 use bevy::prelude::*;
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 
 /// The global game state for an MTG game
 #[derive(Resource)]
@@ -185,7 +185,7 @@ impl GameState {
 pub fn state_based_actions_system(
     mut commands: Commands,
     mut game_state: ResMut<GameState>,
-    mut zone_manager: ResMut<ZoneManager>,
+    zone_manager: ResMut<ZoneManager>,
     player_query: Query<(Entity, &Player)>,
     creature_query: Query<(Entity, &CreatureOnField, Option<&Card>)>,
     commander_query: Query<(Entity, &Commander)>,

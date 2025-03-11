@@ -48,25 +48,35 @@ pub fn cleanup_star_of_david_thoroughly(
     children_query: Query<&Children>,
     star_components: Query<(Entity, &StarOfDavid), Without<Children>>,
 ) {
+    // Clean up complete entities with children
     let count = stars_query.iter().count();
     info!("Cleaning up {} Star of David entities thoroughly", count);
 
-    // First, remove all children entities recursively
-    for entity in stars_query.iter() {
+    // First, find all StarOfDavid entities that have children
+    for entity in &stars_query {
         if let Ok(children) = children_query.get(entity) {
-            for &child in children.iter() {
-                commands.entity(child).despawn_recursive();
-            }
+            info!(
+                "Found StarOfDavid entity {:?} with {} children",
+                entity,
+                children.len()
+            );
+
+            // Despawn the entity and all of its children
+            commands.entity(entity).despawn_recursive();
+        } else {
+            // No children, just despawn the entity itself
+            commands.entity(entity).despawn();
         }
-        commands.entity(entity).despawn_recursive();
     }
 
-    // Also clean up any orphaned StarOfDavid components that might not have children
+    // Look for any detached StarOfDavid components
     for (entity, _) in star_components.iter() {
+        info!(
+            "Found detached StarOfDavid component on entity {:?}",
+            entity
+        );
         commands.entity(entity).despawn_recursive();
     }
-
-    // Let commands execute immediately - no need for a dummy entity
 }
 
 /// Cleans up game entities (cards and game camera)

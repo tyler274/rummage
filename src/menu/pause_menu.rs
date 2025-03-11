@@ -5,9 +5,8 @@ use crate::menu::{
     styles::*,
 };
 use bevy::prelude::*;
-use bevy::render::view::RenderLayers;
 use bevy::text::JustifyText;
-use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
+use bevy::ui::{AlignItems, JustifyContent, Val};
 
 /// Sets up the pause menu interface
 pub fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {

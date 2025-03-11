@@ -1,7 +1,6 @@
-use crate::card::Card;
 use crate::player::Player;
 use bevy::prelude::*;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 /// Represents the different zones in an MTG game
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

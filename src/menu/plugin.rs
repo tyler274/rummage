@@ -1,12 +1,11 @@
-use bevy::{app::AppExit, ecs::system::ParamSet, prelude::*};
+use bevy::{ecs::system::ParamSet, prelude::*};
 
 use crate::{
     camera::components::{AppLayer, GameCamera, MenuCamera},
     card::Card,
     menu::{
         cleanup::{
-            cleanup_game, cleanup_main_menu, cleanup_menu_camera, cleanup_pause_menu,
-            cleanup_star_of_david, cleanup_star_of_david_thoroughly,
+            cleanup_game, cleanup_main_menu, cleanup_menu_camera, cleanup_pause_menu, cleanup_star_of_david_thoroughly,
         },
         components::MenuItem,
         logo::{StarOfDavidPlugin, render_star_of_david},
@@ -43,16 +42,18 @@ pub struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(StateTransitionContext::default())
+        app.init_state::<GameMenuState>()
+            .insert_resource(GameMenuState::MainMenu)
+            .insert_resource(StateTransitionContext::default())
             .init_resource::<MenuVisibilityLogState>()
             .add_plugins(StarOfDavidPlugin)
             // Main Menu state
             .add_systems(
                 OnEnter(GameMenuState::MainMenu),
                 (
-                    cleanup_game.before(cleanup_menu_camera),
-                    cleanup_menu_camera.before(cleanup_star_of_david_thoroughly),
-                    cleanup_star_of_david_thoroughly.before(setup_main_menu),
+                    cleanup_game,
+                    cleanup_menu_camera,
+                    cleanup_star_of_david_thoroughly,
                     setup_main_menu,
                     setup_menu_camera,
                     set_menu_camera_zoom,
@@ -125,47 +126,34 @@ impl Plugin for MenuPlugin {
     }
 }
 
-/// Creates a menu camera with the proper configuration for WSL2 compatibility
+/// Creates a menu camera with the proper configuration
 pub fn setup_menu_camera(
     mut commands: Commands,
     existing_cameras: Query<Entity, With<MenuCamera>>,
 ) {
-    // Clean up any existing menu cameras first
-    for entity in existing_cameras.iter() {
-        commands.entity(entity).despawn_recursive();
+    // Check if any menu cameras already exist
+    if !existing_cameras.is_empty() {
+        info!("Menu camera already exists, not creating a new one");
+        return;
     }
 
-    info!("Setting up menu camera - WSL2 optimized");
-
-    // Create a simpler camera setup for WSL2 compatibility
-    let camera_entity = commands
+    info!("Setting up menu camera");
+    let entity = commands
         .spawn((
-            // Core camera components
-            Camera2d::default(),
-            Camera {
-                // Ensure this camera renders on top
-                order: 0,
-                // Use a clear background color
-                clear_color: ClearColorConfig::Default,
-                // Disable HDR which can cause issues in WSL2
-                hdr: false,
+            Camera2dBundle {
+                camera: Camera {
+                    order: 1,
+                    ..default()
+                },
                 ..default()
             },
-            // Standard transform components
-            Transform::default(),
-            GlobalTransform::default(),
-            // Visibility components
-            Visibility::Visible,
-            InheritedVisibility::default(),
-            ViewVisibility::default(),
-            // Menu camera marker
             MenuCamera,
-            // Add a name for debugging
+            AppLayer::menu_layers(),
             Name::new("Menu Camera"),
         ))
         .id();
 
-    info!("Spawned menu camera: {}", camera_entity);
+    info!("Spawned menu camera: {:?}", entity);
 }
 
 /// Setup Star of David for pause menu

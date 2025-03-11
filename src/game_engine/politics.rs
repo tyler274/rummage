@@ -330,7 +330,7 @@ pub struct DealBrokenEvent {
 
 /// System to handle the monarch mechanic
 pub fn monarch_system(
-    mut commands: Commands,
+    commands: Commands,
     mut politics: ResMut<PoliticsSystem>,
     mut monarch_events: EventReader<MonarchChangedEvent>,
     game_state: Res<GameState>,
@@ -510,7 +510,7 @@ impl PoliticsSystem {
 
 /// System to handle goad effects
 pub fn goad_system(
-    mut commands: Commands,
+    commands: Commands,
     mut politics: ResMut<PoliticsSystem>,
     mut combat_state: ResMut<CombatState>,
     turn_manager: Res<TurnManager>,
@@ -555,7 +555,7 @@ pub fn goad_system(
 
 /// System to handle deals between players
 pub fn deal_system(
-    mut commands: Commands,
+    commands: Commands,
     mut politics: ResMut<PoliticsSystem>,
     mut deal_proposed_events: EventReader<DealProposedEvent>,
     mut deal_response_events: EventReader<DealResponseEvent>,

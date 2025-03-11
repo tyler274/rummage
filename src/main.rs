@@ -7,65 +7,52 @@ mod mana;
 mod menu;
 mod player;
 mod text;
-mod wsl2;
 
-use bevy::{
-    app::AppExit,
-    log::info,
-    prelude::*,
-    window::{PresentMode, WindowPlugin, WindowResolution},
-};
-
+use bevy::DefaultPlugins;
+use bevy::app::AppExit;
+use bevy::prelude::*;
+use bevy::window::WindowResolution;
+use bevy_rand::prelude::*;
 use camera::{
-    CameraConfig, CameraPanState, CameraPlugin,
+    CameraConfig, CameraPanState,
     components::GameCamera,
-    systems::{camera_movement, handle_window_resize, setup_camera},
+    systems::{camera_movement, handle_window_resize, set_initial_zoom, setup_camera},
 };
-use card::CardPlugin;
+use card::DebugConfig;
+use cards::CardsPlugin;
 use drag::DragPlugin;
 use game_engine::GameEnginePlugin;
-use menu::{
-    MenuPlugin,
-    state::{GameMenuState, StateTransitionContext},
-};
+use menu::{GameMenuState, MenuPlugin, state::StateTransitionContext};
 use player::spawn_hand;
 use text::spawn_card_text;
-use wsl2::{WSL2CompatibilityPlugin, detect_wsl2, get_wsl2_window_settings};
 
-/// Main game plugin that sets up the game environment
+// Plugin for the actual game systems
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        // Initialize resources first to ensure they're available
-        app
-            // Add basic resources
-            .insert_resource(StateTransitionContext::default())
+        app.add_plugins(DragPlugin)
+            .add_plugins(EntropyPlugin::<WyRand>::default())
+            .add_plugins(CardsPlugin)
+            .add_plugins(GameEnginePlugin)
+            .insert_resource(DebugConfig {
+                show_text_positions: false,
+            })
             .insert_resource(CameraConfig::default())
             .insert_resource(CameraPanState::default())
-            // Initialize game state
-            .init_state::<GameMenuState>()
-            // Add core plugins
-            .add_plugins(CameraPlugin)
-            .add_plugins(CardPlugin)
-            .add_plugins(DragPlugin)
-            // Add game engine plugins
-            .add_plugins(GameEnginePlugin)
-            // Add menu plugin last to ensure all dependencies are available
-            .add_plugins(MenuPlugin)
-            // Set initial game state
             .add_systems(
-                Startup,
-                |mut next_state: ResMut<NextState<GameMenuState>>| {
-                    next_state.set(GameMenuState::MainMenu);
-                },
+                OnEnter(GameMenuState::InGame),
+                (
+                    setup_game,
+                    // Only set initial zoom when not coming from pause menu
+                    set_initial_zoom
+                        .run_if(|context: Res<StateTransitionContext>| !context.from_pause_menu)
+                        .after(setup_game),
+                ),
             )
-            // Game-specific systems
-            .add_systems(OnEnter(GameMenuState::InGame), setup_game)
             .add_systems(
                 Update,
                 (handle_window_resize, camera_movement, spawn_card_text)
-                    // Only run these systems when in the game state
                     .run_if(in_state(GameMenuState::InGame)),
             );
     }
@@ -100,59 +87,51 @@ fn setup_game(
     info!("Game setup complete!");
 }
 
-/// Handle exit events from the application
 fn handle_exit(mut exit_events: EventReader<AppExit>) {
-    for _ in exit_events.read() {
-        info!("Exiting application");
+    for _exit_event in exit_events.read() {
+        info!("Received exit event, cleaning up...");
     }
-}
-
-/// Set up a custom panic hook to handle crashes gracefully
-fn setup_panic_hook() {
-    let old_hook = std::panic::take_hook();
-    std::panic::set_hook(Box::new(move |panic_info| {
-        // Call the default handler first
-        old_hook(panic_info);
-        // Then log additional information
-        error!("Application panicked: {}", panic_info);
-    }));
 }
 
 fn main() {
-    // Set up custom panic handling
-    setup_panic_hook();
-
-    // Detect if running under WSL2
-    let is_wsl2 = detect_wsl2();
-    if is_wsl2 {
-        info!("WSL2 environment detected - applying WSL2-specific optimizations");
-    }
-
-    // Create the app with appropriate window configuration
-    let mut app = App::new();
-
-    // Configure window settings based on environment
-    if is_wsl2 {
-        // Use WSL2-specific window settings
-        app.add_plugins(DefaultPlugins.set(get_wsl2_window_settings()));
-    } else {
-        // Use standard window settings for non-WSL2 environments
-        app.add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Rummage".into(),
-                resolution: WindowResolution::new(1024.0, 768.0),
-                present_mode: PresentMode::AutoVsync,
-                ..default()
-            }),
-            ..default()
-        }));
-    }
-
-    // Add WSL2 compatibility plugin
-    app.add_plugins(WSL2CompatibilityPlugin)
-        // Add game plugins
+    App::new()
+        .add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "Rummage".to_string(),
+                        resolution: WindowResolution::new(1920.0, 1080.0),
+                        present_mode: bevy::window::PresentMode::AutoNoVsync,
+                        resizable: true,
+                        resize_constraints: bevy::window::WindowResizeConstraints {
+                            min_width: 960.0,  // Half of 1920
+                            min_height: 540.0, // Half of 1080
+                            ..default()
+                        },
+                        ..default()
+                    }),
+                    ..default()
+                })
+                .set(bevy::render::RenderPlugin {
+                    // Configure rendering to be more resilient in WSL2 environments
+                    render_creation: bevy::render::settings::RenderCreation::Automatic(
+                        bevy::render::settings::WgpuSettings {
+                            // Try multiple backends if needed for WSL2 compatibility
+                            backends: Some(bevy::render::settings::Backends::all()),
+                            // Use low power preference for better WSL2 compatibility
+                            power_preference: bevy::render::settings::PowerPreference::LowPower,
+                            // Don't require all features, adapt to what's available in WSL2
+                            features: bevy::render::settings::WgpuFeatures::empty(),
+                            ..default()
+                        },
+                    ),
+                    // Don't wait for pipelines to compile, which can hang under certain conditions
+                    synchronous_pipeline_compilation: false,
+                    ..default()
+                }),
+        )
+        .add_plugins(MenuPlugin)
         .add_plugins(GamePlugin)
-        // Add exit handler
         .add_systems(Update, handle_exit)
         .run();
 }

@@ -48,17 +48,3 @@ pub mod components;
 pub mod systems;
 pub use config::*;
 pub use state::*;
-
-use bevy::prelude::*;
-use systems::{camera_movement, handle_window_resize};
-
-/// Plugin for camera management
-pub struct CameraPlugin;
-
-impl Plugin for CameraPlugin {
-    fn build(&self, app: &mut App) {
-        app.init_resource::<CameraConfig>()
-            .init_resource::<CameraPanState>()
-            .add_systems(Update, camera_movement);
-    }
-}

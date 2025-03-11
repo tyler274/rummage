@@ -23,9 +23,10 @@ use crate::camera::components::{AppLayer, GameCamera};
 ///
 /// Each text component is spawned as a child entity of the card,
 /// ensuring proper positioning and movement during drag operations.
-use crate::card::{Card, CardDetails, CardTextContent, CardTextType, Draggable};
+use crate::card::{Card, CardDetails, Draggable};
 use crate::cards::get_example_cards;
 use crate::mana::{ManaPool, convert_rules_text_to_symbols};
+use crate::text::{CardTextContent, CardTextType};
 use bevy::prelude::*;
 use rand::seq::SliceRandom;
 
@@ -129,64 +130,21 @@ pub fn spawn_hand(
             ))
             .id();
 
-        // Spawn card name text
+        // Spawn card text content
         commands
             .spawn((
                 CardTextContent {
-                    text: card.name.clone(),
-                    text_type: CardTextType::Name,
-                },
-                Transform::from_xyz(-card_size.x * 0.20, card_size.y * 0.3, z + 0.1),
-                AppLayer::Cards.layer(), // Use the specific Cards layer
-            ))
-            .set_parent(card_entity);
-
-        // Spawn mana cost text
-        commands
-            .spawn((
-                CardTextContent {
-                    text: card.cost.to_string(),
-                    text_type: CardTextType::Cost,
-                },
-                Transform::from_xyz(card_size.x * 0.35, card_size.y * 0.3, z + 0.1),
-                AppLayer::Cards.layer(), // Use the specific Cards layer
-            ))
-            .set_parent(card_entity);
-
-        // Spawn type line text
-        commands
-            .spawn((
-                CardTextContent {
-                    text: card.type_line(),
-                    text_type: CardTextType::Type,
-                },
-                Transform::from_xyz(0.0, 0.0, z + 0.1),
-                AppLayer::Cards.layer(), // Use the specific Cards layer
-            ))
-            .set_parent(card_entity);
-
-        // Spawn power/toughness text for creatures
-        if let CardDetails::Creature(creature) = &card.card_details {
-            commands
-                .spawn((
-                    CardTextContent {
-                        text: format!("{}/{}", creature.power, creature.toughness),
-                        text_type: CardTextType::PowerToughness,
+                    name: card.name.clone(),
+                    mana_cost: card.cost.to_string(),
+                    type_line: card.type_line(),
+                    rules_text: convert_rules_text_to_symbols(&card.rules_text),
+                    power_toughness: if let CardDetails::Creature(creature) = &card.card_details {
+                        Some(format!("{}/{}", creature.power, creature.toughness))
+                    } else {
+                        None
                     },
-                    Transform::from_xyz(card_size.x * 0.4, -card_size.y * 0.4, z + 0.1),
-                    AppLayer::Cards.layer(), // Use the specific Cards layer
-                ))
-                .set_parent(card_entity);
-        }
-
-        // Spawn rules text with mana symbols
-        commands
-            .spawn((
-                CardTextContent {
-                    text: convert_rules_text_to_symbols(&card.rules_text),
-                    text_type: CardTextType::RulesText,
                 },
-                Transform::from_xyz(-card_size.x * 0.35, -card_size.y * 0.15, z + 0.1),
+                Transform::default(),
                 AppLayer::Cards.layer(), // Use the specific Cards layer
             ))
             .set_parent(card_entity);

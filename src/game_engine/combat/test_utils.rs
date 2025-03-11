@@ -1,7 +1,6 @@
 use super::combat::CombatState;
 use crate::game_engine::commander::{CombatDamageEvent, Commander};
 use crate::game_engine::state::GameState;
-use crate::menu::GameMenuState;
 use crate::player::Player;
 use bevy::prelude::*;
 use std::collections::HashMap;
@@ -12,7 +11,7 @@ pub fn setup_test_combat(
     blockers: Vec<(Entity, Entity)>,  // (blocker, attacker) pairs
     commander_entities: Vec<Entity>,  // Which entities are commanders
 ) {
-    let mut world = app.world_mut();
+    let world = app.world_mut();
     let mut combat_state = world.resource_mut::<CombatState>();
 
     // Add attackers
@@ -91,14 +90,14 @@ pub fn apply_combat_damage(app: &mut App, damage_events: Vec<CombatDamageEvent>)
 }
 
 pub fn add_attacker_with_target(app: &mut App, attacker: Entity, target: Entity) {
-    let mut world = app.world_mut();
+    let world = app.world_mut();
     let mut combat_state = world.resource_mut::<CombatState>();
     combat_state.attackers.insert(attacker, target);
     combat_state.in_declare_attackers = true;
 }
 
 pub fn assign_blocker(app: &mut App, attacker: Entity, blocker: Entity) {
-    let mut world = app.world_mut();
+    let world = app.world_mut();
     let mut combat_state = world.resource_mut::<CombatState>();
 
     if !combat_state.attackers.contains_key(&attacker) {
@@ -117,7 +116,7 @@ pub fn assign_blocker(app: &mut App, attacker: Entity, blocker: Entity) {
 }
 
 pub fn deal_damage_to_players(app: &mut App, amount: i32) {
-    let mut world = app.world_mut();
+    let world = app.world_mut();
 
     // Deal damage to all players
     if amount > 0 {

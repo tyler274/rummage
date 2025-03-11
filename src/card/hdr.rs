@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::{prelude::*, render::mesh::Mesh};
 
 use crate::card::Card;
-use crate::menu::GameMenuState;
+use crate::menu::state::GameMenuState;
 
 /// Component to mark an entity as an HDR emissive card for visual effects
 #[derive(Component)]

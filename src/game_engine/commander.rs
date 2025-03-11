@@ -1,5 +1,4 @@
 use crate::card::{Card, CardTypes};
-use crate::game_engine::Phase;
 use crate::game_engine::zones::{Zone, ZoneChangeEvent, ZoneManager};
 use crate::mana::Color;
 use crate::mana::Mana;
@@ -367,7 +366,7 @@ pub fn record_commander_damage(
 /// Handle commander changing zones
 pub fn handle_commander_zone_change(
     mut commands: Commands,
-    mut zone_manager: ResMut<ZoneManager>,
+    zone_manager: ResMut<ZoneManager>,
     mut cmd_zone_manager: ResMut<CommandZoneManager>,
     mut zone_events: EventReader<ZoneChangeEvent>,
     commander_query: Query<(Entity, &Commander)>,
@@ -416,11 +415,11 @@ pub fn handle_commander_zone_change(
 
 /// Process commander zone choice events
 pub fn process_commander_zone_choices(
-    mut commands: Commands,
+    commands: Commands,
     mut choice_events: EventReader<CommanderZoneChoiceEvent>,
     mut zone_manager: ResMut<ZoneManager>,
     mut cmd_zone_manager: ResMut<CommandZoneManager>,
-    mut commander_query: Query<&mut Commander>,
+    commander_query: Query<&mut Commander>,
 ) {
     for event in choice_events.read() {
         if event.can_go_to_command_zone {
@@ -451,10 +450,10 @@ pub fn process_commander_zone_choices(
 
 /// Handle casting a commander from the command zone
 pub fn handle_commander_casting(
-    mut commands: Commands,
-    mut zone_manager: ResMut<ZoneManager>,
-    mut cmd_zone_manager: ResMut<CommandZoneManager>,
-    mut commander_query: Query<&mut Commander>,
+    commands: Commands,
+    zone_manager: ResMut<ZoneManager>,
+    cmd_zone_manager: ResMut<CommandZoneManager>,
+    commander_query: Query<&mut Commander>,
     cards: Query<(Entity, &Card)>,
     // We would need other queries and inputs here
 ) {
@@ -472,7 +471,7 @@ pub fn validate_commander_deck(
     player_query: Query<(Entity, &Player)>,
 ) -> HashMap<Entity, Vec<Entity>> {
     // Map to store players and their illegal cards
-    let mut illegal_cards = HashMap::new();
+    let illegal_cards = HashMap::new();
 
     // For each player, check their deck against their commander's color identity
     for (player_entity, _) in player_query.iter() {
@@ -498,8 +497,8 @@ pub fn validate_commander_deck(
 
 /// System to handle Commander damage tracking
 pub fn track_commander_damage(
-    mut commands: Commands,
-    mut game_state: ResMut<GameMenuState>,
+    commands: Commands,
+    game_state: ResMut<GameMenuState>,
     commanders: Query<(Entity, &Commander)>,
     players: Query<Entity, With<Player>>,
     cmd_zone_manager: Res<CommandZoneManager>,

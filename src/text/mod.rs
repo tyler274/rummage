@@ -22,7 +22,6 @@ pub struct TextPlugin;
 
 impl Plugin for TextPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(DebugConfig::default())
-            .add_systems(Update, systems::spawn_card_text);
+        app.add_systems(Update, systems::spawn_card_text);
     }
 }

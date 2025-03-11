@@ -1,6 +1,5 @@
-use crate::game_engine::state::GameState;
-use crate::game_engine::{BeginningStep, EndingStep, Phase, PhaseState, Step};
-use crate::menu::state::GameMenuState;
+use crate::game_engine::{BeginningStep, EndingStep, Phase};
+use crate::menu::GameMenuState;
 use crate::player::Player;
 use bevy::prelude::*;
 
@@ -21,6 +20,9 @@ pub struct TurnManager {
 
     /// Players eliminated from the game
     pub eliminated_players: Vec<Entity>,
+
+    /// The current game phase/step
+    pub current_phase: Phase,
 }
 
 impl Default for TurnManager {
@@ -31,6 +33,7 @@ impl Default for TurnManager {
             active_player_index: 0,
             turn_number: 1,
             eliminated_players: Vec::new(),
+            current_phase: Phase::Beginning(BeginningStep::Untap),
         }
     }
 }
@@ -108,14 +111,14 @@ pub struct TurnEndEvent {
 
 /// System to handle the start of a new turn
 pub fn turn_start_system(
-    mut commands: Commands,
-    phase_state: Res<PhaseState>,
+    commands: Commands,
+    phase: Res<Phase>,
     player_query: Query<&Player>,
     mut turn_start_events: EventWriter<TurnStartEvent>,
     turn_manager: Res<TurnManager>,
 ) {
     // Only trigger at the beginning of the untap step
-    if phase_state.current_phase == Phase::Beginning(BeginningStep::Untap) {
+    if *phase == Phase::Beginning(BeginningStep::Untap) {
         // Create a turn start event
         turn_start_events.send(TurnStartEvent {
             player: turn_manager.active_player,
@@ -131,14 +134,14 @@ pub fn turn_start_system(
 
 /// System to handle the end of a turn
 pub fn turn_end_system(
-    mut commands: Commands,
-    phase_state: Res<PhaseState>,
+    commands: Commands,
+    phase: Res<Phase>,
     player_query: Query<&Player>,
     mut turn_end_events: EventWriter<TurnEndEvent>,
     turn_manager: Res<TurnManager>,
 ) {
     // Only trigger at the beginning of the end step
-    if phase_state.current_phase == Phase::Ending(EndingStep::End) {
+    if *phase == Phase::Ending(EndingStep::End) {
         // Create a turn end event
         turn_end_events.send(TurnEndEvent {
             player: turn_manager.active_player,
@@ -154,13 +157,13 @@ pub fn turn_end_system(
 
 /// System to handle untapping permanents
 pub fn untap_system(
-    mut commands: Commands,
-    phase_state: Res<PhaseState>,
+    commands: Commands,
+    phase: Res<Phase>,
     turn_manager: Res<TurnManager>,
     // We would need queries for permanents to untap them
 ) {
     // Only trigger at the beginning of the untap step
-    if phase_state.current_phase == Phase::Beginning(BeginningStep::Untap) {
+    if *phase == Phase::Beginning(BeginningStep::Untap) {
         info!(
             "Untapping permanents for player {:?}",
             turn_manager.active_player
