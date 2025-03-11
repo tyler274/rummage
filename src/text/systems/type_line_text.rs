@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 
 use crate::text::{
-    components::{CardTextContent, CardTextType, TextLayoutInfo},
+    components::{
+        CardTextBundle, CardTextContent, CardTextStyleBundle, CardTextType, TextLayoutInfo,
+    },
     utils::{calculate_text_size, get_card_font_size, get_card_layout},
 };
 
@@ -27,36 +29,93 @@ pub fn spawn_type_line_text(
 
     let text_size = calculate_text_size(card_size, layout.type_line_width, layout.type_line_height);
 
-    let font_size = get_card_font_size(card_size, 22.0);
+    // Make the type line a bit larger and bolder for better readability
+    let font_size = get_card_font_size(card_size, 20.0);
 
-    // Create text with Text2d component
+    // Format type line consistently (match MTG style with em-dash between types)
+    let formatted_type_line = format_type_line(&content.type_line);
+
+    // Create text style bundle
+    let text_style = CardTextStyleBundle {
+        text_font: TextFont {
+            font: asset_server.load("fonts/DejaVuSans-Bold.ttf"),
+            font_size,
+            ..default()
+        },
+        text_color: TextColor(Color::BLACK),
+        text_layout: TextLayout::new_with_justify(JustifyText::Center),
+    };
+
+    // Create text with CardTextBundle
     let entity = commands
-        .spawn((
-            // Text2d component
-            Text2d::new(content.type_line.clone()),
-            // Use a relative transform instead of absolute world position
-            // The z value is relative to the parent (card)
-            Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.1)),
-            GlobalTransform::default(),
-            // Add text styling
-            TextFont {
-                font: asset_server.load("fonts/DejaVuSans-Bold.ttf"),
-                font_size,
-                ..default()
-            },
-            TextColor(Color::BLACK),
-            TextLayout::new_with_justify(JustifyText::Center),
-            // Add our custom components
-            CardTextType::TypeLine,
-            TextLayoutInfo {
+        .spawn(CardTextBundle {
+            text_2d: Text2d::new(formatted_type_line.clone()),
+            transform: Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.1)),
+            global_transform: GlobalTransform::default(),
+            text_font: text_style.text_font,
+            text_color: text_style.text_color,
+            text_layout: text_style.text_layout,
+            card_text_type: CardTextType::TypeLine,
+            text_layout_info: TextLayoutInfo {
                 position: card_pos + local_offset, // Store absolute position for reference
                 size: text_size,
                 alignment: JustifyText::Center,
             },
-            // Add a name for debugging
-            Name::new(format!("Type Line: {}", content.type_line)),
-        ))
+            name: Name::new(format!("Type Line: {}", formatted_type_line)),
+        })
         .id();
 
     entity
+}
+
+/// Format type line to match MTG standard style
+fn format_type_line(type_line: &str) -> String {
+    // If the type line already has a proper em-dash, return it as is
+    if type_line.contains(" — ") {
+        return type_line.to_string();
+    }
+
+    // Check if the type line contains a simple dash
+    if type_line.contains(" - ") {
+        // Replace simple dash with proper em-dash (with spacing)
+        return type_line.replace(" - ", " — ");
+    }
+
+    // Check if we need to add a subtype separator
+    if type_line.contains("Creature")
+        || type_line.contains("Artifact")
+        || type_line.contains("Enchantment")
+        || type_line.contains("Land")
+    {
+        // Split the type line into words
+        let words: Vec<&str> = type_line.split_whitespace().collect();
+
+        // Find where subtypes might start (usually after the main type)
+        let main_types = [
+            "Creature",
+            "Artifact",
+            "Enchantment",
+            "Land",
+            "Planeswalker",
+            "Instant",
+            "Sorcery",
+            "Battle",
+        ];
+
+        let mut separator_index = 0;
+        for (i, word) in words.iter().enumerate() {
+            if main_types.contains(word) {
+                separator_index = i + 1;
+            }
+        }
+
+        // If we have a subtype, format with proper em-dash
+        if separator_index > 0 && separator_index < words.len() {
+            let (main_part, sub_part) = words.split_at(separator_index);
+            return format!("{} — {}", main_part.join(" "), sub_part.join(" "));
+        }
+    }
+
+    // If no formatting needed, return original
+    type_line.to_string()
 }

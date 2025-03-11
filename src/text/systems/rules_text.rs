@@ -35,7 +35,7 @@ pub fn spawn_rules_text(
     );
 
     // Adjust font size based on card size and text length
-    let base_font_size = 18.0;
+    let base_font_size = 16.0; // Slightly smaller base font for better readability
     let text_length_factor = (content.rules_text.len() as f32 / 100.0).clamp(0.5, 1.5);
     let adjusted_font_size = base_font_size / text_length_factor.max(1.0);
     let font_size = get_card_font_size(card_size, adjusted_font_size);
@@ -46,15 +46,17 @@ pub fn spawn_rules_text(
     // Format the rules text with proper line breaks and wrapping
     let formatted_text = format_rules_text(&content.rules_text, max_text_width, font_size);
 
-    // Create text style bundle
+    // Create text style bundle with justified text for a more MTG-like appearance
     let text_style = CardTextStyleBundle {
         text_font: TextFont {
-            font: asset_server.load("fonts/DejaVuSans-Bold.ttf"),
+            // Use a regular font rather than bold for rules text like MTG cards
+            font: asset_server.load("fonts/DejaVuSans.ttf"),
             font_size,
             ..default()
         },
         text_color: TextColor(Color::BLACK),
-        text_layout: TextLayout::new_with_justify(JustifyText::Left),
+        // Center-justify the text like MTG cards
+        text_layout: TextLayout::new_with_justify(JustifyText::Center),
     };
 
     // Create text with Text2d component
@@ -70,7 +72,8 @@ pub fn spawn_rules_text(
             text_layout_info: TextLayoutInfo {
                 position: card_pos + local_offset, // Store absolute position for reference
                 size: text_size,
-                alignment: JustifyText::Left,
+                // Match the alignment from the text_layout
+                alignment: JustifyText::Center,
             },
             name: Name::new(format!("Rules Text: {}", content.rules_text)),
         })
@@ -80,9 +83,22 @@ pub fn spawn_rules_text(
 }
 
 /// Format rules text with proper line breaks, spacing, and wrapping
+/// Now includes better paragraph separation and support for flavor text
 fn format_rules_text(text: &str, max_width: f32, font_size: f32) -> String {
-    // Split by existing line breaks
-    let paragraphs: Vec<&str> = text.split('\n').collect();
+    // Check for flavor text separator (MTG uses a line between rules and flavor)
+    let (rules_part, flavor_part) = if text.contains("—") {
+        let parts: Vec<&str> = text.splitn(2, "—").collect();
+        if parts.len() > 1 {
+            (parts[0].trim(), Some(parts[1].trim()))
+        } else {
+            (text, None)
+        }
+    } else {
+        (text, None)
+    };
+
+    // Split rules by existing line breaks
+    let paragraphs: Vec<&str> = rules_part.split('\n').collect();
 
     // Process each paragraph to ensure proper width
     let mut formatted_paragraphs = Vec::new();
@@ -136,6 +152,29 @@ fn format_rules_text(text: &str, max_width: f32, font_size: f32) -> String {
         }
     }
 
-    // Join paragraphs with line breaks
-    formatted_paragraphs.join("\n")
+    // Format the result with proper MTG-style paragraph spacing
+    let rules_text = formatted_paragraphs.join("\n");
+
+    // Add flavor text if present (with proper formatting and separator)
+    if let Some(flavor) = flavor_part {
+        // Format the flavor text with the same line wrapping logic
+        let flavor_paragraphs: Vec<&str> = flavor.split('\n').collect();
+        let mut formatted_flavor = Vec::new();
+
+        for paragraph in flavor_paragraphs {
+            if paragraph.trim().is_empty() {
+                formatted_flavor.push(String::new());
+                continue;
+            }
+
+            // Italicize flavor text by adding markdown-style indicators
+            // Note: This assumes your text rendering supports these markers
+            formatted_flavor.push(format!("*{}*", paragraph.trim()));
+        }
+
+        // Join with double line break to separate rules text from flavor text
+        format!("{}\n\n—{}", rules_text, formatted_flavor.join("\n"))
+    } else {
+        rules_text
+    }
 }
