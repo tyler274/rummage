@@ -184,6 +184,16 @@ fn render_inline_mana_symbols(
 
                 // Advance x position by mana symbol width
                 current_x += get_mana_symbol_width(font_size);
+
+                // Add extra spacing after tap symbol
+                if segment_text.trim() == "{T}" {
+                    current_x += font_size * 0.25; // Add extra spacing after tap symbol
+                }
+
+                // Add spacing after a colon if present
+                if segment_text.contains(':') {
+                    current_x += font_size * 0.15; // Extra spacing after colon
+                }
             } else {
                 // Render regular text segment
                 let segment_clone = segment_text.clone();
