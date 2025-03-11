@@ -4,7 +4,7 @@ use crate::text::{
     components::{
         CardTextBundle, CardTextContent, CardTextStyleBundle, CardTextType, TextLayoutInfo,
     },
-    utils::{calculate_text_size, get_card_font_size, get_card_layout},
+    utils::{calculate_text_size, get_card_font_size, get_card_layout, get_mana_symbol_color},
 };
 
 /// Spawn rules text for a card
@@ -46,24 +46,18 @@ pub fn spawn_rules_text(
     // Format the rules text with proper line breaks and wrapping
     let formatted_text = format_rules_text(&content.rules_text, max_text_width, font_size);
 
-    // Create text style bundle with justified text for a more MTG-like appearance
-    let text_style = CardTextStyleBundle {
-        text_font: TextFont {
-            font: asset_server.load("fonts/DejaVuSans.ttf"),
-            font_size,
-            ..default()
-        },
-        text_color: TextColor(Color::rgba(0.0, 0.0, 0.0, 0.9)),
-        text_layout: TextLayout::new_with_justify(JustifyText::Left),
-    };
+    // Load fonts
+    let regular_font = asset_server.load("fonts/DejaVuSans.ttf");
+    let mana_font = asset_server.load("fonts/Mana.ttf");
 
-    // Create text with CardTextBundle
-    let entity = commands
+    // Create the parent text entity
+    let parent_entity = commands
         .spawn((
-            Text2d::new(formatted_text.clone()),
-            text_style,
+            // Empty root for text container
+            Text2d::new(""),
             Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.2)),
             GlobalTransform::default(),
+            TextLayout::new_with_justify(JustifyText::Left),
             CardTextType::RulesText,
             TextLayoutInfo {
                 position: card_pos + local_offset,
@@ -74,7 +68,86 @@ pub fn spawn_rules_text(
         ))
         .id();
 
-    entity
+    // Instead of complex parsing, we'll just render the full text with regular font
+    // and then add colored mana symbols as overlays
+
+    // First add the regular text
+    commands
+        .spawn((
+            TextSpan::default(),
+            Text2d::new(formatted_text.clone()),
+            TextFont {
+                font: regular_font.clone(),
+                font_size,
+                ..default()
+            },
+            TextColor(Color::rgba(0.0, 0.0, 0.0, 0.9)),
+        ))
+        .set_parent(parent_entity);
+
+    // Now scan for mana symbols and overlay them
+    let mut symbol_index = 0;
+    while let Some(start) = formatted_text[symbol_index..].find('{') {
+        // Find the starting position of the symbol
+        let real_start = symbol_index + start;
+
+        // Look for the end of the symbol
+        if let Some(end) = formatted_text[real_start..].find('}') {
+            let real_end = real_start + end + 1; // +1 to include the closing brace
+            let symbol = &formatted_text[real_start..real_end];
+
+            // Only process if the symbol is a valid mana symbol
+            if is_valid_mana_symbol(symbol) {
+                let symbol_color = get_mana_symbol_color(symbol);
+
+                // Calculate the approximate position for this symbol
+                // This is a rough estimate - in a real implementation,
+                // you'd need more precise text metrics
+                let chars_before = real_start;
+                let estimated_x_pos = (chars_before as f32) * (font_size * 0.5);
+
+                commands
+                    .spawn((
+                        TextSpan::default(),
+                        Text2d::new(symbol.to_string()),
+                        TextFont {
+                            font: mana_font.clone(),
+                            font_size,
+                            ..default()
+                        },
+                        TextColor(symbol_color),
+                        // Use precise positioning
+                        Transform::from_translation(Vec3::new(estimated_x_pos, 0.0, 0.1)),
+                    ))
+                    .set_parent(parent_entity);
+            }
+
+            // Move past this symbol
+            symbol_index = real_end;
+        } else {
+            // No closing brace found, exit the loop
+            break;
+        }
+    }
+
+    parent_entity
+}
+
+/// Check if a string is a valid mana symbol
+fn is_valid_mana_symbol(symbol: &str) -> bool {
+    if symbol.len() < 3 || !symbol.starts_with('{') || !symbol.ends_with('}') {
+        return false;
+    }
+
+    let inner = &symbol[1..symbol.len() - 1];
+    match inner {
+        "W" | "U" | "B" | "R" | "G" | "C" | "T" => true,
+        "X" => true,
+        _ => {
+            // Check if it's a numeric generic mana cost
+            inner.parse::<u32>().is_ok()
+        }
+    }
 }
 
 /// Format rules text with proper line breaks, spacing, and wrapping

@@ -1,11 +1,14 @@
 use crate::card::Card;
 use crate::text::{
     components::{CardTextBundle, CardTextType, TextLayoutInfo},
-    utils::{calculate_text_position, calculate_text_size, get_card_font_size, get_card_layout},
+    utils::{
+        calculate_text_position, calculate_text_size, get_card_font_size, get_card_layout,
+        get_mana_symbol_color,
+    },
 };
 use bevy::prelude::*;
 
-/// Creates a text entity for mana cost
+/// Creates a text entity for mana cost with colored mana symbols
 pub fn create_mana_cost_text(
     commands: &mut Commands,
     content: &crate::text::components::CardTextContent,
@@ -25,42 +28,91 @@ pub fn create_mana_cost_text(
     // Font size for mana symbols
     let font_size = 25.0;
 
-    // Format mana cost for the Mana font
-    // The font requires the mana symbols to remain in their braced format {W}, {U}, etc.
-    let mana_text = content.mana_cost.clone();
-
     // Position the mana cost correctly
     let mana_position = Vec2::new(
         layout.mana_cost_x_offset * card_size.x,
         layout.mana_cost_y_offset * card_size.y,
     );
 
-    // Create the text entity with high z-index
-    commands
-        .spawn(CardTextBundle {
-            text_2d: Text2d::new(mana_text.clone()),
-            transform: Transform::from_translation(Vec3::new(
+    // Extract individual mana symbols from the mana cost
+    let mana_cost = content.mana_cost.clone();
+    let mut symbols = Vec::new();
+    let mut current_symbol = String::new();
+    let mut inside_brace = false;
+
+    for c in mana_cost.chars() {
+        match c {
+            '{' => {
+                inside_brace = true;
+                current_symbol.push(c);
+            }
+            '}' => {
+                inside_brace = false;
+                current_symbol.push(c);
+                symbols.push(current_symbol.clone());
+                current_symbol.clear();
+            }
+            _ => {
+                if inside_brace {
+                    current_symbol.push(c);
+                }
+            }
+        }
+    }
+
+    // Create the parent container entity
+    let parent_entity = commands
+        .spawn((
+            // Empty root text element
+            Text2d::new(""),
+            Transform::from_translation(Vec3::new(
                 mana_position.x,
                 mana_position.y,
                 1.0, // High z-index
             )),
-            global_transform: GlobalTransform::default(),
-            text_font: TextFont {
-                font: mana_font.clone(),
-                font_size,
-                ..default()
-            },
-            text_color: TextColor(Color::rgba(0.0, 0.0, 0.0, 1.0)), // Black text
-            text_layout: TextLayout::new_with_justify(JustifyText::Right), // Right-justified
-            card_text_type: CardTextType::ManaCost,
-            text_layout_info: TextLayoutInfo {
+            GlobalTransform::default(),
+            TextLayout::new_with_justify(JustifyText::Right), // Right-justified
+            CardTextType::ManaCost,
+            TextLayoutInfo {
                 position: card_pos + mana_position,
                 size: Vec2::new(card_size.x * 0.3, card_size.y * 0.1),
                 alignment: JustifyText::Right,
             },
-            name: Name::new(format!("Mana Cost: {}", mana_text)),
-        })
-        .id()
+            Name::new(format!("Mana Cost: {}", content.mana_cost)),
+        ))
+        .id();
+
+    // The spacing value between mana symbols
+    let symbol_width = font_size * 0.8;
+    let num_symbols = symbols.len() as f32;
+    let total_width = symbol_width * num_symbols;
+
+    // Add each mana symbol as its own entity with correct positioning
+    for (i, symbol) in symbols.iter().enumerate() {
+        let symbol_color = get_mana_symbol_color(symbol);
+
+        // Change how we position the mana symbols with sequential placement
+        // The horizontal offset is calculated to place each symbol correctly
+        let horizontal_offset =
+            -(total_width / 2.0) + (i as f32 * symbol_width) + (symbol_width / 2.0);
+
+        commands
+            .spawn((
+                TextSpan::default(),
+                Text2d::new(symbol.clone()),
+                TextColor(symbol_color),
+                TextFont {
+                    font: mana_font.clone(),
+                    font_size,
+                    ..default()
+                },
+                // Position each symbol with a specific offset
+                Transform::from_translation(Vec3::new(horizontal_offset, 0.0, 0.0)),
+            ))
+            .set_parent(parent_entity);
+    }
+
+    parent_entity
 }
 
 /// System implementation that finds cards and creates mana cost text for them
