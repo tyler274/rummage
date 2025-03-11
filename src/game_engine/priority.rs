@@ -1,7 +1,8 @@
 use crate::game_engine::GameStack;
-use crate::game_engine::Phase;
 use crate::game_engine::state::GameState;
-use crate::menu::GameMenuState;
+use crate::game_engine::turns::TurnManager;
+use crate::game_engine::{Phase, PhaseState};
+use crate::menu::state::GameMenuState;
 use bevy::prelude::*;
 use std::collections::VecDeque;
 
@@ -109,7 +110,7 @@ pub fn priority_system(
     mut priority: ResMut<PrioritySystem>,
     mut game_state: ResMut<GameState>,
     stack: Res<GameStack>,
-    phase: Res<Phase>,
+    phase_state: Res<PhaseState>,
     // This would also interact with any pending game actions
 ) {
     // Update stack empty status
@@ -120,7 +121,7 @@ pub fn priority_system(
 
     // If in a phase that auto-passes when empty and the stack is empty,
     // automatically pass priority
-    if phase.auto_pass_if_empty() && stack.is_empty() {
+    if phase_state.current_phase.auto_pass_if_empty() && stack.is_empty() {
         // Auto-pass for all players
         for _ in 0..priority.priority_queue.len() {
             priority.pass_priority();
@@ -131,4 +132,13 @@ pub fn priority_system(
     // - Handle player input for passing priority
     // - Process priority passing after spell casts or ability activations
     // - Handle automatic priority passing for certain game situations
+}
+
+/// System to handle priority passing
+pub fn handle_priority_passing(
+    _commands: Commands,
+    mut priority_system: ResMut<PrioritySystem>,
+    mut turn_manager: ResMut<TurnManager>,
+) {
+    // Implementation will be added later
 }

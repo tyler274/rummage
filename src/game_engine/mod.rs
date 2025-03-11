@@ -23,7 +23,8 @@ pub use state::*;
 pub use turns::*;
 pub use zones::*;
 
-use crate::menu::{GameMenuState, state::StateTransitionContext};
+use crate::menu::state::GameMenuState;
+use crate::menu::state::StateTransitionContext;
 use crate::player::Player;
 use bevy::prelude::*;
 
@@ -55,7 +56,12 @@ impl Plugin for GameEnginePlugin {
             .add_event::<CreatureAttacksEvent>()
             .add_event::<CreatureBlocksEvent>()
             .add_event::<CreatureBlockedEvent>()
-            .add_event::<CombatDamageCompleteEvent>();
+            .add_event::<CombatDamageCompleteEvent>()
+            .add_event::<PhaseTransitionEvent>()
+            .add_event::<politics::PoliticsEvent>()
+            .add_event::<politics::VoteEvent>()
+            .add_event::<politics::MonarchChangeEvent>()
+            .add_event::<politics::InitiativeChangeEvent>();
 
         // Add game resources initialization during OnEnter(GameMenuState::InGame)
         app.add_systems(OnEnter(GameMenuState::InGame), setup_game_engine);
@@ -165,7 +171,7 @@ fn setup_game_engine(
     let players: Vec<Entity> = player_query.iter().collect();
 
     // Initialize the phase system starting at Beginning::Untap
-    commands.insert_resource(Phase::Beginning(BeginningStep::Untap));
+    commands.insert_resource(PhaseState::default());
 
     // Initialize the priority system (no player has priority at start)
     commands.insert_resource(PrioritySystem::default());

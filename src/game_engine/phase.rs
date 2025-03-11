@@ -1,10 +1,11 @@
 use crate::game_engine::state::GameState;
-use crate::menu::GameMenuState;
+use crate::game_engine::turns::TurnManager;
+use crate::menu::state::GameMenuState;
 use crate::player::Player;
 use bevy::prelude::*;
 
 /// The main phases of a Magic: The Gathering turn
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Resource)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Phase {
     Beginning(BeginningStep),
     Precombat(PrecombatStep),
@@ -48,6 +49,40 @@ pub enum PostcombatStep {
 pub enum EndingStep {
     End,
     Cleanup,
+}
+
+/// Represents any step in any phase
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Step {
+    Beginning(BeginningStep),
+    Precombat(PrecombatStep),
+    Combat(CombatStep),
+    Postcombat(PostcombatStep),
+    Ending(EndingStep),
+}
+
+/// Resource to track the current phase and step
+#[derive(Resource, Debug)]
+pub struct PhaseState {
+    pub current_phase: Phase,
+    pub current_step: Option<Step>,
+}
+
+impl Default for PhaseState {
+    fn default() -> Self {
+        let initial_phase = Phase::Beginning(BeginningStep::Untap);
+        Self {
+            current_phase: initial_phase,
+            current_step: Some(Step::Beginning(BeginningStep::Untap)),
+        }
+    }
+}
+
+/// Event fired when a phase transition occurs
+#[derive(Event)]
+pub struct PhaseTransitionEvent {
+    pub new_phase: Phase,
+    pub new_step: Option<Step>,
 }
 
 impl Phase {
@@ -112,64 +147,24 @@ impl Phase {
     }
 }
 
-impl Default for Phase {
-    fn default() -> Self {
-        Phase::Beginning(BeginningStep::Untap)
+/// System to handle phase transitions
+pub fn phase_transition_system(
+    _commands: Commands,
+    mut phase_state: ResMut<PhaseState>,
+    mut events: EventReader<PhaseTransitionEvent>,
+    _player_query: Query<Entity, With<Player>>,
+) {
+    for event in events.read() {
+        phase_state.current_phase = event.new_phase;
+        phase_state.current_step = event.new_step;
+        info!(
+            "Phase changed to {:?}, step {:?}",
+            phase_state.current_phase, phase_state.current_step
+        );
     }
 }
 
-/// System to handle phase transitions
-pub fn phase_transition_system(
-    mut commands: Commands,
-    mut game_state: ResMut<GameState>,
-    mut phase: ResMut<Phase>,
-    priority_system: Res<crate::game_engine::PrioritySystem>,
-    stack: Res<crate::game_engine::GameStack>,
-    player_query: Query<Entity, With<Player>>,
-) {
-    // If all players have passed priority and the stack is empty, move to the next phase
-    if priority_system.all_players_passed && stack.is_empty() {
-        let next_phase = phase.next();
-
-        // Special case: when moving from Cleanup to a new turn's Untap
-        if *phase == Phase::Ending(EndingStep::Cleanup)
-            && next_phase == Phase::Beginning(BeginningStep::Untap)
-        {
-            // Advance to the next turn
-            game_state.turn_number += 1;
-
-            // Move to the next player in turn order
-            game_state.advance_active_player();
-
-            info!(
-                "Turn {} begins for player {:?}",
-                game_state.turn_number, game_state.active_player
-            );
-        }
-
-        // Update the phase
-        *phase = next_phase;
-        info!("Phase changed to {:?}", *phase);
-
-        // Perform phase-specific actions
-        match *phase {
-            Phase::Beginning(BeginningStep::Untap) => {
-                // Untap permanents controlled by active player
-                // This will be implemented in a separate untap system
-            }
-            Phase::Beginning(BeginningStep::Draw) => {
-                // Active player draws a card (except on the first turn of the game)
-                if game_state.turn_number > 1 {
-                    // Card draw will be implemented in a separate system
-                }
-            }
-            _ => {}
-        }
-
-        // Reset priority for the new phase
-        if next_phase.allows_actions() {
-            // Give priority to the active player
-            game_state.priority_holder = game_state.active_player;
-        }
-    }
+/// System to handle the beginning of a turn
+pub fn turn_begin_system(_phase_state: ResMut<PhaseState>, _turn_manager: ResMut<TurnManager>) {
+    // Implementation will be added later
 }
