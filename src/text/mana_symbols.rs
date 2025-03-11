@@ -1,3 +1,4 @@
+use crate::mana::mana_symbol_to_char;
 use crate::text::utils::get_mana_symbol_color;
 use bevy::prelude::*;
 
@@ -37,6 +38,9 @@ pub fn render_mana_symbol(
     let symbol_color = get_mana_symbol_color(symbol);
     let pos_3d = Vec3::new(position.x, position.y, options.z_index);
 
+    // Convert the symbol to the appropriate character for the Mana font
+    let display_symbol = mana_symbol_to_char(symbol);
+
     // Apply vertical alignment offset if specified
     let aligned_pos = if options.vertical_alignment_offset != 0.0 {
         Vec3::new(
@@ -50,13 +54,13 @@ pub fn render_mana_symbol(
 
     // Render drop shadow if enabled
     if options.with_shadow {
-        let shadow_offset = Vec3::new(0.6, -0.6, 0.0);
-        let shadow_color = Color::srgba(0.0, 0.0, 0.0, 0.35);
+        let shadow_offset = Vec3::new(1.5, -1.5, 0.0);
+        let shadow_color = Color::srgba(0.0, 0.0, 0.0, 0.8);
 
         commands
             .spawn((
                 TextSpan::default(),
-                Text2d::new(symbol.to_string()),
+                Text2d::new(display_symbol.clone()),
                 TextFont {
                     font: mana_font.clone(),
                     font_size: options.font_size,
@@ -74,7 +78,7 @@ pub fn render_mana_symbol(
     commands
         .spawn((
             TextSpan::default(),
-            Text2d::new(symbol.to_string()),
+            Text2d::new(display_symbol),
             TextFont {
                 font: mana_font.clone(),
                 font_size: options.font_size,
@@ -97,13 +101,19 @@ pub fn is_valid_mana_symbol(symbol: &str) -> bool {
         return false;
     }
 
-    let inner = &symbol[1..symbol.len() - 1];
-    match inner {
-        "W" | "U" | "B" | "R" | "G" | "C" | "T" => true,
-        "X" => true,
-        _ => {
-            // Check if it's a numeric generic mana cost
-            inner.parse::<u32>().is_ok()
+    // Use our constant mapping to validate symbols
+    use crate::mana::MANA_SYMBOLS;
+    for (key, _) in MANA_SYMBOLS {
+        if *key == symbol {
+            return true;
         }
     }
+
+    // Generic check for numbers that may not be in our map
+    let inner = &symbol[1..symbol.len() - 1];
+    if inner.parse::<u32>().is_ok() {
+        return true;
+    }
+
+    false
 }

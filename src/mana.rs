@@ -18,7 +18,7 @@ use std::fmt;
 /// using the Mana font. The font expects the braced symbols as input and renders them
 /// as the appropriate mana symbols.
 ///
-pub const _MANA_SYMBOLS: &[(&str, char)] = &[
+pub const MANA_SYMBOLS: &[(&str, char)] = &[
     ("{W}", 'w'),  // White mana
     ("{U}", 'u'),  // Blue mana
     ("{B}", 'b'),  // Black mana
@@ -36,8 +36,18 @@ pub const _MANA_SYMBOLS: &[(&str, char)] = &[
     ("{8}", '8'),  // Eight generic mana
     ("{9}", '9'),  // Nine generic mana
     ("{10}", 'a'), // Ten generic mana
+    ("{11}", 'b'), // Eleven generic mana
+    ("{12}", 'c'), // Twelve generic mana
+    ("{13}", 'd'), // Thirteen generic mana
+    ("{14}", 'e'), // Fourteen generic mana
+    ("{15}", 'f'), // Fifteen generic mana
+    ("{16}", 'g'), // Sixteen generic mana
+    ("{20}", 'h'), // Twenty generic mana
     ("{X}", 'x'),  // Variable mana
+    ("{Y}", 'y'),  // Variable mana Y
+    ("{Z}", 'z'),  // Variable mana Z
     ("{T}", 't'),  // Tap symbol
+    ("{Q}", 'q'),  // Untap symbol
 ];
 
 /// Converts a mana symbol string to its font character representation.
@@ -48,16 +58,17 @@ pub const _MANA_SYMBOLS: &[(&str, char)] = &[
 /// # Arguments
 /// * `symbol` - The mana symbol to convert (e.g., "{W}", "{2}")
 ///
-/// # Returns
-/// The symbol string unchanged, as the Mana font handles the conversion internally.
-///
-/// # Examples
-/// ```
-/// use rummage::mana::mana_symbol_to_char;
-/// assert_eq!(mana_symbol_to_char("{W}"), "{W}");
-/// ```
-pub fn _mana_symbol_to_char(symbol: &str) -> String {
-    // Keep the braces around the symbol for proper font rendering
+pub fn mana_symbol_to_char(symbol: &str) -> String {
+    let cleaned = symbol.trim();
+    
+    // Check if we have a direct mapping
+    for (key, val) in MANA_SYMBOLS {
+        if key == &cleaned {
+            return val.to_string();
+        }
+    }
+    
+    // If no match found, just return the original
     symbol.to_string()
 }
 

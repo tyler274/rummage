@@ -20,7 +20,7 @@ pub fn get_green_cards() -> Vec<Card> {
                 toughness: 1,
                 creature_type: CreatureType::NONE,
             }),
-            rules_text: "Flying\nTap: Add one mana of any color.".to_string(),
+            rules_text: "Flying\n{T}: Add one mana of any color.".to_string(),
         },
         Card {
             name: "Llanowar Elves".to_string(),
@@ -39,7 +39,7 @@ pub fn get_green_cards() -> Vec<Card> {
                 toughness: 1,
                 creature_type: CreatureType::NONE,
             }),
-            rules_text: "Tap: Add {G}.".to_string(),
+            rules_text: "{T}: Add {G}.".to_string(),
         },
         Card {
             name: "Tarmogoyf".to_string(),

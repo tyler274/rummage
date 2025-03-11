@@ -78,8 +78,9 @@ pub fn spawn_rules_text(
     let mut current_x = 0.0;
     let mut current_line = 0;
     let line_height = font_size * 1.2; // Line height with some spacing
+    let mut new_line_started = true; // Track if we're at the start of a line
 
-    for (segment, is_mana_symbol) in segments {
+    for (idx, (segment, is_mana_symbol)) in segments.iter().enumerate() {
         // Skip empty segments
         if segment.is_empty() {
             continue;
@@ -89,34 +90,64 @@ pub fn spawn_rules_text(
         if segment == "\n" {
             current_x = 0.0;
             current_line += 1;
+            new_line_started = true;
             continue;
         }
 
         // Calculate Y position based on current line
         let y_pos = -current_line as f32 * line_height;
 
-        if is_mana_symbol {
+        if *is_mana_symbol {
             // This is a mana symbol - use our unified rendering function
             let mana_options = ManaSymbolOptions {
                 font_size,
-                vertical_alignment_offset: font_size * 0.15, // Adjust to align with text baseline
+                vertical_alignment_offset: font_size * 0.2, // Adjusted for better baseline alignment
                 z_index: 0.1,
                 with_shadow: true,
             };
 
+            // Special alignment adjustment for different mana symbols
+            let extra_horizontal_offset = if segment == "{R}" {
+                font_size * 0.1 // Adjusted offset for red mana
+            } else if segment == "{G}" {
+                font_size * 0.05 // Small adjustment for green mana
+            } else {
+                0.0
+            };
+
             render_mana_symbol(
                 commands,
-                &segment,
-                Vec2::new(current_x, y_pos),
+                segment,
+                Vec2::new(current_x + extra_horizontal_offset, y_pos),
                 mana_font.clone(),
                 mana_options,
                 parent_entity,
             );
 
             // Advance X position using our standardized function
-            current_x += get_mana_symbol_width(font_size);
+            current_x += get_mana_symbol_width(font_size) + extra_horizontal_offset;
+            new_line_started = false;
+
+            // Check if next segment starts with a colon (part of an activated ability)
+            // We won't add extra spacing in that case
+            let is_part_of_ability = segments
+                .get(idx + 1)
+                .map(|(next_text, _)| next_text.starts_with(':'))
+                .unwrap_or(false);
+
+            if !is_part_of_ability {
+                current_x += font_size * 0.05; // Small spacing after standalone mana symbols
+            }
         } else {
             // This is regular text - use regular font
+
+            // Special case for ability text that starts with a colon
+            let colon_adjustment = if segment.starts_with(':') {
+                -font_size * 0.1 // Move colon slightly closer to mana symbol
+            } else {
+                0.0
+            };
+
             commands
                 .spawn((
                     TextSpan::default(),
@@ -127,20 +158,33 @@ pub fn spawn_rules_text(
                         ..default()
                     },
                     TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
-                    // Position at current_x
-                    Transform::from_translation(Vec3::new(current_x, y_pos, 0.0)),
+                    // Position at current_x with potential colon adjustment
+                    Transform::from_translation(Vec3::new(
+                        current_x + colon_adjustment,
+                        y_pos,
+                        0.0,
+                    )),
                 ))
                 .set_parent(parent_entity);
 
             // Approximately calculate width based on character count and font size
             // Add a bit more precision for different character widths
             let char_width_factor = if segment.contains(':') {
-                0.4 // Make colons narrower for better spacing in "{R}: effect" constructs
+                0.45 // Make colons narrower for better spacing in "{R}: effect" constructs
+            } else if segment.trim().is_empty() {
+                0.25 // Very narrow for spaces and whitespace
+            } else if segment.trim() == ":" {
+                0.3 // Even narrower for isolated colons
             } else {
                 0.5 // Standard spacing for regular text
             };
 
             current_x += segment.chars().count() as f32 * (font_size * char_width_factor);
+
+            // Add extra space after colon to improve readability of ability costs
+            if segment.contains(':') {
+                current_x += font_size * 0.15; // Increased extra space after colons
+            }
         }
     }
 
@@ -150,69 +194,235 @@ pub fn spawn_rules_text(
 /// Parse text into segments, identifying mana symbols and regular text
 fn parse_text_with_mana_symbols(text: &str) -> Vec<(String, bool)> {
     let mut segments = Vec::new();
-    let mut current_text = String::new();
-    let mut i = 0;
 
-    // Special case for known MTG symbols in text, like {R}:
-    // Look for pattern like "{R}:" which is a cost symbol followed by colon
+    // First, check if the text contains an activated ability pattern like "{R}:"
+    if let Some(ability_matches) = find_activated_abilities(text) {
+        // Text contains one or more activated abilities
+        let mut current_pos = 0;
 
-    while i < text.len() {
-        if i + 1 < text.len() && text[i..i + 1] == *"{" {
-            // Possible start of a mana symbol
-
-            // First, add any accumulated text
-            if !current_text.is_empty() {
-                segments.push((current_text.clone(), false));
-                current_text.clear();
-            }
-
-            // Find the end of the potential symbol
-            let mut j = i + 1;
-            let mut valid_symbol = false;
-
-            while j < text.len() && text[j..j + 1] != *"}" {
-                j += 1;
-            }
-
-            if j < text.len() {
-                // We found a closing brace
-                let symbol = &text[i..=j];
-
-                if is_valid_mana_symbol(symbol) {
-                    // This is a valid mana symbol
-                    segments.push((symbol.to_string(), true));
-                    valid_symbol = true;
-                    i = j + 1;
+        for (start, end) in ability_matches {
+            // Add any text before this ability
+            if start > current_pos {
+                let before_text = &text[current_pos..start];
+                if !before_text.is_empty() {
+                    segments.extend(split_regular_text(before_text));
                 }
             }
 
-            if !valid_symbol {
-                // Not a valid symbol, just add the opening brace as text
-                current_text.push('{');
-                i += 1;
-            }
-        } else if text[i..i + 1] == *"\n" {
-            // Handle line breaks specially
+            // Extract the ability text
+            let ability_text = &text[start..end];
 
-            // Add any accumulated text first
-            if !current_text.is_empty() {
-                segments.push((current_text.clone(), false));
-                current_text.clear();
+            // Process the ability - first find the mana symbol
+            if let Some(symbol_end) = ability_text.find('}') {
+                // Add a newline before the mana symbol if it's not at the beginning of the text
+                // and the previous character isn't already a newline
+                let needs_newline = start > 0 && !text[start - 1..start].contains('\n');
+                if needs_newline {
+                    segments.push(("\n".to_string(), false));
+                }
+
+                // Get the symbol
+                let symbol = &ability_text[0..symbol_end + 1];
+
+                // Handle mana symbol positioning - we want it left-aligned
+                segments.push((symbol.to_string(), true)); // Add mana symbol
+
+                // Handle the text after the mana symbol until the colon
+                let after_symbol = &ability_text[symbol_end + 1..];
+
+                // Find the colon
+                if let Some(colon_pos) = after_symbol.find(':') {
+                    // Add the colon with minimal spacing
+                    segments.push((":".to_string(), false));
+
+                    // Add the rest of the ability text after the colon
+                    if colon_pos + 1 < after_symbol.len() {
+                        let after_colon = &after_symbol[colon_pos + 1..];
+
+                        // Ensure proper spacing after the colon
+                        if after_colon.starts_with(' ') {
+                            segments.push((" ".to_string(), false)); // Add one space
+
+                            // Add the rest of the text without the space
+                            if after_colon.len() > 1 {
+                                segments.push((after_colon[1..].to_string(), false));
+                            }
+                        } else {
+                            segments.push((" ".to_string(), false)); // Add one space
+                            segments.push((after_colon.to_string(), false)); // Add the text
+                        }
+                    }
+                } else {
+                    // No colon found, just add the rest as is
+                    segments.push((after_symbol.to_string(), false));
+                }
             }
 
-            // Add the line break as a special segment
-            segments.push(("\n".to_string(), false));
-            i += 1;
+            current_pos = end;
+        }
+
+        // Add any remaining text after the last ability
+        if current_pos < text.len() {
+            let remaining = &text[current_pos..];
+            if !remaining.is_empty() {
+                segments.extend(split_regular_text(remaining));
+            }
+        }
+    } else {
+        // No activated abilities, just process normally
+        segments.extend(split_regular_text(text));
+    }
+
+    // Final pass to handle newlines separately
+    let mut final_segments = Vec::new();
+    for (segment, is_symbol) in segments {
+        if is_symbol {
+            final_segments.push((segment, true));
         } else {
-            // Regular character, add to current text
-            current_text.push_str(&text[i..i + 1]);
-            i += 1;
+            // For text segments, handle line breaks separately
+            let mut current_pos = 0;
+            while current_pos < segment.len() {
+                if let Some(nl_pos) = segment[current_pos..].find('\n') {
+                    // Add text before newline
+                    let before_nl = &segment[current_pos..current_pos + nl_pos];
+                    if !before_nl.is_empty() {
+                        final_segments.push((before_nl.to_string(), false));
+                    }
+
+                    // Add newline as separate segment
+                    final_segments.push(("\n".to_string(), false));
+
+                    current_pos += nl_pos + 1;
+                } else {
+                    // No more newlines, add the rest as a single segment
+                    let rest = &segment[current_pos..];
+                    if !rest.is_empty() {
+                        final_segments.push((rest.to_string(), false));
+                    }
+                    break;
+                }
+            }
         }
     }
 
-    // Add any remaining text
-    if !current_text.is_empty() {
-        segments.push((current_text, false));
+    final_segments
+}
+
+/// Find all occurrences of activated ability patterns like "{R}:" or "{T}:" in text
+fn find_activated_abilities(text: &str) -> Option<Vec<(usize, usize)>> {
+    let mut matches = Vec::new();
+    let mut i = 0;
+
+    while i < text.len() {
+        if let Some(start) = text[i..].find('{') {
+            let start_pos = i + start;
+
+            // Make sure we don't go out of bounds
+            if start_pos >= text.len() - 1 {
+                break;
+            }
+
+            // Look for the closing brace
+            if let Some(brace_end) = text[start_pos..].find('}') {
+                let brace_end_pos = start_pos + brace_end + 1;
+
+                // Make sure we don't go out of bounds
+                if brace_end_pos >= text.len() {
+                    i = start_pos + 1;
+                    continue;
+                }
+
+                // Check if this is a valid mana symbol or tap symbol
+                let symbol = &text[start_pos..brace_end_pos];
+                if !is_valid_mana_symbol(symbol) {
+                    i = start_pos + 1;
+                    continue;
+                }
+
+                // Look for a colon after the symbol (allowing for whitespace)
+                let after_brace = &text[brace_end_pos..];
+                let mut colon_pos = None;
+
+                // Look for the colon, allowing for whitespace
+                for (offset, ch) in after_brace.char_indices() {
+                    if ch == ':' {
+                        colon_pos = Some(offset);
+                        break;
+                    } else if !ch.is_whitespace() {
+                        // If we hit a non-whitespace character that's not a colon, this isn't an activated ability
+                        break;
+                    }
+                }
+
+                if let Some(colon_offset) = colon_pos {
+                    // This is an activated ability!
+                    let colon_pos = brace_end_pos + colon_offset;
+
+                    // Find the end of the ability (next period, newline, or end of text)
+                    let after_colon = &text[colon_pos + 1..];
+                    let ability_end = after_colon
+                        .find('.')
+                        .map(|p| p + 1)
+                        .unwrap_or_else(|| after_colon.find('\n').unwrap_or(after_colon.len()));
+
+                    matches.push((start_pos, colon_pos + 1 + ability_end));
+                    i = colon_pos + 1 + ability_end;
+                    continue;
+                }
+            }
+
+            // If we get here, we didn't find a complete ability at this position
+            i = start_pos + 1;
+        } else {
+            // No more opening braces
+            break;
+        }
+    }
+
+    if matches.is_empty() {
+        None
+    } else {
+        Some(matches)
+    }
+}
+
+/// Split regular text (non-ability text) into segments
+fn split_regular_text(text: &str) -> Vec<(String, bool)> {
+    let mut segments = Vec::new();
+    let mut i = 0;
+
+    while i < text.len() {
+        if let Some(start) = text[i..].find('{') {
+            let start_pos = i + start;
+
+            // Add text before the symbol if any
+            if start_pos > i {
+                segments.push((text[i..start_pos].to_string(), false));
+            }
+
+            // Find the closing brace
+            if let Some(end) = text[start_pos..].find('}') {
+                let end_pos = start_pos + end + 1;
+                let symbol = &text[start_pos..end_pos];
+
+                if is_valid_mana_symbol(symbol) {
+                    segments.push((symbol.to_string(), true));
+                } else {
+                    segments.push((symbol.to_string(), false));
+                }
+
+                i = end_pos;
+                continue;
+            } else {
+                // No closing brace - treat as regular text
+                segments.push((text[i..].to_string(), false));
+                break;
+            }
+        } else {
+            // No more symbols
+            segments.push((text[i..].to_string(), false));
+            break;
+        }
     }
 
     segments
