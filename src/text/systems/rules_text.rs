@@ -38,8 +38,11 @@ pub fn spawn_rules_text(
     let adjusted_font_size = base_font_size / text_length_factor.max(1.0);
     let font_size = get_card_font_size(card_size, adjusted_font_size);
 
-    // Format the rules text with proper line breaks
-    let formatted_text = format_rules_text(&content.rules_text);
+    // Calculate the maximum width for text in pixels
+    let max_text_width = text_size.x;
+
+    // Format the rules text with proper line breaks and wrapping
+    let formatted_text = format_rules_text(&content.rules_text, max_text_width, font_size);
 
     // Create text with Text2d component
     let entity = commands
@@ -59,6 +62,8 @@ pub fn spawn_rules_text(
             TextColor(Color::BLACK),
             // Use left alignment for better readability
             TextLayout::new_with_justify(JustifyText::Left),
+            // Add linebreak behavior to ensure text wrapping
+            TextLineBreak::default(),
             // Add our custom components
             CardTextType::RulesText,
             TextLayoutInfo {
@@ -74,25 +79,63 @@ pub fn spawn_rules_text(
     entity
 }
 
-/// Format rules text with proper line breaks and spacing
-fn format_rules_text(text: &str) -> String {
+/// Format rules text with proper line breaks, spacing, and wrapping
+fn format_rules_text(text: &str, max_width: f32, font_size: f32) -> String {
     // Split by existing line breaks
-    let lines: Vec<&str> = text.split('\n').collect();
+    let paragraphs: Vec<&str> = text.split('\n').collect();
 
-    // Process each line to ensure proper width
-    let mut formatted_lines = Vec::new();
+    // Process each paragraph to ensure proper width
+    let mut formatted_paragraphs = Vec::new();
 
-    for line in lines {
-        // Skip empty lines
-        if line.trim().is_empty() {
-            formatted_lines.push(String::new());
+    for paragraph in paragraphs {
+        // Skip empty paragraphs
+        if paragraph.trim().is_empty() {
+            formatted_paragraphs.push(String::new());
             continue;
         }
 
-        // Add the line with proper spacing
-        formatted_lines.push(line.trim().to_string());
+        // Estimate characters per line based on font size and max width
+        // This is an approximation - actual text rendering may vary
+        let avg_char_width = font_size * 0.5; // Approximate width of a character
+        let chars_per_line = (max_width / avg_char_width).floor() as usize;
+
+        if chars_per_line <= 0 {
+            // If the line is too narrow, just add the paragraph as is
+            formatted_paragraphs.push(paragraph.trim().to_string());
+            continue;
+        }
+
+        // Perform manual word wrapping
+        let words: Vec<&str> = paragraph.split_whitespace().collect();
+        let mut current_line = String::new();
+        let mut current_line_length = 0;
+
+        for word in words {
+            let word_length = word.len();
+
+            // Check if adding this word would exceed the line length
+            if current_line_length + word_length + 1 > chars_per_line && !current_line.is_empty() {
+                // Line would be too long, add the current line to formatted lines
+                formatted_paragraphs.push(current_line.trim().to_string());
+                current_line = word.to_string();
+                current_line_length = word_length;
+            } else {
+                // Add word to current line
+                if !current_line.is_empty() {
+                    current_line.push(' ');
+                    current_line_length += 1;
+                }
+                current_line.push_str(word);
+                current_line_length += word_length;
+            }
+        }
+
+        // Add the last line if it's not empty
+        if !current_line.is_empty() {
+            formatted_paragraphs.push(current_line.trim().to_string());
+        }
     }
 
-    // Join lines with line breaks
-    formatted_lines.join("\n")
+    // Join paragraphs with line breaks
+    formatted_paragraphs.join("\n")
 }

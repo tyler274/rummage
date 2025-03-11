@@ -52,8 +52,8 @@ impl Default for CardTextLayout {
             // Adjusted to better match standard Magic card layout
             text_box_y_offset: -0.05, // Moved up slightly
             text_box_height: 0.45,    // Increased height for more text space
-            text_box_width: 0.8,      // Slightly narrower for better margins
-            text_box_padding: 0.03,   // Padding inside the text box
+            text_box_width: 0.75,     // Narrower to ensure text stays within card boundaries
+            text_box_padding: 0.05,   // Increased padding for better margins
 
             // Power/toughness box (bottom right corner)
             pt_x_offset: 0.35,
