@@ -98,8 +98,8 @@ pub fn spawn_card_text(
                 commands.entity(card_entity).add_child(pt_entity);
             }
 
-            // Spawn debug visualization if enabled
-            if let Some(debug_config) = &debug_config {
+            // Add debug visualization if enabled
+            if let Some(debug_config) = debug_config.as_ref() {
                 if debug_config.show_text_positions {
                     let debug_entity = spawn_debug_visualization(
                         &mut commands,
@@ -110,69 +110,41 @@ pub fn spawn_card_text(
                     commands.entity(card_entity).add_child(debug_entity);
                 }
             }
+
+            // Mark the text content as spawned
+            commands.entity(card_entity).insert(SpawnedText);
         }
     }
 
-    // Process text content entities with parents
-    for (text_entity, text_content, parent) in text_content_query.iter() {
+    // Process text content entities
+    for (text_entity, content, parent) in text_content_query.iter() {
         let parent_entity = parent.get();
-        info!(
-            "Processing text content entity {:?} with parent {:?}",
-            text_entity, parent_entity
-        );
-
-        if let Ok((card_entity, card_transform, card_sprite, _card)) = card_query.get(parent_entity)
-        {
-            info!(
-                "Found card transform and sprite for parent entity {:?}",
-                parent_entity
-            );
-
+        if let Ok((_, card_transform, card_sprite, _)) = card_query.get(parent_entity) {
             let card_size = card_sprite.custom_size.unwrap_or(Vec2::ONE);
             let card_pos = card_transform.translation.truncate();
 
             // Spawn name text
-            let name_entity = spawn_name_text(
-                &mut commands,
-                text_content,
-                card_pos,
-                card_size,
-                &asset_server,
-            );
-            commands.entity(text_entity).add_child(name_entity);
+            let name_entity =
+                spawn_name_text(&mut commands, content, card_pos, card_size, &asset_server);
+            commands.entity(parent_entity).add_child(name_entity);
 
             // Spawn mana cost text
-            let mana_cost_entity = spawn_mana_cost_text(
-                &mut commands,
-                text_content,
-                card_pos,
-                card_size,
-                &asset_server,
-            );
-            commands.entity(text_entity).add_child(mana_cost_entity);
+            let mana_cost_entity =
+                spawn_mana_cost_text(&mut commands, content, card_pos, card_size, &asset_server);
+            commands.entity(parent_entity).add_child(mana_cost_entity);
 
             // Spawn type line text
-            let type_line_entity = spawn_type_line_text(
-                &mut commands,
-                text_content,
-                card_pos,
-                card_size,
-                &asset_server,
-            );
-            commands.entity(text_entity).add_child(type_line_entity);
+            let type_line_entity =
+                spawn_type_line_text(&mut commands, content, card_pos, card_size, &asset_server);
+            commands.entity(parent_entity).add_child(type_line_entity);
 
             // Spawn rules text
-            let rules_text_entity = spawn_rules_text(
-                &mut commands,
-                text_content,
-                card_pos,
-                card_size,
-                &asset_server,
-            );
-            commands.entity(text_entity).add_child(rules_text_entity);
+            let rules_text_entity =
+                spawn_rules_text(&mut commands, content, card_pos, card_size, &asset_server);
+            commands.entity(parent_entity).add_child(rules_text_entity);
 
-            // Spawn power/toughness text if it exists
-            if let Some(pt) = &text_content.power_toughness {
+            // Spawn power/toughness text if applicable
+            if let Some(pt) = &content.power_toughness {
                 let pt_entity = spawn_power_toughness_text(
                     &mut commands,
                     pt,
@@ -180,14 +152,11 @@ pub fn spawn_card_text(
                     card_size,
                     &asset_server,
                 );
-                commands.entity(text_entity).add_child(pt_entity);
+                commands.entity(parent_entity).add_child(pt_entity);
             }
 
-            // Mark as spawned
-            commands.entity(text_entity).insert(SpawnedText);
-
             // Add debug visualization if enabled
-            if let Some(debug_config) = &debug_config {
+            if let Some(debug_config) = debug_config.as_ref() {
                 if debug_config.show_text_positions {
                     let debug_entity = spawn_debug_visualization(
                         &mut commands,
@@ -195,9 +164,12 @@ pub fn spawn_card_text(
                         card_size,
                         &asset_server,
                     );
-                    commands.entity(card_entity).add_child(debug_entity);
+                    commands.entity(parent_entity).add_child(debug_entity);
                 }
             }
+
+            // Mark the text content as spawned
+            commands.entity(text_entity).insert(SpawnedText);
         } else {
             warn!(
                 "Could not find card transform and sprite for parent entity {:?}",
@@ -218,18 +190,22 @@ fn spawn_name_text(
     let text_pos = card_pos + Vec2::new(-card_size.x * 0.3, card_size.y * 0.4);
     let text_size = Vec2::new(card_size.x * 0.7, card_size.y * 0.2);
 
-    // Create a simple sprite with the card name as a label
+    // Create text with Text2d component
     let entity = commands
         .spawn((
-            // Use Sprite component directly
-            Sprite {
-                color: Color::rgba(1.0, 1.0, 1.0, 0.0), // Transparent sprite
-                custom_size: Some(text_size),
-                ..default()
-            },
+            // Text2d component
+            Text2d::new(content.name.clone()),
             // Add transform for positioning
             Transform::from_translation(text_pos.extend(10.0)),
             GlobalTransform::default(),
+            // Add text styling
+            TextFont {
+                font: asset_server.load("fonts/DejaVuSans-Bold.ttf"),
+                font_size: card_size.y * 0.1,
+                ..default()
+            },
+            TextColor(Color::BLACK),
+            TextLayout::new_with_justify(JustifyText::Left),
             // Add our custom components
             CardTextType::Name,
             TextLayoutInfo {
@@ -256,18 +232,22 @@ fn spawn_mana_cost_text(
     let text_pos = card_pos + Vec2::new(card_size.x * 0.3, card_size.y * 0.4);
     let text_size = Vec2::new(card_size.x * 0.3, card_size.y * 0.2);
 
-    // Create a simple sprite with the mana cost as a label
+    // Create text with Text2d component
     let entity = commands
         .spawn((
-            // Use Sprite component directly
-            Sprite {
-                color: Color::rgba(1.0, 1.0, 1.0, 0.0), // Transparent sprite
-                custom_size: Some(text_size),
-                ..default()
-            },
+            // Text2d component
+            Text2d::new(content.mana_cost.clone()),
             // Add transform for positioning
             Transform::from_translation(text_pos.extend(10.0)),
             GlobalTransform::default(),
+            // Add text styling
+            TextFont {
+                font: asset_server.load("fonts/DejaVuSans-Bold.ttf"),
+                font_size: card_size.y * 0.1,
+                ..default()
+            },
+            TextColor(Color::BLACK),
+            TextLayout::new_with_justify(JustifyText::Right),
             // Add our custom components
             CardTextType::ManaCost,
             TextLayoutInfo {
@@ -294,18 +274,22 @@ fn spawn_type_line_text(
     let text_pos = card_pos + Vec2::new(0.0, card_size.y * 0.1);
     let text_size = Vec2::new(card_size.x * 0.8, card_size.y * 0.1);
 
-    // Create a simple sprite with the type line as a label
+    // Create text with Text2d component
     let entity = commands
         .spawn((
-            // Use Sprite component directly
-            Sprite {
-                color: Color::rgba(1.0, 1.0, 1.0, 0.0), // Transparent sprite
-                custom_size: Some(text_size),
-                ..default()
-            },
+            // Text2d component
+            Text2d::new(content.type_line.clone()),
             // Add transform for positioning
             Transform::from_translation(text_pos.extend(10.0)),
             GlobalTransform::default(),
+            // Add text styling
+            TextFont {
+                font: asset_server.load("fonts/DejaVuSans-Bold.ttf"),
+                font_size: card_size.y * 0.08,
+                ..default()
+            },
+            TextColor(Color::BLACK),
+            TextLayout::new_with_justify(JustifyText::Center),
             // Add our custom components
             CardTextType::TypeLine,
             TextLayoutInfo {
@@ -329,21 +313,25 @@ fn spawn_rules_text(
     card_size: Vec2,
     asset_server: &AssetServer,
 ) -> Entity {
-    let text_pos = card_pos + Vec2::new(0.0, -card_size.y * 0.1);
+    let text_pos = card_pos + Vec2::new(0.0, -card_size.y * 0.15);
     let text_size = Vec2::new(card_size.x * 0.8, card_size.y * 0.3);
 
-    // Create a simple sprite with the rules text as a label
+    // Create text with Text2d component
     let entity = commands
         .spawn((
-            // Use Sprite component directly
-            Sprite {
-                color: Color::rgba(1.0, 1.0, 1.0, 0.0), // Transparent sprite
-                custom_size: Some(text_size),
-                ..default()
-            },
+            // Text2d component
+            Text2d::new(content.rules_text.clone()),
             // Add transform for positioning
             Transform::from_translation(text_pos.extend(10.0)),
             GlobalTransform::default(),
+            // Add text styling
+            TextFont {
+                font: asset_server.load("fonts/DejaVuSans-Bold.ttf"),
+                font_size: card_size.y * 0.07,
+                ..default()
+            },
+            TextColor(Color::BLACK),
+            TextLayout::new_with_justify(JustifyText::Center),
             // Add our custom components
             CardTextType::RulesText,
             TextLayoutInfo {
@@ -370,18 +358,22 @@ fn spawn_power_toughness_text(
     let text_pos = card_pos + Vec2::new(card_size.x * 0.3, -card_size.y * 0.4);
     let text_size = Vec2::new(card_size.x * 0.2, card_size.y * 0.1);
 
-    // Create a simple sprite with the power/toughness as a label
+    // Create text with Text2d component
     let entity = commands
         .spawn((
-            // Use Sprite component directly
-            Sprite {
-                color: Color::rgba(1.0, 1.0, 1.0, 0.0), // Transparent sprite
-                custom_size: Some(text_size),
-                ..default()
-            },
+            // Text2d component
+            Text2d::new(pt.to_string()),
             // Add transform for positioning
             Transform::from_translation(text_pos.extend(10.0)),
             GlobalTransform::default(),
+            // Add text styling
+            TextFont {
+                font: asset_server.load("fonts/DejaVuSans-Bold.ttf"),
+                font_size: card_size.y * 0.09,
+                ..default()
+            },
+            TextColor(Color::BLACK),
+            TextLayout::new_with_justify(JustifyText::Right),
             // Add our custom components
             CardTextType::PowerToughness,
             TextLayoutInfo {
@@ -410,7 +402,7 @@ fn spawn_debug_visualization(
     // Create a simple sprite for debug visualization
     let entity = commands
         .spawn((
-            // Use Sprite component directly
+            // Use Sprite component for visualization
             Sprite {
                 color: Color::rgba(1.0, 0.0, 0.0, 0.2), // Semi-transparent red
                 custom_size: Some(debug_size),
@@ -421,6 +413,7 @@ fn spawn_debug_visualization(
             GlobalTransform::default(),
             // Add our custom components
             CardTextType::Debug,
+            // Add a name for debugging
             Name::new("Debug Visualization"),
         ))
         .id();
