@@ -5,7 +5,8 @@ use crate::{
     card::Card,
     menu::{
         cleanup::{
-            cleanup_game, cleanup_main_menu, cleanup_menu_camera, cleanup_pause_menu, cleanup_star_of_david_thoroughly,
+            cleanup_game, cleanup_main_menu, cleanup_menu_camera, cleanup_pause_menu,
+            cleanup_star_of_david_thoroughly,
         },
         components::MenuItem,
         logo::{StarOfDavidPlugin, render_star_of_david},
@@ -140,13 +141,11 @@ pub fn setup_menu_camera(
     info!("Setting up menu camera");
     let entity = commands
         .spawn((
-            Camera2dBundle {
-                camera: Camera {
-                    order: 1,
-                    ..default()
-                },
+            Camera {
+                order: 1,
                 ..default()
             },
+            Camera2d,
             MenuCamera,
             AppLayer::menu_layers(),
             Name::new("Menu Camera"),

@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 
 use crate::text::{
-    components::{CardTextContent, CardTextType, TextLayoutInfo},
+    components::{
+        CardTextBundle, CardTextContent, CardTextStyleBundle, CardTextType, TextLayoutInfo,
+    },
     utils::{calculate_text_size, get_card_font_size, get_card_layout},
 };
 
@@ -44,36 +46,34 @@ pub fn spawn_rules_text(
     // Format the rules text with proper line breaks and wrapping
     let formatted_text = format_rules_text(&content.rules_text, max_text_width, font_size);
 
+    // Create text style bundle
+    let text_style = CardTextStyleBundle {
+        text_font: TextFont {
+            font: asset_server.load("fonts/DejaVuSans-Bold.ttf"),
+            font_size,
+            ..default()
+        },
+        text_color: TextColor(Color::BLACK),
+        text_layout: TextLayout::new_with_justify(JustifyText::Left),
+    };
+
     // Create text with Text2d component
     let entity = commands
-        .spawn((
-            // Text2d component with formatted text
-            Text2d::new(formatted_text),
-            // Use a relative transform instead of absolute world position
-            // The z value is relative to the parent (card)
-            Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.1)),
-            GlobalTransform::default(),
-            // Add text styling
-            TextFont {
-                font: asset_server.load("fonts/DejaVuSans-Bold.ttf"),
-                font_size,
-                ..default()
-            },
-            TextColor(Color::BLACK),
-            // Use left alignment for better readability
-            TextLayout::new_with_justify(JustifyText::Left),
-            // Add linebreak behavior to ensure text wrapping
-            TextLineBreak::default(),
-            // Add our custom components
-            CardTextType::RulesText,
-            TextLayoutInfo {
+        .spawn(CardTextBundle {
+            text_2d: Text2d::new(formatted_text),
+            transform: Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.1)),
+            global_transform: GlobalTransform::default(),
+            text_font: text_style.text_font,
+            text_color: text_style.text_color,
+            text_layout: text_style.text_layout,
+            card_text_type: CardTextType::RulesText,
+            text_layout_info: TextLayoutInfo {
                 position: card_pos + local_offset, // Store absolute position for reference
                 size: text_size,
                 alignment: JustifyText::Left,
             },
-            // Add a name for debugging
-            Name::new(format!("Rules Text: {}", content.rules_text)),
-        ))
+            name: Name::new(format!("Rules Text: {}", content.rules_text)),
+        })
         .id();
 
     entity
