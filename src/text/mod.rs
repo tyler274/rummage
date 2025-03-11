@@ -7,9 +7,9 @@
 //! - Debug visualization for text positions
 //! - Mana symbol rendering using the Mana font
 
-mod components;
-mod systems;
-mod utils;
+pub mod components;
+pub mod systems;
+pub mod utils;
 
 pub use components::*;
 pub use systems::*;
@@ -22,6 +22,6 @@ pub struct TextPlugin;
 
 impl Plugin for TextPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, systems::spawn_card_text);
+        app.add_systems(Update, systems::card_text::spawn_card_text);
     }
 }

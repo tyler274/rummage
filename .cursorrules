@@ -1,6 +1,6 @@
 Using Bevy 0.15.x APIs that aren't deprecated, we are implementing a robust end to end
 tested Magic the Gathering Commander format game engine.
-Text2dBundle, SpriteBundle, NodeBundle, etc are deprecated.
+Text2dBundle, SpriteBundle, NodeBundle, etc are deprecated for Text2d, Sprite, and Node respectively.
 Always check for and fix any compiler warnings and errors.
 After a code change check if there are no compiler warnings and errors.
 Stage all the changed files determined using "git status" with a descriptive commit message. 
