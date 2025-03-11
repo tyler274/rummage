@@ -54,7 +54,7 @@ pub fn spawn_debug_visualization(
         parent_entity,
     );
 
-    // Visualize rules text area
+    // Visualize rules text area - outer box (full text box)
     let rules_offset = Vec2::new(0.0, card_size.y * layout.text_box_y_offset);
     let rules_size = calculate_text_size(card_size, layout.text_box_width, layout.text_box_height);
     spawn_debug_box(
@@ -62,6 +62,21 @@ pub fn spawn_debug_visualization(
         rules_offset,
         rules_size,
         Color::srgba(1.0, 1.0, 0.0, 0.2),
+        parent_entity,
+    );
+
+    // Visualize rules text area - inner box (with padding)
+    let rules_inner_offset = Vec2::new(0.0, card_size.y * layout.text_box_y_offset);
+    let rules_inner_size = calculate_text_size(
+        card_size,
+        layout.text_box_width - (layout.text_box_padding * 2.0),
+        layout.text_box_height - (layout.text_box_padding * 2.0),
+    );
+    spawn_debug_box(
+        commands,
+        rules_inner_offset,
+        rules_inner_size,
+        Color::srgba(0.0, 0.5, 0.5, 0.3),
         parent_entity,
     );
 

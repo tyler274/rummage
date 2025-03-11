@@ -20,6 +20,7 @@ pub struct CardTextLayout {
     pub text_box_y_offset: f32,
     pub text_box_height: f32,
     pub text_box_width: f32,
+    pub text_box_padding: f32,
 
     // Power/toughness box region
     pub pt_x_offset: f32,
@@ -48,9 +49,11 @@ impl Default for CardTextLayout {
             type_line_width: 0.85,
 
             // Text box (middle ~55% of card)
-            text_box_y_offset: -0.1,
-            text_box_height: 0.35,
-            text_box_width: 0.85,
+            // Adjusted to better match standard Magic card layout
+            text_box_y_offset: -0.05, // Moved up slightly
+            text_box_height: 0.45,    // Increased height for more text space
+            text_box_width: 0.8,      // Slightly narrower for better margins
+            text_box_padding: 0.03,   // Padding inside the text box
 
             // Power/toughness box (bottom right corner)
             pt_x_offset: 0.35,
