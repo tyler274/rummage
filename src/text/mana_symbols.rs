@@ -50,7 +50,8 @@ pub fn render_mana_symbol(
         "{B}" => options.font_size * 0.05, // Slight adjustment for black mana
         "{W}" => options.font_size * 0.03, // Slight adjustment for white mana
         "{R}" => options.font_size * 0.04, // Slight adjustment for red mana
-        "{T}" => options.font_size * 0.08, // More significant adjustment for tap symbol
+        "{U}" => options.font_size * 0.03, // Adjustment for blue mana
+        "{T}" => options.font_size * 0.15, // Increased adjustment for tap symbol
         _ => 0.0,
     };
 

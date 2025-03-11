@@ -122,7 +122,7 @@ pub fn spawn_rules_text(
             // For tap symbol, add additional vertical alignment adjustment
             let tap_symbol_options = if segment == "{T}" {
                 ManaSymbolOptions {
-                    vertical_alignment_offset: font_size * 0.25, // Increased vertical alignment for tap
+                    vertical_alignment_offset: font_size * 0.35, // Increased vertical alignment for tap
                     ..mana_options
                 }
             } else {
@@ -396,7 +396,25 @@ fn find_activated_abilities(text: &str) -> Option<Vec<(usize, usize)>> {
                         .map(|p| p + 1)
                         .unwrap_or_else(|| after_colon.find('\n').unwrap_or(after_colon.len()));
 
-                    matches.push((start_pos, colon_pos + 1 + ability_end));
+                    // Special handling: if this is at the start of a line followed by newline,
+                    // or it's after a newline, capture from the start of the line
+                    let adjusted_start_pos = if start_pos > 0 {
+                        if let Some(nl_pos) = text[..start_pos].rfind('\n') {
+                            // There's a newline before this symbol, start after that newline
+                            nl_pos + 1
+                        } else if start_pos == i {
+                            // This is at the beginning of the text or current search position
+                            start_pos
+                        } else {
+                            // Keep the original position
+                            start_pos
+                        }
+                    } else {
+                        // This is at the very beginning of the text
+                        0
+                    };
+
+                    matches.push((adjusted_start_pos, colon_pos + 1 + ability_end));
                     i = colon_pos + 1 + ability_end;
                     continue;
                 }
