@@ -122,9 +122,6 @@ fn render_inline_mana_symbols(
     // Extract segments of text, separating mana symbols from regular text
     let segments = extract_mana_symbol_segments(line);
 
-    // Prepare a single text entity with all segments
-    let mut text = String::new();
-
     // Span the entire text to be rendered with the regular font first
     commands
         .spawn((

@@ -5,7 +5,10 @@ use crate::card::Card;
 use crate::text::{
     components::{CardTextBundle, CardTextType, TextLayoutInfo},
     mana_symbols::{ManaSymbolOptions, render_mana_symbol},
-    utils::{calculate_text_position, calculate_text_size, get_card_font_size, get_card_layout},
+    utils::{
+        calculate_text_position, calculate_text_size, get_card_font_size, get_card_layout,
+        get_mana_symbol_color,
+    },
 };
 
 /// Creates a text entity for mana cost with colored mana symbols
@@ -91,9 +94,10 @@ pub fn create_mana_cost_text(
     let mana_options = ManaSymbolOptions {
         font_size,
         vertical_alignment_offset: 0.0, // No baseline adjustment needed for mana cost
-        z_index: 0.1,
-        with_shadow: true,
+        z_index: 0.2,                   // Increased z-index so symbol appears above the circle
+        with_shadow: false,             // No shadow as we're adding a background circle
         alignment: JustifyText::Center,
+        with_colored_background: true, // Enable colored background circles for MTG style
     };
 
     // Add each mana symbol as its own entity with correct positioning
@@ -102,7 +106,7 @@ pub fn create_mana_cost_text(
         let horizontal_offset =
             -(total_width / 2.0) + (i as f32 * symbol_width) + (symbol_width / 2.0);
 
-        // Use the unified mana symbol renderer
+        // Use the unified mana symbol renderer with colored background
         render_mana_symbol(
             commands,
             symbol,

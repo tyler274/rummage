@@ -16,6 +16,8 @@ pub struct ManaSymbolOptions {
     pub with_shadow: bool,
     /// Text alignment for the mana symbol
     pub alignment: JustifyText,
+    /// Whether to render with colored circle background (MTG style)
+    pub with_colored_background: bool,
 }
 
 impl Default for ManaSymbolOptions {
@@ -26,6 +28,7 @@ impl Default for ManaSymbolOptions {
             z_index: 0.1,
             with_shadow: true,
             alignment: JustifyText::Center,
+            with_colored_background: false,
         }
     }
 }
@@ -72,6 +75,90 @@ pub fn render_mana_symbol(
         pos_3d.z,
     );
 
+    // If colored background option is enabled, add a circle
+    if options.with_colored_background {
+        // Make sure we're working with a clean symbol
+        let clean_symbol = symbol.trim();
+
+        // Determine background color based on symbol
+        let background_color = match clean_symbol {
+            "{W}" => Color::srgb(0.95, 0.95, 0.85), // White
+            "{U}" => Color::srgb(0.0, 0.2, 0.63),   // Blue - adjusted to match MTG blue
+            "{B}" => Color::srgb(0.15, 0.15, 0.15), // Black (not fully black for visibility)
+            "{R}" => Color::srgb(0.8, 0.15, 0.15),  // Red
+            "{G}" => Color::srgb(0.15, 0.7, 0.15),  // Green
+            "{C}" => Color::srgb(0.8, 0.8, 0.9),    // Colorless
+            _ => {
+                // For generic mana and other symbols
+                if clean_symbol.starts_with("{") && clean_symbol.ends_with("}") {
+                    let inner = &clean_symbol[1..clean_symbol.len() - 1];
+                    if inner.parse::<u32>().is_ok() || inner == "X" {
+                        // Generic/X mana is light gray
+                        Color::srgb(0.75, 0.73, 0.71)
+                    } else if inner == "T" {
+                        // Tap symbol, use darker gray
+                        Color::srgb(0.4, 0.4, 0.4)
+                    } else {
+                        // Other symbols, use light gray
+                        Color::srgb(0.7, 0.7, 0.7)
+                    }
+                } else {
+                    Color::srgb(0.7, 0.7, 0.7) // Light gray default
+                }
+            }
+        };
+
+        // Size of the circle should be proportional to the font size
+        let circle_size = Vec2::splat(options.font_size * 1.0);
+
+        // Spawn the circle with the background color, ensuring it's perfectly round
+        commands
+            .spawn((
+                Sprite {
+                    color: background_color,
+                    custom_size: Some(circle_size),
+                    ..default()
+                },
+                Transform::from_translation(Vec3::new(
+                    aligned_pos.x,
+                    aligned_pos.y,
+                    aligned_pos.z - 0.05, // Slightly behind the text
+                )),
+                // Name to identify this as a mana circle for our circle system
+                Name::new(format!("Mana Circle: {}", clean_symbol)),
+                GlobalTransform::default(),
+            ))
+            .set_parent(parent_entity);
+
+        // Determine text color based on background for better contrast
+        let text_color = if is_dark_background(clean_symbol, &background_color) {
+            // White text for dark backgrounds
+            Color::srgb(1.0, 1.0, 1.0)
+        } else {
+            // Black text for light backgrounds
+            Color::srgb(0.0, 0.0, 0.0)
+        };
+
+        // Render the symbol with the appropriate color
+        commands
+            .spawn((
+                TextSpan::default(),
+                Text2d::new(display_symbol),
+                TextFont {
+                    font: mana_font,
+                    font_size: options.font_size,
+                    ..default()
+                },
+                TextColor(text_color),
+                TextLayout::new_with_justify(options.alignment),
+                Transform::from_translation(aligned_pos),
+            ))
+            .set_parent(parent_entity);
+
+        return;
+    }
+
+    // Regular rendering without background
     // Render drop shadow if enabled
     if options.with_shadow {
         let shadow_offset = Vec3::new(1.5, -1.5, 0.0);
@@ -138,4 +225,43 @@ pub fn is_valid_mana_symbol(symbol: &str) -> bool {
     }
 
     false
+}
+
+/// Helper function to determine if a background color is dark and needs white text
+fn is_dark_background(symbol: &str, _color: &Color) -> bool {
+    // Standard dark mana backgrounds that should have white text
+    if symbol == "{B}" || symbol == "{G}" || symbol == "{U}" {
+        return true;
+    }
+
+    // Check for symbols with Phyrexian mana (contains "P")
+    if symbol.contains("P")
+        && (symbol.contains("B") || symbol.contains("G") || symbol.contains("U"))
+    {
+        return true;
+    }
+
+    // Check for tap symbol and other special symbols that use dark backgrounds
+    if symbol == "{T}" {
+        return true;
+    }
+
+    // For all other symbols, check based on the symbol itself since we know our color mapping
+    match symbol.trim() {
+        // Dark background symbols that need white text
+        "{B}" | "{U}" | "{G}" | "{T}" => true,
+        // Light background symbols that need black text
+        "{W}" | "{R}" | "{C}" => false,
+        // For generic mana symbols, check if they're the type that needs white text
+        s if s.len() >= 3 && s.starts_with('{') && s.ends_with('}') => {
+            let inner = &s[1..s.len() - 1];
+            // Set any other dark backgrounds that need white text here
+            match inner {
+                // Add specific cases here
+                _ => false, // Default to black text
+            }
+        }
+        // Default to black text for any other case
+        _ => false,
+    }
 }
