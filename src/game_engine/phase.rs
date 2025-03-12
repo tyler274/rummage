@@ -1,4 +1,5 @@
 use crate::game_engine::state::GameState;
+use crate::game_engine::turns::TurnManager;
 use crate::player::Player;
 use bevy::prelude::*;
 
@@ -122,6 +123,7 @@ pub fn phase_transition_system(
     commands: Commands,
     mut game_state: ResMut<GameState>,
     mut phase: ResMut<Phase>,
+    mut turn_manager: ResMut<TurnManager>,
     priority_system: Res<crate::game_engine::PrioritySystem>,
     stack: Res<crate::game_engine::GameStack>,
     player_query: Query<Entity, With<Player>>,
@@ -134,20 +136,24 @@ pub fn phase_transition_system(
         if *phase == Phase::Ending(EndingStep::Cleanup)
             && next_phase == Phase::Beginning(BeginningStep::Untap)
         {
-            // Advance to the next turn
-            game_state.turn_number += 1;
+            // Advance to the next player in turn order
+            turn_manager.advance_turn();
 
-            // Move to the next player in turn order
-            game_state.advance_active_player();
+            // Also update the game state to keep them in sync
+            game_state.turn_number = turn_manager.turn_number;
+            game_state.active_player = turn_manager.active_player;
 
             info!(
                 "Turn {} begins for player {:?}",
-                game_state.turn_number, game_state.active_player
+                turn_manager.turn_number, turn_manager.active_player
             );
         }
 
         // Update the phase
         *phase = next_phase;
+        // Keep the TurnManager's phase in sync
+        turn_manager.current_phase = *phase;
+
         info!("Phase changed to {:?}", *phase);
 
         // Perform phase-specific actions
@@ -158,7 +164,7 @@ pub fn phase_transition_system(
             }
             Phase::Beginning(BeginningStep::Draw) => {
                 // Active player draws a card (except on the first turn of the game)
-                if game_state.turn_number > 1 {
+                if turn_manager.turn_number > 1 {
                     // Card draw will be implemented in a separate system
                 }
             }
@@ -168,7 +174,7 @@ pub fn phase_transition_system(
         // Reset priority for the new phase
         if next_phase.allows_actions() {
             // Give priority to the active player
-            game_state.priority_holder = game_state.active_player;
+            game_state.priority_holder = turn_manager.active_player;
         }
     }
 }

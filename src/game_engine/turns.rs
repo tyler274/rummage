@@ -172,10 +172,11 @@ pub fn handle_untap_step(
         With<crate::card::Card>,
     >,
     turn_manager: Res<TurnManager>,
+    phase: Res<Phase>,
     _player_query: Query<&mut crate::player::Player>,
 ) {
     // Only process during untap step
-    if turn_manager.current_phase != Phase::Beginning(BeginningStep::Untap) {
+    if *phase != Phase::Beginning(BeginningStep::Untap) {
         return;
     }
 
