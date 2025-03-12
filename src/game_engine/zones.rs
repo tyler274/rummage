@@ -170,7 +170,7 @@ impl ZoneManager {
     }
 
     /// Add a card to the battlefield
-    pub fn add_to_battlefield(&mut self, owner: Entity, card: Entity) {
+    pub fn add_to_battlefield(&mut self, _owner: Entity, card: Entity) {
         if !self.battlefield.contains(&card) {
             self.battlefield.push(card);
             self.card_zone_map.insert(card, Zone::Battlefield);
@@ -299,6 +299,39 @@ impl ZoneManager {
     }
 }
 
+/// Event for when a permanent enters the battlefield
+#[derive(Event)]
+pub struct EntersBattlefieldEvent {
+    /// The permanent that entered the battlefield
+    pub permanent: Entity,
+    /// The owner of the permanent
+    pub owner: Entity,
+    /// Whether the permanent entered tapped
+    pub enters_tapped: bool,
+}
+
+/// System to handle permanents entering the battlefield
+pub fn handle_enters_battlefield(
+    mut commands: Commands,
+    mut enter_events: EventReader<EntersBattlefieldEvent>,
+    turn_manager: Res<crate::game_engine::turns::TurnManager>,
+) {
+    for event in enter_events.read() {
+        // Add PermanentState component to the entity
+        let mut permanent_state = crate::card::PermanentState::new(turn_manager.turn_number);
+
+        // Set tapped state if the permanent enters tapped
+        if event.enters_tapped {
+            permanent_state.is_tapped = true;
+        }
+
+        // Add the component to the entity
+        commands.entity(event.permanent).insert(permanent_state);
+
+        info!("Permanent {:?} entered the battlefield", event.permanent);
+    }
+}
+
 // System to initialize zone manager
 pub fn setup_zone_manager(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
     let mut zone_manager = ZoneManager::default();
@@ -311,8 +344,14 @@ pub fn setup_zone_manager(mut commands: Commands, player_query: Query<Entity, Wi
     commands.insert_resource(zone_manager);
 }
 
-// Register zones-related systems and events
+/// Register all zone-related systems and events
 pub fn register_zone_systems(app: &mut App) {
-    app.add_event::<ZoneChangeEvent>()
-        .add_systems(OnEnter(crate::menu::GameMenuState::InGame), setup_zone_manager);
+    app.insert_resource(ZoneManager::default())
+        .add_event::<ZoneChangeEvent>()
+        .add_event::<EntersBattlefieldEvent>()
+        .add_systems(
+            OnEnter(crate::menu::GameMenuState::InGame),
+            setup_zone_manager,
+        )
+        .add_systems(Update, handle_enters_battlefield);
 }

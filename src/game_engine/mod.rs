@@ -19,7 +19,10 @@ pub use phase::*;
 pub use priority::*;
 pub use stack::*;
 pub use state::*;
-pub use turns::*;
+pub use turns::{
+    TurnEndEvent, TurnManager, TurnStartEvent, handle_untap_step, turn_end_system,
+    turn_start_system,
+};
 pub use zones::*;
 
 use crate::menu::{GameMenuState, state::StateTransitionContext};
@@ -95,7 +98,10 @@ impl Plugin for GameEnginePlugin {
             Update,
             turn_end_system.run_if(in_state(GameMenuState::InGame)),
         );
-        app.add_systems(Update, untap_system.run_if(in_state(GameMenuState::InGame)));
+        app.add_systems(
+            Update,
+            handle_untap_step.run_if(in_state(GameMenuState::InGame)),
+        );
 
         // Commander systems
         app.add_systems(

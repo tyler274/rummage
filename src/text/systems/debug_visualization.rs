@@ -8,7 +8,7 @@ use crate::text::{
 /// Spawn debug visualization for text boundaries
 pub fn spawn_debug_visualization(
     commands: &mut Commands,
-    card_pos: Vec2,
+    _card_pos: Vec2,
     card_size: Vec2,
     _asset_server: &AssetServer,
 ) -> Entity {

@@ -11,7 +11,7 @@ pub fn update_mana_circles(
     mut commands: Commands,
     query: Query<(Entity, &Transform, &Sprite, &Name), Without<ManaCircle>>,
 ) {
-    for (entity, transform, sprite, name) in query.iter() {
+    for (entity, _transform, sprite, name) in query.iter() {
         // Only process sprites with "Mana Circle" in their name
         if !name.as_str().contains("Mana Circle") {
             continue;

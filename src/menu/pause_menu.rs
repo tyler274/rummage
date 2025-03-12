@@ -76,7 +76,7 @@ fn spawn_menu_button(
     parent: &mut ChildBuilder,
     text: &str,
     action: MenuButtonAction,
-    asset_server: &AssetServer,
+    _asset_server: &AssetServer,
 ) {
     parent
         .spawn((

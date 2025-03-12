@@ -25,7 +25,7 @@ use crate::camera::components::{AppLayer, GameCamera};
 /// ensuring proper positioning and movement during drag operations.
 use crate::card::{Card, CardDetails, Draggable, get_example_cards};
 use crate::mana::{ManaPool, convert_rules_text_to_symbols};
-use crate::text::{CardTextContent, CardTextType};
+use crate::text::CardTextContent;
 use bevy::prelude::*;
 use rand::seq::SliceRandom;
 
@@ -111,7 +111,7 @@ pub fn spawn_hand(
             .spawn((
                 card.clone(),
                 Sprite {
-                    color: Color::rgb(0.85, 0.85, 0.85),
+                    color: Color::srgb(0.85, 0.85, 0.85),
                     custom_size: Some(card_size),
                     ..default()
                 },

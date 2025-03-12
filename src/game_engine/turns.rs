@@ -93,6 +93,11 @@ impl TurnManager {
     pub fn get_player_index(&self, player: Entity) -> Option<usize> {
         self.player_order.iter().position(|&p| p == player)
     }
+
+    /// Get the currently active player
+    pub fn get_active_player(&self) -> Entity {
+        self.active_player
+    }
 }
 
 /// Event triggered at the start of a turn
@@ -111,9 +116,9 @@ pub struct TurnEndEvent {
 
 /// System to handle the start of a new turn
 pub fn turn_start_system(
-    commands: Commands,
+    _commands: Commands,
     phase: Res<Phase>,
-    player_query: Query<&Player>,
+    _player_query: Query<&Player>,
     mut turn_start_events: EventWriter<TurnStartEvent>,
     turn_manager: Res<TurnManager>,
 ) {
@@ -134,9 +139,9 @@ pub fn turn_start_system(
 
 /// System to handle the end of a turn
 pub fn turn_end_system(
-    commands: Commands,
+    _commands: Commands,
     phase: Res<Phase>,
-    player_query: Query<&Player>,
+    _player_query: Query<&Player>,
     mut turn_end_events: EventWriter<TurnEndEvent>,
     turn_manager: Res<TurnManager>,
 ) {
@@ -155,20 +160,62 @@ pub fn turn_end_system(
     }
 }
 
-/// System to handle untapping permanents
-pub fn untap_system(
-    commands: Commands,
-    phase: Res<Phase>,
+/// System that handles untapping permanents during the untap step
+/// This system considers special effects that prevent untapping, like NoUntapEffect
+pub fn handle_untap_step(
+    mut card_query: Query<
+        (
+            Entity,
+            &mut crate::card::PermanentState,
+            Option<&crate::card::NoUntapEffect>,
+        ),
+        With<crate::card::Card>,
+    >,
     turn_manager: Res<TurnManager>,
-    // We would need queries for permanents to untap them
+    _player_query: Query<&mut crate::player::Player>,
 ) {
-    // Only trigger at the beginning of the untap step
-    if *phase == Phase::Beginning(BeginningStep::Untap) {
-        info!(
-            "Untapping permanents for player {:?}",
-            turn_manager.active_player
-        );
-        // Here we would untap all permanents for the active player
+    // Only process during untap step
+    if turn_manager.current_phase != Phase::Beginning(BeginningStep::Untap) {
+        return;
+    }
+
+    let active_player_entity = turn_manager.get_active_player();
+    info!(
+        "Processing untap step for player: {:?}",
+        active_player_entity
+    );
+
+    // Get the current turn number
+    let current_turn = turn_manager.turn_number;
+
+    for (entity, mut permanent_state, no_untap_effect) in card_query.iter_mut() {
+        // Update summoning sickness regardless of untap restrictions
+        permanent_state.update_summoning_sickness(current_turn);
+
+        // Check if there's a no-untap effect
+        if let Some(no_untap) = no_untap_effect {
+            let should_skip_untap = match &no_untap.condition {
+                // Skip untap if we're in the next untap step after the effect was applied
+                Some(crate::card::NoUntapCondition::NextUntapStep) => true,
+
+                // Other conditions would be checked here, but we won't implement them for now
+                // as they would require more complex state tracking
+                _ => true, // Default to skipping untap if any other condition exists
+            };
+
+            if should_skip_untap {
+                info!("Permanent {:?} does not untap due to NoUntapEffect", entity);
+                continue;
+            }
+        }
+
+        // Untap the permanent if it's tapped
+        if permanent_state.is_tapped {
+            let untapped = permanent_state.untap();
+            if untapped {
+                info!("Untapped permanent: {:?}", entity);
+            }
+        }
     }
 }
 
@@ -179,7 +226,7 @@ pub fn register_turn_systems(app: &mut App) {
         .insert_resource(TurnManager::default())
         .add_systems(
             Update,
-            (turn_start_system, turn_end_system, untap_system)
+            (turn_start_system, turn_end_system, handle_untap_step)
                 .run_if(in_state(GameMenuState::InGame)),
         );
 }
