@@ -50,13 +50,9 @@ impl Default for CardTextType {
     }
 }
 
-/// Component for storing text layout information
+/// Component for storing text layout information (used by layout systems)
 #[derive(Component, Debug, Clone)]
 pub struct TextLayoutInfo {
-    /// The position of the text relative to the card
-    pub position: Vec2,
-    /// The size of the text bounds
-    pub size: Vec2,
     /// The alignment of the text
     pub alignment: JustifyText,
 }
@@ -65,14 +61,12 @@ pub struct TextLayoutInfo {
 impl Default for TextLayoutInfo {
     fn default() -> Self {
         Self {
-            position: Vec2::ZERO,
-            size: Vec2::new(100.0, 50.0),
             alignment: JustifyText::Left,
         }
     }
 }
 
-/// Bundle for card text components to avoid having too many components in a tuple
+/// Bundle for card text components
 #[derive(Bundle)]
 pub struct CardTextBundle {
     pub text_2d: Text2d,
@@ -84,39 +78,6 @@ pub struct CardTextBundle {
     pub card_text_type: CardTextType,
     pub text_layout_info: TextLayoutInfo,
     pub name: Name,
-}
-
-impl CardTextBundle {
-    /// Create a new text bundle for cards with standard configuration
-    pub fn new(
-        text: String,
-        font: Handle<Font>,
-        font_size: f32,
-        color: Color,
-        card_position: Vec3,
-        local_offset: Vec2,
-        alignment: JustifyText,
-    ) -> Self {
-        Self {
-            text_2d: Text2d::new(text.clone()),
-            transform: Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.1)),
-            global_transform: GlobalTransform::default(),
-            text_font: TextFont {
-                font,
-                font_size,
-                ..default()
-            },
-            text_color: TextColor(color),
-            text_layout: TextLayout::new_with_justify(alignment),
-            card_text_type: CardTextType::default(),
-            text_layout_info: TextLayoutInfo {
-                position: card_position.truncate() + local_offset,
-                size: Vec2::new(100.0, 50.0),
-                alignment,
-            },
-            name: Name::new(format!("Card Text: {}", text)),
-        }
-    }
 }
 
 /// Bundle for text style components

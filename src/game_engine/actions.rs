@@ -85,9 +85,9 @@ pub fn process_game_actions(
             }
 
             GameAction::ActivateAbility {
-                player,
-                source,
-                ability_index,
+                player: _player,
+                source: _source,
+                ability_index: _ability_index,
                 targets: _,
                 mana_payment: _,
             } => {

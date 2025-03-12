@@ -101,16 +101,20 @@ impl TurnManager {
 }
 
 /// Event triggered at the start of a turn
-#[derive(Event)]
+#[derive(Event, Debug)]
 pub struct TurnStartEvent {
+    /// The player whose turn is starting
     pub player: Entity,
+    /// The turn number that is starting
     pub turn_number: u32,
 }
 
 /// Event triggered at the end of a turn
-#[derive(Event)]
+#[derive(Event, Debug)]
 pub struct TurnEndEvent {
+    /// The player whose turn is ending
     pub player: Entity,
+    /// The turn number that is ending
     pub turn_number: u32,
 }
 
@@ -277,15 +281,11 @@ pub fn handle_untap_step(
     event_tracker.last_processed_turn = turn_manager.turn_number;
 }
 
-/// Register all turn-related systems and events
+/// Register all turn-related systems with the app
 pub fn register_turn_systems(app: &mut App) {
-    app.add_event::<TurnStartEvent>()
-        .add_event::<TurnEndEvent>()
-        .insert_resource(TurnManager::default())
-        .insert_resource(TurnEventTracker::default())
-        .add_systems(
-            Update,
-            (turn_start_system, turn_end_system, handle_untap_step)
-                .run_if(in_state(GameMenuState::InGame)),
-        );
+    app.add_systems(
+        Update,
+        (turn_start_system, turn_end_system, handle_untap_step)
+            .run_if(in_state(crate::menu::GameMenuState::InGame)),
+    );
 }

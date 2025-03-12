@@ -366,7 +366,7 @@ pub fn record_commander_damage(
 /// Handle commander changing zones
 pub fn handle_commander_zone_change(
     mut commands: Commands,
-    zone_manager: ResMut<ZoneManager>,
+    _zone_manager: ResMut<ZoneManager>,
     mut cmd_zone_manager: ResMut<CommandZoneManager>,
     mut zone_events: EventReader<ZoneChangeEvent>,
     commander_query: Query<(Entity, &Commander)>,
@@ -383,7 +383,6 @@ pub fn handle_commander_zone_change(
                 Zone::Hand => CommanderZoneLocation::Hand,
                 Zone::Library => CommanderZoneLocation::Library,
                 Zone::Stack => CommanderZoneLocation::Stack,
-                _ => CommanderZoneLocation::CommandZone, // Default case
             };
 
             cmd_zone_manager.update_commander_zone(entity, new_zone);
@@ -400,26 +399,17 @@ pub fn handle_commander_zone_change(
                     can_go_to_command_zone: true,
                 });
             }
-
-            // Increase zone transition count if moved to command zone
-            if event.destination == Zone::CommandZone {
-                let count = cmd_zone_manager
-                    .zone_transition_count
-                    .entry(entity)
-                    .or_insert(0);
-                *count += 1;
-            }
         }
     }
 }
 
-/// Process commander zone choice events
+/// Process player choices for commander zone changes
 pub fn process_commander_zone_choices(
-    commands: Commands,
+    mut _commands: Commands,
     mut choice_events: EventReader<CommanderZoneChoiceEvent>,
     mut zone_manager: ResMut<ZoneManager>,
     mut cmd_zone_manager: ResMut<CommandZoneManager>,
-    commander_query: Query<&mut Commander>,
+    mut _commander_query: Query<&mut Commander>,
 ) {
     for event in choice_events.read() {
         if event.can_go_to_command_zone {
@@ -450,23 +440,19 @@ pub fn process_commander_zone_choices(
 
 /// Handle casting a commander from the command zone
 pub fn handle_commander_casting(
-    commands: Commands,
-    zone_manager: ResMut<ZoneManager>,
-    cmd_zone_manager: ResMut<CommandZoneManager>,
-    commander_query: Query<&mut Commander>,
-    cards: Query<(Entity, &Card)>,
+    _commands: Commands,
+    _zone_manager: ResMut<ZoneManager>,
+    _cmd_zone_manager: ResMut<CommandZoneManager>,
+    _commander_query: Query<&mut Commander>,
+    _cards: Query<(Entity, &Card)>,
     // We would need other queries and inputs here
 ) {
-    // In a full implementation, this would:
-    // 1. Apply commander tax based on cast count
-    // 2. Move the commander from command zone to stack
-    // 3. Update the commander zone status
-    // 4. Increment cast count if successfully cast
+    // Implementation will be added later
 }
 
-/// Check for violation of color identity in a commander deck
+/// Validate that all cards in a player's deck match their commander's color identity
 pub fn validate_commander_deck(
-    card_query: Query<(Entity, &Card)>,
+    _card_query: Query<(Entity, &Card)>,
     cmd_zone_manager: Res<CommandZoneManager>,
     player_query: Query<(Entity, &Player)>,
 ) -> HashMap<Entity, Vec<Entity>> {
@@ -495,19 +481,16 @@ pub fn validate_commander_deck(
     illegal_cards
 }
 
-/// System to handle Commander damage tracking
+/// Track commander damage for UI display and game rules
 pub fn track_commander_damage(
-    commands: Commands,
-    game_state: ResMut<GameMenuState>,
-    commanders: Query<(Entity, &Commander)>,
-    players: Query<Entity, With<Player>>,
-    cmd_zone_manager: Res<CommandZoneManager>,
+    _commands: Commands,
+    _game_state: ResMut<GameMenuState>,
+    _commanders: Query<(Entity, &Commander)>,
+    _players: Query<Entity, With<Player>>,
+    _cmd_zone_manager: Res<CommandZoneManager>,
     // We'll need a damage event/component to track actual damage
 ) {
-    // This would be implemented to:
-    // 1. Detect when a Commander deals combat damage to a player
-    // 2. Track the damage in the Commander component
-    // 3. Check if any player has been eliminated by Commander damage
+    // Implementation will be added later
 }
 
 /// Register all Commander-related systems and events

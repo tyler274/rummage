@@ -12,11 +12,10 @@ pub enum Zone {
     Stack,
     Exile,
     CommandZone,
-    Limbo, // For temporary transitions
 }
 
 /// Event that triggers when a card changes zones
-#[derive(Event)]
+#[derive(Event, Debug)]
 pub struct ZoneChangeEvent {
     /// The card that changed zones
     pub card: Entity,
@@ -100,7 +99,6 @@ impl ZoneManager {
             Zone::Stack => self.remove_from_stack(card),
             Zone::Exile => self.remove_from_exile(card),
             Zone::CommandZone => self.remove_from_command_zone(card),
-            Zone::Limbo => true, // Cards in limbo don't need to be removed
         };
 
         if !removed {
@@ -116,7 +114,6 @@ impl ZoneManager {
             Zone::Stack => self.add_to_stack(card),
             Zone::Exile => self.add_to_exile(card),
             Zone::CommandZone => self.add_to_command_zone(card),
-            Zone::Limbo => { /* Do nothing for limbo */ }
         }
 
         // Update the card's zone tracking
@@ -261,7 +258,6 @@ impl ZoneManager {
             Zone::Stack => Some(&self.stack),             // Shared zone
             Zone::Exile => Some(&self.exile),             // Shared zone
             Zone::CommandZone => Some(&self.command_zone), // Shared zone
-            Zone::Limbo => None,                          // Limbo is transient and has no storage
         }
     }
 
@@ -294,13 +290,14 @@ impl ZoneManager {
         None
     }
 
+    /// Get the zone that a card is currently in
     pub fn get_card_zone(&self, card: Entity) -> Option<Zone> {
         self.card_zone_map.get(&card).copied()
     }
 }
 
-/// Event for when a permanent enters the battlefield
-#[derive(Event)]
+/// Event fired when a permanent enters the battlefield
+#[derive(Event, Debug)]
 pub struct EntersBattlefieldEvent {
     /// The permanent that entered the battlefield
     pub permanent: Entity,
@@ -310,29 +307,29 @@ pub struct EntersBattlefieldEvent {
     pub enters_tapped: bool,
 }
 
-/// System to handle permanents entering the battlefield
+/// Handle special effects when permanents enter the battlefield
 pub fn handle_enters_battlefield(
     mut commands: Commands,
     mut enter_events: EventReader<EntersBattlefieldEvent>,
     turn_manager: Res<crate::game_engine::turns::TurnManager>,
 ) {
     for event in enter_events.read() {
-        // Add PermanentState component to the entity
-        let mut permanent_state = crate::card::PermanentState::new(turn_manager.turn_number);
-
-        // Set tapped state if the permanent enters tapped
+        // Set tapped state if permanent enters tapped
         if event.enters_tapped {
-            permanent_state.is_tapped = true;
+            commands
+                .entity(event.permanent)
+                .insert(crate::card::PermanentState {
+                    is_tapped: true,
+                    has_summoning_sickness: true,
+                    turn_entered_battlefield: turn_manager.turn_number,
+                });
         }
 
-        // Add the component to the entity
-        commands.entity(event.permanent).insert(permanent_state);
-
-        info!("Permanent {:?} entered the battlefield", event.permanent);
+        // Additional enter-the-battlefield effects can be handled here
     }
 }
 
-// System to initialize zone manager
+/// Initialize the zone manager with players
 pub fn setup_zone_manager(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
     let mut zone_manager = ZoneManager::default();
 
@@ -344,14 +341,10 @@ pub fn setup_zone_manager(mut commands: Commands, player_query: Query<Entity, Wi
     commands.insert_resource(zone_manager);
 }
 
-/// Register all zone-related systems and events
+/// Register zone-related systems with the app
 pub fn register_zone_systems(app: &mut App) {
-    app.insert_resource(ZoneManager::default())
-        .add_event::<ZoneChangeEvent>()
-        .add_event::<EntersBattlefieldEvent>()
-        .add_systems(
-            OnEnter(crate::menu::GameMenuState::InGame),
-            setup_zone_manager,
-        )
-        .add_systems(Update, handle_enters_battlefield);
+    app.add_systems(
+        Update,
+        (handle_enters_battlefield,).run_if(in_state(crate::menu::GameMenuState::InGame)),
+    );
 }

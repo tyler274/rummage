@@ -34,29 +34,27 @@ pub fn create_name_text(
 
     // Create the text entity
     commands
-        .spawn(CardTextBundle {
-            text_2d: Text2d::new(name_text.clone()),
-            transform: Transform::from_translation(Vec3::new(
+        .spawn((
+            Text2d::new(name_text.clone()),
+            Transform::from_translation(Vec3::new(
                 name_position.x,
                 name_position.y,
-                0.9, // High z-index to ensure visibility
+                0.1, // Slightly above the card
             )),
-            global_transform: GlobalTransform::default(),
-            text_font: TextFont {
-                font: font.clone(),
+            GlobalTransform::default(),
+            TextFont {
+                font,
                 font_size,
                 ..default()
             },
-            text_color: TextColor(Color::srgba(0.0, 0.0, 0.0, 1.0)), // Black text
-            text_layout: TextLayout::new_with_justify(JustifyText::Left), // Left justified
-            card_text_type: CardTextType::Name,
-            text_layout_info: TextLayoutInfo {
-                position: card_pos + name_position,
-                size: calculate_text_size(card_size, layout.name_width, 0.08),
-                alignment: JustifyText::Left, // Left aligned
+            TextColor(Color::BLACK),
+            TextLayout::new_with_justify(JustifyText::Left),
+            CardTextType::Name,
+            TextLayoutInfo {
+                alignment: JustifyText::Left,
             },
-            name: Name::new(format!("Card Name: {}", name_text)),
-        })
+            Name::new(format!("Card Name: {}", name_text)),
+        ))
         .id()
 }
 
@@ -67,10 +65,12 @@ pub fn name_text_system(
     asset_server: Res<AssetServer>,
 ) {
     // Load font
-    let font = asset_server.load("fonts/DejaVuSans-Bold.ttf");
     let layout = CardTextLayout::default();
 
-    for (entity, transform, card) in query.iter() {
+    for (entity, _transform, card) in query.iter() {
+        // Load font for each iteration to avoid move issues
+        let font = asset_server.load("fonts/DejaVuSans-Bold.ttf");
+
         // Set font size for card name
         let font_size = 20.0;
         let card_size = Vec2::new(layout.card_width, layout.card_height);
@@ -85,20 +85,29 @@ pub fn name_text_system(
         );
 
         // Create the text entity
-        let text_entity = commands
-            .spawn(CardTextBundle::new(
-                name_text,
-                font.clone(),
-                font_size,
-                Color::BLACK,
-                transform.translation,
-                name_position,
-                JustifyText::Left,
+        commands
+            .spawn((
+                Text2d::new(name_text.clone()),
+                Transform::from_translation(Vec3::new(
+                    name_position.x,
+                    name_position.y,
+                    0.1, // Slightly above the card
+                )),
+                GlobalTransform::default(),
+                TextFont {
+                    font,
+                    font_size,
+                    ..default()
+                },
+                TextColor(Color::BLACK),
+                TextLayout::new_with_justify(JustifyText::Left),
+                CardTextType::Name,
+                TextLayoutInfo {
+                    alignment: JustifyText::Left,
+                },
+                Name::new(format!("Card Name: {}", name_text)),
             ))
-            .id();
-
-        // Set as child of the card entity
-        commands.entity(entity).add_child(text_entity);
+            .set_parent(entity);
     }
 }
 

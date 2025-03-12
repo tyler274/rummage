@@ -123,7 +123,7 @@ impl PrioritySystem {
 
 /// System to handle priority passing and checks
 pub fn priority_system(
-    commands: Commands,
+    _commands: Commands,
     mut priority: ResMut<PrioritySystem>,
     mut game_state: ResMut<GameState>,
     stack: Res<GameStack>,

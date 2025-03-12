@@ -16,12 +16,13 @@ pub use actions::*;
 pub use combat::*;
 pub use commander::*;
 pub use phase::*;
+pub use politics::*;
 pub use priority::*;
 pub use stack::*;
 pub use state::*;
 pub use turns::{
-    TurnEndEvent, TurnManager, TurnStartEvent, handle_untap_step, turn_end_system,
-    turn_start_system,
+    TurnEndEvent, TurnManager, TurnStartEvent, handle_untap_step, register_turn_systems,
+    turn_end_system, turn_start_system,
 };
 pub use zones::*;
 
@@ -58,7 +59,13 @@ impl Plugin for GameEnginePlugin {
             .add_event::<CreatureAttacksEvent>()
             .add_event::<CreatureBlocksEvent>()
             .add_event::<CreatureBlockedEvent>()
-            .add_event::<CombatDamageCompleteEvent>();
+            .add_event::<CombatDamageCompleteEvent>()
+            // Register battlefield events
+            .add_event::<EntersBattlefieldEvent>()
+            // Register politics events
+            .add_event::<GoadEvent>()
+            .add_event::<ApplyCombatRestrictionEvent>()
+            .add_event::<RemoveCombatRestrictionEvent>();
 
         // Add game resources initialization during OnEnter(GameMenuState::InGame)
         app.add_systems(OnEnter(GameMenuState::InGame), setup_game_engine);
@@ -103,6 +110,11 @@ impl Plugin for GameEnginePlugin {
             Update,
             handle_untap_step.run_if(in_state(GameMenuState::InGame)),
         );
+
+        // Register zone systems
+        register_zone_systems(app);
+        // Register turn systems
+        register_turn_systems(app);
 
         // Commander systems
         app.add_systems(

@@ -27,7 +27,7 @@ pub fn replace_mana_symbols_with_unicode(text: &str) -> String {
 pub fn spawn_rules_text(
     commands: &mut Commands,
     content: &CardTextContent,
-    card_pos: Vec2,
+    _card_pos: Vec2,
     card_size: Vec2,
     asset_server: &AssetServer,
 ) -> Entity {
@@ -76,9 +76,7 @@ pub fn spawn_rules_text(
             TextLayout::new_with_justify(JustifyText::Left),
             CardTextType::RulesText,
             TextLayoutInfo {
-                position: card_pos + local_offset,
-                size: text_size,
-                alignment: JustifyText::Left,
+                alignment: JustifyText::Center,
             },
             Name::new(format!("Rules Text: {}", formatted_text.replace('\n', " "))),
         ))

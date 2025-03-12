@@ -267,20 +267,20 @@ pub fn declare_blockers_system(
 }
 
 pub fn assign_combat_damage_system(
-    commands: Commands,
+    _commands: Commands,
     mut combat_state: ResMut<CombatState>,
     mut events: EventReader<AssignCombatDamageEvent>,
 ) {
-    for event in events.read() {
+    for _event in events.read() {
         combat_state.in_combat_damage = true;
         // Handle damage assignment logic here
     }
 }
 
 pub fn process_combat_damage_system(
-    commands: Commands,
+    _commands: Commands,
     mut combat_state: ResMut<CombatState>,
-    game_state: ResMut<GameState>,
+    _game_state: ResMut<GameState>,
     mut players: Query<&mut Player>,
 ) {
     // Clone the pending events to avoid borrow issues

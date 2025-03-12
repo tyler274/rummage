@@ -15,7 +15,7 @@ use crate::text::{
 pub fn create_mana_cost_text(
     commands: &mut Commands,
     content: &crate::text::components::CardTextContent,
-    card_pos: Vec2,
+    _card_pos: Vec2,
     card_size: Vec2,
     asset_server: &AssetServer,
 ) -> Entity {
@@ -77,8 +77,6 @@ pub fn create_mana_cost_text(
             TextLayout::new_with_justify(JustifyText::Right), // Right-justified
             CardTextType::ManaCost,
             TextLayoutInfo {
-                position: card_pos + mana_position,
-                size: Vec2::new(card_size.x * 0.3, card_size.y * 0.1),
                 alignment: JustifyText::Right,
             },
             Name::new(format!("Mana Cost: {}", content.mana_cost)),
@@ -92,12 +90,11 @@ pub fn create_mana_cost_text(
 
     // Create mana symbol options
     let mana_options = ManaSymbolOptions {
-        font_size,
-        vertical_alignment_offset: 0.0, // No baseline adjustment needed for mana cost
-        z_index: 0.2,                   // Increased z-index so symbol appears above the circle
-        with_shadow: false,             // No shadow as we're adding a background circle
-        alignment: JustifyText::Center,
-        with_colored_background: true, // Enable colored background circles for MTG style
+        font_size: font_size * 0.8,
+        vertical_alignment_offset: 0.0,
+        z_index: 0.2,
+        with_shadow: true,
+        with_colored_background: true,
     };
 
     // Add each mana symbol as its own entity with correct positioning

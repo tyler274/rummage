@@ -120,7 +120,7 @@ impl Default for Phase {
 
 /// System to handle phase transitions
 pub fn phase_transition_system(
-    commands: Commands,
+    _commands: Commands,
     mut game_state: ResMut<GameState>,
     mut phase: ResMut<Phase>,
     mut turn_manager: ResMut<TurnManager>,

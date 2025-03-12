@@ -6,5 +6,6 @@ pub mod power_toughness_text;
 pub mod rules_text;
 pub mod type_line_text;
 
-// Only export the card_text module since that's what's used in the plugin
+// Export only the card_text module and the rules_text function
 pub use card_text::*;
+pub use rules_text::replace_mana_symbols_with_unicode;

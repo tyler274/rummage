@@ -100,18 +100,14 @@ impl GameState {
             if let Some(player) = next_player {
                 self.active_player = player;
                 self.priority_holder = player;
-
-                // Reset per-turn tracking
+                self.turn_number += 1;
                 self.reset_turn_tracking();
-            } else {
-                // If all players are eliminated, the game is over
-                info!("All players eliminated, game over");
             }
         }
     }
 
     /// Reset per-turn state tracking
-    fn reset_turn_tracking(&mut self) {
+    pub fn reset_turn_tracking(&mut self) {
         // Clear lands played counters
         self.lands_played.clear();
 
@@ -211,7 +207,7 @@ pub fn state_based_actions_system(
 
     // 2. Check for commander damage eliminations
     if game_state.use_commander_damage {
-        for (entity, player) in player_query.iter() {
+        for (entity, _player) in player_query.iter() {
             for (commander_entity, commander) in commander_query.iter() {
                 // Check if this commander has dealt lethal damage to the player
                 if let Some((_, damage)) = commander.damage_dealt.iter().find(|(p, _)| *p == entity)

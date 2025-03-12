@@ -11,7 +11,7 @@ use crate::text::{
 pub fn spawn_type_line_text(
     commands: &mut Commands,
     content: &CardTextContent,
-    card_pos: Vec2,
+    _card_pos: Vec2,
     card_size: Vec2,
     asset_server: &AssetServer,
 ) -> Entity {
@@ -27,7 +27,8 @@ pub fn spawn_type_line_text(
         card_size.y * vertical_offset,
     );
 
-    let text_size = calculate_text_size(card_size, layout.type_line_width, layout.type_line_height);
+    // We don't need text_size for the simplified TextLayoutInfo
+    let _text_size = calculate_text_size(card_size, layout.type_line_width, layout.type_line_height);
 
     // Smaller font size for type line to better match MTG card proportions
     let font_size = get_card_font_size(card_size, 16.0);
@@ -55,9 +56,7 @@ pub fn spawn_type_line_text(
             GlobalTransform::default(),
             CardTextType::TypeLine,
             TextLayoutInfo {
-                position: card_pos + local_offset,
-                size: text_size,
-                alignment: JustifyText::Left,
+                alignment: JustifyText::Center,
             },
             Name::new(format!("Type Line: {}", formatted_type_line)),
         ))

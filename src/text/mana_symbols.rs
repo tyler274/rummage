@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy::text::JustifyText;
 
 /// Represents rendering options for mana symbols
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ManaSymbolOptions {
     /// Font size for the mana symbol
     pub font_size: f32,
@@ -14,8 +14,6 @@ pub struct ManaSymbolOptions {
     pub z_index: f32,
     /// Whether to render with drop shadow
     pub with_shadow: bool,
-    /// Text alignment for the mana symbol
-    pub alignment: JustifyText,
     /// Whether to render with colored circle background (MTG style)
     pub with_colored_background: bool,
 }
@@ -27,7 +25,6 @@ impl Default for ManaSymbolOptions {
             vertical_alignment_offset: 0.0,
             z_index: 0.1,
             with_shadow: true,
-            alignment: JustifyText::Center,
             with_colored_background: false,
         }
     }

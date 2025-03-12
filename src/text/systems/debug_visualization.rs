@@ -105,8 +105,6 @@ fn spawn_debug_box(
             GlobalTransform::default(),
             CardTextType::Debug,
             TextLayoutInfo {
-                position: local_offset, // Store local position
-                size,
                 alignment: JustifyText::Center,
             },
         ))

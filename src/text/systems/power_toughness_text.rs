@@ -11,7 +11,7 @@ use crate::text::{
 pub fn spawn_power_toughness_text(
     commands: &mut Commands,
     pt: &str,
-    card_pos: Vec2,
+    _card_pos: Vec2,
     card_size: Vec2,
     asset_server: &AssetServer,
 ) -> Entity {
@@ -27,7 +27,8 @@ pub fn spawn_power_toughness_text(
         card_size.y * vertical_offset,
     );
 
-    let text_size = calculate_text_size(card_size, layout.pt_width, layout.pt_height);
+    // We don't need text_size for the simplified TextLayoutInfo
+    let _text_size = calculate_text_size(card_size, layout.pt_width, layout.pt_height);
 
     // Make power/toughness prominent like MTG cards
     let font_size = get_card_font_size(card_size, 26.0);
@@ -53,8 +54,6 @@ pub fn spawn_power_toughness_text(
             GlobalTransform::default(),
             CardTextType::PowerToughness,
             TextLayoutInfo {
-                position: card_pos + local_offset,
-                size: text_size,
                 alignment: JustifyText::Center,
             },
             Name::new(format!("Power/Toughness: {}", pt)),
