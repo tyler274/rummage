@@ -124,18 +124,31 @@ pub fn phase_transition_system(
     mut game_state: ResMut<GameState>,
     mut phase: ResMut<Phase>,
     mut turn_manager: ResMut<TurnManager>,
-    priority_system: Res<crate::game_engine::PrioritySystem>,
+    mut priority_system: ResMut<crate::game_engine::PrioritySystem>,
     stack: Res<crate::game_engine::GameStack>,
     player_query: Query<Entity, With<Player>>,
 ) {
+    // Store current phase to detect if we've already processed this transition
+    let current_phase = *phase;
+
+    // If this phase has already been processed for the current turn, skip
+    if priority_system.has_processed_phase(current_phase, turn_manager.turn_number)
+        && priority_system.all_players_passed == true
+    {
+        // This specific phase combination has already been fully processed this turn
+        return;
+    }
+
     // If all players have passed priority and the stack is empty, move to the next phase
     if priority_system.all_players_passed && stack.is_empty() {
         let next_phase = phase.next();
 
+        // If we're about to wrap around to a new turn
+        let start_new_turn = current_phase == Phase::Ending(EndingStep::Cleanup)
+            && next_phase == Phase::Beginning(BeginningStep::Untap);
+
         // Special case: when moving from Cleanup to a new turn's Untap
-        if *phase == Phase::Ending(EndingStep::Cleanup)
-            && next_phase == Phase::Beginning(BeginningStep::Untap)
-        {
+        if start_new_turn {
             // Advance to the next player in turn order
             turn_manager.advance_turn();
 
@@ -171,10 +184,29 @@ pub fn phase_transition_system(
             _ => {}
         }
 
-        // Reset priority for the new phase
-        if next_phase.allows_actions() {
-            // Give priority to the active player
-            game_state.priority_holder = turn_manager.active_player;
+        // Reset the priority system to prevent immediate phase transitions
+        let players: Vec<Entity> = player_query.iter().collect();
+        let active_player = turn_manager.active_player;
+
+        // Reset priority system for the new phase
+        priority_system.initialize(&players, active_player);
+        priority_system.all_players_passed = false;
+
+        // If we're in a phase that doesn't allow actions, immediately mark all players as passed
+        if !next_phase.allows_actions() {
+            for _ in 0..priority_system.priority_queue.len() {
+                priority_system.pass_priority();
+            }
+        }
+
+        // Update priority holder in game state
+        game_state.priority_holder = active_player;
+
+        // Mark this as a different phase so we know it's a new state
+        if start_new_turn {
+            // For a new turn, we haven't processed any phases yet
+            priority_system.last_processed_phase = None;
+            priority_system.last_processed_turn = turn_manager.turn_number;
         }
     }
 }

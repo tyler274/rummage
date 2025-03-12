@@ -35,7 +35,8 @@ pub struct GameEnginePlugin;
 impl Plugin for GameEnginePlugin {
     fn build(&self, app: &mut App) {
         // Register events
-        app.add_event::<StackItemResolvedEvent>()
+        app.add_event::<GameAction>()
+            .add_event::<StackItemResolvedEvent>()
             .add_event::<CheckStateBasedActionsEvent>()
             .add_event::<PlayerEliminatedEvent>()
             .add_event::<CommanderZoneChoiceEvent>()

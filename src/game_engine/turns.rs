@@ -114,6 +114,19 @@ pub struct TurnEndEvent {
     pub turn_number: u32,
 }
 
+/// Resource to track turn event state to prevent duplicate events
+#[derive(Resource, Default, Debug)]
+pub struct TurnEventTracker {
+    /// Whether a turn start event has been sent for the current turn
+    pub turn_start_processed: bool,
+    /// Whether a turn end event has been sent for the current turn
+    pub turn_end_processed: bool,
+    /// Whether the untap step has been processed for the current turn
+    pub untap_step_processed: bool,
+    /// The last turn number that was processed
+    pub last_processed_turn: u32,
+}
+
 /// System to handle the start of a new turn
 pub fn turn_start_system(
     _commands: Commands,
@@ -121,19 +134,34 @@ pub fn turn_start_system(
     _player_query: Query<&Player>,
     mut turn_start_events: EventWriter<TurnStartEvent>,
     turn_manager: Res<TurnManager>,
+    mut event_tracker: Local<TurnEventTracker>,
 ) {
     // Only trigger at the beginning of the untap step
     if *phase == Phase::Beginning(BeginningStep::Untap) {
+        // Check if we've already processed this turn
+        if event_tracker.turn_start_processed
+            && event_tracker.last_processed_turn == turn_manager.turn_number
+        {
+            return;
+        }
+
         // Create a turn start event
         turn_start_events.send(TurnStartEvent {
             player: turn_manager.active_player,
             turn_number: turn_manager.turn_number,
         });
 
+        // Mark as processed
+        event_tracker.turn_start_processed = true;
+        event_tracker.last_processed_turn = turn_manager.turn_number;
+
         info!(
             "Turn {} started for player {:?}",
             turn_manager.turn_number, turn_manager.active_player
         );
+    } else {
+        // If we're not in the untap step, reset the tracker for the next turn
+        event_tracker.turn_start_processed = false;
     }
 }
 
@@ -144,19 +172,34 @@ pub fn turn_end_system(
     _player_query: Query<&Player>,
     mut turn_end_events: EventWriter<TurnEndEvent>,
     turn_manager: Res<TurnManager>,
+    mut event_tracker: Local<TurnEventTracker>,
 ) {
     // Only trigger at the beginning of the end step
     if *phase == Phase::Ending(EndingStep::End) {
+        // Check if we've already processed the end of this turn
+        if event_tracker.turn_end_processed
+            && event_tracker.last_processed_turn == turn_manager.turn_number
+        {
+            return;
+        }
+
         // Create a turn end event
         turn_end_events.send(TurnEndEvent {
             player: turn_manager.active_player,
             turn_number: turn_manager.turn_number,
         });
 
+        // Mark as processed
+        event_tracker.turn_end_processed = true;
+        event_tracker.last_processed_turn = turn_manager.turn_number;
+
         info!(
             "Turn {} ended for player {:?}",
             turn_manager.turn_number, turn_manager.active_player
         );
+    } else {
+        // If we're not in the end step, reset the tracker for the next turn
+        event_tracker.turn_end_processed = false;
     }
 }
 
@@ -174,9 +217,19 @@ pub fn handle_untap_step(
     turn_manager: Res<TurnManager>,
     phase: Res<Phase>,
     _player_query: Query<&mut crate::player::Player>,
+    mut event_tracker: Local<TurnEventTracker>,
 ) {
     // Only process during untap step
     if *phase != Phase::Beginning(BeginningStep::Untap) {
+        // Reset the untap step tracker if we're not in the untap step
+        event_tracker.untap_step_processed = false;
+        return;
+    }
+
+    // Check if we've already processed the untap step for this turn
+    if event_tracker.untap_step_processed
+        && event_tracker.last_processed_turn == turn_manager.turn_number
+    {
         return;
     }
 
@@ -218,6 +271,10 @@ pub fn handle_untap_step(
             }
         }
     }
+
+    // Mark the untap step as processed for this turn
+    event_tracker.untap_step_processed = true;
+    event_tracker.last_processed_turn = turn_manager.turn_number;
 }
 
 /// Register all turn-related systems and events
@@ -225,6 +282,7 @@ pub fn register_turn_systems(app: &mut App) {
     app.add_event::<TurnStartEvent>()
         .add_event::<TurnEndEvent>()
         .insert_resource(TurnManager::default())
+        .insert_resource(TurnEventTracker::default())
         .add_systems(
             Update,
             (turn_start_system, turn_end_system, handle_untap_step)

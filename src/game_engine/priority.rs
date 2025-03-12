@@ -21,6 +21,12 @@ pub struct PrioritySystem {
 
     /// Whether all players have passed priority in succession
     pub all_players_passed: bool,
+
+    /// Tracks the last phase we completed a full priority round for
+    pub last_processed_phase: Option<Phase>,
+
+    /// Tracks the last turn number we processed
+    pub last_processed_turn: u32,
 }
 
 impl Default for PrioritySystem {
@@ -31,6 +37,8 @@ impl Default for PrioritySystem {
             priority_queue: VecDeque::new(),
             stack_is_empty: true,
             all_players_passed: false,
+            last_processed_phase: None,
+            last_processed_turn: 0,
         }
     }
 }
@@ -100,6 +108,17 @@ impl PrioritySystem {
             self.all_players_passed = false;
         }
     }
+
+    /// Check if we've already processed a particular phase in the current turn
+    pub fn has_processed_phase(&self, current_phase: Phase, turn_number: u32) -> bool {
+        self.last_processed_phase == Some(current_phase) && self.last_processed_turn == turn_number
+    }
+
+    /// Mark a phase as processed for this turn
+    pub fn mark_phase_processed(&mut self, current_phase: Phase, turn_number: u32) {
+        self.last_processed_phase = Some(current_phase);
+        self.last_processed_turn = turn_number;
+    }
 }
 
 /// System to handle priority passing and checks
@@ -109,6 +128,7 @@ pub fn priority_system(
     mut game_state: ResMut<GameState>,
     stack: Res<GameStack>,
     phase: Res<Phase>,
+    turn_manager: Res<crate::game_engine::turns::TurnManager>,
     // This would also interact with any pending game actions
 ) {
     // Update stack empty status
@@ -117,12 +137,21 @@ pub fn priority_system(
     // Update game state priority holder
     game_state.priority_holder = priority.active_player;
 
+    // When all players have passed and the stack is empty, we're ready for phase transition
+    if priority.all_players_passed && stack.is_empty() {
+        // Mark this phase as processed to prevent duplicate processing
+        priority.mark_phase_processed(*phase, turn_manager.turn_number);
+    }
+
     // If in a phase that auto-passes when empty and the stack is empty,
     // automatically pass priority
     if phase.auto_pass_if_empty() && stack.is_empty() {
-        // Auto-pass for all players
-        for _ in 0..priority.priority_queue.len() {
-            priority.pass_priority();
+        // Check if we've already processed this phase in the current turn
+        if !priority.has_processed_phase(*phase, turn_manager.turn_number) {
+            // Auto-pass for all players
+            for _ in 0..priority.priority_queue.len() {
+                priority.pass_priority();
+            }
         }
     }
 

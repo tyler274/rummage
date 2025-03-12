@@ -6,7 +6,7 @@ use crate::player::Player;
 use bevy::prelude::*;
 
 /// Different types of game actions a player can take
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Event)]
 pub enum GameAction {
     /// Play a land
     PlayLand { player: Entity, land_card: Entity },
@@ -36,77 +36,71 @@ pub fn process_game_actions(
     _stack: ResMut<GameStack>,
     mut priority: ResMut<PrioritySystem>,
     phase: Res<Phase>,
-    // Add an event reader for GameAction events when you implement the event system
+    mut game_action_events: EventReader<GameAction>,
     _player_query: Query<&Player>,
     card_query: Query<&Card>,
 ) {
-    // This would normally read actions from an event queue or similar
-    // For now, this is a placeholder showing how action processing would work
-
-    // Example: Processing a PlayLand action
-    let action = GameAction::PlayLand {
-        player: Entity::PLACEHOLDER,
-        land_card: Entity::PLACEHOLDER,
-    };
-
-    match action {
-        GameAction::PlayLand { player, land_card } => {
-            // Check if it's a valid time to play a land
-            if valid_time_to_play_land(&game_state, &phase, player) {
-                // Check if the player has already played a land this turn
-                if game_state.can_play_land(player) {
-                    // Check if the card is actually a land
-                    if let Ok(card) = card_query.get(land_card) {
-                        if card.types.contains(CardTypes::LAND) {
-                            // Mark that the player has played a land this turn
-                            game_state.record_land_played(player);
-                            // In a full implementation, you would move the land from hand to battlefield
-                            info!("Land played successfully");
+    // Process game actions from the event queue
+    for action in game_action_events.read() {
+        match action {
+            GameAction::PlayLand { player, land_card } => {
+                // Check if it's a valid time to play a land
+                if valid_time_to_play_land(&game_state, &phase, *player) {
+                    // Check if the player has already played a land this turn
+                    if game_state.can_play_land(*player) {
+                        // Check if the card is actually a land
+                        if let Ok(card) = card_query.get(*land_card) {
+                            if card.types.contains(CardTypes::LAND) {
+                                // Mark that the player has played a land this turn
+                                game_state.record_land_played(*player);
+                                // In a full implementation, you would move the land from hand to battlefield
+                                info!("Land played successfully");
+                            }
                         }
                     }
+                } else {
+                    warn!("Not a valid time to play a land");
                 }
-            } else {
-                warn!("Not a valid time to play a land");
             }
-        }
 
-        GameAction::CastSpell {
-            player,
-            spell_card,
-            targets: _,
-            mana_payment: _,
-        } => {
-            // Check if it's a valid time to cast this spell
-            if let Ok(card) = card_query.get(spell_card) {
-                let is_instant = is_instant_cast(card);
-                if is_instant || valid_time_for_sorcery(&game_state, &phase, &_stack, player) {
-                    // In a full implementation, check if the player can pay the cost
-                    if let Ok(player_entity) = _player_query.get(player) {
-                        if can_pay_mana(player_entity, &card.cost) {
-                            // In a full implementation, you would move the spell to the stack
-                            info!("Spell cast successfully");
+            GameAction::CastSpell {
+                player,
+                spell_card,
+                targets: _,
+                mana_payment: _,
+            } => {
+                // Check if it's a valid time to cast this spell
+                if let Ok(card) = card_query.get(*spell_card) {
+                    let is_instant = is_instant_cast(card);
+                    if is_instant || valid_time_for_sorcery(&game_state, &phase, &_stack, *player) {
+                        // In a full implementation, check if the player can pay the cost
+                        if let Ok(player_entity) = _player_query.get(*player) {
+                            if can_pay_mana(player_entity, &card.cost) {
+                                // In a full implementation, you would move the spell to the stack
+                                info!("Spell cast successfully");
+                            }
                         }
                     }
                 }
             }
-        }
 
-        GameAction::ActivateAbility {
-            player,
-            source,
-            ability_index,
-            targets,
-            mana_payment,
-        } => {
-            // Similar to cast spell, but for abilities
-            // Would check activation restrictions, costs, etc.
-        }
+            GameAction::ActivateAbility {
+                player,
+                source,
+                ability_index,
+                targets: _,
+                mana_payment: _,
+            } => {
+                // Similar to cast spell, but for abilities
+                // Would check activation restrictions, costs, etc.
+            }
 
-        GameAction::PassPriority { player } => {
-            // Check if it's this player's priority
-            if priority.active_player == player && priority.has_priority {
-                // Pass priority to the next player
-                priority.pass_priority();
+            GameAction::PassPriority { player } => {
+                // Check if it's this player's priority
+                if priority.active_player == *player && priority.has_priority {
+                    // Pass priority to the next player
+                    priority.pass_priority();
+                }
             }
         }
     }

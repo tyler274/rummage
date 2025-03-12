@@ -8,7 +8,9 @@ use crate::text::{
 };
 
 /// Directly replace mana symbols in text with their Unicode equivalents
-fn replace_mana_symbols_with_unicode(text: &str) -> String {
+/// This is a simpler alternative to the more complex inline mana symbol rendering
+/// that can be used for plain text displays or debugging purposes.
+pub fn replace_mana_symbols_with_unicode(text: &str) -> String {
     use crate::mana::MANA_SYMBOLS;
 
     let mut result = text.to_string();
@@ -184,7 +186,6 @@ fn render_inline_mana_symbols(
                         ..default()
                     },
                     TextColor(get_mana_symbol_color(inner_char)),
-                    TextLayout::new_with_justify(JustifyText::Left),
                 ))
                 .set_parent(parent_entity);
 

@@ -150,7 +150,6 @@ pub fn render_mana_symbol(
                     ..default()
                 },
                 TextColor(text_color),
-                TextLayout::new_with_justify(options.alignment),
                 Transform::from_translation(aligned_pos),
             ))
             .set_parent(parent_entity);
@@ -174,7 +173,6 @@ pub fn render_mana_symbol(
                     ..default()
                 },
                 TextColor(shadow_color),
-                TextLayout::new_with_justify(options.alignment),
                 Transform::from_translation(
                     aligned_pos + shadow_offset - Vec3::new(0.0, 0.0, 0.05),
                 ),
@@ -193,7 +191,6 @@ pub fn render_mana_symbol(
                 ..default()
             },
             TextColor(symbol_color),
-            TextLayout::new_with_justify(options.alignment),
             Transform::from_translation(aligned_pos),
         ))
         .set_parent(parent_entity);
