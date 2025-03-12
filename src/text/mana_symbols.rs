@@ -139,7 +139,6 @@ pub fn render_mana_symbol(
         // Render the symbol with the appropriate color
         commands
             .spawn((
-                TextSpan::default(),
                 Text2d::new(display_symbol),
                 TextFont {
                     font: mana_font,
@@ -148,6 +147,8 @@ pub fn render_mana_symbol(
                 },
                 TextColor(text_color),
                 Transform::from_translation(aligned_pos),
+                GlobalTransform::default(),
+                Name::new(format!("Mana Symbol: {}", clean_symbol)),
             ))
             .set_parent(parent_entity);
 
@@ -162,7 +163,6 @@ pub fn render_mana_symbol(
 
         commands
             .spawn((
-                TextSpan::default(),
                 Text2d::new(display_symbol.clone()),
                 TextFont {
                     font: mana_font.clone(),
@@ -173,6 +173,8 @@ pub fn render_mana_symbol(
                 Transform::from_translation(
                     aligned_pos + shadow_offset - Vec3::new(0.0, 0.0, 0.05),
                 ),
+                GlobalTransform::default(),
+                Name::new(format!("Mana Symbol Shadow: {}", symbol)),
             ))
             .set_parent(parent_entity);
     }
@@ -180,7 +182,6 @@ pub fn render_mana_symbol(
     // Render the actual mana symbol
     commands
         .spawn((
-            TextSpan::default(),
             Text2d::new(display_symbol),
             TextFont {
                 font: mana_font.clone(),
@@ -189,6 +190,8 @@ pub fn render_mana_symbol(
             },
             TextColor(symbol_color),
             Transform::from_translation(aligned_pos),
+            GlobalTransform::default(),
+            Name::new(format!("Mana Symbol: {}", symbol)),
         ))
         .set_parent(parent_entity);
 }
