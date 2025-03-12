@@ -1,14 +1,9 @@
 use bevy::prelude::*;
 use bevy::text::JustifyText;
 
-use crate::mana::mana_symbol_to_char;
 use crate::text::{
-    components::{
-        CardTextBundle, CardTextContent, CardTextStyleBundle, CardTextType, TextLayoutInfo,
-    },
-    mana_symbols::{
-        ManaSymbolOptions, get_mana_symbol_width, is_valid_mana_symbol, render_mana_symbol,
-    },
+    components::{CardTextContent, CardTextType, TextLayoutInfo},
+    mana_symbols::{get_mana_symbol_width, is_valid_mana_symbol},
     utils::{calculate_text_size, get_card_font_size, get_card_layout, get_mana_symbol_color},
 };
 
@@ -126,168 +121,81 @@ fn render_inline_mana_symbols(
 ) {
     // Extract segments of text, separating mana symbols from regular text
     let segments = extract_mana_symbol_segments(line);
+
+    // Prepare a single text entity with all segments
+    let mut text = String::new();
+
+    // Span the entire text to be rendered with the regular font first
+    commands
+        .spawn((
+            Text2d::new(line),
+            Transform::from_translation(Vec3::new(0.0, y_pos, 0.1)),
+            TextLayout::new_with_justify(JustifyText::Left),
+            TextFont {
+                font: regular_font.clone(),
+                font_size,
+                ..default()
+            },
+            TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
+        ))
+        .set_parent(parent_entity);
+
+    // Now add the mana symbols on top at their precise positions
     let mut current_x = 0.0;
+    let char_width = font_size * 0.5; // Approximate width of a character
 
-    // Check if this is an activated ability line (contains {T}: or other mana symbol followed by colon)
-    let is_activated_ability = line.contains("{T}:")
-        || (line.contains(':')
-            && segments
-                .iter()
-                .any(|(text, is_symbol)| *is_symbol && text.contains('{')));
-
-    // Special handling for compact rendering of activated abilities
-    if is_activated_ability {
-        // Starting position should be at the far left for proper alignment
-        let mut current_x = 0.0;
-
-        // For activated abilities, we'll use a simpler approach:
-        // Just render each segment sequentially with proper spacing
-        for (segment_text, is_mana_symbol) in segments {
-            if segment_text.is_empty() {
-                continue;
-            }
-
-            if is_mana_symbol {
-                // Create symbol-specific vertical adjustment
-                let symbol_specific_offset = match segment_text.trim() {
-                    "{T}" => font_size * 0.12, // Tap symbol needs specific adjustment
-                    "{G}" => font_size * 0.04, // Green mana
-                    "{R}" => font_size * 0.04, // Red mana
-                    "{B}" => font_size * 0.05, // Black mana
-                    "{W}" => font_size * 0.03, // White mana
-                    "{U}" => font_size * 0.03, // Blue mana
-                    "{C}" => font_size * 0.04, // Colorless mana
-                    s if s.len() >= 3 && s.starts_with('{') && s.ends_with('}') => {
-                        // Generic mana cost symbols
-                        let inner = &s[1..s.len() - 1];
-                        if inner.parse::<u32>().is_ok() || inner == "X" {
-                            font_size * 0.05
-                        } else {
-                            0.0
-                        }
-                    }
-                    _ => 0.0,
-                };
-
-                // Use the mana symbol renderer for consistent appearance
-                render_mana_symbol(
-                    commands,
-                    &segment_text,
-                    Vec2::new(current_x, y_pos + symbol_specific_offset),
-                    mana_font.clone(),
-                    ManaSymbolOptions {
-                        font_size,
-                        vertical_alignment_offset: 0.0,
-                        z_index: 0.2, // Render above regular text
-                        with_shadow: true,
-                        alignment: JustifyText::Left, // Ensure left alignment
-                    },
-                    parent_entity,
-                );
-
-                // Advance x position by mana symbol width
-                current_x += get_mana_symbol_width(font_size);
-
-                // Add extra spacing after tap symbol
-                if segment_text.trim() == "{T}" {
-                    current_x += font_size * 0.25; // Add extra spacing after tap symbol
-                }
-
-                // Add spacing after a colon if present
-                if segment_text.contains(':') {
-                    current_x += font_size * 0.3; // Increased spacing after colon for better readability
-                }
-            } else {
-                // Render regular text segment
-                let segment_clone = segment_text.clone();
-                commands
-                    .spawn((
-                        TextSpan::default(),
-                        Text2d::new(segment_clone.clone()),
-                        TextFont {
-                            font: regular_font.clone(),
-                            font_size,
-                            ..default()
-                        },
-                        TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
-                        Transform::from_translation(Vec3::new(current_x, y_pos, 0.0)),
-                        TextLayout::new_with_justify(JustifyText::Left),
-                    ))
-                    .set_parent(parent_entity);
-
-                // Advance x position based on text width (approximate)
-                current_x += segment_clone.len() as f32 * (font_size * 0.5);
-            }
-        }
-
-        return; // Skip the standard rendering for activated abilities
-    }
-
-    // Standard rendering for non-activated ability text
     for (segment_text, is_mana_symbol) in segments {
         if segment_text.is_empty() {
             continue;
         }
 
         if is_mana_symbol {
-            // Create mana symbol options with appropriate vertical alignment
-            let symbol_specific_offset = match segment_text.trim() {
-                "{T}" => font_size * 0.15, // Tap symbol needs more adjustment
-                "{B}" => font_size * 0.05, // Black mana
-                "{W}" => font_size * 0.03, // White mana
-                "{R}" => font_size * 0.04, // Red mana
-                "{U}" => font_size * 0.03, // Blue mana
-                "{C}" => font_size * 0.04, // Colorless mana
-                s if s.len() >= 3 && s.starts_with('{') && s.ends_with('}') => {
-                    // Generic mana cost symbols
-                    let inner = &s[1..s.len() - 1];
-                    if inner.parse::<u32>().is_ok() || inner == "X" {
-                        font_size * 0.05
-                    } else {
-                        0.0
+            // For mana symbols, extract the inner character and render it with the mana font
+            let symbol = segment_text.trim();
+            let inner_char =
+                if symbol.len() >= 3 && symbol.starts_with('{') && symbol.ends_with('}') {
+                    // Get the character inside the braces
+                    let inner = &symbol[1..symbol.len() - 1];
+                    // Convert to lowercase for the mana font
+                    match inner {
+                        "T" => "t", // tap symbol
+                        "W" => "w", // white mana
+                        "U" => "u", // blue mana
+                        "B" => "b", // black mana
+                        "R" => "r", // red mana
+                        "G" => "g", // green mana
+                        "C" => "c", // colorless mana
+                        // Handle numeric mana costs and X
+                        s if s.parse::<u32>().is_ok() => s,
+                        "X" => "x",
+                        // For other symbols
+                        _ => inner,
                     }
-                }
-                _ => 0.0,
-            };
+                } else {
+                    // Fallback
+                    "?"
+                };
 
-            // Use the mana symbol renderer for consistent appearance
-            render_mana_symbol(
-                commands,
-                &segment_text,
-                Vec2::new(current_x, y_pos + symbol_specific_offset),
-                mana_font.clone(),
-                ManaSymbolOptions {
-                    font_size,
-                    vertical_alignment_offset: 0.0, // We're applying it directly to position
-                    z_index: 0.1,
-                    with_shadow: true,
-                    alignment: JustifyText::Left,
-                },
-                parent_entity,
-            );
-
-            // Advance x position by mana symbol width
-            current_x += get_mana_symbol_width(font_size);
-        } else {
-            // Render regular text segment
-            let segment_clone = segment_text.clone();
+            // Overlay the mana symbol
             commands
                 .spawn((
-                    TextSpan::default(),
-                    Text2d::new(segment_clone.clone()),
+                    Text2d::new(inner_char),
+                    Transform::from_translation(Vec3::new(current_x, y_pos, 0.15)), // Slightly higher z to appear on top
                     TextFont {
-                        font: regular_font.clone(),
+                        font: mana_font.clone(),
                         font_size,
                         ..default()
                     },
-                    TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
-                    Transform::from_translation(Vec3::new(current_x, y_pos, 0.0)),
+                    TextColor(get_mana_symbol_color(inner_char)),
                     TextLayout::new_with_justify(JustifyText::Left),
                 ))
                 .set_parent(parent_entity);
 
-            // Advance x position based on text width (approximate)
-            current_x += segment_clone.len() as f32 * (font_size * 0.5);
+            // Advance the position by the symbol width
+            current_x += get_mana_symbol_width(font_size);
+        } else {
+            // For regular text, just advance the position
+            current_x += segment_text.len() as f32 * char_width;
         }
     }
 }
