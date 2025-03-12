@@ -106,10 +106,10 @@ impl Default for CardTextLayout {
             type_line_y_offset: 0.05, // Moved down from 0.25 to make space for card art
             type_line_width: 0.8,
             type_line_height: 0.08,
-            // Text box positioning - moved down to follow type line
-            text_box_y_offset: -0.15, // Moved down from 0.0 to position below type line
-            text_box_width: 0.8,
-            text_box_height: 0.35,
+            // Text box positioning - moved up to ensure it stays within card bounds
+            text_box_y_offset: -0.12, // Adjusted from -0.15 to keep text within bounds
+            text_box_width: 0.7,      // Reduced from 0.8 to keep text within horizontal bounds
+            text_box_height: 0.25,    // Reduced from 0.35 to ensure text fits vertically
             text_box_padding: 0.025,
         }
     }

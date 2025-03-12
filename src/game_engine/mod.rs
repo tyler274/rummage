@@ -115,28 +115,8 @@ impl Plugin for GameEnginePlugin {
         register_zone_systems(app);
         // Register turn systems
         register_turn_systems(app);
-
-        // Commander systems
-        app.add_systems(
-            Update,
-            track_commander_damage.run_if(in_state(GameMenuState::InGame)),
-        );
-        app.add_systems(
-            Update,
-            handle_commander_zone_change.run_if(in_state(GameMenuState::InGame)),
-        );
-        app.add_systems(
-            Update,
-            process_commander_zone_choices.run_if(in_state(GameMenuState::InGame)),
-        );
-        app.add_systems(
-            Update,
-            check_commander_damage_loss.run_if(in_state(GameMenuState::InGame)),
-        );
-        app.add_systems(
-            Update,
-            record_commander_damage.run_if(in_state(GameMenuState::InGame)),
-        );
+        // Register commander systems
+        commander::register_commander_systems(app);
 
         // Combat systems
         app.add_systems(
@@ -160,7 +140,7 @@ impl Plugin for GameEnginePlugin {
 }
 
 /// Condition function to check if the game state is InGame
-fn game_state_condition(state: Res<State<GameMenuState>>) -> bool {
+pub fn game_state_condition(state: Res<State<GameMenuState>>) -> bool {
     *state.get() == GameMenuState::InGame
 }
 

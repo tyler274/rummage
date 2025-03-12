@@ -51,8 +51,7 @@ impl Plugin for GamePlugin {
             )
             .add_systems(
                 Update,
-                (handle_window_resize, camera_movement, spawn_card_text)
-                    .run_if(in_state(GameMenuState::InGame)),
+                (handle_window_resize, camera_movement).run_if(in_state(GameMenuState::InGame)),
             );
     }
 }

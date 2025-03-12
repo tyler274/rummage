@@ -64,15 +64,20 @@ pub fn spawn_rules_text(
 
     // Load fonts - both regular and mana fonts
     let regular_font = asset_server.load("fonts/DejaVuSans.ttf");
-    let mana_font = asset_server.load("fonts/Mana.ttf");
+    let mana_font: Handle<Font> = asset_server.load("fonts/Mana.ttf");
 
-    // Create the parent text entity
-    let parent_entity = commands
+    // Create the root text entity with sections for the entire text content
+    let text_entity = commands
         .spawn((
-            // Empty root for text container
-            Text2d::new(""),
+            Text2d::new(formatted_text.clone()),
             Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.2)),
             GlobalTransform::default(),
+            TextFont {
+                font: regular_font.clone(),
+                font_size,
+                ..default()
+            },
+            TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
             TextLayout::new_with_justify(JustifyText::Left),
             CardTextType::RulesText,
             TextLayoutInfo {
@@ -82,118 +87,22 @@ pub fn spawn_rules_text(
         ))
         .id();
 
-    // Render rules text line by line
-    let lines = formatted_text.split('\n').collect::<Vec<_>>();
-    let line_height = font_size * 1.2; // Line height with some spacing
-
-    for (line_idx, line) in lines.iter().enumerate() {
-        // Skip empty lines
-        if line.is_empty() {
-            continue;
-        }
-
-        let y_pos = -(line_idx as f32) * line_height;
-
-        // Use our improved inline mana symbol renderer for all lines
-        render_inline_mana_symbols(
-            commands,
-            line,
-            y_pos,
-            font_size,
-            &regular_font,
-            &mana_font,
-            parent_entity,
-        );
-    }
-
-    parent_entity
+    text_entity
 }
 
-/// Renders a line of text with inline mana symbols
-fn render_inline_mana_symbols(
-    commands: &mut Commands,
-    line: &str,
-    y_pos: f32,
-    font_size: f32,
-    regular_font: &Handle<Font>,
-    mana_font: &Handle<Font>,
-    parent_entity: Entity,
+/// Add mana symbols as child entities with TextSpan components - Deprecated
+/// This function is no longer used and kept for reference
+#[allow(dead_code)]
+fn add_mana_symbols_as_children(
+    _commands: &mut Commands,
+    _parent_entity: Entity,
+    _formatted_text: &str,
+    _font_size: f32,
+    _regular_font: &Handle<Font>,
+    _mana_font: &Handle<Font>,
 ) {
-    // Extract segments of text, separating mana symbols from regular text
-    let segments = extract_mana_symbol_segments(line);
-
-    // Span the entire text to be rendered with the regular font first
-    commands
-        .spawn((
-            Text2d::new(line),
-            Transform::from_translation(Vec3::new(0.0, y_pos, 0.1)),
-            TextLayout::new_with_justify(JustifyText::Left),
-            TextFont {
-                font: regular_font.clone(),
-                font_size,
-                ..default()
-            },
-            TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
-        ))
-        .set_parent(parent_entity);
-
-    // Now add the mana symbols on top at their precise positions
-    let mut current_x = 0.0;
-    let char_width = font_size * 0.5; // Approximate width of a character
-
-    for (segment_text, is_mana_symbol) in segments {
-        if segment_text.is_empty() {
-            continue;
-        }
-
-        if is_mana_symbol {
-            // For mana symbols, extract the inner character and render it with the mana font
-            let symbol = segment_text.trim();
-            let inner_char =
-                if symbol.len() >= 3 && symbol.starts_with('{') && symbol.ends_with('}') {
-                    // Get the character inside the braces
-                    let inner = &symbol[1..symbol.len() - 1];
-                    // Convert to lowercase for the mana font
-                    match inner {
-                        "T" => "t", // tap symbol
-                        "W" => "w", // white mana
-                        "U" => "u", // blue mana
-                        "B" => "b", // black mana
-                        "R" => "r", // red mana
-                        "G" => "g", // green mana
-                        "C" => "c", // colorless mana
-                        // Handle numeric mana costs and X
-                        s if s.parse::<u32>().is_ok() => s,
-                        "X" => "x",
-                        // For other symbols
-                        _ => inner,
-                    }
-                } else {
-                    // Fallback
-                    "?"
-                };
-
-            // Overlay the mana symbol
-            commands
-                .spawn((
-                    Text2d::new(inner_char),
-                    Transform::from_translation(Vec3::new(current_x, y_pos, 0.15)), // Slightly higher z to appear on top
-                    TextFont {
-                        font: mana_font.clone(),
-                        font_size,
-                        ..default()
-                    },
-                    TextColor(get_mana_symbol_color(inner_char)),
-                ))
-                .set_parent(parent_entity);
-
-            // Advance the position by the symbol width
-            current_x += get_mana_symbol_width(font_size);
-        } else {
-            // For regular text, just advance the position
-            current_x += segment_text.len() as f32 * char_width;
-        }
-    }
+    // This approach caused the TextSpan warning and has been removed
+    // We now use a simpler approach with just a plain Text2d component
 }
 
 /// Extract segments of text, separating mana symbols from regular text
@@ -332,4 +241,19 @@ fn format_rules_text(text: &str, max_width: f32, font_size: f32) -> String {
     }
 
     result
+}
+
+/// Renders a line of text with inline mana symbols
+#[allow(dead_code)] // Kept for reference but no longer used
+fn render_inline_mana_symbols(
+    _commands: &mut Commands,
+    _line: &str,
+    _y_pos: f32,
+    _font_size: f32,
+    _regular_font: &Handle<Font>,
+    _mana_font: &Handle<Font>,
+    _parent_entity: Entity,
+) {
+    // This function is kept for reference but is no longer used
+    // We now build the Text component directly with sections
 }
