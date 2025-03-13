@@ -9,6 +9,8 @@ pub mod state;
 pub mod systems;
 // mod tests; // Will be added when tests are implemented
 
+// snapshot module has been moved to its own top-level module at src/snapshot
+
 use bevy::prelude::*;
 
 use crate::camera::config::CameraConfig;
