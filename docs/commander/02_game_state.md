@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Game State Management module is responsible for tracking and maintaining the complete state of a Commander game. It serves as the central source of truth for all game data and coordinates the interactions between other modules.
+The Game State Management module is responsible for tracking and maintaining the complete state of a Commander game. It serves as the central source of truth for all game data and coordinates the interactions between other modules, ensuring rules compliance according to the Magic: The Gathering Comprehensive Rules section 903.
 
 ## Core Components
 
@@ -23,13 +23,18 @@ pub struct CommanderGameState {
     pub priority_holder: Entity,
     
     // Game parameters
-    pub starting_life: u32,  // Typically 40 for Commander
+    pub starting_life: u32,  // 40 for Commander (rule 903.7)
     pub max_players: u8,     // Up to 13 supported
-    pub commander_damage_threshold: u32,  // Typically 21
+    pub commander_damage_threshold: u32,  // 21 (rule 903.10a)
     
     // Game state flags
     pub game_over: bool,
     pub winner: Option<Entity>,
+    
+    // Commander-specific tracking
+    pub color_identity_enforced: bool, // For deck validation (rule 903.5c)
+    pub commander_tax_enabled: bool, // Track commander tax (rule 903.8)
+    pub commander_zone_transitions_enabled: bool, // Special command zone transitions (rule 903.9)
 }
 ```
 
@@ -50,6 +55,19 @@ pub struct ZoneManager {
     
     // Shared zones
     pub stack: Vec<StackItem>,
+    
+    // Zone transition tracking
+    pub zone_history: HashMap<Entity, Vec<ZoneTransition>>,
+}
+
+#[derive(Clone, Debug)]
+pub struct ZoneTransition {
+    pub card: Entity,
+    pub from_zone: Zone,
+    pub to_zone: Zone,
+    pub timestamp: std::time::Instant,
+    pub turn_number: u32,
+    pub is_commander: bool,
 }
 ```
 
@@ -60,6 +78,7 @@ pub struct ZoneManager {
 pub struct GameActionHistory {
     pub actions: Vec<GameAction>,
     pub current_turn_actions: Vec<GameAction>,
+    pub commander_casts: HashMap<Entity, Vec<CommanderCast>>, // Tracks commander casts for tax
 }
 
 #[derive(Clone, Debug)]
@@ -70,6 +89,15 @@ pub struct GameAction {
     pub targets: Vec<Entity>,
     pub cards: Vec<Entity>,
     pub metadata: HashMap<String, String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct CommanderCast {
+    pub commander: Entity,
+    pub cast_count: u32,
+    pub tax_paid: u32,
+    pub turn_number: u32,
+    pub timestamp: std::time::Instant,
 }
 ```
 
@@ -101,7 +129,13 @@ fn initialize_commander_game(
     game_state.current_phase = Phase::Beginning(BeginningStep::Untap);
     
     // Additional setup for Commander format
-    // ...
+    game_state.starting_life = 40; // Rule 903.7
+    game_state.commander_damage_threshold = 21; // Rule 903.10a
+    game_state.color_identity_enforced = true; // Rule 903.5c
+    game_state.commander_tax_enabled = true; // Rule 903.8
+    game_state.commander_zone_transitions_enabled = true; // Rule 903.9
+    
+    // Initialize command zones for each player (will be done in a separate system)
 }
 ```
 
@@ -110,20 +144,20 @@ fn initialize_commander_game(
 ```rust
 fn update_game_state(
     mut game_state: ResMut<CommanderGameState>,
-    players: Query<&Player>,
+    players: Query<(Entity, &Player, &CommanderPlayer)>,
     time: Res<Time>,
 ) {
     // Check for game-ending conditions
     let active_players = players.iter()
-        .filter(|p| p.life > 0 && !p.has_lost)
+        .filter(|(_, _, commander_player)| commander_player.life > 0 && !commander_player.has_lost)
         .count();
     
     if active_players <= 1 {
         game_state.game_over = true;
         
         // Find the winner if there is one
-        for (entity, player) in players.iter_entities() {
-            if player.life > 0 && !player.has_lost {
+        for (entity, _, commander_player) in players.iter() {
+            if commander_player.life > 0 && !commander_player.has_lost {
                 game_state.winner = Some(entity);
                 break;
             }
@@ -160,11 +194,68 @@ fn process_game_actions(
         
         // Process the action based on its type
         match action.action_type {
-            ActionType::DrawCard => {
-                // Handle card drawing logic
+            ActionType::CastCommander => {
+                // Handle commander casting with tax calculation (rule 903.8)
+                if let Some(commander_entity) = action.cards.first() {
+                    let player_entity = action.player;
+                    
+                    // Get current cast count or default to 0
+                    let commander_casts = history.commander_casts
+                        .entry(player_entity)
+                        .or_insert_with(Vec::new);
+                    
+                    let cast_count = commander_casts.iter()
+                        .filter(|cast| cast.commander == *commander_entity)
+                        .count() as u32;
+                    
+                    // Calculate and record tax
+                    let tax = 2 * cast_count; // Each previous cast adds {2} to cost
+                    
+                    commander_casts.push(CommanderCast {
+                        commander: *commander_entity,
+                        cast_count: cast_count + 1,
+                        tax_paid: tax,
+                        turn_number: game_state.turn_number,
+                        timestamp: std::time::Instant::now(),
+                    });
+                    
+                    // Move the commander from command zone to stack
+                    let command_zone = zone_manager.command_zones.entry(player_entity).or_default();
+                    if let Some(idx) = command_zone.iter().position(|e| e == commander_entity) {
+                        let commander = command_zone.remove(idx);
+                        
+                        // Add to stack (simplified, actual stack implementation in stack.rs)
+                        zone_manager.stack.push(StackItem {
+                            entity: *commander_entity,
+                            item_type: StackItemType::Spell(SpellType::Commander),
+                            controller: player_entity,
+                            source: *commander_entity,
+                            source_zone: Zone::CommandZone,
+                            targets: Vec::new(),
+                            // Additional stack item properties...
+                        });
+                        
+                        // Record zone transition
+                        zone_manager.zone_history.entry(*commander_entity)
+                            .or_insert_with(Vec::new)
+                            .push(ZoneTransition {
+                                card: *commander_entity,
+                                from_zone: Zone::CommandZone,
+                                to_zone: Zone::Stack,
+                                timestamp: std::time::Instant::now(),
+                                turn_number: game_state.turn_number,
+                                is_commander: true,
+                            });
+                    }
+                }
             },
-            ActionType::PlayLand => {
-                // Handle land playing logic
+            ActionType::CommanderDamage => {
+                // Handle commander damage (rule 903.10a)
+                // Implementation details in combat system
+            },
+            ActionType::CommanderZoneTransition => {
+                // Handle commander returning to command zone (rule 903.9)
+                // Implementation details in commander zone system
             },
             // Handle other action types
             // ...
@@ -184,6 +275,7 @@ pub fn serialize_game_state(
     history: &GameActionHistory,
 ) -> Result<String, serde_json::Error> {
     // Serialize the complete game state to JSON
+    // Include all Commander-specific state
 }
 
 pub fn deserialize_game_state(
@@ -195,27 +287,30 @@ pub fn deserialize_game_state(
 
 ## Integration Points
 
-- **Player Management**: Tracks player entities and their states
+- **Player Management**: Tracks player entities and their commanders
 - **Turn Structure**: Updates phase information and manages phase transitions
 - **Stack System**: Coordinates with ZoneManager for stack operations
 - **Command Zone**: Special handling for Commander cards and zone transitions
+- **Combat System**: Tracks and enforces commander damage rules
 - **UI System**: Provides state information for rendering
 
 ## Testing Strategy
 
 1. **Unit Tests**:
-   - Verify state transitions
-   - Test game-ending condition detection
-   - Validate persistence functionality
+   - Verify commander tax calculation
+   - Test commander zone transitions
+   - Validate commander damage tracking
    
 2. **Integration Tests**:
-   - Test multi-player state management
-   - Verify state consistency across complex operations
-   - Simulate full game scenarios
+   - Test multi-player commander game state
+   - Verify color identity enforcement
+   - Simulate special commander scenarios
+   - Test state-based actions for commanders
 
 ## Performance Considerations
 
 For games with many players (up to 13):
 - Efficient entity lookups with spatial partitioning
 - Batch processing of state updates
-- Lazy evaluation of derived state information 
+- Lazy evaluation of derived state information
+- Optimized zone transition tracking 

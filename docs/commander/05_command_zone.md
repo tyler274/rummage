@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Command Zone is a unique game zone central to the Commander format. This module manages the Command Zone, Commander card movement between zones, and the special rules surrounding Commander cards. It integrates with the zone management and player systems to provide a complete implementation of Commander-specific mechanics.
+The Command Zone is a unique game zone central to the Commander format. This module manages the Command Zone, Commander card movement between zones, and the special rules surrounding Commander cards. It integrates with the zone management and player systems to provide a complete implementation of Commander-specific mechanics according to the official Magic: The Gathering Comprehensive Rules section 903.
 
 ## Core Components
 
@@ -17,11 +17,12 @@ pub struct CommandZoneManager {
     // Tracks whether commanders are in the command zone or elsewhere
     pub commander_zone_status: HashMap<Entity, CommanderZoneLocation>,
     
-    // Tracks the number of times a commander has moved to command zone
-    pub zone_transition_count: HashMap<Entity, u32>,
+    // Tracks the number of times each commander has been cast from the command zone
+    pub cast_count: HashMap<Entity, u32>,
     
-    // Tracks commanders that died this turn (for "died this turn" triggers)
+    // Tracks commanders that died/were exiled this turn (for state-based actions)
     pub died_this_turn: HashSet<Entity>,
+    pub exiled_this_turn: HashSet<Entity>,
     
     // Track partner commanders and backgrounds
     pub commander_partnerships: HashMap<Entity, Entity>,
@@ -49,9 +50,6 @@ pub struct CommanderCard {
     // Reference to the player who owns this commander
     pub owner: Entity,
     
-    // Number of times cast from command zone (for tax calculation)
-    pub cast_count: u32,
-    
     // Commander's color identity (for deck validation)
     pub color_identity: ColorIdentity,
     
@@ -60,8 +58,9 @@ pub struct CommanderCard {
     pub is_background: bool,
     pub can_be_companion: bool,
     
-    // Track if commander has dealt combat damage this turn
+    // Track if commander has dealt combat damage to each player this turn
     pub dealt_combat_damage_this_turn: HashSet<Entity>,
+    pub total_commander_damage_dealt: HashMap<Entity, u32>,
     
     // Commander-specific abilities
     pub special_abilities: Vec<CommanderAbility>,
@@ -90,174 +89,210 @@ fn initialize_command_zone(
     mut game_state: ResMut<CommanderGameState>,
     mut players: Query<(Entity, &CommanderPlayer)>,
     mut cmd_zone_manager: ResMut<CommandZoneManager>,
-    cards: Query<(Entity, &Card)>,
+    cards: Query<(Entity, &Card, Option<&CommanderCard>)>,
 ) {
-    // Initialize command zones for each player
+    // Initialize command zones for each player (rule 903.6)
     for (player_entity, player) in players.iter_mut() {
         // Create empty command zone entry
         cmd_zone_manager.command_zones.insert(player_entity, Vec::new());
         
-        // Get commander cards for this player
-        for &commander_entity in &player.commander_entities {
-            // Add commander to command zone
-            cmd_zone_manager.command_zones
-                .get_mut(&player_entity)
-                .unwrap()
-                .push(commander_entity);
+        // Get commander cards for this player and put them in command zone
+        for commander_entity in &player.commander_entities {
+            if let Ok((entity, card, _)) = cards.get(*commander_entity) {
+                // Add commander to command zone
+                cmd_zone_manager.command_zones.get_mut(&player_entity).unwrap().push(entity);
                 
-            // Set initial zone status
-            cmd_zone_manager.commander_zone_status
-                .insert(commander_entity, CommanderZoneLocation::CommandZone);
+                // Set zone status
+                cmd_zone_manager.commander_zone_status.insert(entity, CommanderZoneLocation::CommandZone);
                 
-            // Initialize transition count
-            cmd_zone_manager.zone_transition_count
-                .insert(commander_entity, 0);
+                // Initialize cast count
+                cmd_zone_manager.cast_count.insert(entity, 0);
                 
-            // Set up commander card component
-            if let Ok((entity, card)) = cards.get(commander_entity) {
-                // Extract color identity from card
-                let color_identity = extract_color_identity(card);
-                
-                // Check for partner/background abilities
-                let is_partner = card.rules_text.contains("Partner");
-                let is_background = card.rules_text.contains("Background");
-                
-                // Create commander component
-                let commander_card = CommanderCard {
-                    owner: player_entity,
-                    cast_count: 0,
-                    color_identity,
-                    is_partner,
-                    is_background,
-                    can_be_companion: false,
-                    dealt_combat_damage_this_turn: HashSet::new(),
-                    special_abilities: Vec::new(),
-                };
-                
-                // Add commander component to card
-                commands.entity(entity).insert(commander_card);
-            }
-        }
-    }
-    
-    // Process partner commanders
-    for (player_entity, player) in players.iter() {
-        let commander_entities = player.commander_entities.clone();
-        if commander_entities.len() == 2 {
-            // Check if both have partner or one is a background
-            let has_partners = commander_entities.iter().all(|&e| {
-                if let Ok((_, cmd)) = cards.get_component::<CommanderCard>(e) {
-                    cmd.is_partner
-                } else {
-                    false
-                }
-            });
-            
-            let has_background = commander_entities.iter().any(|&e| {
-                if let Ok((_, cmd)) = cards.get_component::<CommanderCard>(e) {
-                    cmd.is_background
-                } else {
-                    false
-                }
-            });
-            
-            if has_partners || has_background {
-                // Link the partners or commander+background
-                cmd_zone_manager.commander_partnerships.insert(
-                    commander_entities[0], 
-                    commander_entities[1]
-                );
-            } else {
-                // Invalid pair - log error and handle
-                error!("Invalid commander pair for player {}", player_entity.index());
+                // Additional commander initialization
+                // ...
             }
         }
     }
 }
 ```
 
-### Commander Movement System
+### Commander Zone Transfer System
 
 ```rust
-fn handle_commander_zone_changes(
-    mut commands: Commands,
-    mut zone_events: EventReader<ZoneChangeEvent>,
+fn handle_commander_zone_change(
+    mut command_zone_events: EventReader<CommanderZoneChoiceEvent>,
+    mut zone_manager: ResMut<ZoneManager>,
     mut cmd_zone_manager: ResMut<CommandZoneManager>,
-    mut players: Query<(Entity, &mut CommanderPlayer)>,
-    commanders: Query<(Entity, &CommanderCard)>,
+    mut game_events: EventWriter<GameEvent>,
 ) {
-    for event in zone_events.read() {
-        // Only process commander cards
-        if let Ok((entity, commander)) = commanders.get(event.card) {
-            let owner = commander.owner;
-            
-            // Update zone status
-            match event.destination {
-                Zone::CommandZone => {
-                    cmd_zone_manager.commander_zone_status
-                        .insert(entity, CommanderZoneLocation::CommandZone);
-                        
-                    // Update player's commander in command zone flag
-                    if let Ok((_, mut player)) = players.get_mut(owner) {
-                        if let Some(index) = player.commander_entities.iter()
-                            .position(|&e| e == entity) {
-                            player.commander_in_command_zone[index] = true;
+    for event in command_zone_events.read() {
+        let commander_entity = event.commander;
+        let player_entity = event.player;
+        
+        // Handle state-based action for commander in graveyard or exile (rule 903.9a)
+        if event.from_zone == Zone::Graveyard || event.from_zone == Zone::Exile {
+            // Commander can go to command zone as a state-based action
+            if event.to_command_zone {
+                // Remove from current zone
+                match event.from_zone {
+                    Zone::Graveyard => {
+                        if let Some(graveyard) = zone_manager.graveyards.get_mut(&player_entity) {
+                            if let Some(idx) = graveyard.iter().position(|&e| e == commander_entity) {
+                                graveyard.swap_remove(idx);
+                            }
                         }
+                        cmd_zone_manager.died_this_turn.remove(&commander_entity);
+                    },
+                    Zone::Exile => {
+                        if let Some(exile) = zone_manager.exiles.get_mut(&player_entity) {
+                            if let Some(idx) = exile.iter().position(|&e| e == commander_entity) {
+                                exile.swap_remove(idx);
+                            }
+                        }
+                        cmd_zone_manager.exiled_this_turn.remove(&commander_entity);
+                    },
+                    _ => {}
+                }
+                
+                // Add to command zone
+                cmd_zone_manager.command_zones.get_mut(&player_entity).unwrap().push(commander_entity);
+                cmd_zone_manager.commander_zone_status.insert(commander_entity, CommanderZoneLocation::CommandZone);
+                
+                // Send event for successful zone change
+                game_events.send(GameEvent::ZoneChanged {
+                    card: commander_entity,
+                    from: event.from_zone,
+                    to: Zone::CommandZone,
+                    controller: player_entity,
+                });
+            }
+        } 
+        // Handle replacement effect for commander going to hand or library (rule 903.9b)
+        else if event.from_zone == Zone::Battlefield && 
+               (event.to_zone == Zone::Hand || event.to_zone == Zone::Library) {
+            if event.to_command_zone {
+                // This is a replacement effect - commander never goes to hand/library
+                
+                // Remove from battlefield
+                if let Some(battlefield) = zone_manager.battlefields.get_mut(&player_entity) {
+                    if let Some(idx) = battlefield.iter().position(|&e| e == commander_entity) {
+                        battlefield.swap_remove(idx);
                     }
-                },
-                Zone::Battlefield => {
-                    cmd_zone_manager.commander_zone_status
-                        .insert(entity, CommanderZoneLocation::Battlefield);
-                },
-                Zone::Graveyard => {
-                    // Commander death triggers
-                    if event.source == Zone::Battlefield {
-                        cmd_zone_manager.died_this_turn.insert(entity);
-                        
-                        // Offer replacement effect to send to command zone
-                        commands.spawn(CommanderZoneChoiceEvent {
-                            commander: entity,
-                            owner,
-                            current_zone: Zone::Graveyard,
-                            can_go_to_command_zone: true,
-                        });
-                    }
-                    
-                    cmd_zone_manager.commander_zone_status
-                        .insert(entity, CommanderZoneLocation::Graveyard);
-                },
-                Zone::Exile => {
-                    // Offer replacement effect to send to command zone
-                    commands.spawn(CommanderZoneChoiceEvent {
-                        commander: entity,
-                        owner,
-                        current_zone: Zone::Exile,
-                        can_go_to_command_zone: true,
-                    });
-                    
-                    cmd_zone_manager.commander_zone_status
-                        .insert(entity, CommanderZoneLocation::Exile);
-                },
-                Zone::Hand => {
-                    cmd_zone_manager.commander_zone_status
-                        .insert(entity, CommanderZoneLocation::Hand);
-                },
-                Zone::Library => {
-                    cmd_zone_manager.commander_zone_status
-                        .insert(entity, CommanderZoneLocation::Library);
-                },
-                Zone::Stack => {
-                    cmd_zone_manager.commander_zone_status
-                        .insert(entity, CommanderZoneLocation::Stack);
-                },
+                }
+                
+                // Add to command zone directly
+                cmd_zone_manager.command_zones.get_mut(&player_entity).unwrap().push(commander_entity);
+                cmd_zone_manager.commander_zone_status.insert(commander_entity, CommanderZoneLocation::CommandZone);
+                
+                // Send event for successful zone change
+                game_events.send(GameEvent::ZoneChanged {
+                    card: commander_entity,
+                    from: event.from_zone,
+                    to: Zone::CommandZone,
+                    controller: player_entity,
+                });
+            } else {
+                // Commander goes to original destination
+                match event.to_zone {
+                    Zone::Hand => {
+                        zone_manager.hands.get_mut(&player_entity).unwrap().push(commander_entity);
+                        cmd_zone_manager.commander_zone_status.insert(commander_entity, CommanderZoneLocation::Hand);
+                    },
+                    Zone::Library => {
+                        zone_manager.libraries.get_mut(&player_entity).unwrap().push(commander_entity);
+                        cmd_zone_manager.commander_zone_status.insert(commander_entity, CommanderZoneLocation::Library);
+                    },
+                    _ => {}
+                }
+            }
+        }
+    }
+}
+```
+
+### Commander Death State-Based Action
+
+```rust
+fn check_commander_death_state_based_action(
+    mut cmd_zone_manager: ResMut<CommandZoneManager>,
+    mut zone_manager: ResMut<ZoneManager>,
+    mut choice_events: EventWriter<CommanderZoneChoiceEvent>,
+) {
+    // Create a list of commanders to check, to avoid mutability issues
+    let commanders_to_check: Vec<(Entity, Entity, Zone)> = cmd_zone_manager.died_this_turn
+        .iter()
+        .filter_map(|&commander_entity| {
+            // Find the owner
+            for (player, commanders) in &cmd_zone_manager.command_zones {
+                if commanders.contains(&commander_entity) {
+                    return Some((commander_entity, *player, Zone::Graveyard));
+                }
+            }
+            None
+        })
+        .collect();
+    
+    // Same for exiled commanders
+    let exiled_commanders: Vec<(Entity, Entity, Zone)> = cmd_zone_manager.exiled_this_turn
+        .iter()
+        .filter_map(|&commander_entity| {
+            // Find the owner
+            for (player, commanders) in &cmd_zone_manager.command_zones {
+                if commanders.contains(&commander_entity) {
+                    return Some((commander_entity, *player, Zone::Exile));
+                }
+            }
+            None
+        })
+        .collect();
+    
+    // Process all dead/exiled commanders
+    let all_commanders = [commanders_to_check, exiled_commanders].concat();
+    
+    for (commander_entity, player_entity, from_zone) in all_commanders {
+        // Create a zone choice event (rule 903.9a)
+        choice_events.send(CommanderZoneChoiceEvent {
+            commander: commander_entity,
+            player: player_entity,
+            from_zone,
+            to_zone: from_zone, // Original destination
+            to_command_zone: true, // Default to move to command zone, but player can choose
+        });
+    }
+}
+```
+
+### Commander Replacement Effect System
+
+```rust
+fn commander_replacement_effect(
+    mut zone_change_events: EventReader<ZoneChangeEvent>,
+    mut cmd_zone_manager: ResMut<CommandZoneManager>,
+    commanders: Query<Entity, With<CommanderCard>>,
+    mut choice_events: EventWriter<CommanderZoneChoiceEvent>,
+) {
+    for event in zone_change_events.read() {
+        // Check if this is a commander
+        if commanders.contains(event.card) {
+            // Handle replacement effect for hand/library (rule 903.9b)
+            if event.to_zone == Zone::Hand || event.to_zone == Zone::Library {
+                // Trigger choice event for replacement effect
+                choice_events.send(CommanderZoneChoiceEvent {
+                    commander: event.card,
+                    player: event.controller,
+                    from_zone: event.from_zone,
+                    to_zone: event.to_zone,
+                    to_command_zone: true, // Default to move to command zone, but player can choose
+                });
             }
             
-            // Increase zone transition count if moved to command zone
-            if event.destination == Zone::CommandZone {
-                let count = cmd_zone_manager.zone_transition_count
-                    .entry(entity)
-                    .or_insert(0);
-                *count += 1;
+            // Track graveyard and exile for SBA (rule 903.9a)
+            if event.to_zone == Zone::Graveyard {
+                cmd_zone_manager.died_this_turn.insert(event.card);
+                cmd_zone_manager.commander_zone_status.insert(event.card, CommanderZoneLocation::Graveyard);
+            } else if event.to_zone == Zone::Exile {
+                cmd_zone_manager.exiled_this_turn.insert(event.card);
+                cmd_zone_manager.commander_zone_status.insert(event.card, CommanderZoneLocation::Exile);
             }
         }
     }
@@ -267,62 +302,145 @@ fn handle_commander_zone_changes(
 ### Commander Tax Calculation
 
 ```rust
-fn calculate_commander_cost(
-    commander: Entity,
-    base_cost: Mana,
-    cmd_zone_manager: &CommandZoneManager,
-    players: &Query<(Entity, &CommanderPlayer)>,
-) -> Mana {
-    let mut final_cost = base_cost.clone();
+fn calculate_commander_tax(
+    cmd_zone_manager: Res<CommandZoneManager>,
+    commander_entity: Entity,
+) -> u32 {
+    // Get the number of times this commander has been cast (rule 903.8)
+    let cast_count = cmd_zone_manager.cast_count.get(&commander_entity).copied().unwrap_or(0);
     
-    // Find the commander's owner and cast count
-    for (_, commander_card) in players.iter() {
-        if commander_card.owner == commander {
-            // Add commander tax (2 generic mana per previous cast)
-            let cast_count = commander_card.cast_count;
-            final_cost.colorless += 2 * cast_count;
-            break;
-        }
-    }
-    
-    final_cost
+    // Each previous cast adds {2} to the cost
+    cast_count * 2
 }
 ```
 
-### Commander Damage Tracking
+### Commander Casting System
 
 ```rust
-fn track_commander_damage(
+fn handle_commander_cast(
     mut commands: Commands,
-    mut damage_events: EventReader<CombatDamageEvent>,
-    commanders: Query<(Entity, &CommanderCard)>,
-    mut players: Query<(Entity, &mut CommanderPlayer)>,
-    game_state: Res<CommanderGameState>,
+    mut cmd_zone_manager: ResMut<CommandZoneManager>,
+    mut zone_manager: ResMut<ZoneManager>,
+    mut cast_events: EventReader<CommanderCastEvent>,
 ) {
-    for event in damage_events.read() {
-        // Only process commander combat damage
-        if let Ok((commander_entity, commander)) = commanders.get(event.source) {
-            if event.is_combat_damage && event.damage > 0 {
-                // Find the damaged player
-                if let Ok((damaged_player, mut player)) = players.get_mut(event.target) {
-                    // Update commander damage for the player
-                    let owner = commander.owner;
-                    let entry = player.commander_damage_received
-                        .entry(owner)
-                        .or_insert(0);
-                    *entry += event.damage;
+    for event in cast_events.read() {
+        let commander_entity = event.commander;
+        let player_entity = event.player;
+        
+        // Update cast count for commander tax (rule 903.8)
+        let cast_count = cmd_zone_manager.cast_count.entry(commander_entity).or_insert(0);
+        *cast_count += 1;
+        
+        // Update zone status
+        cmd_zone_manager.commander_zone_status.insert(commander_entity, CommanderZoneLocation::Stack);
+        
+        // Move from command zone to stack
+        if let Some(command_zone) = cmd_zone_manager.command_zones.get_mut(&player_entity) {
+            if let Some(idx) = command_zone.iter().position(|&e| e == commander_entity) {
+                command_zone.swap_remove(idx);
+                
+                // Add to stack (simplified, actual implementation in stack.rs)
+                zone_manager.stack.push(StackItem {
+                    entity: commander_entity,
+                    item_type: StackItemType::Spell(SpellType::Commander),
+                    controller: player_entity,
+                    source: commander_entity,
+                    source_zone: Zone::CommandZone,
+                    targets: Vec::new(),
+                    // Additional stack item fields...
+                });
+            }
+        }
+    }
+}
+```
+
+### Partner Commander System
+
+```rust
+fn handle_partner_commanders(
+    mut commands: Commands,
+    partners: Query<(Entity, &CommanderCard), With<PartnerAbility>>,
+    mut cmd_zone_manager: ResMut<CommandZoneManager>,
+    players: Query<(Entity, &CommanderPlayer)>,
+) {
+    // Find all partner commanders and link them
+    for (player_entity, player) in players.iter() {
+        let player_commanders: Vec<Entity> = player.commander_entities.clone();
+        
+        if player_commanders.len() == 2 {
+            // Both might be partners, validate
+            let mut valid_partners = true;
+            
+            for &cmd_entity in &player_commanders {
+                if let Ok((_, commander_card)) = partners.get(cmd_entity) {
+                    if !commander_card.is_partner {
+                        valid_partners = false;
+                        break;
+                    }
+                } else {
+                    valid_partners = false;
+                    break;
+                }
+            }
+            
+            // Link the partners if valid
+            if valid_partners {
+                cmd_zone_manager.commander_partnerships.insert(player_commanders[0], player_commanders[1]);
+                cmd_zone_manager.commander_partnerships.insert(player_commanders[1], player_commanders[0]);
+            }
+        }
+    }
+}
+```
+
+## Integrating with Game State
+
+The Command Zone module integrates with other systems:
+
+1. **Game State**: Commanders start in the command zone (rule 903.6)
+2. **Zone System**: Special rules for commander movement (rule 903.9)
+3. **Stack System**: Casting commanders from command zone with tax (rule 903.8)
+4. **Combat System**: Tracking commander damage (rule 903.10a)
+5. **State-Based Actions**: Supporting death/exile zone transitions (rule 903.9a)
+
+## Handling Melded and Merged Commanders
+
+As per rule 903.9c, special handling is needed for melded or merged commanders:
+
+```rust
+fn handle_melded_commander_zone_change(
+    mut zone_events: EventReader<CommanderZoneChoiceEvent>,
+    melded_commanders: Query<(Entity, &MeldedPermanent)>,
+    mut zone_manager: ResMut<ZoneManager>,
+    mut cmd_zone_manager: ResMut<CommandZoneManager>,
+) {
+    for event in zone_events.read() {
+        // Check if this is a melded commander
+        if let Ok((entity, melded)) = melded_commanders.get(event.commander) {
+            if event.to_command_zone && 
+               (event.to_zone == Zone::Hand || event.to_zone == Zone::Library) {
+                // Only the commander component goes to command zone (rule 903.9c)
+                let commander_component = melded.components.iter()
+                    .find(|&&comp| cmd_zone_manager.command_zones.values().flatten().any(|&cmd| cmd == comp))
+                    .copied();
+                
+                if let Some(commander_card) = commander_component {
+                    // Move just the commander to command zone
+                    cmd_zone_manager.command_zones.get_mut(&event.player).unwrap().push(commander_card);
+                    cmd_zone_manager.commander_zone_status.insert(commander_card, CommanderZoneLocation::CommandZone);
                     
-                    // Update tracking on the commander card
-                    let mut cmd_card = commander.clone();
-                    cmd_card.dealt_combat_damage_this_turn.insert(damaged_player);
-                    commands.entity(commander_entity).insert(cmd_card);
-                    
-                    // Check for lethal commander damage
-                    if *entry >= game_state.commander_damage_threshold {
-                        commands.spawn(GameEvent::PlayerEliminated {
-                            player: damaged_player,
-                            reason: EliminationReason::CommanderDamage(owner),
-                        });
+                    // Move other components to appropriate zone
+                    for &component in melded.components.iter().filter(|&&c| Some(c) != commander_component) {
+                        match event.to_zone {
+                            Zone::Hand => {
+                                zone_manager.hands.get_mut(&event.player).unwrap().push(component);
+                            },
+                            Zone::Library => {
+                                zone_manager.libraries.get_mut(&event.player).unwrap().push(component);
+                            },
+                            _ => {}
+                        }
                     }
                 }
             }
@@ -331,138 +449,24 @@ fn track_commander_damage(
 }
 ```
 
-### Commander Zone Choice Handling
-
-```rust
-fn handle_commander_zone_choices(
-    mut commands: Commands,
-    mut choice_events: EventReader<CommanderZoneChoiceEvent>,
-    mut zone_manager: ResMut<ZoneManager>,
-    mut cmd_zone_manager: ResMut<CommandZoneManager>,
-    cards: Query<(Entity, &Card)>,
-) {
-    for event in choice_events.read() {
-        // Typically in a real game the player would choose, 
-        // but we'll implement the common choice to return to command zone
-        if event.can_go_to_command_zone {
-            // Remove from current zone
-            match event.current_zone {
-                Zone::Graveyard => {
-                    let graveyard = zone_manager.graveyards
-                        .get_mut(&event.owner)
-                        .unwrap();
-                    if let Some(pos) = graveyard.iter().position(|&e| e == event.commander) {
-                        graveyard.swap_remove(pos);
-                    }
-                },
-                Zone::Exile => {
-                    let exile = zone_manager.exiles
-                        .get_mut(&event.owner)
-                        .unwrap();
-                    if let Some(pos) = exile.iter().position(|&e| e == event.commander) {
-                        exile.swap_remove(pos);
-                    }
-                },
-                _ => { /* Handle other zones if needed */ }
-            }
-            
-            // Add to command zone
-            let command_zone = zone_manager.command_zones
-                .get_mut(&event.owner)
-                .unwrap();
-            command_zone.push(event.commander);
-            
-            // Update zone status
-            cmd_zone_manager.commander_zone_status
-                .insert(event.commander, CommanderZoneLocation::CommandZone);
-                
-            // Send zone change event
-            commands.spawn(ZoneChangeEvent {
-                card: event.commander,
-                source: event.current_zone,
-                destination: Zone::CommandZone,
-            });
-        }
-    }
-}
-```
-
-## Special Commander Rules
-
-### Color Identity Enforcement
-
-```rust
-fn validate_color_identity(
-    deck: &Vec<Card>,
-    commander_color_identity: &ColorIdentity,
-) -> Vec<Card> {
-    // Check each card against commander's color identity
-    deck.iter()
-        .filter(|card| {
-            // Extract card's color identity
-            let card_identity = extract_color_identity(card);
-            
-            // Card is valid if all its colors are included in commander's identity
-            (card_identity.white == false || commander_color_identity.white == true) &&
-            (card_identity.blue == false || commander_color_identity.blue == true) &&
-            (card_identity.black == false || commander_color_identity.black == true) &&
-            (card_identity.red == false || commander_color_identity.red == true) &&
-            (card_identity.green == false || commander_color_identity.green == true)
-        })
-        .cloned()
-        .collect()
-}
-
-fn extract_color_identity(card: &Card) -> ColorIdentity {
-    let mut identity = ColorIdentity {
-        white: card.cost.white > 0,
-        blue: card.cost.blue > 0,
-        black: card.cost.black > 0,
-        red: card.cost.red > 0,
-        green: card.cost.green > 0,
-    };
-    
-    // Also check rules text for mana symbols
-    // This is simplified and would need more complex text parsing
-    if card.rules_text.contains("{W}") {
-        identity.white = true;
-    }
-    if card.rules_text.contains("{U}") {
-        identity.blue = true;
-    }
-    if card.rules_text.contains("{B}") {
-        identity.black = true;
-    }
-    if card.rules_text.contains("{R}") {
-        identity.red = true;
-    }
-    if card.rules_text.contains("{G}") {
-        identity.green = true;
-    }
-    
-    identity
-}
-```
-
-## Integration Points
-
-- **Game State Module**: Updates command zone state on game start/reset
-- **Player Module**: Tracks commander-specific player data
-- **Turn Structure**: Handles commander casting timing restrictions
-- **Combat Module**: Processes commander combat damage
-- **Zone Module**: Coordinates commander movement between zones
-
 ## Testing Strategy
 
 1. **Unit Tests**:
    - Verify commander tax calculation
-   - Test zone replacement effects
-   - Validate color identity enforcement
+   - Test command zone transitions
+   - Validate state-based actions for commanders
    
 2. **Integration Tests**:
-   - Test full commander movement lifecycle
-   - Verify commander damage tracking
-   - Test partner/background handling
+   - Test commander casting with tax increase
+   - Simulate commander deaths and zone choices
+   - Verify partner commander mechanics
+   - Test melded commander handling
+
+## Performance Considerations
+
+- Optimize commander zone tracking for games with many commanders (partners, etc.)
+- Batch process state-based action checks
+- Use flags to quickly identify commanders in different zones
 
 ## Design Considerations
 

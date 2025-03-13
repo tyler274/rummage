@@ -2,11 +2,11 @@
 
 ## Overview
 
-State-Based Actions (SBAs) are automatic game rules that check and modify the game state whenever a player would receive priority. They handle fundamental game mechanics like creature death, legend rule, and player elimination. For Commander games with many players, SBAs require optimized implementation to efficiently handle complex board states.
+State-Based Actions (SBAs) are automatic game rules that check and modify the game state whenever a player would receive priority. They handle fundamental game mechanics like creature death, legend rule, and player elimination. For Commander games, SBAs include special handling for commander damage and commander zone transitions as specified in the Magic: The Gathering Comprehensive Rules section 903.
 
 ## Core Components
 
-### State-Based Actions Resource
+### State-Based Action System
 
 ```rust
 #[derive(Resource)]
@@ -23,6 +23,11 @@ pub struct StateBasedActionSystem {
     // Game state tracking
     pub actions_performed_last_check: usize,
     pub state_is_clean: bool,
+    
+    // Commander-specific tracking
+    pub commander_checks_enabled: bool,
+    pub commander_damage_tracked: bool,
+    pub commander_zone_transitions_enabled: bool,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -36,6 +41,8 @@ pub struct StateCheckPriority {
     pub legend_rule: u8,
     pub planeswalker_rule: u8,
     pub token_cleanup: u8,
+    pub commander_damage: u8, // Commander-specific priority
+    pub commander_zone_transitions: u8, // Commander-specific priority
 }
 ```
 
@@ -58,6 +65,7 @@ pub enum StateBasedActionCategory {
     TokenState,
     ZoneState,
     LegendaryState,
+    CommanderState, // Commander-specific category
 }
 
 #[derive(Event)]
@@ -73,7 +81,21 @@ pub enum GameStateChangeSource {
     CostPayment,
     PriorityAction,
     TurnBasedAction,
+    CommanderDamage, // Commander-specific source
+    CommanderZoneChange, // Commander-specific source
     Manual,
+}
+
+#[derive(Event)]
+pub struct CheckStateBasedActionsEvent;
+
+#[derive(Event)]
+pub struct CommanderZoneChoiceEvent {
+    pub commander: Entity,
+    pub player: Entity,
+    pub from_zone: Zone,
+    pub to_zone: Zone,
+    pub to_command_zone: bool,
 }
 ```
 
@@ -87,490 +109,410 @@ fn state_based_action_system(
     mut sba_system: ResMut<StateBasedActionSystem>,
     mut game_state: ResMut<CommanderGameState>,
     mut zone_manager: ResMut<ZoneManager>,
+    mut cmd_zone_manager: ResMut<CommandZoneManager>,
     time: Res<Time>,
-    mut players: Query<(Entity, &mut CommanderPlayer)>,
+    players: Query<(Entity, &Player, &mut CommanderPlayer)>,
     permanents: Query<(Entity, &Permanent, Option<&CreatureCard>)>,
+    commanders: Query<(Entity, &CommanderCard)>,
     mut game_state_events: EventReader<GameStateModifiedEvent>,
     mut sba_events: EventWriter<StateBasedActionCheckedEvent>,
+    mut zone_events: EventWriter<CommanderZoneChoiceEvent>,
 ) {
     // Skip check if system is disabled
     if !sba_system.enabled {
         return;
     }
     
-    // Determine if check is needed
-    let force_check = game_state_events.read().any(|e| e.requires_sba_check);
-    let time_check = time.elapsed() - sba_system.last_check_time >= sba_system.check_frequency;
-    
-    if !(force_check || time_check) {
+    // Check if it's time to run SBAs
+    let current_time = time.elapsed();
+    if current_time.duration_since(sba_system.last_check_time) < sba_system.check_frequency && 
+       sba_system.state_is_clean {
         return;
     }
     
-    // Record check time
-    sba_system.last_check_time = time.elapsed();
+    // Update last check time
+    sba_system.last_check_time = current_time;
     
-    // Reset tracking
-    sba_system.actions_performed_last_check = 0;
+    // Track modifications
+    let mut actions_performed = 0;
     let mut categories_modified = Vec::new();
-    sba_system.state_is_clean = false;
     
-    // Perform checks until state is clean (no more actions needed)
-    let mut iterations = 0;
-    let max_iterations = 10; // Safety limit
-    
-    while !sba_system.state_is_clean && iterations < max_iterations {
-        // Track actions performed in this iteration
-        let mut actions_this_iteration = 0;
-        
-        // Check player state (life total, empty library, etc.)
-        let player_actions = check_player_state(
-            &mut commands, 
-            &mut game_state, 
-            &players
-        );
-        
-        if player_actions > 0 {
-            actions_this_iteration += player_actions;
-            categories_modified.push(StateBasedActionCategory::PlayerState);
-        }
-        
-        // Check creature state (toughness <= 0, lethal damage, etc.)
-        let creature_actions = check_creature_state(
-            &mut commands, 
-            &permanents, 
-            &mut zone_manager
-        );
-        
-        if creature_actions > 0 {
-            actions_this_iteration += creature_actions;
-            categories_modified.push(StateBasedActionCategory::CreatureState);
-        }
-        
-        // Check planeswalker state (0 loyalty)
-        let planeswalker_actions = check_planeswalker_state(
-            &mut commands, 
-            &permanents, 
-            &mut zone_manager
-        );
-        
-        if planeswalker_actions > 0 {
-            actions_this_iteration += planeswalker_actions;
-            categories_modified.push(StateBasedActionCategory::PlaneswalkerState);
-        }
-        
-        // Check attachment validity (Auras, Equipment)
-        let attachment_actions = check_attachment_validity(
-            &mut commands, 
-            &permanents, 
-            &mut zone_manager
-        );
-        
-        if attachment_actions > 0 {
-            actions_this_iteration += attachment_actions;
-            categories_modified.push(StateBasedActionCategory::AttachmentState);
-        }
-        
-        // Check legendary permanent uniqueness
-        let legend_actions = check_legend_rule(
-            &mut commands, 
-            &permanents, 
-            &mut zone_manager,
-            &players
-        );
-        
-        if legend_actions > 0 {
-            actions_this_iteration += legend_actions;
-            categories_modified.push(StateBasedActionCategory::LegendaryState);
-        }
-        
-        // Other state checks as needed...
-        
-        // Update tracking
-        sba_system.actions_performed_last_check += actions_this_iteration;
-        
-        // If no actions were performed, state is clean
-        if actions_this_iteration == 0 {
-            sba_system.state_is_clean = true;
-        }
-        
-        iterations += 1;
+    // Check player state (including commander damage)
+    if check_player_state(
+        &mut commands,
+        &players,
+        &commanders,
+        &game_state,
+        &sba_system,
+        &mut categories_modified,
+    ) {
+        actions_performed += 1;
     }
     
-    // Notify that state-based actions were checked
-    if sba_system.actions_performed_last_check > 0 {
+    // Check creature state
+    if check_creature_state(
+        &mut commands,
+        &permanents,
+        &mut zone_manager,
+        &mut categories_modified,
+    ) {
+        actions_performed += 1;
+    }
+    
+    // Commander-specific SBAs
+    if sba_system.commander_checks_enabled {
+        // Check commander zone transitions (rule 903.9a)
+        if check_commander_zones(
+            &mut commands,
+            &mut cmd_zone_manager,
+            &mut zone_manager,
+            &mut zone_events,
+            &mut categories_modified,
+        ) {
+            actions_performed += 1;
+        }
+    }
+    
+    // Additional checks...
+    
+    // Update tracking
+    sba_system.actions_performed_last_check = actions_performed;
+    sba_system.state_is_clean = actions_performed == 0;
+    
+    // Send event if actions were performed
+    if actions_performed > 0 {
         sba_events.send(StateBasedActionCheckedEvent {
-            actions_performed: sba_system.actions_performed_last_check,
+            actions_performed,
             categories_modified,
         });
     }
 }
 ```
 
-### Player State Check
+### Player State Checks (Including Commander Damage)
 
 ```rust
 fn check_player_state(
     commands: &mut Commands,
-    game_state: &mut CommanderGameState,
-    players: &Query<(Entity, &CommanderPlayer)>,
-) -> usize {
-    let mut actions_performed = 0;
+    players: &Query<(Entity, &Player, &mut CommanderPlayer)>,
+    commanders: &Query<(Entity, &CommanderCard)>,
+    game_state: &CommanderGameState,
+    sba_system: &StateBasedActionSystem,
+    categories_modified: &mut Vec<StateBasedActionCategory>,
+) -> bool {
+    let mut state_modified = false;
     
-    for (entity, player) in players.iter() {
-        // Check life total
-        if player.life <= 0 && !player.has_lost {
+    // Check each player's state
+    for (entity, player, commander_player) in players.iter() {
+        // Check for life <= 0
+        if player.life <= 0 && !commander_player.has_lost {
             // Player loses the game
-            commands.spawn(GameEvent::PlayerEliminated {
+            commands.entity(entity).insert(PlayerEliminatedEvent {
                 player: entity,
                 reason: EliminationReason::LifeLoss,
             });
-            actions_performed += 1;
+            state_modified = true;
         }
         
-        // Check poison counters (10+ means loss)
-        if player.poison_counters >= 10 && !player.has_lost {
-            commands.spawn(GameEvent::PlayerEliminated {
-                player: entity,
-                reason: EliminationReason::Poison,
-            });
-            actions_performed += 1;
-        }
+        // Check for other loss conditions
+        // ...
         
-        // Check if player tried to draw from empty library
-        if player.attempted_draw_from_empty_library && !player.has_lost {
-            commands.spawn(GameEvent::PlayerEliminated {
-                player: entity,
-                reason: EliminationReason::EmptyLibrary,
-            });
-            actions_performed += 1;
-        }
-        
-        // Special Commander rule: Check if all commanders are in command zone
-        // and player has no other permanents or cards in hand, signifying a restart
-        if should_concede_commander(entity, player, game_state) {
-            commands.spawn(GameEvent::PlayerEliminated {
-                player: entity,
-                reason: EliminationReason::Conceded,
-            });
-            actions_performed += 1;
-        }
-    }
-    
-    actions_performed
-}
-
-fn should_concede_commander(
-    player_entity: Entity,
-    player: &CommanderPlayer,
-    game_state: &CommanderGameState,
-) -> bool {
-    // This would implement Commander-specific concession detection
-    // For example, if all commanders are in command zone and player has
-    // zero permanents and empty hand, they might be trying to restart
-    false
-}
-```
-
-### Creature State Check
-
-```rust
-fn check_creature_state(
-    commands: &mut Commands,
-    permanents: &Query<(Entity, &Permanent, Option<&CreatureCard>)>,
-    zone_manager: &mut ZoneManager,
-) -> usize {
-    let mut actions_performed = 0;
-    let mut creatures_to_destroy = Vec::new();
-    
-    // Check all creatures
-    for (entity, permanent, creature_opt) in permanents.iter() {
-        if let Some(creature) = creature_opt {
-            let current_toughness = creature.toughness as i64 + creature.toughness_modifier;
-            
-            // Check for 0 or less toughness
-            if current_toughness <= 0 {
-                creatures_to_destroy.push((entity, permanent.controller));
-                actions_performed += 1;
-            }
-            
-            // Check for lethal damage
-            if permanent.damage >= creature.toughness as u64 {
-                creatures_to_destroy.push((entity, permanent.controller));
-                actions_performed += 1;
-            }
-        }
-    }
-    
-    // Process all creatures that need to be destroyed
-    for (entity, controller) in creatures_to_destroy {
-        commands.spawn(PermanentDestroyedEvent {
-            permanent: entity,
-            controller,
-            reason: DestructionReason::StateBased,
-        });
-        
-        // Move to appropriate zone (normally graveyard)
-        move_to_graveyard(commands, zone_manager, entity, controller);
-    }
-    
-    actions_performed
-}
-
-fn move_to_graveyard(
-    commands: &mut Commands,
-    zone_manager: &mut ZoneManager,
-    entity: Entity,
-    controller: Entity,
-) {
-    // Implementation would remove from battlefield and add to graveyard
-    if let Some(battlefield) = zone_manager.battlefields.get_mut(&controller) {
-        if let Some(pos) = battlefield.iter().position(|&e| e == entity) {
-            battlefield.swap_remove(pos);
-            
-            // Add to graveyard
-            zone_manager.graveyards
-                .entry(controller)
-                .or_default()
-                .push(entity);
-                
-            // Send zone change event
-            commands.spawn(ZoneChangeEvent {
-                card: entity,
-                source: Zone::Battlefield,
-                destination: Zone::Graveyard,
-            });
-        }
-    }
-}
-```
-
-### Legendary Permanent Check (Legend Rule)
-
-```rust
-fn check_legend_rule(
-    commands: &mut Commands,
-    permanents: &Query<(Entity, &Permanent)>,
-    zone_manager: &mut ZoneManager,
-    players: &Query<(Entity, &CommanderPlayer)>,
-) -> usize {
-    let mut actions_performed = 0;
-    
-    // Group legendary permanents by name and controller
-    let mut legend_groups: HashMap<(String, Entity), Vec<Entity>> = HashMap::new();
-    
-    for (entity, permanent) in permanents.iter() {
-        if permanent.is_legendary {
-            legend_groups
-                .entry((permanent.name.clone(), permanent.controller))
-                .or_default()
-                .push(entity);
-        }
-    }
-    
-    // Check each group for duplicates
-    for ((name, controller), entities) in legend_groups.iter() {
-        if entities.len() > 1 {
-            // Controller must choose one to keep
-            commands.spawn(LegendRuleChoiceEvent {
-                controller: *controller,
-                permanents: entities.clone(),
-                name: name.clone(),
-            });
-            
-            actions_performed += 1;
-        }
-    }
-    
-    actions_performed
-}
-```
-
-### Attachment Validity Check
-
-```rust
-fn check_attachment_validity(
-    commands: &mut Commands,
-    permanents: &Query<(Entity, &Permanent)>,
-    zone_manager: &mut ZoneManager,
-) -> usize {
-    let mut actions_performed = 0;
-    let mut attachments_to_drop = Vec::new();
-    
-    // Check all permanents with attachments
-    for (entity, permanent) in permanents.iter() {
-        if permanent.is_aura || permanent.is_equipment {
-            let attached_to = permanent.attached_to;
-            
-            if let Some(target) = attached_to {
-                // Check if attachment target is invalid
-                if !is_valid_attachment_target(entity, target, permanent, permanents) {
-                    attachments_to_drop.push((entity, permanent.controller));
-                    actions_performed += 1;
+        // Commander damage check (rule 903.10a)
+        if sba_system.commander_damage_tracked {
+            for (commander_entity, commander_damage) in &commander_player.commander_damage_received {
+                if *commander_damage >= game_state.commander_damage_threshold {
+                    // Player loses from commander damage
+                    commands.entity(entity).insert(PlayerEliminatedEvent {
+                        player: entity,
+                        reason: EliminationReason::CommanderDamage(*commander_entity),
+                    });
+                    state_modified = true;
+                    break;
                 }
-            } else if permanent.is_aura {
-                // Auras must be attached
-                attachments_to_drop.push((entity, permanent.controller));
-                actions_performed += 1;
             }
         }
     }
     
-    // Process invalid attachments
-    for (entity, controller) in attachments_to_drop {
-        // For Auras, put in graveyard
-        if is_aura(entity, permanents) {
-            move_to_graveyard(commands, zone_manager, entity, controller);
-        } 
-        // For Equipment, unattach but leave on battlefield
-        else if is_equipment(entity, permanents) {
-            unattach_equipment(commands, entity);
-        }
+    if state_modified {
+        categories_modified.push(StateBasedActionCategory::PlayerState);
     }
     
-    actions_performed
+    state_modified
 }
+```
 
-fn is_valid_attachment_target(
-    attachment: Entity,
-    target: Entity,
-    attachment_permanent: &Permanent,
-    permanents: &Query<(Entity, &Permanent)>,
+### Commander Zone Checks
+
+```rust
+fn check_commander_zones(
+    commands: &mut Commands,
+    cmd_zone_manager: &mut ResMut<CommandZoneManager>,
+    zone_manager: &mut ResMut<ZoneManager>,
+    zone_events: &mut EventWriter<CommanderZoneChoiceEvent>,
+    categories_modified: &mut Vec<StateBasedActionCategory>,
 ) -> bool {
-    // Check if target still exists
-    if let Ok((_, target_permanent)) = permanents.get(target) {
-        // Check if target has protection
-        if has_protection_from(target_permanent, attachment_permanent) {
-            return false;
+    let mut state_modified = false;
+    
+    // Check for commanders in graveyard or exile (rule 903.9a)
+    // First, collect all commanders in graveyards
+    let commanders_in_graveyard: Vec<(Entity, Entity)> = zone_manager.graveyards
+        .iter()
+        .flat_map(|(&player, cards)| {
+            cards.iter()
+                .filter_map(|&card| {
+                    if cmd_zone_manager.commander_zone_status.get(&card) == Some(&CommanderZoneLocation::Graveyard) {
+                        Some((card, player))
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    
+    // Then, collect all commanders in exile
+    let commanders_in_exile: Vec<(Entity, Entity)> = zone_manager.exiles
+        .iter()
+        .flat_map(|(&player, cards)| {
+            cards.iter()
+                .filter_map(|&card| {
+                    if cmd_zone_manager.commander_zone_status.get(&card) == Some(&CommanderZoneLocation::Exile) {
+                        Some((card, player))
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    
+    // Process graveyard commanders
+    for (commander, player) in commanders_in_graveyard {
+        if cmd_zone_manager.died_this_turn.contains(&commander) {
+            // Send event to give player the choice to move commander to command zone
+            zone_events.send(CommanderZoneChoiceEvent {
+                commander,
+                player,
+                from_zone: Zone::Graveyard,
+                to_zone: Zone::Graveyard, // Original destination
+                to_command_zone: true, // Default to command zone, but player can choose
+            });
+            
+            state_modified = true;
         }
-        
-        // Check if target is still a valid attachment target
-        // This would check if equipment can equip this type of creature, etc.
-        
-        return true;
     }
     
-    false
+    // Process exile commanders
+    for (commander, player) in commanders_in_exile {
+        if cmd_zone_manager.exiled_this_turn.contains(&commander) {
+            // Send event to give player the choice to move commander to command zone
+            zone_events.send(CommanderZoneChoiceEvent {
+                commander,
+                player,
+                from_zone: Zone::Exile,
+                to_zone: Zone::Exile, // Original destination
+                to_command_zone: true, // Default to command zone, but player can choose
+            });
+            
+            state_modified = true;
+        }
+    }
+    
+    if state_modified {
+        categories_modified.push(StateBasedActionCategory::CommanderState);
+    }
+    
+    state_modified
+}
+```
+
+### Commander Replacement Effect Handler
+
+```rust
+fn handle_commander_replacement_effects(
+    mut zone_change_events: EventReader<ZoneChangeEvent>,
+    commanders: Query<Entity, With<CommanderCard>>,
+    mut zone_choice_events: EventWriter<CommanderZoneChoiceEvent>,
+) {
+    for event in zone_change_events.read() {
+        // Check if the card is a commander
+        if commanders.contains(event.card) {
+            // Handle replacement effect for hand/library (rule 903.9b)
+            if event.to_zone == Zone::Hand || event.to_zone == Zone::Library {
+                // Trigger a choice event for the replacement effect
+                zone_choice_events.send(CommanderZoneChoiceEvent {
+                    commander: event.card,
+                    player: event.controller,
+                    from_zone: event.from_zone,
+                    to_zone: event.to_zone,
+                    to_command_zone: true, // Default to command zone, but player can choose
+                });
+            }
+        }
+    }
+}
+```
+
+### Tracking Commander Damage
+
+```rust
+fn track_commander_damage(
+    mut damage_events: EventReader<CombatDamageEvent>,
+    commanders: Query<Entity, With<CommanderCard>>,
+    mut players: Query<(Entity, &mut CommanderPlayer)>,
+    mut state_modified_events: EventWriter<GameStateModifiedEvent>,
+) {
+    for event in damage_events.read() {
+        // Check if damage is from a commander
+        if commanders.contains(event.source) && event.is_combat_damage {
+            // Find the target player
+            if let Ok((player_entity, mut commander_player)) = players.get_mut(event.target) {
+                // Update commander damage tracking
+                let damage_entry = commander_player.commander_damage_received
+                    .entry(event.source)
+                    .or_insert(0);
+                *damage_entry += event.damage;
+                
+                // Trigger state-based action check
+                state_modified_events.send(GameStateModifiedEvent {
+                    source: GameStateChangeSource::CommanderDamage,
+                    requires_sba_check: true,
+                });
+            }
+        }
+    }
 }
 ```
 
 ## Commander-Specific State-Based Actions
 
-### Commander Damage Check
+According to rule 903.9a, when a commander is in a graveyard or in exile and that object was put into that zone since the last time state-based actions were checked, its owner may put it into the command zone as a state-based action.
 
 ```rust
-fn check_commander_damage(
-    commands: &mut Commands,
-    players: &Query<(Entity, &CommanderPlayer)>,
-    game_state: &CommanderGameState,
-) -> usize {
-    let mut actions_performed = 0;
-    
-    for (entity, player) in players.iter() {
-        // Check commander damage from each opponent
-        for (source_player, damage) in player.commander_damage_received.iter() {
-            if *damage >= game_state.commander_damage_threshold && !player.has_lost {
-                commands.spawn(GameEvent::PlayerEliminated {
-                    player: entity,
-                    reason: EliminationReason::CommanderDamage(*source_player),
-                });
-                actions_performed += 1;
-                break; // Only need to eliminate once
-            }
+fn trigger_state_based_actions_system(
+    mut sba_checks: EventReader<GameStateModifiedEvent>,
+    mut check_events: EventWriter<CheckStateBasedActionsEvent>,
+) {
+    for event in sba_checks.read() {
+        if event.requires_sba_check {
+            check_events.send(CheckStateBasedActionsEvent);
+            break; // Only need one check
         }
     }
-    
-    actions_performed
 }
 ```
 
-### Commander Zone Change Check
+And according to rule 903.10a, a player who's been dealt 21 or more combat damage by the same commander over the course of the game loses the game.
 
 ```rust
-fn handle_commander_zone_changes(
-    commands: &mut Commands,
-    players: &Query<(Entity, &CommanderPlayer)>,
-    cmd_zone_manager: &CommandZoneManager,
-    zone_events: &mut EventReader<ZoneChangeEvent>,
-) -> usize {
-    let mut actions_performed = 0;
-    
-    for event in zone_events.read() {
-        // Check if the card is a commander
-        for (player_entity, player) in players.iter() {
-            if player.commander_entities.contains(&event.card) {
-                // If commander changed zones to graveyard or exile
-                if event.destination == Zone::Graveyard || event.destination == Zone::Exile {
-                    // Offer player choice to move to command zone
-                    commands.spawn(CommanderZoneChoiceEvent {
-                        commander: event.card,
-                        owner: player_entity,
-                        current_zone: event.destination,
-                        can_go_to_command_zone: true,
-                    });
+fn check_commander_damage_loss(
+    players: Query<(Entity, &CommanderPlayer)>,
+    mut player_eliminated_events: EventWriter<PlayerEliminatedEvent>,
+    game_state: Res<CommanderGameState>,
+) {
+    for (player_entity, commander_player) in players.iter() {
+        // Skip players who already lost
+        if commander_player.has_lost {
+            continue;
+        }
+        
+        // Check each commander damage source
+        for (source_commander, damage) in &commander_player.commander_damage_received {
+            if *damage >= game_state.commander_damage_threshold {
+                // Player loses the game due to commander damage
+                player_eliminated_events.send(PlayerEliminatedEvent {
+                    player: player_entity,
+                    reason: EliminationReason::CommanderDamage(*source_commander),
+                });
+                break;
+            }
+        }
+    }
+}
+```
+
+## Handling Melded Commanders
+
+For melded commanders, there are special rules (903.9c):
+
+```rust
+fn handle_melded_commander_replacement(
+    mut command_zone_events: EventReader<CommanderZoneChoiceEvent>,
+    melded_commanders: Query<(Entity, &MeldedPermanent)>,
+    commanders: Query<Entity, With<CommanderCard>>,
+    mut zone_manager: ResMut<ZoneManager>,
+    mut cmd_zone_manager: ResMut<CommandZoneManager>,
+) {
+    for event in command_zone_events.read() {
+        // Check if this is a melded permanent where one part is a commander
+        if let Ok((entity, meld_data)) = melded_commanders.get(event.commander) {
+            if event.to_command_zone {
+                // Find which part of the meld is the commander
+                let commander_component = meld_data.components.iter()
+                    .find(|&&comp| commanders.contains(comp))
+                    .copied();
+                
+                if let Some(commander) = commander_component {
+                    // Commander card goes to command zone
+                    cmd_zone_manager.command_zones.get_mut(&event.player).unwrap()
+                        .push(commander);
                     
-                    actions_performed += 1;
+                    // Other components go to the original destination zone
+                    for &component in &meld_data.components {
+                        if component != commander {
+                            match event.to_zone {
+                                Zone::Hand => {
+                                    zone_manager.hands.get_mut(&event.player).unwrap()
+                                        .push(component);
+                                },
+                                Zone::Library => {
+                                    zone_manager.libraries.get_mut(&event.player).unwrap()
+                                        .push(component);
+                                },
+                                Zone::Graveyard => {
+                                    zone_manager.graveyards.get_mut(&event.player).unwrap()
+                                        .push(component);
+                                },
+                                Zone::Exile => {
+                                    zone_manager.exiles.get_mut(&event.player).unwrap()
+                                        .push(component);
+                                },
+                                _ => {} // Other zones not relevant for this rule
+                            }
+                        }
+                    }
                 }
             }
         }
     }
-    
-    actions_performed
 }
 ```
 
-## Optimization for Multiplayer
+## Integration with Other Systems
 
-```rust
-fn optimize_sba_checks(
-    sba_system: &mut StateBasedActionSystem,
-    player_count: usize,
-) {
-    // Adjust check frequency based on player count
-    let base_frequency = std::time::Duration::from_millis(200);
-    let player_factor = (player_count as f32 / 4.0).max(1.0);
-    
-    sba_system.check_frequency = base_frequency.mul_f32(player_factor);
-    
-    // Adjust batch size for larger games
-    sba_system.batch_size = player_count * 5;
-    
-    // Prioritize critical checks in large games
-    if player_count > 6 {
-        sba_system.priority_categories.player_elimination = 1;
-        sba_system.priority_categories.creature_death = 2;
-        sba_system.priority_categories.legend_rule = 3;
-        // Lower priority for less critical checks
-    }
-}
-```
+The State-Based Actions system coordinates with other modules:
 
-## Integration Points
-
-- **Game State Module**: Receives updates from state-based actions
-- **Player Module**: Processes player eliminations
-- **Combat Module**: Provides damage information for creature checks
-- **Zone Management**: Coordinates card movement between zones
-- **Command Zone**: Special handling for Commander cards
+1. **Priority System**: SBAs are checked each time a player would receive priority
+2. **Command Zone**: For commander zone transitions (rule 903.9)
+3. **Combat System**: For tracking commander damage (rule 903.10a)
+4. **Player Management**: For applying commander damage loss conditions
+5. **Zone Management**: For handling zone transitions
 
 ## Testing Strategy
 
 1. **Unit Tests**:
-   - Test each individual state-based action
-   - Verify correct detection of each game state condition
-   - Test action ordering and priority
+   - Verify commander damage threshold triggers player loss
+   - Test commander zone transitions as SBAs
+   - Validate timing of SBA checks
    
 2. **Integration Tests**:
-   - Test interactions between different state-based actions
-   - Verify persistence of state modifications
-   - Test performance with large game states
-   - Validate Commander-specific rules
+   - Simulate complex commander damage scenarios
+   - Test commander zone transitions in different contexts
+   - Verify interaction with priority system
+   - Test melded commander handling
 
 ## Performance Considerations
 
-For Commander games with many players:
-
-- Batch processing of similar state checks
-- Priority-based checking (check most critical conditions first)
-- Efficient data structures for quick state lookups
-- Only check relevant parts of state modified since last check
-- Throttling check frequency based on game complexity 
+- Batch SBA checks to avoid performance issues in multiplayer games
+- Prioritize checks based on likelihood of modification
+- Optimize commander tracking for games with many commanders 
