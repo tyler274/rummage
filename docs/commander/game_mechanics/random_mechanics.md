@@ -4,6 +4,20 @@
 
 This document outlines test cases for Magic: The Gathering cards and mechanics involving randomness, including coin flips, dice rolls, and random selections. When implementing these mechanics, it's crucial to ensure deterministic testing while maintaining fair randomness in actual gameplay.
 
+## Randomness in Commander Format
+
+The Commander format includes many cards with random elements that require special handling:
+
+1. **Commander-Specific Random Cards**: Many popular Commander cards use coin flips, dice rolls, or random selection as a core mechanic (e.g., Okaun, Eye of Chaos, Zndrsplt, Eye of Wisdom, Yusri, Fortune's Flame)
+
+2. **Multiplayer Considerations**: Random effects in multiplayer games need to ensure all players can verify the randomness 
+
+3. **Deterministic Testing**: While gameplay should be truly random, our testing requires deterministic outcomes
+
+4. **Network Implementation**: In networked games, random results must be synchronized across all clients
+
+This document provides test cases to ensure these mechanics work properly within the Commander format implementation.
+
 ## Test Principles
 
 1. **Deterministic Testing**: All random operations must be mockable for testing

@@ -12,11 +12,13 @@ use bevy::DefaultPlugins;
 use bevy::app::AppExit;
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
-use bevy_rand::prelude::*;
 use camera::{
-    CameraConfig, CameraPanState,
-    components::GameCamera,
-    systems::{camera_movement, handle_window_resize, set_initial_zoom, setup_camera},
+    CameraPanState,
+    components::{AppLayer, GameCamera},
+    config::CameraConfig,
+    snapshot::resources::SnapshotEvent,
+    snapshot::systems::take_snapshot,
+    systems::{camera_movement, handle_window_resize, set_initial_zoom},
 };
 use card::CardPlugin;
 use deck::DeckPlugin;
@@ -32,7 +34,6 @@ pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(DragPlugin)
-            .add_plugins(EntropyPlugin::<WyRand>::default())
             .add_plugins(CardPlugin)
             .add_plugins(DeckPlugin)
             .add_plugins(GameEnginePlugin)
@@ -80,12 +81,46 @@ fn setup_game(
         // Only set up camera if needed here, but don't create cards
         if game_cameras.is_empty() {
             info!("No game camera found despite coming from pause menu, setting up camera anyway");
-            setup_camera(&mut commands);
+            // Spawn a new camera directly here
+            commands.spawn((
+                Camera2d::default(),
+                Camera {
+                    order: 0, // Explicitly set order to 0 for game camera
+                    ..default()
+                },
+                Visibility::default(),
+                InheritedVisibility::default(),
+                ViewVisibility::default(),
+                Transform::default(), // Use default transform position (0,0,0)
+                GlobalTransform::default(),
+                GameCamera,
+                AppLayer::game_layers(), // Use combined game layers to see all game elements including cards
+            ));
+
+            // Initialize camera pan state
+            commands.insert_resource(CameraPanState::default());
         }
     } else {
         // Normal game setup - this is a fresh game
         info!("Setting up game camera...");
-        setup_camera(&mut commands);
+        // Spawn a new camera directly here
+        commands.spawn((
+            Camera2d::default(),
+            Camera {
+                order: 0, // Explicitly set order to 0 for game camera
+                ..default()
+            },
+            Visibility::default(),
+            InheritedVisibility::default(),
+            ViewVisibility::default(),
+            Transform::default(), // Use default transform position (0,0,0)
+            GlobalTransform::default(),
+            GameCamera,
+            AppLayer::game_layers(), // Use combined game layers to see all game elements including cards
+        ));
+
+        // Initialize camera pan state
+        commands.insert_resource(CameraPanState::default());
 
         // Spawn the players using the new system
         info!("Spawning initial hand...");
@@ -141,5 +176,26 @@ fn main() {
         .add_plugins(MenuPlugin)
         .add_plugins(GamePlugin)
         .add_systems(Update, handle_exit)
+        .add_systems(PostStartup, take_snapshot_after_setup)
         .run();
+}
+
+/// System to take a snapshot after the game setup is complete
+fn take_snapshot_after_setup(
+    mut commands: Commands,
+    mut snapshot_events: EventWriter<SnapshotEvent>,
+    game_cameras: Query<Entity, With<camera::components::GameCamera>>,
+) {
+    // Get the first game camera
+    if let Some(camera) = game_cameras.iter().next() {
+        info!("Taking initial card layout snapshot");
+        take_snapshot(
+            &mut commands,
+            &mut snapshot_events,
+            Some(camera),
+            Some("initial_card_layout".to_string()),
+        );
+    } else {
+        error!("No game camera found for initial snapshot");
+    }
 }

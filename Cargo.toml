@@ -9,14 +9,20 @@ test-utils = []
 [dependencies]
 async-trait = "0.1.77"
 bevy = { version = "0.15", features = ["dynamic_linking", "wayland"] }
-bevy_prng = { version = "0.9", features = ["wyrand"] }
-bevy_rand = { version = "0.9", features = ["wyrand", "experimental"] }
+bevy_prng = { git = "https://github.com/Bluefinger/bevy_rand", branch = "main", features = [
+    "wyrand",
+] }
+bevy_rand = { git = "https://github.com/Bluefinger/bevy_rand", branch = "main", features = [
+    "wyrand",
+    "experimental",
+] }
 bitflags = "2.9.0"
 bzip2 = "0.5.2"
 chrono = "0.4.40"
 dirs = "6.0.0"
 flate2 = "1.1.0"
 hex = "0.4.3"
+image = "0.24.9"
 log = { version = "*", features = [
     "max_level_debug",
     "release_max_level_warn",
@@ -30,7 +36,7 @@ sha2 = "0.10.8"
 tar = "0.4.44"
 tokio = { version = "1.0", features = ["time"] }
 lazy_static = "1.4"
-uuid = { version = "1.7.0", features = ["v4"] }
+uuid = { version = "1.13.1", features = ["v4"] }
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }

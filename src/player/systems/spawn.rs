@@ -156,8 +156,22 @@ fn spawn_visual_cards(
     spacing_multiplier: f32,
     player_position: Vec3, // Add player position parameter
 ) {
-    let spacing = card_size.x * spacing_multiplier;
-    let start_x = -(display_cards.len() as f32 * spacing) / 2.0 + spacing / 2.0;
+    // Increase the spacing between cards
+    let spacing = card_size.x * spacing_multiplier * 1.5; // Increased spacing by 50%
+
+    // Calculate the total width of all cards with spacing
+    let total_width = display_cards.len() as f32 * spacing;
+
+    // Move the starting position further to the left for better distribution
+    let start_x = -(total_width) / 2.0 + spacing / 2.0;
+
+    info!(
+        "Spawning {} cards with spacing {:.2}, total width {:.2}, starting at x={:.2}",
+        display_cards.len(),
+        spacing,
+        total_width,
+        start_x
+    );
 
     // Get game camera entity to set render target
     let game_camera_entities: Vec<Entity> = game_cameras.iter().collect();
@@ -174,10 +188,14 @@ fn spawn_visual_cards(
     for (i, card) in display_cards.into_iter().enumerate() {
         let z = i as f32;
         // Position cards at player position
-        let transform = Transform::from_xyz(
-            start_x + i as f32 * spacing + player_position.x,
-            player_position.y + 2.0, // Position cards slightly above the player
-            z,
+        let x_pos = start_x + i as f32 * spacing + player_position.x;
+        let y_pos = player_position.y + 2.0; // Position cards slightly above the player
+
+        let transform = Transform::from_xyz(x_pos, y_pos, z);
+
+        info!(
+            "Positioning card '{}' at ({:.2}, {:.2}, {:.2})",
+            card.name, x_pos, y_pos, z
         );
 
         let card_entity = commands
@@ -227,4 +245,9 @@ fn spawn_visual_cards(
             text_entity, card_entity
         );
     }
+
+    info!(
+        "Finished spawning cards, total width={:.2}, using spacing={:.2}",
+        total_width, spacing
+    );
 }
