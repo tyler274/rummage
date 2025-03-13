@@ -118,6 +118,7 @@ pub fn create_mana_cost_text(
 }
 
 /// System implementation that finds cards and creates mana cost text for them
+#[allow(dead_code)]
 pub fn mana_cost_text_system(
     mut commands: Commands,
     query: Query<(Entity, &Transform, &Card)>,

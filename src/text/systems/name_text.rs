@@ -12,7 +12,7 @@ use bevy::prelude::*;
 pub fn create_name_text(
     commands: &mut Commands,
     content: &crate::text::components::CardTextContent,
-    card_pos: Vec2,
+    _card_pos: Vec2,
     card_size: Vec2,
     asset_server: &AssetServer,
 ) -> Entity {
@@ -58,7 +58,8 @@ pub fn create_name_text(
         .id()
 }
 
-/// System implementation that finds cards and creates name text for them
+/// System implementation to spawn name text for cards
+#[allow(dead_code)]
 pub fn name_text_system(
     mut commands: Commands,
     query: Query<(Entity, &Transform, &Card)>,

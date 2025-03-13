@@ -50,10 +50,11 @@ impl Default for CardTextType {
     }
 }
 
-/// Component for storing text layout information (used by layout systems)
-#[derive(Component, Debug, Clone)]
+/// Information about text layout, used by multiple text components
+#[derive(Component, Clone, Debug)]
 pub struct TextLayoutInfo {
     /// The alignment of the text
+    #[allow(dead_code)]
     pub alignment: JustifyText,
 }
 

@@ -1,7 +1,6 @@
 use crate::mana::mana_symbol_to_char;
 use crate::text::utils::get_mana_symbol_color;
 use bevy::prelude::*;
-use bevy::text::JustifyText;
 
 /// Represents rendering options for mana symbols
 #[derive(Clone, Debug)]
@@ -197,11 +196,13 @@ pub fn render_mana_symbol(
 }
 
 /// Calculates the appropriate width of a mana symbol for layout purposes
+#[allow(dead_code)]
 pub fn get_mana_symbol_width(font_size: f32) -> f32 {
     font_size * 0.7 // Slightly narrower than square for better text integration
 }
 
 /// Checks if a string is a valid mana symbol
+#[allow(dead_code)]
 pub fn is_valid_mana_symbol(symbol: &str) -> bool {
     if symbol.len() < 3 || !symbol.starts_with('{') || !symbol.ends_with('}') {
         return false;

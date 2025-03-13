@@ -38,8 +38,10 @@ pub fn get_mana_symbol_color(symbol: &str) -> Color {
 #[derive(Debug, Clone)]
 pub struct CardTextLayout {
     /// The width of the card
+    #[allow(dead_code)]
     pub card_width: f32,
     /// The height of the card
+    #[allow(dead_code)]
     pub card_height: f32,
     /// X offset of name text from left edge of card (normalized -0.5 to 0.5)
     pub name_x_offset: f32,
@@ -52,8 +54,10 @@ pub struct CardTextLayout {
     /// Y offset of mana cost from top edge of card (normalized -0.5 to 0.5)
     pub mana_cost_y_offset: f32,
     /// The margin between text and the edge of the card for rules text (normalized)
+    #[allow(dead_code)]
     pub vertical_margin: f32,
     /// The horizontal margin for text relative to the card edge (normalized)
+    #[allow(dead_code)]
     pub horizontal_margin: f32,
     /// X offset of power/toughness from right edge of card (normalized -0.5 to 0.5)
     pub pt_x_offset: f32,
@@ -64,6 +68,7 @@ pub struct CardTextLayout {
     /// Height constraint for power/toughness as percentage of card height
     pub pt_height: f32,
     /// X offset of type line from left edge of card (normalized -0.5 to 0.5)
+    #[allow(dead_code)]
     pub type_line_x_offset: f32,
     /// Y offset of type line from top edge of card (normalized -0.5 to 0.5)
     pub type_line_y_offset: f32,
@@ -116,6 +121,7 @@ impl Default for CardTextLayout {
 }
 
 /// Spawn debug bounds visualization for text
+#[allow(dead_code)]
 pub fn spawn_debug_bounds(
     commands: &mut Commands,
     _card_pos: Vec2,
@@ -164,6 +170,7 @@ pub fn spawn_debug_bounds(
 /// as the parent and calculate relative offsets. This ensures that text
 /// stays properly aligned with cards even when they're away from the center
 /// of the screen.
+#[allow(dead_code)]
 pub fn calculate_text_position(
     card_pos: Vec2,
     card_size: Vec2,

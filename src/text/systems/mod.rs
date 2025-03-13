@@ -7,5 +7,3 @@ pub mod rules_text;
 pub mod type_line_text;
 
 // Export only the card_text module and the rules_text function
-pub use card_text::*;
-pub use rules_text::replace_mana_symbols_with_unicode;

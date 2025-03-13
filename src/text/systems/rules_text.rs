@@ -10,6 +10,7 @@ use crate::text::{
 /// Directly replace mana symbols in text with their Unicode equivalents
 /// This is a simpler alternative to the more complex inline mana symbol rendering
 /// that can be used for plain text displays or debugging purposes.
+#[allow(dead_code)]
 pub fn replace_mana_symbols_with_unicode(text: &str) -> String {
     use crate::mana::MANA_SYMBOLS;
 
@@ -63,8 +64,8 @@ pub fn spawn_rules_text(
     let formatted_text = format_rules_text(&content.rules_text, max_text_width, font_size);
 
     // Load fonts - both regular and mana fonts
-    let regular_font = asset_server.load("fonts/DejaVuSans.ttf");
-    let mana_font: Handle<Font> = asset_server.load("fonts/Mana.ttf");
+    let regular_font: Handle<Font> = asset_server.load("fonts/NotoSerif-Regular.ttf");
+    let _mana_font: Handle<Font> = asset_server.load("fonts/Mana.ttf");
 
     // Create the root text entity with sections for the entire text content
     let text_entity = commands
@@ -106,6 +107,7 @@ fn add_mana_symbols_as_children(
 }
 
 /// Extract segments of text, separating mana symbols from regular text
+#[allow(dead_code)]
 fn extract_mana_symbol_segments(text: &str) -> Vec<(String, bool)> {
     let mut segments = Vec::new();
     let mut current_pos = 0;

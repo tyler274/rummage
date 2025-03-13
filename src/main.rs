@@ -22,7 +22,7 @@ use drag::DragPlugin;
 use game_engine::GameEnginePlugin;
 use menu::{GameMenuState, MenuPlugin, state::StateTransitionContext};
 use player::spawn_hand;
-use text::{DebugConfig, spawn_card_text};
+use text::DebugConfig;
 
 // Plugin for the actual game systems
 pub struct GamePlugin;
