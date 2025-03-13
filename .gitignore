@@ -22,3 +22,6 @@ target/
 
 # Ignore all cached sets
 sets/
+
+# Ignore generated book files
+docs/book/
