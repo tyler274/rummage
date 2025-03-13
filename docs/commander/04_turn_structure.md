@@ -396,3 +396,499 @@ For games with many players:
 - Optimize priority passing and player actions
 - Use efficient data structures for tracking turn modifications
 - Consider caching computed values for turn transitions 
+
+## Turn Structure Edge Cases in Commander
+
+### Extra Turns and Turn Order Manipulation
+
+Commander games often involve cards that grant extra turns or modify turn order. Here's how the system handles these edge cases:
+
+```rust
+fn handle_extra_turn_effects(
+    mut commands: Commands,
+    mut turn_manager: ResMut<TurnManager>,
+    mut extra_turn_events: EventReader<ExtraTurnEvent>,
+    players: Query<Entity, With<CommanderPlayer>>,
+) {
+    // Process extra turn events
+    for event in extra_turn_events.read() {
+        // Insert the extra turn into the turn queue
+        let extra_turn = TurnQueueEntry {
+            player: event.player,
+            source: TurnSource::ExtraTurn(event.source),
+            skipped_phases: event.skipped_phases.clone(),
+            extra_phases: event.extra_phases.clone(),
+            modified_rules: event.modified_rules.clone(),
+        };
+        
+        match event.insertion_method {
+            ExtraTurnInsertion::Immediately => {
+                // Insert immediately after the current turn
+                let position = turn_manager.current_turn_index + 1;
+                turn_manager.turn_queue.insert(position, extra_turn);
+            },
+            ExtraTurnInsertion::AfterFullCycle => {
+                // Insert after all players have had a turn
+                let player_count = turn_manager.player_order.len();
+                let position = turn_manager.current_turn_index + player_count;
+                
+                // Ensure we don't go past the end of the queue
+                let target_position = position.min(turn_manager.turn_queue.len());
+                turn_manager.turn_queue.insert(target_position, extra_turn);
+            },
+            ExtraTurnInsertion::End => {
+                // Add to the end of the queue
+                turn_manager.turn_queue.push(extra_turn);
+            },
+        }
+        
+        // Notify that turn order has changed
+        commands.spawn(TurnOrderChangedEvent {
+            reason: TurnOrderChangeReason::ExtraTurn(event.source),
+            new_queue: turn_manager.turn_queue.clone(),
+        });
+    }
+}
+```
+
+### Phase and Step Skipping
+
+Cards like Time Stop can end the turn immediately or skip phases:
+
+```rust
+fn handle_phase_skip_effects(
+    mut commands: Commands,
+    mut turn_manager: ResMut<TurnManager>,
+    mut phase_skip_events: EventReader<PhaseSkipEvent>,
+) {
+    for event in phase_skip_events.read() {
+        match event.skip_type {
+            PhaseSkipType::EndTurn => {
+                // End the turn immediately
+                turn_manager.phases_remaining.clear();
+                turn_manager.current_phase = TurnPhase::EndingPhase;
+                turn_manager.current_step = Some(TurnStep::EndStep);
+                turn_manager.phase_complete = true;
+                
+                // Clear the stack and pending effects
+                commands.spawn(EndTurnImmediatelyEvent {
+                    source: event.source,
+                });
+            },
+            PhaseSkipType::SkipPhase(phase) => {
+                // Remove the specified phase from the remaining phases
+                turn_manager.phases_remaining.retain(|p| p != &phase);
+                
+                // If we're currently in the phase to skip, end it immediately
+                if turn_manager.current_phase == phase {
+                    turn_manager.phase_complete = true;
+                }
+            },
+            PhaseSkipType::SkipToPhase(phase) => {
+                // Skip to a specific phase
+                let current_phase_index = turn_manager.phases_remaining
+                    .iter()
+                    .position(|p| p == &turn_manager.current_phase);
+                
+                let target_phase_index = turn_manager.phases_remaining
+                    .iter()
+                    .position(|p| p == &phase);
+                
+                if let (Some(current), Some(target)) = (current_phase_index, target_phase_index) {
+                    if target > current {
+                        // Remove all phases between current and target
+                        turn_manager.phases_remaining = turn_manager.phases_remaining
+                            .iter()
+                            .enumerate()
+                            .filter(|(i, _)| *i <= current || *i >= target)
+                            .map(|(_, p)| p.clone())
+                            .collect();
+                            
+                        // End current phase
+                        turn_manager.phase_complete = true;
+                    }
+                }
+            },
+            PhaseSkipType::ExtraPhase(phase) => {
+                // Insert an extra phase after the current one
+                if let Some(current_index) = turn_manager.phases_remaining
+                    .iter()
+                    .position(|p| p == &turn_manager.current_phase) {
+                    
+                    turn_manager.phases_remaining.insert(current_index + 1, phase);
+                }
+            },
+        }
+    }
+}
+```
+
+### Handling Modified Turn Rules
+
+Some effects modify how turns work rather than skipping phases:
+
+```rust
+fn apply_turn_modifications(
+    mut turn_manager: ResMut<TurnManager>,
+    active_modifications: Query<&TurnRuleModification>,
+) {
+    // Reset to default rules
+    turn_manager.max_lands_per_turn = 1;
+    turn_manager.skip_untap = false;
+    turn_manager.skip_draw = false;
+    turn_manager.skip_combat = false;
+    turn_manager.additional_combat_phases = 0;
+    turn_manager.mana_empties_between_phases = true;
+    
+    // Apply all active modifications
+    for modification in active_modifications.iter() {
+        match modification.modification_type {
+            TurnRuleModificationType::MaxLandsPerTurn(count) => {
+                turn_manager.max_lands_per_turn = count;
+            },
+            TurnRuleModificationType::SkipUntap(player) => {
+                if turn_manager.active_player == player {
+                    turn_manager.skip_untap = true;
+                }
+            },
+            TurnRuleModificationType::SkipDraw(player) => {
+                if turn_manager.active_player == player {
+                    turn_manager.skip_draw = true;
+                }
+            },
+            TurnRuleModificationType::SkipCombat(player) => {
+                if turn_manager.active_player == player {
+                    turn_manager.skip_combat = true;
+                }
+            },
+            TurnRuleModificationType::AdditionalCombatPhases(count) => {
+                turn_manager.additional_combat_phases = count;
+            },
+            TurnRuleModificationType::ManaDoesNotEmpty => {
+                turn_manager.mana_empties_between_phases = false;
+            },
+            // Other modifications...
+        }
+    }
+}
+```
+
+### Controlled Player Turns
+
+In Commander, one player can sometimes control another player's turn:
+
+```rust
+fn handle_player_control_effects(
+    mut commands: Commands,
+    mut turn_manager: ResMut<TurnManager>,
+    mut control_events: EventReader<PlayerControlEvent>,
+    mut end_control_events: EventReader<EndPlayerControlEvent>,
+) {
+    // Process control events
+    for event in control_events.read() {
+        turn_manager.controlled_turns.insert(
+            event.controlled_player,
+            TurnControl {
+                controller: event.controlling_player,
+                source: event.source,
+                restrictions: event.restrictions.clone(),
+            }
+        );
+    }
+    
+    // Process end control events
+    for event in end_control_events.read() {
+        turn_manager.controlled_turns.remove(&event.controlled_player);
+    }
+    
+    // Check if the current active player is controlled
+    let active_player = turn_manager.active_player;
+    if let Some(control) = turn_manager.controlled_turns.get(&active_player) {
+        // Set up control for this turn
+        commands.spawn(ActivePlayerControlledEvent {
+            controlled_player: active_player,
+            controlling_player: control.controller,
+            restrictions: control.restrictions.clone(),
+        });
+    }
+}
+```
+
+### Time Walk Effects vs. Normal Turn Cycle
+
+Commander games can have both extra turns and modified turn cycles:
+
+```rust
+fn reconcile_turn_modifications(
+    mut turn_manager: ResMut<TurnManager>,
+    time_walk_effects: Query<&TimeWalkEffect>,
+    turn_cycle_effects: Query<&TurnCycleModification>,
+) {
+    // First apply any global turn cycle modifications
+    let mut turn_cycle_modified = false;
+    for effect in turn_cycle_effects.iter() {
+        match effect.modification_type {
+            TurnCycleModificationType::ReverseOrder => {
+                turn_manager.reversed_turn_order = true;
+                turn_cycle_modified = true;
+            },
+            TurnCycleModificationType::SkipPlayers(ref players) => {
+                // Mark players to skip in the turn order
+                for &player in players {
+                    turn_manager.skipped_players.insert(player);
+                }
+                turn_cycle_modified = true;
+            },
+            TurnCycleModificationType::EveryoneDrawsEveryTurn => {
+                turn_manager.everyone_draws = true;
+                turn_cycle_modified = true;
+            },
+            // Other modifications...
+        }
+    }
+    
+    // Then check for extra turns/time walks
+    let has_time_walks = !time_walk_effects.is_empty();
+    
+    // Special case: when both are active, the rule is that
+    // time walk effects override turn cycle modifications temporarily
+    if has_time_walks && turn_cycle_modified {
+        for effect in time_walk_effects.iter() {
+            if effect.override_turn_cycle {
+                // This time walk effect temporarily disables turn cycle modifications
+                turn_manager.turn_cycle_override_active = true;
+                break;
+            }
+        }
+    }
+}
+```
+
+### Edge Case: Simultaneous Extra Turn Effects
+
+When multiple players would take extra turns simultaneously:
+
+```rust
+fn resolve_simultaneous_extra_turns(
+    mut commands: Commands,
+    mut turn_manager: ResMut<TurnManager>,
+    mut extra_turn_collisions: EventReader<ExtraTurnCollisionEvent>,
+) {
+    for event in extra_turn_collisions.read() {
+        let colliding_turns = &event.colliding_turns;
+        
+        // Default rule: APNAP order (Active Player, Non-Active Player)
+        // Sort by distance from active player in turn order
+        let mut sorted_turns = colliding_turns.clone();
+        sorted_turns.sort_by(|a, b| {
+            let active_index = turn_manager.player_order
+                .iter()
+                .position(|p| *p == turn_manager.active_player)
+                .unwrap_or(0);
+                
+            let a_index = turn_manager.player_order
+                .iter()
+                .position(|p| *p == a.player)
+                .unwrap_or(0);
+                
+            let b_index = turn_manager.player_order
+                .iter()
+                .position(|p| *p == b.player)
+                .unwrap_or(0);
+                
+            // Calculate distance in turn order
+            let a_distance = (a_index + turn_manager.player_order.len() - active_index) 
+                             % turn_manager.player_order.len();
+            let b_distance = (b_index + turn_manager.player_order.len() - active_index) 
+                             % turn_manager.player_order.len();
+                
+            a_distance.cmp(&b_distance)
+        });
+        
+        // Replace the colliding turns with the sorted order
+        let position = turn_manager.turn_queue
+            .iter()
+            .position(|t| colliding_turns.contains(t))
+            .unwrap_or(0);
+            
+        // Remove old entries
+        turn_manager.turn_queue.retain(|t| !colliding_turns.contains(t));
+        
+        // Insert sorted entries
+        for (i, turn) in sorted_turns.into_iter().enumerate() {
+            turn_manager.turn_queue.insert(position + i, turn);
+        }
+        
+        // Notify about the resolution
+        commands.spawn(ExtraTurnCollisionResolvedEvent {
+            original_event: event.clone(),
+            resolution_method: ExtraTurnResolutionMethod::APNAPOrder,
+        });
+    }
+}
+```
+
+### Edge Case: Turn Cycles during Multiplayer Elimination
+
+When a player is eliminated during a multiplayer game, the turn order must be maintained:
+
+```rust
+fn handle_elimination_turn_adjustments(
+    mut turn_manager: ResMut<TurnManager>,
+    mut player_eliminated_events: EventReader<PlayerEliminatedEvent>,
+) {
+    for event in player_eliminated_events.read() {
+        let eliminated_player = event.player;
+        
+        // Remove from player order
+        if let Some(pos) = turn_manager.player_order.iter().position(|&p| p == eliminated_player) {
+            turn_manager.player_order.remove(pos);
+            
+            // Adjust indices if needed
+            if pos <= turn_manager.active_player_index {
+                turn_manager.active_player_index = turn_manager.active_player_index.saturating_sub(1);
+            }
+            
+            if pos <= turn_manager.priority_player_index {
+                turn_manager.priority_player_index = turn_manager.priority_player_index.saturating_sub(1);
+            }
+        }
+        
+        // Update future turns
+        turn_manager.turn_queue.retain(|turn| turn.player != eliminated_player);
+        
+        // Handle cases where eliminated player had the next turn
+        if turn_manager.next_player() == eliminated_player {
+            // Advance to the next player
+            advance_to_next_valid_player(&mut turn_manager);
+        }
+    }
+}
+
+fn advance_to_next_valid_player(turn_manager: &mut TurnManager) {
+    // Find the next non-eliminated, non-skipped player
+    while turn_manager.skipped_players.contains(&turn_manager.next_player()) {
+        // Move to the next player in order
+        turn_manager.active_player_index = 
+            (turn_manager.active_player_index + 1) % turn_manager.player_order.len();
+    }
+}
+```
+
+### Split Second During Turn Transitions
+
+Handle the edge case of Split Second effects during turn transitions:
+
+```rust
+fn handle_split_second_during_turn_transition(
+    turn_manager: Res<TurnManager>,
+    split_second_effects: Query<Entity, With<SplitSecondEffect>>,
+    mut end_step_events: EventReader<EndStepEvent>,
+    mut commands: Commands,
+) {
+    // Check if there's a split second effect active during turn transition
+    let split_second_active = !split_second_effects.is_empty();
+    
+    if split_second_active {
+        for event in end_step_events.read() {
+            // Special handling for split second during turn transitions
+            // Players can't respond to the turn ending or beginning
+            commands.spawn(SplitSecondTurnTransitionEvent {
+                from_player: turn_manager.active_player,
+                to_player: turn_manager.next_player(),
+                allows_responses: false,
+            });
+        }
+    }
+}
+```
+
+### Teferi's Protection and Similar Phase-Out Effects
+
+Handle phasing out during turn transitions:
+
+```rust
+fn handle_phased_out_player(
+    mut turn_manager: ResMut<TurnManager>,
+    mut phase_out_events: EventReader<PlayerPhasedOutEvent>,
+    mut phase_in_events: EventReader<PlayerPhasedInEvent>,
+    phased_out_players: Query<Entity, With<PhasedOutStatus>>,
+) {
+    // Track players phasing out
+    for event in phase_out_events.read() {
+        turn_manager.phased_out_players.insert(event.player);
+    }
+    
+    // Track players phasing in
+    for event in phase_in_events.read() {
+        turn_manager.phased_out_players.remove(&event.player);
+    }
+    
+    // Special handling for phased out active player
+    if turn_manager.phased_out_players.contains(&turn_manager.active_player) {
+        // Player is phased out but still takes their turn
+        // They just can't be affected by anything
+        turn_manager.active_player_phased_out = true;
+    } else {
+        turn_manager.active_player_phased_out = false;
+    }
+}
+```
+
+### Commander Specific: Command Zone Interactions on Turn Start
+
+```rust
+fn handle_command_zone_turn_start(
+    mut commands: Commands,
+    turn_manager: Res<TurnManager>,
+    command_zone: Res<CommandZone>,
+    active_player_query: Query<Entity, (With<CommanderPlayer>, With<ActivePlayer>)>,
+) {
+    // If a player's commander is in the command zone at the start of their turn,
+    // trigger any "at the beginning of your turn, if your commander is in the command zone" effects
+    
+    if let Ok(active_player) = active_player_query.get_single() {
+        // Get player's commanders in command zone
+        let commanders_in_command_zone = command_zone
+            .get_commanders_for_player(active_player)
+            .iter()
+            .filter(|&&commander| command_zone.contains(commander))
+            .copied()
+            .collect::<Vec<_>>();
+            
+        if !commanders_in_command_zone.is_empty() {
+            commands.spawn(CommanderInCommandZoneTurnStartEvent {
+                player: active_player,
+                commanders: commanders_in_command_zone,
+            });
+        }
+    }
+}
+```
+
+## Testing Turn Structure Edge Cases
+
+Complex turn structure scenarios require thorough testing:
+
+```rust
+#[test]
+fn test_turn_structure_edge_cases() {
+    let mut app = App::new();
+    app.add_plugins(CommanderTurnTestPlugin);
+    
+    // Test cases for complex turn structure scenarios
+    
+    // 1. Multiple extra turns from different sources
+    // 2. Player elimination during extra turn resolution
+    // 3. Split second effects during turn transitions
+    // 4. Reversed turn order with extra turn effects
+    // 5. Turn control combined with turn modifications
+    // 6. Phase skipping combined with extra phase effects
+    // 7. Multiple simultaneous end-the-turn effects
+    // 8. Player phasing out during their turn
+    // 9. Player concession during extra turn sequence
+    // 10. Complex APNAP ordering with multiple turn-affecting spells
+    
+    // Test execution...
+}
+``` 

@@ -807,3 +807,884 @@ For Commander games with many players:
 - Distributed voting process for many players
 - Smart update system that only refreshes changed political state
 - Client-server architecture for multiplayer politics 
+
+## Multiplayer Politics Edge Cases
+
+### Joint Victory and Optional Draw Conditions
+
+Commander introduces the possibility of joint victory or draws based on player agreement:
+
+```rust
+fn handle_joint_victory_conditions(
+    mut commands: Commands,
+    mut politics: ResMut<PoliticsSystem>,
+    players: Query<(Entity, &CommanderPlayer)>,
+    mut victory_events: EventReader<VictoryProposalEvent>,
+    mut victory_response_events: EventReader<VictoryResponseEvent>,
+) {
+    // Handle proposed joint victories
+    for event in victory_events.read() {
+        match event.proposal_type {
+            VictoryProposalType::JointVictory { players: proposed_winners } => {
+                // Set up the proposal
+                politics.active_victory_proposal = Some(VictoryProposal {
+                    id: event.id,
+                    proposer: event.proposer,
+                    proposal_type: event.proposal_type.clone(),
+                    responses: HashMap::new(),
+                    created_at: time.elapsed(),
+                });
+                
+                // Require unanimous agreement from all players
+                for (player, _) in players.iter() {
+                    // Skip eliminated players
+                    if !proposed_winners.contains(&player) {
+                        politics.active_victory_proposal.as_mut().unwrap()
+                            .responses.insert(player, VictoryResponseType::Pending);
+                    }
+                }
+            },
+            VictoryProposalType::Draw => {
+                // For a draw, ALL players must agree
+                politics.active_victory_proposal = Some(VictoryProposal {
+                    id: event.id,
+                    proposer: event.proposer,
+                    proposal_type: event.proposal_type.clone(),
+                    responses: HashMap::new(),
+                    created_at: time.elapsed(),
+                });
+                
+                // Initialize all players as pending
+                for (player, _) in players.iter() {
+                    politics.active_victory_proposal.as_mut().unwrap()
+                        .responses.insert(player, VictoryResponseType::Pending);
+                }
+            },
+            // Other proposal types...
+        }
+    }
+    
+    // Process responses to victory proposals
+    for event in victory_response_events.read() {
+        if let Some(proposal) = &mut politics.active_victory_proposal {
+            if proposal.id == event.proposal_id {
+                // Record the response
+                proposal.responses.insert(event.responder, event.response.clone());
+                
+                // Check if we have all responses
+                let all_responded = proposal.responses.values()
+                    .all(|r| *r != VictoryResponseType::Pending);
+                    
+                if all_responded {
+                    // For joint victory, all non-winners must accept
+                    // For draw, everyone must accept
+                    let is_accepted = proposal.responses.values()
+                        .all(|r| *r == VictoryResponseType::Accept);
+                    
+                    if is_accepted {
+                        // Apply the victory condition
+                        match &proposal.proposal_type {
+                            VictoryProposalType::JointVictory { players } => {
+                                for &player in players {
+                                    commands.spawn(PlayerVictoryEvent {
+                                        player,
+                                        victory_type: VictoryType::Joint,
+                                        shared_with: players.clone(),
+                                    });
+                                }
+                            },
+                            VictoryProposalType::Draw => {
+                                commands.spawn(GameDrawEvent {
+                                    reason: DrawReason::MutualAgreement,
+                                });
+                            },
+                            // Other types...
+                        }
+                    } else {
+                        // Proposal rejected
+                        commands.spawn(VictoryProposalRejectedEvent {
+                            proposal_id: proposal.id,
+                            reason: "Not all players accepted".to_string(),
+                        });
+                    }
+                    
+                    // Clear the active proposal
+                    politics.active_victory_proposal = None;
+                }
+            }
+        }
+    }
+}
+```
+
+### Kingmaking and Anti-Leader Coalitions
+
+In Commander multiplayer, players often form temporary alliances against the strongest player:
+
+```rust
+fn handle_dynamic_coalitions(
+    mut commands: Commands,
+    mut politics: ResMut<PoliticsSystem>,
+    players: Query<(Entity, &CommanderPlayer)>,
+    game_state: Res<CommanderGameState>,
+) {
+    // Periodically analyze game state to identify potential leaders
+    if game_state.turn_number % 3 == 0 { // Every 3 turns
+        // Calculate threat assessment for each player
+        let mut threat_levels = HashMap::new();
+        
+        for (player, player_data) in players.iter() {
+            // Basic threat metrics
+            let mut threat_score = 0;
+            
+            // Life total relative to starting life
+            let life_percentage = player_data.life as f32 / CommanderRules::STARTING_LIFE as f32;
+            threat_score += (life_percentage * 10.0) as i32;
+            
+            // Number of permanents
+            let permanent_count = game_state.get_permanent_count(player);
+            threat_score += permanent_count as i32;
+            
+            // Commander on battlefield
+            if player_data.commander_on_battlefield {
+                threat_score += 5;
+                
+                // Commander with high power
+                if let Some(power) = player_data.commander_power {
+                    threat_score += power as i32;
+                }
+            }
+            
+            // Hand size
+            threat_score += player_data.hand_size as i32 * 2;
+            
+            // Store threat assessment
+            threat_levels.insert(player, threat_score);
+        }
+        
+        // Identify the leader(s)
+        if let Some(max_threat) = threat_levels.values().max() {
+            let leaders: Vec<Entity> = threat_levels.iter()
+                .filter(|(_, &threat)| threat == *max_threat)
+                .map(|(&player, _)| player)
+                .collect();
+                
+            // Update politics system
+            politics.perceived_leaders = leaders.clone();
+            
+            // Notify all players about the threat assessment
+            commands.spawn(ThreatAssessmentEvent {
+                threat_levels: threat_levels.clone(),
+                leaders: leaders,
+            });
+        }
+    }
+}
+```
+
+### Temporary Alliances with Rules Integration
+
+Handle temporary alliances that modify game rules:
+
+```rust
+fn apply_alliance_effects(
+    mut commands: Commands,
+    politics: Res<PoliticsSystem>,
+    mut game_rules: ResMut<GameRules>,
+) {
+    // Apply rule modifications based on active alliances
+    for alliance in politics.active_alliances.iter() {
+        match &alliance.effect_type {
+            AllianceEffectType::SharedDamageRedirection { rate } => {
+                // Set up damage redirection system for allied players
+                for &player in &alliance.members {
+                    game_rules.damage_redirection.insert(
+                        player,
+                        DamageRedirection {
+                            source_type: RedirectionSource::Alliance(alliance.id),
+                            share_targets: alliance.members.clone(),
+                            share_rate: *rate,
+                            duration: alliance.duration,
+                        }
+                    );
+                }
+            },
+            AllianceEffectType::MutualProtection => {
+                // Set up protection effects
+                for &player in &alliance.members {
+                    for &ally in &alliance.members {
+                        if player != ally {
+                            game_rules.protection_effects.insert(
+                                (player, ally),
+                                ProtectionEffect {
+                                    protected_player: ally,
+                                    protector: player,
+                                    source_type: ProtectionSource::Alliance(alliance.id),
+                                    duration: alliance.duration,
+                                }
+                            );
+                        }
+                    }
+                }
+            },
+            // Other alliance effect types...
+        }
+    }
+}
+```
+
+### Edge Case: Simultaneous Decision Making with Timeout
+
+For efficiency in large multiplayer games, implement a timeout system for decisions:
+
+```rust
+fn handle_timed_multiplayer_decisions(
+    mut commands: Commands,
+    mut politics: ResMut<PoliticsSystem>,
+    mut decision_events: EventReader<GroupDecisionEvent>,
+    mut decision_responses: EventReader<PlayerDecisionResponse>,
+    time: Res<Time>,
+) {
+    // Process new decision events
+    for event in decision_events.read() {
+        let decision = GroupDecision {
+            id: event.id,
+            decision_type: event.decision_type.clone(),
+            participants: event.participants.clone(),
+            responses: HashMap::new(),
+            timeout: event.timeout,
+            created_at: time.elapsed(),
+        };
+        
+        politics.active_decisions.push(decision);
+    }
+    
+    // Process incoming responses
+    for event in decision_responses.read() {
+        if let Some(decision_index) = politics.active_decisions.iter()
+            .position(|d| d.id == event.decision_id) {
+            
+            let decision = &mut politics.active_decisions[decision_index];
+            decision.responses.insert(event.player, event.response.clone());
+            
+            // Check if all responses are in
+            let all_responded = decision.participants.iter()
+                .all(|p| decision.responses.contains_key(p));
+                
+            if all_responded {
+                resolve_group_decision(&mut commands, decision_index, &mut politics);
+            }
+        }
+    }
+    
+    // Check for timeouts
+    let current_time = time.elapsed();
+    let mut decisions_to_resolve = Vec::new();
+    
+    for (i, decision) in politics.active_decisions.iter().enumerate() {
+        if let Some(timeout) = decision.timeout {
+            if current_time - decision.created_at > timeout {
+                // Add defaulting behavior for non-responders
+                decisions_to_resolve.push(i);
+            }
+        }
+    }
+    
+    // Resolve timed-out decisions in reverse order
+    for index in decisions_to_resolve.into_iter().rev() {
+        resolve_group_decision(&mut commands, index, &mut politics);
+    }
+}
+
+fn resolve_group_decision(
+    commands: &mut Commands,
+    decision_index: usize,
+    politics: &mut PoliticsSystem,
+) {
+    // Take ownership of the decision
+    let decision = politics.active_decisions.remove(decision_index);
+    
+    // For any player who didn't respond, apply the default action
+    let mut final_responses = decision.responses.clone();
+    for &participant in &decision.participants {
+        if !final_responses.contains_key(&participant) {
+            final_responses.insert(participant, DecisionResponse::Default);
+        }
+    }
+    
+    // Process based on decision type
+    match decision.decision_type {
+        GroupDecisionType::AttackDirection => {
+            // Process coordinated attack planning
+            commands.spawn(GroupDecisionResolvedEvent {
+                decision_id: decision.id,
+                decision_type: decision.decision_type,
+                responses: final_responses,
+            });
+        },
+        GroupDecisionType::ResourceSharing { resource_type } => {
+            // Process resource sharing
+            // (e.g., mana, cards, permanent control)
+            commands.spawn(ResourceSharingResolvedEvent {
+                decision_id: decision.id,
+                resource_type,
+                shares: final_responses.into_iter()
+                    .map(|(player, resp)| {
+                        let amount = match resp {
+                            DecisionResponse::Number(n) => n,
+                            DecisionResponse::Default => 0,
+                            _ => 0,
+                        };
+                        (player, amount)
+                    })
+                    .collect(),
+            });
+        },
+        // Other decision types...
+    }
+}
+```
+
+### Edge Case: Diplomatic Immunity and Targeting Restrictions
+
+Some political mechanics create targeting restrictions:
+
+```rust
+fn apply_diplomatic_immunity(
+    mut commands: Commands,
+    politics: Res<PoliticsSystem>,
+    mut game_state: ResMut<CommanderGameState>,
+) {
+    // Clear current diplomatic immunities
+    game_state.targeting_restrictions.diplomatic_immunity.clear();
+    
+    // Apply current diplomatic agreements
+    for deal in politics.active_deals.iter() {
+        match &deal.deal_type {
+            DealType::NonAggressionPact { players, duration } => {
+                for &player1 in players {
+                    for &player2 in players {
+                        if player1 != player2 {
+                            // Create mutual targeting restriction
+                            game_state.targeting_restrictions.diplomatic_immunity
+                                .entry(player1)
+                                .or_default()
+                                .push(TargetingRestriction {
+                                    source_player: player2,
+                                    restriction_type: TargetingRestrictionType::CannotTargetPlayer,
+                                    source: RestrictionSource::Deal(deal.id),
+                                });
+                        }
+                    }
+                }
+            },
+            DealType::ProtectionAgreement { protector, protected, duration } => {
+                // One player cannot be targeted by the other
+                game_state.targeting_restrictions.diplomatic_immunity
+                    .entry(*protected)
+                    .or_default()
+                    .push(TargetingRestriction {
+                        source_player: *protector,
+                        restriction_type: TargetingRestrictionType::CannotTargetPlayer,
+                        source: RestrictionSource::Deal(deal.id),
+                    });
+            },
+            // Other deal types...
+        }
+    }
+}
+```
+
+### Edge Case: Simultaneous Secret Selection
+
+Handle scenarios where players make simultaneous secret choices:
+
+```rust
+fn handle_simultaneous_secret_choices(
+    mut commands: Commands,
+    mut politics: ResMut<PoliticsSystem>,
+    mut secret_choice_events: EventReader<SecretChoiceEvent>,
+    mut secret_choice_submissions: EventReader<SecretChoiceSubmission>,
+    time: Res<Time>,
+) {
+    // Handle new secret choice scenarios
+    for event in secret_choice_events.read() {
+        politics.active_secret_choices.push(SecretChoiceScenario {
+            id: event.id,
+            choice_type: event.choice_type.clone(),
+            eligible_players: event.eligible_players.clone(),
+            submissions: HashMap::new(),
+            timeout: event.timeout,
+            created_at: time.elapsed(),
+        });
+    }
+    
+    // Process submissions
+    for event in secret_choice_submissions.read() {
+        if let Some(choice) = politics.active_secret_choices.iter_mut()
+            .find(|c| c.id == event.choice_id) {
+            
+            // Record submission
+            choice.submissions.insert(event.player, event.choice.clone());
+            
+            // Check if all players have submitted
+            if choice.submissions.len() == choice.eligible_players.len() {
+                resolve_secret_choice(
+                    &mut commands,
+                    &mut politics.active_secret_choices,
+                    choice.id
+                );
+            }
+        }
+    }
+    
+    // Check for timeouts
+    let current_time = time.elapsed();
+    let choice_ids: Vec<Uuid> = politics.active_secret_choices.iter()
+        .filter(|choice| {
+            if let Some(timeout) = choice.timeout {
+                current_time - choice.created_at > timeout
+            } else {
+                false
+            }
+        })
+        .map(|choice| choice.id)
+        .collect();
+    
+    // Resolve timed-out choices
+    for id in choice_ids {
+        resolve_secret_choice(
+            &mut commands,
+            &mut politics.active_secret_choices,
+            id
+        );
+    }
+}
+
+fn resolve_secret_choice(
+    commands: &mut Commands,
+    choices: &mut Vec<SecretChoiceScenario>,
+    choice_id: Uuid,
+) {
+    // Find and remove the choice
+    let choice_index = choices.iter().position(|c| c.id == choice_id).unwrap();
+    let choice = choices.remove(choice_index);
+    
+    // Handle default choices for any players who didn't submit
+    let mut final_choices = choice.submissions;
+    for &player in &choice.eligible_players {
+        if !final_choices.contains_key(&player) {
+            match choice.choice_type {
+                SecretChoiceType::TargetPlayer => {
+                    // Default to no choice
+                    final_choices.insert(player, PlayerChoice::NoSelection);
+                },
+                SecretChoiceType::TargetCard { card_list } => {
+                    // Default to first card if possible
+                    let default_choice = if card_list.is_empty() {
+                        PlayerChoice::NoSelection
+                    } else {
+                        PlayerChoice::Card(card_list[0])
+                    };
+                    final_choices.insert(player, default_choice);
+                },
+                // Other types...
+            }
+        }
+    }
+    
+    // Reveal all choices simultaneously
+    commands.spawn(SecretChoicesRevealedEvent {
+        choice_id: choice.id,
+        choice_type: choice.choice_type,
+        choices: final_choices,
+    });
+}
+```
+
+### Edge Case: Vote Trading and Enforcement
+
+Handle complex voting scenarios where players trade votes:
+
+```rust
+fn handle_vote_trading(
+    mut commands: Commands,
+    mut politics: ResMut<PoliticsSystem>,
+    mut vote_trade_events: EventReader<VoteTradeEvent>,
+    mut vote_events: EventReader<VoteEvent>,
+    mut vote_cast_events: EventReader<VoteCastEvent>,
+) {
+    // Process vote trade proposals
+    for event in vote_trade_events.read() {
+        match event.trade_type {
+            VoteTradeType::Proposal { from, to, offer, request } => {
+                // Record the proposal
+                politics.vote_trade_proposals.push(VoteTrade {
+                    id: event.id,
+                    from,
+                    to,
+                    offer,
+                    request,
+                    status: VoteTradeStatus::Pending,
+                });
+            },
+            VoteTradeType::Accept { id } => {
+                // Find and update the proposal
+                if let Some(trade) = politics.vote_trade_proposals.iter_mut()
+                    .find(|t| t.id == id) {
+                    
+                    trade.status = VoteTradeStatus::Accepted;
+                    
+                    // Add enforcement tracking
+                    politics.vote_trade_enforcement.push(VoteTradeEnforcement {
+                        trade_id: id,
+                        offerer_voted: false,
+                        requester_voted: false,
+                        offerer_honored: false,
+                        requester_honored: false,
+                    });
+                }
+            },
+            VoteTradeType::Reject { id } => {
+                // Remove rejected proposals
+                politics.vote_trade_proposals.retain(|t| t.id != id);
+            },
+        }
+    }
+    
+    // Track active votes
+    for event in vote_events.read() {
+        politics.active_votes.push(event.vote_id);
+    }
+    
+    // Monitor vote casting to enforce trades
+    for event in vote_cast_events.read() {
+        // Check if this vote is part of a trade
+        for enforcement in politics.vote_trade_enforcement.iter_mut() {
+            let trade = politics.vote_trade_proposals.iter()
+                .find(|t| t.id == enforcement.trade_id)
+                .unwrap();
+            
+            // Check if this is the offerer voting
+            if event.player == trade.from {
+                enforcement.offerer_voted = true;
+                
+                // Check if they honored the trade
+                if let VoteOffer::SpecificChoice { vote_id, choice } = &trade.offer {
+                    if event.vote_id == *vote_id && event.choice == *choice {
+                        enforcement.offerer_honored = true;
+                    }
+                }
+            }
+            
+            // Check if this is the requester voting
+            if event.player == trade.to {
+                enforcement.requester_voted = true;
+                
+                // Check if they honored the trade
+                if let VoteRequest::SpecificChoice { vote_id, choice } = &trade.request {
+                    if event.vote_id == *vote_id && event.choice == *choice {
+                        enforcement.requester_honored = true;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Process completed votes
+    let completed_votes: Vec<Uuid> = politics.active_votes.clone();
+    
+    for vote_id in completed_votes {
+        // For each completed vote, check trade enforcement
+        for enforcement in politics.vote_trade_enforcement.iter() {
+            let trade = politics.vote_trade_proposals.iter()
+                .find(|t| t.id == enforcement.trade_id)
+                .unwrap();
+            
+            // Check if this trade was relevant to the completed vote
+            let trade_involves_vote = match &trade.offer {
+                VoteOffer::SpecificChoice { vote_id: offer_vote_id, .. } => *offer_vote_id == vote_id,
+                _ => false,
+            } || match &trade.request {
+                VoteRequest::SpecificChoice { vote_id: request_vote_id, .. } => *request_vote_id == vote_id,
+                _ => false,
+            };
+            
+            if trade_involves_vote {
+                // Check if trade was violated
+                let violated = enforcement.offerer_voted && !enforcement.offerer_honored ||
+                               enforcement.requester_voted && !enforcement.requester_honored;
+                
+                if violated {
+                    commands.spawn(VoteTradeViolatedEvent {
+                        trade_id: enforcement.trade_id,
+                        violator: if enforcement.offerer_voted && !enforcement.offerer_honored {
+                            trade.from
+                        } else {
+                            trade.to
+                        },
+                    });
+                }
+            }
+        }
+    }
+}
+```
+
+### Edge Case: Concession Timing and Inheritance
+
+Handle the complex case of player concession during critical game moments:
+
+```rust
+fn handle_player_concession(
+    mut commands: Commands,
+    mut game_state: ResMut<CommanderGameState>,
+    mut concession_events: EventReader<PlayerConcessionEvent>,
+    mut politics: ResMut<PoliticsSystem>,
+    stack: Res<Stack>,
+    combat_state: Option<Res<CombatState>>,
+) {
+    for event in concession_events.read() {
+        let conceding_player = event.player;
+        
+        // Handle concession during different game states
+        let current_phase = game_state.current_phase;
+        let stack_is_resolving = stack.currently_resolving.is_some();
+        let in_combat = combat_state.is_some() && combat_state.unwrap().in_combat;
+        
+        // Apply special handling for concessions during critical moments
+        if stack_is_resolving || in_combat {
+            // Complex concession handling:
+            
+            // 1. Record all targets controlled by conceding player
+            let targets_controlled = game_state.get_permanents_controlled_by(conceding_player);
+            
+            // 2. For each spell/ability on the stack targeting those permanents
+            let affected_stack_items = stack.get_items_targeting_permanents(&targets_controlled);
+            
+            for stack_item in affected_stack_items {
+                // Determine if spell fizzles or needs redirection
+                commands.spawn(StackItemConcessionAffectedEvent {
+                    stack_item,
+                    conceding_player,
+                    affected_permanents: targets_controlled.clone(),
+                });
+            }
+            
+            // 3. For combat, check if player is being attacked
+            if let Some(combat) = combat_state {
+                let attacks_against_player = combat
+                    .attackers
+                    .iter()
+                    .filter(|(_, &defender)| defender == conceding_player)
+                    .map(|(&attacker, _)| attacker)
+                    .collect::<Vec<_>>();
+                    
+                if !attacks_against_player.is_empty() {
+                    commands.spawn(AttacksConcessionAffectedEvent {
+                        attackers: attacks_against_player,
+                        defender: conceding_player,
+                    });
+                }
+            }
+        }
+        
+        // Handle political effects
+        
+        // 1. Terminate all deals involving the player
+        for deal in politics.active_deals.iter_mut() {
+            if deal.involves_player(conceding_player) {
+                deal.status = DealStatus::Terminated(TerminationReason::PlayerConceded);
+            }
+        }
+        
+        // 2. Resolve all votes immediately if they involve the player
+        if politics.active_vote.as_ref().map_or(false, |v| v.involves_player(conceding_player)) {
+            // Force immediate vote resolution
+            let mut vote = politics.active_vote.take().unwrap();
+            vote.eligible_voters.retain(|&p| p != conceding_player);
+            vote.votes_cast.remove(&conceding_player);
+            
+            commands.spawn(VoteResolvedEvent {
+                vote_id: vote.id,
+                reason: VoteResolutionReason::PlayerConceded(conceding_player),
+                vote_results: vote.votes_cast,
+            });
+        }
+        
+        // 3. Transfer control of "owned" political effects
+        let effects_to_transfer = politics.get_effects_controlled_by(conceding_player);
+        
+        if !effects_to_transfer.is_empty() {
+            commands.spawn(PoliticalEffectsTransferEvent {
+                from_player: conceding_player,
+                effects: effects_to_transfer,
+                transfer_method: TransferMethod::RandomDistribution,
+            });
+        }
+        
+        // Finally, eliminate the player
+        commands.spawn(PlayerEliminatedEvent {
+            player: conceding_player,
+            reason: EliminationReason::Concede,
+        });
+    }
+}
+```
+
+### Edge Case: Hidden Information Politics
+
+Handle the complex case of shared or revealed hidden information:
+
+```rust
+fn handle_hidden_information_sharing(
+    mut commands: Commands,
+    mut politics: ResMut<PoliticsSystem>,
+    mut info_share_events: EventReader<HiddenInfoShareEvent>,
+    mut revealed_cards_events: EventReader<RevealedCardsEvent>,
+    game_state: Res<CommanderGameState>,
+) {
+    // Process information sharing events
+    for event in info_share_events.read() {
+        match event.info_type {
+            HiddenInfoType::HandCard { card, owner, shown_to } => {
+                // Record that this card has been revealed to specific players
+                politics.revealed_information.hand_cards
+                    .entry(owner)
+                    .or_default()
+                    .entry(card)
+                    .or_default()
+                    .extend(shown_to.iter());
+            },
+            HiddenInfoType::FaceDownCard { card, controller, shown_to } => {
+                // Record face-down card information
+                politics.revealed_information.face_down_cards
+                    .entry(controller)
+                    .or_default()
+                    .entry(card)
+                    .or_default()
+                    .extend(shown_to.iter());
+            },
+            HiddenInfoType::LibraryTopCard { cards, owner, shown_to } => {
+                // Record library top card information
+                politics.revealed_information.library_cards
+                    .entry(owner)
+                    .or_default()
+                    .push(LibraryRevealInfo {
+                        cards,
+                        revealed_to: shown_to.clone(),
+                        timestamp: game_state.turn_number,
+                    });
+            },
+            // Other hidden info types...
+        }
+    }
+    
+    // Process game-mandated reveals
+    for event in revealed_cards_events.read() {
+        // Update knowledge tracking based on public reveals
+        match event.reveal_type {
+            RevealType::ToAll { cards, owner } => {
+                // Everyone sees these cards
+                let all_players: Vec<Entity> = game_state.get_active_players();
+                
+                match event.zone {
+                    Zone::Hand => {
+                        for &card in &cards {
+                            politics.revealed_information.hand_cards
+                                .entry(owner)
+                                .or_default()
+                                .entry(card)
+                                .or_default()
+                                .extend(all_players.iter());
+                        }
+                    },
+                    Zone::Library => {
+                        politics.revealed_information.library_cards
+                            .entry(owner)
+                            .or_default()
+                            .push(LibraryRevealInfo {
+                                cards,
+                                revealed_to: all_players,
+                                timestamp: game_state.turn_number,
+                            });
+                    },
+                    // Other zones...
+                    _ => {}
+                }
+            },
+            RevealType::ToSpecific { cards, owner, viewers } => {
+                // Same logic but for specific viewers
+                match event.zone {
+                    Zone::Hand => {
+                        for &card in &cards {
+                            politics.revealed_information.hand_cards
+                                .entry(owner)
+                                .or_default()
+                                .entry(card)
+                                .or_default()
+                                .extend(viewers.iter());
+                        }
+                    },
+                    // Other zones...
+                    _ => {}
+                }
+            },
+        }
+    }
+    
+    // Clean up outdated information
+    clean_up_outdated_information(&mut politics, &game_state);
+}
+
+fn clean_up_outdated_information(
+    politics: &mut PoliticsSystem,
+    game_state: &CommanderGameState,
+) {
+    // Remove information about cards that have moved zones
+    
+    // 1. Clean hand cards
+    for (owner, cards) in politics.revealed_information.hand_cards.iter_mut() {
+        let current_hand = game_state.get_hand(*owner);
+        cards.retain(|&card, _| current_hand.contains(&card));
+    }
+    
+    // 2. Clean face-down cards
+    for (controller, cards) in politics.revealed_information.face_down_cards.iter_mut() {
+        let current_face_down = game_state.get_face_down_cards(*controller);
+        cards.retain(|&card, _| current_face_down.contains(&card));
+    }
+    
+    // 3. Clean library cards (only keep recent reveals)
+    for (owner, reveals) in politics.revealed_information.library_cards.iter_mut() {
+        reveals.retain(|info| game_state.turn_number - info.timestamp <= 1);
+    }
+}
+```
+
+## Advanced Multiplayer Politics Testing Framework
+
+Complex political scenarios require thorough testing:
+
+```rust
+#[test]
+fn test_multiplayer_politics_edge_cases() {
+    let mut app = App::new();
+    app.add_plugins(CommanderPoliticsTestPlugin);
+    
+    // Test cases for complex political scenarios
+    
+    // 1. Multi-player vote trading with enforcement
+    // 2. Hidden information sharing affecting game decisions
+    // 3. Diplomatic immunity during critical game moments
+    // 4. Player concession during stack resolution
+    // 5. Kingmaking scenarios and prevention
+    // 6. Joint victory proposals with partial acceptance
+    // 7. Secret simultaneous choices with conflicting outcomes
+    // 8. Dynamic coalition formation and dissolution
+    // 9. Deal breaking with consequences
+    // 10. Politics during multiplayer mulligans
+    
+    // Test execution...
+}
+``` 

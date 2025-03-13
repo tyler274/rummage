@@ -516,3 +516,453 @@ The State-Based Actions system coordinates with other modules:
 - Batch SBA checks to avoid performance issues in multiplayer games
 - Prioritize checks based on likelihood of modification
 - Optimize commander tracking for games with many commanders 
+
+## Edge Cases in Commander State-Based Actions
+
+### Complex Commander Zone Transitions
+
+#### Multiple Commander Damage Sources
+
+When tracking commander damage from multiple sources, special care is needed:
+
+```rust
+fn check_combined_commander_damage(
+    players: Query<(Entity, &CommanderPlayer)>,
+    game_state: Res<CommanderGameState>,
+) -> bool {
+    // Rule 903.10a only counts damage from the same commander
+    // No need to check combined damage from different commanders
+    
+    for (player_entity, player) in players.iter() {
+        let has_lethal_commander_damage = player.commander_damage_received
+            .iter()
+            .any(|(_, damage)| *damage >= CommanderRules::COMMANDER_DAMAGE_THRESHOLD);
+            
+        if has_lethal_commander_damage {
+            return true;
+        }
+    }
+    
+    false
+}
+```
+
+#### Multiple Commander Deaths in One Cycle
+
+When multiple commanders die within the same SBA check cycle, all zone transition triggers must be handled sequentially:
+
+```rust
+fn handle_multiple_commander_deaths(
+    mut commander_zone_events: EventReader<CommanderDiedEvent>,
+    mut zone_choice_events: EventWriter<CommanderZoneChoiceEvent>,
+) {
+    // Track all dead commanders for this SBA cycle
+    let mut dead_commanders = Vec::new();
+    
+    for event in commander_zone_events.read() {
+        dead_commanders.push((event.commander, event.owner));
+    }
+    
+    // Process each commander individually
+    for (commander, owner) in dead_commanders {
+        zone_choice_events.send(CommanderZoneChoiceEvent {
+            commander,
+            player: owner,
+            from_zone: Zone::Graveyard,
+            to_zone: Zone::CommandZone,
+            to_command_zone: true, // Default choice
+        });
+    }
+}
+```
+
+### Face-Down Commanders
+
+When a commander is turned face down (through effects like Morph, Disguise, or Ixidron):
+
+```rust
+fn handle_face_down_commander_tracking(
+    mut commanders: Query<(Entity, &mut Commander, &FaceDownStatus)>,
+    mut damage_events: EventReader<CombatDamageEvent>,
+) {
+    for event in damage_events.read() {
+        // First check if source is a face-down commander
+        if let Ok((entity, mut commander, face_down)) = commanders.get_mut(event.source) {
+            if face_down.is_face_down && event.is_combat_damage {
+                // Even face-down commanders accumulate commander damage
+                if let Some(damage_entry) = commander
+                    .damage_dealt
+                    .iter_mut()
+                    .find(|(p, _)| *p == event.target)
+                {
+                    damage_entry.1 += event.damage;
+                } else {
+                    commander.damage_dealt.push((event.target, event.damage));
+                }
+            }
+        }
+    }
+}
+```
+
+### Partner Commanders and Commander Damage
+
+For partner commanders (903.9d), damage from each partner is tracked separately:
+
+```rust
+fn check_partner_commander_damage(
+    mut player_query: Query<(Entity, &CommanderPlayer)>,
+    partner_commanders: Query<(Entity, &Commander), With<PartnerCommander>>,
+) {
+    for (player_entity, player) in player_query.iter_mut() {
+        // Check each partner commander separately
+        // Partner damage is NOT combined for the 21 damage threshold
+        for (commander_entity, commander) in partner_commanders.iter() {
+            if let Some((_, damage)) = commander
+                .damage_dealt
+                .iter()
+                .find(|(p, _)| *p == player_entity)
+            {
+                if *damage >= CommanderRules::COMMANDER_DAMAGE_THRESHOLD {
+                    // Player has lost to this specific partner commander
+                    // Even if they haven't lost to the other partner
+                    commands.spawn(PlayerEliminatedEvent {
+                        player: player_entity,
+                        reason: EliminationReason::CommanderDamage(commander_entity),
+                    });
+                    break;
+                }
+            }
+        }
+    }
+}
+```
+
+### Simultaneous Player Elimination
+
+When multiple players would be eliminated simultaneously:
+
+```rust
+fn handle_simultaneous_player_elimination(
+    mut commands: Commands,
+    mut elimination_queue: Local<Vec<(Entity, EliminationReason)>>,
+    mut elimination_events: EventReader<PlayerEliminatedEvent>,
+    game_state: Res<CommanderGameState>,
+) {
+    // Collect all elimination events for this cycle
+    for event in elimination_events.read() {
+        elimination_queue.push((event.player, event.reason));
+    }
+    
+    if !elimination_queue.is_empty() {
+        // Process in active player order (rule 800.4)
+        let active_player_index = game_state.turn_order.active_player_index;
+        let player_order = &game_state.turn_order.player_order;
+        
+        // Sort elimination queue by turn order
+        elimination_queue.sort_by(|(player_a, _), (player_b, _)| {
+            let a_pos = player_order.iter().position(|p| p == player_a).unwrap_or(usize::MAX);
+            let b_pos = player_order.iter().position(|p| p == player_b).unwrap_or(usize::MAX);
+            
+            // Primary sort: distance from active player
+            let a_dist = (a_pos + player_order.len() - active_player_index) % player_order.len();
+            let b_dist = (b_pos + player_order.len() - active_player_index) % player_order.len();
+            a_dist.cmp(&b_dist)
+        });
+        
+        // Process each elimination
+        for (player, reason) in elimination_queue.drain(..) {
+            commands.spawn(ProcessPlayerEliminationEvent {
+                player,
+                reason,
+            });
+        }
+    }
+}
+```
+
+### Rule Interaction: Commander + Effects That Change Control
+
+When a commander changes control temporarily:
+
+```rust
+fn handle_commander_control_change(
+    mut commanders: Query<(Entity, &mut Commander, &ControlChangeStatus)>,
+    mut damage_events: EventReader<CombatDamageEvent>,
+) {
+    for (entity, mut commander, control_status) in commanders.iter_mut() {
+        if control_status.is_under_different_control {
+            // The original owner is still tracked for commander damage purposes
+            // Even if control has changed temporarily
+            
+            // For permanents under changed control that deal combat damage:
+            // 1. Commander damage is still tracked normally
+            // 2. The original owner must still be used for zone transition choices
+            // 3. Commander tax is still based on the original owner's cast count
+        }
+    }
+}
+```
+
+### Clone Effects on Commanders
+
+When a commander is cloned (including by other player's spells):
+
+```rust
+fn handle_cloned_commanders(
+    mut commands: Commands,
+    clone_events: EventReader<CommanderClonedEvent>,
+    commanders: Query<&Commander>,
+) {
+    for event in clone_events.read() {
+        // The clone is NOT a commander (rule 903.3)
+        // Only the original card has the commander designation
+        
+        if let Ok(original_commander) = commanders.get(event.original) {
+            // Clone does not:
+            // 1. Deal commander damage
+            // 2. Have commander zone transition permissions
+            // 3. Accrue commander tax
+            
+            // Ensure the clone does not have commander status
+            commands.entity(event.clone).remove::<CommanderCard>();
+        }
+    }
+}
+```
+
+### Rule Interaction: Commander + Replacement Effects
+
+Complex interactions with replacement effects:
+
+```rust
+fn handle_commander_damage_replacement(
+    mut commands: Commands,
+    mut damage_events: EventReader<CombatDamageEvent>,
+    commanders: Query<Entity, With<CommanderCard>>,
+    replacement_effects: Query<(Entity, &DamageReplacementEffect)>,
+) {
+    for event in damage_events.read() {
+        let is_commander_damage = commanders.contains(event.source) && event.is_combat_damage;
+        
+        if is_commander_damage {
+            // Check for replacement effects that might modify the damage
+            let mut replaced_damage = false;
+            
+            for (effect_entity, replacement) in replacement_effects.iter() {
+                if replacement.applies_to(event.source, event.target) {
+                    // Even if damage is prevented or redirected, it still counts 
+                    // as commander damage from the original source
+                    // The replacement only affects the game state damage, not the tracking
+                    replaced_damage = true;
+                    
+                    // For prevention effects, we still need to record that commander 
+                    // damage was attempted for various triggered abilities
+                    if replacement.is_prevention() {
+                        commands.spawn(CommanderDamagePreventedEvent {
+                            source: event.source,
+                            target: event.target,
+                            amount: event.damage,
+                            prevention_source: effect_entity,
+                        });
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+### Commander Copy Effects and Type-Changing Effects
+
+When a commander changes types or has its characteristics changed:
+
+```rust
+fn handle_commander_type_changes(
+    mut commanders: Query<(Entity, &Commander, &TypeChangeStatus)>,
+    mut damage_events: EventReader<CombatDamageEvent>,
+) {
+    for (entity, commander, type_status) in commanders.iter_mut() {
+        // Even if a commander temporarily loses creature type
+        // or gains other types, it still:
+        // 1. Deals commander damage if combat damage is dealt
+        // 2. Can return to command zone if it would go to graveyard/exile
+        // 3. Maintains its commander status for all rules purposes
+
+        // A commander that loses creature type can still deal commander
+        // damage if it somehow deals combat damage
+    }
+}
+```
+
+### Merged Permanents Involving Commanders
+
+For cases where a commander merges with another permanent:
+
+```rust
+fn handle_merged_commanders(
+    merged_entities: Query<(Entity, &MergedPermanent)>,
+    commanders: Query<&Commander>,
+    mut zone_change_events: EventReader<ZoneChangeEvent>,
+    mut cmd_zone_choice_events: EventWriter<CommanderZoneChoiceEvent>,
+) {
+    for event in zone_change_events.read() {
+        if let Ok((entity, merged)) = merged_entities.get(event.card) {
+            // Check if any component is a commander
+            let has_commander_component = merged.components.iter()
+                .any(|component| commanders.contains(*component));
+            
+            if has_commander_component {
+                // Handle complex merged permanent case
+                // Rule 903.9c analog for merged permanents
+                
+                // Give player choice for commander component
+                if event.to_zone == Zone::Graveyard || event.to_zone == Zone::Exile {
+                    cmd_zone_choice_events.send(CommanderZoneChoiceEvent {
+                        commander: entity,
+                        player: event.controller,
+                        from_zone: event.from_zone,
+                        to_zone: event.to_zone,
+                        to_command_zone: true, // Default
+                        is_merged: true,
+                        merged_components: merged.components.clone(),
+                    });
+                }
+            }
+        }
+    }
+}
+```
+
+### Token Commanders
+
+When a token is copying a commander or created by a commander effect:
+
+```rust
+fn handle_token_commanders(
+    token_commanders: Query<(Entity, &Commander, &TokenStatus)>,
+) {
+    // Token copies of commanders are not actually commanders (rule 903.3)
+    // But tokens created by effects that specifically create commander tokens are
+    
+    for (entity, commander, token) in token_commanders.iter() {
+        // Special case: tokens created by effects that explicitly make them commanders
+        if token.is_special_commander_token {
+            // These tokens can deal commander damage and have commander zone abilities
+            // But cease to exist if they would change zones (due to token rules)
+        } else {
+            // Regular token copies of commanders are not commanders
+            // and should be removed from commander tracking
+        }
+    }
+}
+```
+
+## Handling Requirements vs. Restrictions in Multiplayer
+
+In multiplayer Commander, many effects create requirements or restrictions:
+
+```rust
+fn handle_conflicting_requirements(
+    creatures: Query<(Entity, &AttackRequirements, &AttackRestrictions)>,
+    combat_state: Res<CombatState>,
+    players: Query<(Entity, &CommanderPlayer)>,
+) -> Vec<Entity> {
+    // Per rule 508.1d, if there are conflicting requirements and restrictions,
+    // the player must satisfy as many as possible
+    
+    let mut valid_attackers = Vec::new();
+    
+    for (entity, requirements, restrictions) in creatures.iter() {
+        // Check if creature has both a requirement to attack
+        // and a restriction against attacking
+        let must_attack = requirements.forced_to_attack_if_able;
+        let cannot_attack = restrictions.cannot_attack;
+        
+        if must_attack && cannot_attack {
+            // Rule 508.1d: A restriction takes precedence over a requirement
+            // So this creature won't attack
+            continue;
+        }
+        
+        // Handle "must attack specific player" vs "cannot attack that player"
+        if let Some(required_defender) = requirements.must_attack_player {
+            if restrictions.cannot_attack_players.contains(&required_defender) {
+                // Cannot satisfy both, so restriction wins
+                continue;
+            }
+            
+            // Can satisfy both by attacking the required player
+            valid_attackers.push(entity);
+        }
+        
+        // Add creatures that can satisfy all requirements and restrictions
+        if must_attack && !cannot_attack {
+            // Ensure there is at least one player who can be attacked
+            let can_attack_someone = players.iter()
+                .any(|(player, _)| !restrictions.cannot_attack_players.contains(&player));
+                
+            if can_attack_someone {
+                valid_attackers.push(entity);
+            }
+        }
+    }
+    
+    valid_attackers
+}
+```
+
+## Commander State-Based Actions Performance Optimizations
+
+For large multiplayer games (5+ players), performance optimizations:
+
+```rust
+fn optimize_sba_checks(
+    mut sba_system: ResMut<StateBasedActionSystem>,
+    player_count: Res<PlayerCount>,
+) {
+    // For larger games, batch SBA checks to improve performance
+    if player_count.count > 4 {
+        // Increase batch size as player count grows
+        sba_system.batch_size = player_count.count + 4;
+        
+        // Prioritize commander damage checks earlier with more players
+        sba_system.priority_categories.commander_damage = 2;
+        
+        // Reduce frequency of complete checks in large games
+        sba_system.check_frequency = std::time::Duration::from_millis(100 * player_count.count as u64);
+    } else {
+        // Default settings for 2-4 player games
+        sba_system.batch_size = 4;
+        sba_system.priority_categories.commander_damage = 5;
+        sba_system.check_frequency = std::time::Duration::from_millis(50);
+    }
+}
+```
+
+## Testing Complex Edge Cases
+
+Test vectors for complicated Commander-specific edge cases:
+
+```rust
+#[test]
+fn test_complex_commander_interactions() {
+    let mut app = App::new();
+    
+    // Setup Commander game with multiple players
+    app.add_plugins(CommanderTestPlugin);
+    
+    // Complex test cases:
+    
+    // 1. Commander gets turned face down, deals damage, then face up
+    // 2. Two commanders control-swapped, both deal damage
+    // 3. Commander gets merged with non-commander, changes zones
+    // 4. Partner commanders combined damage on one player
+    // 5. Player gets eliminated by commander damage while controlling another player's commander
+    // 6. Player with lethal commander damage and lethal regular damage simultaneously
+    // 7. Command zone transition during a replacement effect resolution
+    // 8. Multiple players eliminated simultaneously by different commanders
+    
+    // Run test logic...
+}
+``` 

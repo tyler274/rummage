@@ -761,3 +761,505 @@ fn get_other_players(excluded_player: Entity) -> Vec<Entity> {
 - Supporting political and multiplayer-specific mechanics
 - Efficient handling of combat with many creatures/players
 - Providing clear combat feedback to the user interface 
+
+## Edge Cases in Commander Combat
+
+### Multiplayer Politics during Combat
+
+The Commander format introduces unique political dynamics that affect combat. Here's how we handle these edge cases:
+
+```rust
+fn handle_political_combat_effects(
+    mut commands: Commands,
+    mut combat_state: ResMut<CombatState>,
+    politics: Res<PoliticsSystem>,
+    declare_attackers_events: EventReader<DeclareAttackersEvent>,
+    combat_phase_events: EventReader<CombatPhaseEvent>,
+) {
+    // Track deals and agreements affecting combat
+    for event in combat_phase_events.read() {
+        if matches!(event, CombatPhaseEvent::Begin) {
+            // Reset per-combat political effects
+            combat_state.political_restrictions.clear();
+            combat_state.political_requirements.clear();
+            
+            // Apply all active deals that affect combat
+            for deal in politics.active_deals.iter() {
+                match &deal.deal_type {
+                    DealType::NonAttackAgreement { players, duration } => {
+                        // Add mutual non-attack agreements to combat restrictions
+                        for &player in players {
+                            combat_state.political_restrictions.entry(player)
+                                .or_default()
+                                .cannot_be_attacked_by.extend(players.iter().filter(|p| **p != player));
+                        }
+                    },
+                    DealType::AttackSpecificPlayer { attacker, target, duration } => {
+                        // Add "must attack specific player" requirement
+                        combat_state.political_requirements.entry(*attacker)
+                            .or_default()
+                            .must_attack_player = Some(*target);
+                    },
+                    // Other political deal types...
+                }
+            }
+        }
+    }
+}
+```
+
+### Goad Effects in Multiplayer
+
+Goad is a Commander-specific mechanic that forces creatures to attack and restricts which players they can attack:
+
+```rust
+fn apply_goad_effects(
+    mut commands: Commands,
+    mut combat_state: ResMut<CombatState>,
+    politics: Res<PoliticsSystem>,
+    creatures: Query<(Entity, &CreatureCard)>,
+    combat_phase_events: EventReader<CombatPhaseEvent>,
+) {
+    for event in combat_phase_events.read() {
+        if matches!(event, CombatPhaseEvent::BeginDeclareAttackers) {
+            // Apply all active goad effects
+            for (creature, goad_effects) in politics.goad_effects.iter() {
+                if goad_effects.is_empty() {
+                    continue;
+                }
+                
+                // Create a set of players that cannot be attacked due to goad
+                let mut cannot_attack_players = HashSet::new();
+                for goad in goad_effects {
+                    // The controller of the goad effect cannot be attacked
+                    cannot_attack_players.insert(goad.source);
+                }
+                
+                // Apply goad restrictions
+                combat_state.attack_restrictions.entry(*creature)
+                    .or_default()
+                    .cannot_attack_players.extend(cannot_attack_players);
+                    
+                // Apply goad requirements (must attack if able)
+                combat_state.attack_requirements.entry(*creature)
+                    .or_default()
+                    .forced_to_attack_if_able = true;
+            }
+        }
+    }
+}
+```
+
+### Handling Multiple Attacking Requirements
+
+Commander introduces effects like goad, curse effects, and political deals that can create conflicting requirements:
+
+```rust
+fn resolve_attacking_requirements(
+    mut commands: Commands,
+    mut combat_state: ResMut<CombatState>,
+    creatures: Query<(Entity, &CreatureCard)>,
+    players: Query<Entity, With<CommanderPlayer>>,
+) -> HashMap<Entity, Vec<Entity>> {
+    let mut valid_attacks = HashMap::new();
+    
+    // For each creature that could potentially attack
+    for (creature, _) in creatures.iter() {
+        let requirements = combat_state.attack_requirements.get(&creature).cloned()
+            .unwrap_or_default();
+        let restrictions = combat_state.attack_restrictions.get(&creature).cloned()
+            .unwrap_or_default();
+        
+        // Start with all players as potential targets
+        let mut potential_targets: Vec<Entity> = players.iter().collect();
+        
+        // Apply restrictions (cannot attack specific players)
+        if !restrictions.cannot_attack_players.is_empty() {
+            potential_targets.retain(|player| !restrictions.cannot_attack_players.contains(player));
+        }
+        
+        // Apply requirements (must attack specific player if able)
+        if let Some(required_player) = requirements.must_attack_player {
+            if potential_targets.contains(&required_player) {
+                // Can only attack the required player
+                potential_targets = vec![required_player];
+            }
+            // If can't attack required player, can attack anyone else
+        }
+        
+        // Apply goad requirements (attack any player other than goading player)
+        if requirements.forced_to_attack_if_able {
+            // Must attack someone if able
+            if potential_targets.is_empty() {
+                // Can't satisfy the requirement, so creature doesn't attack
+                continue;
+            }
+        } else if !requirements.forced_to_attack_if_able {
+            // Not forced to attack, so can choose not to attack
+            // Add a "no attack" option
+            potential_targets.push(Entity::PLACEHOLDER); // Special value for "no attack"
+        }
+        
+        valid_attacks.insert(creature, potential_targets);
+    }
+    
+    valid_attacks
+}
+```
+
+### Handling Commander Damage when Controlling Another Player's Turn
+
+Commander introduces mind control effects where you might control another player during combat:
+
+```rust
+fn track_damage_during_controlled_turns(
+    mut commands: Commands,
+    combat_state: Res<CombatState>,
+    turn_control: Query<(&TurnControl, &CommanderPlayer)>,
+    commanders: Query<(Entity, &Commander)>,
+    damage_events: EventReader<CombatDamageEvent>,
+) {
+    for event in damage_events.read() {
+        // Only process commander combat damage
+        if !event.source_is_commander || !event.is_combat_damage {
+            continue;
+        }
+        
+        // Check if the active player is controlling another player's turn
+        let active_player = combat_state.active_player;
+        if let Ok((turn_control, _)) = turn_control.get(active_player) {
+            if turn_control.is_controlling_other_turn {
+                // The controller of the turn doesn't matter for commander damage
+                // Only the owner of the commander matters
+                
+                // Find the actual owner of the commander
+                if let Ok((_, commander)) = commanders.get(event.source) {
+                    // Track damage based on the original owner
+                    commands.spawn(CommanderDamageTrackedEvent {
+                        source: event.source,
+                        target: event.target,
+                        amount: event.damage,
+                        source_owner: commander.owner, // Use original owner
+                        controlled_by: active_player,  // Current controller
+                    });
+                }
+            }
+        }
+    }
+}
+```
+
+### Multi-player Combat with Protection and Redirection
+
+Commander games often have effects that redirect or prevent damage:
+
+```rust
+fn handle_redirected_commander_damage(
+    mut commands: Commands,
+    mut damage_events: EventReader<CombatDamageEvent>,
+    mut redirection_events: EventReader<DamageRedirectionEvent>,
+    commanders: Query<(Entity, &Commander)>,
+) {
+    // Track pending damage before redirection
+    let mut pending_commander_damage = HashMap::new();
+    
+    // Record all commander damage events
+    for event in damage_events.read() {
+        if event.source_is_commander && event.is_combat_damage {
+            pending_commander_damage.insert(
+                (event.source, event.target),
+                event.damage
+            );
+        }
+    }
+    
+    // Apply redirection effects
+    for event in redirection_events.read() {
+        let original_source_target = (event.original_source, event.original_target);
+        
+        // Check if this is redirecting commander damage
+        if let Some(damage) = pending_commander_damage.get(&original_source_target) {
+            // Critical rule: Commander damage is still tracked as coming from the commander
+            // even if damage is physically dealt by another source
+            if let Ok((commander_entity, _)) = commanders.get(event.original_source) {
+                commands.spawn(CommanderDamageRedirectedEvent {
+                    original_source: event.original_source,
+                    original_target: event.original_target,
+                    new_target: event.new_target,
+                    amount: *damage,
+                    redirection_source: event.redirection_source,
+                });
+            }
+        }
+    }
+}
+```
+
+### Complex Combat Math in Multiplayer
+
+Commander games often have complex combat math with multiple attackers, blockers, and effects:
+
+```rust
+fn optimize_multiplayer_combat_damage(
+    mut commands: Commands,
+    mut combat_state: ResMut<CombatState>,
+    blockers: Query<(Entity, &CreatureCard)>,
+    attackers: Query<(Entity, &CreatureCard)>,
+) {
+    // Pre-compute damage assignment for multiplayer scenarios
+    // For large combat scenarios, this optimizes performance
+    
+    // Build a bipartite graph of possible assignments
+    let mut attacker_graph: HashMap<Entity, Vec<(Entity, u32)>> = HashMap::new();
+    let mut blocker_graph: HashMap<Entity, Vec<(Entity, u32)>> = HashMap::new();
+    
+    // For each attacking creature
+    for (attacker, attacker_card) in attackers.iter() {
+        if !combat_state.attackers.contains_key(&attacker) {
+            continue;
+        }
+        
+        let blockers_for_attacker = combat_state.blockers.get(&attacker)
+            .cloned()
+            .unwrap_or_default();
+            
+        // Skip if unblocked
+        if blockers_for_attacker.is_empty() {
+            continue;
+        }
+        
+        // Calculate initial even distribution
+        let blocker_count = blockers_for_attacker.len() as u32;
+        let attacker_power = attacker_card.power as u32;
+        let base_damage = attacker_power / blocker_count;
+        let remainder = attacker_power % blocker_count;
+        
+        // Initial assignment - will be optimized later
+        let mut assignments = Vec::new();
+        for (i, blocker) in blockers_for_attacker.iter().enumerate() {
+            let damage = if i < remainder as usize {
+                base_damage + 1
+            } else {
+                base_damage
+            };
+            
+            assignments.push((*blocker, damage));
+        }
+        
+        attacker_graph.insert(attacker, assignments);
+    }
+    
+    // Optimize damage assignment
+    let optimized_assignments = optimize_damage_assignment(
+        attacker_graph,
+        blocker_graph,
+        &combat_state
+    );
+    
+    // Store optimized assignments
+    combat_state.optimized_damage_assignments = optimized_assignments;
+}
+
+fn optimize_damage_assignment(
+    attacker_graph: HashMap<Entity, Vec<(Entity, u32)>>,
+    blocker_graph: HashMap<Entity, Vec<(Entity, u32)>>,
+    combat_state: &CombatState
+) -> HashMap<Entity, HashMap<Entity, u32>> {
+    // This would implement a more sophisticated assignment algorithm
+    // For multiplayer games with complex blocking scenarios
+    
+    // For example, prioritizing:
+    // 1. Lethal damage to important blockers
+    // 2. Minimizing overkill damage
+    // 3. Accounting for special abilities (deathtouch, etc.)
+    
+    // Placeholder simplified implementation
+    let mut result = HashMap::new();
+    
+    for (attacker, assignments) in attacker_graph {
+        let mut attacker_assignments = HashMap::new();
+        for (blocker, damage) in assignments {
+            attacker_assignments.insert(blocker, damage);
+        }
+        result.insert(attacker, attacker_assignments);
+    }
+    
+    result
+}
+```
+
+### Commander Damage from Multiple Combat Steps
+
+Commander games can have extra combat phases and modified turn structures:
+
+```rust
+fn track_commander_damage_across_combats(
+    mut commands: Commands,
+    mut per_combat_damage: Local<HashMap<(Entity, Entity), u32>>,
+    mut per_turn_damage: Local<HashMap<(Entity, Entity), u32>>,
+    combat_phase_events: EventReader<CombatPhaseEvent>,
+    damage_events: EventReader<CombatDamageEvent>,
+    commanders: Query<(Entity, &Commander)>,
+    game_state: Res<CommanderGameState>,
+) {
+    // Reset tracking at the beginning of each combat
+    for event in combat_phase_events.read() {
+        if matches!(event, CombatPhaseEvent::Begin) {
+            per_combat_damage.clear();
+        }
+        
+        // Reset turn tracking at the beginning of a turn
+        if matches!(event, CombatPhaseEvent::Begin) && 
+            game_state.current_step == TurnStep::BeginningPhase {
+            per_turn_damage.clear();
+        }
+    }
+    
+    // Track damage in this combat
+    for event in damage_events.read() {
+        if event.source_is_commander && event.is_combat_damage {
+            let key = (event.source, event.target);
+            
+            // Update per-combat tracking
+            *per_combat_damage.entry(key).or_insert(0) += event.damage;
+            
+            // Update per-turn tracking
+            *per_turn_damage.entry(key).or_insert(0) += event.damage;
+            
+            // If we've reached threshold in this combat, emit event
+            if *per_combat_damage.get(&key).unwrap() >= 21 {
+                commands.spawn(CombatThresholdReachedEvent {
+                    source: event.source,
+                    target: event.target,
+                    damage_type: ThresholdType::CommanderDamage,
+                });
+            }
+        }
+    }
+}
+```
+
+### Commander Combat with Split Second
+
+Split second effects can occur during combat in Commander games:
+
+```rust
+fn handle_split_second_during_combat(
+    mut commands: Commands,
+    split_second_effects: Query<Entity, With<SplitSecondEffect>>,
+    mut damage_events: EventReader<CombatDamageEvent>,
+    stack: Res<Stack>,
+) {
+    // Check if there's a split second spell/ability on the stack
+    let split_second_active = split_second_effects.iter().count() > 0;
+    
+    if split_second_active {
+        // Special handling for combat damage with split second
+        // Damage still occurs and is tracked, but responses are prevented
+        
+        for event in damage_events.read() {
+            if event.source_is_commander && event.is_combat_damage {
+                // Track damage as normal, but mark that it occurred under split second
+                commands.spawn(SplitSecondDamageEvent {
+                    original_event: event.clone(),
+                    allows_responses: false,
+                });
+            }
+        }
+    }
+}
+```
+
+### Phasing and Commander Damage
+
+Phasing is a complex edge case in Commander combat:
+
+```rust
+fn handle_phased_commander_damage(
+    mut commands: Commands,
+    phased_permanents: Query<(Entity, &PhasedStatus, &Commander)>,
+    mut damage_events: EventReader<CombatDamageEvent>,
+) {
+    for event in damage_events.read() {
+        // Check if this event involves a commander that's phased out
+        if let Ok((entity, phased, commander)) = phased_permanents.get(event.source) {
+            if phased.is_phased_out {
+                // A phased out permanent can't deal damage
+                // This is a sanity check - shouldn't happen in normal gameplay
+                commands.spawn(RuleViolationEvent {
+                    rule: "A phased out permanent can't deal combat damage",
+                    entity: entity,
+                });
+                continue;
+            }
+        }
+        
+        // Check for commander damage to a phased permanent
+        // Similar logic for phased-out targets
+    }
+}
+```
+
+### Time Stamps and Combat Modification Order
+
+Combat with multiple effects modifying combat values:
+
+```rust
+fn apply_combat_modifications_in_timestamp_order(
+    mut commands: Commands,
+    creatures: Query<(Entity, &CreatureCard, &CombatModifications)>,
+    timestamp_ordering: Res<TimestampOrdering>,
+) {
+    // Sort all modifications by timestamp
+    let mut modifications = Vec::new();
+    
+    for (entity, _, combat_mods) in creatures.iter() {
+        for modification in &combat_mods.modifications {
+            modifications.push((
+                entity,
+                modification.clone(),
+                timestamp_ordering.get_timestamp(modification.source)
+            ));
+        }
+    }
+    
+    // Sort by timestamp
+    modifications.sort_by_key(|(_, _, timestamp)| *timestamp);
+    
+    // Apply modifications in timestamp order
+    for (entity, modification, _) in modifications {
+        apply_single_combat_modification(
+            entity,
+            modification,
+            &mut commands
+        );
+    }
+}
+```
+
+## Testing Multiplayer Commander Combat Edge Cases
+
+The testing framework must account for various Commander-specific combat complexities:
+
+```rust
+#[test]
+fn test_multiplayer_commander_combat_edge_cases() {
+    let mut app = App::new();
+    app.add_plugins(CommanderCombatTestPlugin);
+    
+    // Test cases for complex Commander combat scenarios
+    
+    // 1. Combat with multiple players and goad effects
+    // 2. Commander damage tracking across multiple combat phases
+    // 3. Commander damage with damage doubling/tripling effects
+    // 4. Interaction between commander damage and damage prevention
+    // 5. Protection effects during multiplayer combat
+    // 6. Complex blocking scenarios with many attackers/blockers
+    // 7. Combat with phased permanents
+    // 8. Split second effects during combat
+    // 9. Multiple players taking extra combat phases
+    // 10. Political effects influencing combat outcomes
+    
+    // Test execution...
+}
+``` 

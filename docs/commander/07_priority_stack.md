@@ -779,3 +779,635 @@ For Commander games with up to 13 players:
 - Highlighting the current priority holder
 - Timer indicators for priority and decisions
 - Stack item grouping for readability with many players 
+
+## Priority and Stack Edge Cases in Commander
+
+### Split Second with Triggered Abilities
+
+Split Second creates complex priority scenarios in multiplayer Commander:
+
+```rust
+fn handle_split_second_edge_cases(
+    mut commands: Commands,
+    mut stack: ResMut<Stack>,
+    mut triggered_abilities: EventReader<TriggeredAbilityEvent>,
+    split_second_spells: Query<Entity, With<SplitSecondEffect>>,
+) {
+    // Check if there's a spell with split second on the stack
+    let split_second_active = stack.items.iter()
+        .any(|item| split_second_spells.contains(item.entity));
+    
+    if split_second_active {
+        // Special handling for triggered abilities during split second
+        for event in triggered_abilities.read() {
+            // Rule 702.60a: While a spell with split second is on the stack, players
+            // can't cast spells or activate abilities that aren't mana abilities.
+            
+            // Rule 702.60b: Triggered abilities trigger and are put on the stack as normal
+            // while a spell with split second is on the stack.
+            
+            // Allow the triggered ability to be put on the stack
+            commands.spawn(StackItemAddedEvent {
+                item: event.ability_entity,
+                controller: event.controller,
+                is_during_split_second: true,
+            });
+            
+            stack.items.push(StackItem {
+                entity: event.ability_entity,
+                controller: event.controller,
+                is_spell: false,
+                costs_paid: true,
+                targets: event.targets.clone(),
+                timestamp: stack.next_timestamp(),
+                flags: StackItemFlags {
+                    is_during_split_second: true,
+                    ..Default::default()
+                },
+            });
+        }
+    }
+}
+```
+
+### Commander-Specific Timing Rules
+
+Commander introduces unique timing constraints:
+
+```rust
+fn handle_commander_specific_timing(
+    mut commands: Commands,
+    mut stack: ResMut<Stack>,
+    mut commander_cast_events: EventReader<CommanderCastEvent>,
+    mut cast_trigger_events: EventWriter<CommanderCastTriggeredEvent>,
+    game_state: Res<CommanderGameState>,
+) {
+    // Process commander cast events
+    for event in commander_cast_events.read() {
+        // When a commander is cast, it creates special triggered abilities
+        
+        // Rule 903.8: A player may cast a commander from the command zone
+        // This pays an additional {2} for each previous time it was cast from there
+        
+        // Special timing rules for commander cast triggers
+        // These happen specifically when cast from the command zone
+        if event.from_zone == Zone::CommandZone {
+            // Trigger "when you cast your commander" abilities
+            cast_trigger_events.send(CommanderCastTriggeredEvent {
+                commander: event.commander,
+                controller: event.controller,
+                from_command_zone: true,
+                cast_count: event.cast_count,
+            });
+            
+            // Commanders cast from command zone have special tracking
+            stack.items.iter_mut()
+                .find(|item| item.entity == event.stack_item)
+                .map(|item| {
+                    item.flags.is_commander_from_command_zone = true;
+                    item.flags.commander_cast_count = event.cast_count;
+                });
+        }
+    }
+}
+```
+
+### Multiplayer Priority with Controlled Turns
+
+Complex priority passing during controlled turns:
+
+```rust
+fn handle_controlled_turn_priority(
+    mut commands: Commands,
+    mut stack: ResMut<Stack>,
+    mut priority: ResMut<PrioritySystem>,
+    controlled_turns: Query<(&ControlledPlayer, &TurnController)>,
+    game_state: Res<CommanderGameState>,
+) {
+    // Check if the active player is under someone else's control
+    let active_player = game_state.turn_state.active_player;
+    
+    if let Ok((controlled, controller)) = controlled_turns.get(active_player) {
+        // Special priority rules apply when a player is controlled
+        
+        // 1. The controlling player makes all decisions, but
+        // 2. Priority still follows normal turn order
+        // 3. The controlling player can't make illegal choices
+        
+        // If it's the controlled player's priority
+        if priority.current_player == active_player {
+            // Special case: redirect priority to controlling player for UI
+            commands.spawn(PriorityRedirectionEvent {
+                nominal_player: active_player,
+                actual_player: controller.controller,
+                reason: PriorityRedirectionReason::ControlledTurn,
+            });
+            
+            // Note: The system will still process the priority correctly,
+            // but the UI will show the controlling player has priority
+            priority.redirected_players.insert(
+                active_player, 
+                controller.controller
+            );
+        }
+    } else {
+        // Normal priority rules apply
+        priority.redirected_players.remove(&active_player);
+    }
+}
+```
+
+### Copying Spells and Abilities in Multiplayer
+
+Complex interactions with copied spells:
+
+```rust
+fn handle_copied_spell_edge_cases(
+    mut commands: Commands,
+    mut stack: ResMut<Stack>,
+    mut copy_events: EventReader<SpellCopiedEvent>,
+    game_state: Res<CommanderGameState>,
+) {
+    for event in copy_events.read() {
+        let original_spell = event.original;
+        let copy = event.copy;
+        let controller = event.controller;
+        
+        // Get the original spell's info
+        if let Some(original_stack_index) = stack.items.iter().position(|item| item.entity == original_spell) {
+            let original_stack_item = &stack.items[original_stack_index];
+            
+            // Create a copy with the same characteristics
+            let copy_stack_item = StackItem {
+                entity: copy,
+                controller,
+                is_spell: original_stack_item.is_spell,
+                costs_paid: true, // Copies don't require costs
+                targets: if event.copy_targets {
+                    original_stack_item.targets.clone()
+                } else {
+                    Vec::new() // New targets will be chosen
+                },
+                timestamp: stack.next_timestamp(),
+                flags: StackItemFlags {
+                    is_copy: true,
+                    copied_from: Some(original_spell),
+                    ..original_stack_item.flags
+                },
+            };
+            
+            // Special handling for copied commander spells
+            if original_stack_item.flags.is_commander_from_command_zone {
+                // Rule: A copy of a commander spell is not a commander
+                commands.spawn(CopiedCommanderSpellEvent {
+                    original: original_spell,
+                    copy,
+                    controller,
+                    is_commander: false, // Copies of commanders aren't commanders
+                });
+            }
+            
+            // Insert the copy on the stack just above the original
+            // This follows APNAP order when multiple copies exist
+            stack.items.insert(original_stack_index + 1, copy_stack_item);
+            
+            // Notify about the new stack item
+            commands.spawn(StackItemAddedEvent {
+                item: copy,
+                controller,
+                is_copy: true,
+            });
+        }
+    }
+}
+```
+
+### "Can't Be Countered" in Multiplayer Commander
+
+Special handling for uncounterable effects:
+
+```rust
+fn handle_uncounterable_spells(
+    mut commands: Commands,
+    mut stack: ResMut<Stack>,
+    mut counter_events: EventReader<CounterspellEvent>,
+    uncounterable_spells: Query<Entity, With<CantBeCountered>>,
+) {
+    for event in counter_events.read() {
+        let target = event.target;
+        let source = event.source;
+        
+        // Check if the target has "can't be countered"
+        if uncounterable_spells.contains(target) {
+            // The counterspell still resolves, but has no effect
+            commands.spawn(CounterspellFailedEvent {
+                target,
+                source,
+                reason: CounterFailReason::CantBeCountered,
+            });
+            
+            // Flag this counter attempt for other triggered abilities
+            if let Some(source_index) = stack.items.iter().position(|item| item.entity == source) {
+                stack.items[source_index].flags.targeted_uncounterable = true;
+            }
+        } else {
+            // Normal countering
+            process_successful_counter(&mut commands, &mut stack, target, source);
+        }
+    }
+}
+```
+
+### State-Based Actions During Stack Resolution
+
+Handling state-based actions at unusual timing:
+
+```rust
+fn handle_sba_during_resolution(
+    mut commands: Commands,
+    mut stack: ResMut<Stack>,
+    mut resolution_events: EventReader<StackItemResolvingEvent>,
+    sba_system: Res<StateBasedActionSystem>,
+) {
+    // Track if SBAs need to be checked mid-resolution
+    let mut check_sba_mid_resolution = false;
+    
+    for event in resolution_events.read() {
+        // During resolution of a spell/ability, certain effects
+        // like damage, life loss, etc. can trigger state-based actions
+        
+        // Flag for SBA check
+        if event.might_cause_state_changes {
+            check_sba_mid_resolution = true;
+        }
+        
+        // If something's resolving and SBAs might need checking
+        if check_sba_mid_resolution {
+            // Pause resolution temporarily
+            if let Some(resolving_index) = stack.currently_resolving {
+                let resolving_item = stack.items[resolving_index].entity;
+                
+                // Check SBAs with special timing
+                commands.spawn(MidResolutionSBACheckEvent {
+                    during_resolution_of: resolving_item,
+                });
+                
+                // The resolution will continue after SBAs are checked
+                stack.resolution_paused_for_sba = true;
+            }
+        }
+    }
+}
+```
+
+### Complex Triggered Ability Timing
+
+Handling complex trigger timing:
+
+```rust
+fn handle_complex_trigger_timing(
+    mut commands: Commands,
+    mut stack: ResMut<Stack>,
+    mut pending_triggers: ResMut<PendingTriggeredAbilities>,
+    game_state: Res<CommanderGameState>,
+) {
+    // If we have pending triggers and a player is receiving priority
+    if !pending_triggers.triggers.is_empty() && !stack.waiting_for_targets {
+        // Sort triggers by timestamp, then APNAP order
+        let active_player = game_state.turn_state.active_player;
+        
+        pending_triggers.triggers.sort_by(|a, b| {
+            // First by timestamp
+            let time_order = a.timestamp.cmp(&b.timestamp);
+            if time_order != std::cmp::Ordering::Equal {
+                return time_order;
+            }
+            
+            // Then by APNAP order
+            let a_pos = game_state.turn_order.player_order.iter()
+                .position(|p| *p == a.controller)
+                .unwrap_or(usize::MAX);
+                
+            let b_pos = game_state.turn_order.player_order.iter()
+                .position(|p| *p == b.controller)
+                .unwrap_or(usize::MAX);
+                
+            let a_dist = (a_pos + game_state.turn_order.player_order.len() - 
+                          game_state.turn_order.active_player_index) % 
+                          game_state.turn_order.player_order.len();
+                          
+            let b_dist = (b_pos + game_state.turn_order.player_order.len() - 
+                          game_state.turn_order.active_player_index) % 
+                          game_state.turn_order.player_order.len();
+                          
+            a_dist.cmp(&b_dist)
+        });
+        
+        // Process the triggers in order
+        for trigger in pending_triggers.triggers.drain(..) {
+            // Put the trigger on the stack
+            commands.spawn(TriggeredAbilityStackEvent {
+                ability: trigger.ability,
+                controller: trigger.controller,
+                source: trigger.source,
+                targets: trigger.targets.clone(),
+                timestamp: trigger.timestamp,
+            });
+        }
+    }
+}
+```
+
+### Edge Case: Multiple Players' Triggered Abilities
+
+When multiple players have triggers at the same time:
+
+```rust
+fn handle_simultaneous_player_triggers(
+    mut commands: Commands,
+    mut stack: ResMut<Stack>,
+    mut trigger_events: EventReader<SimultaneousTriggersEvent>,
+    game_state: Res<CommanderGameState>,
+) {
+    for event in trigger_events.read() {
+        // Group triggers by controller
+        let mut player_triggers: HashMap<Entity, Vec<Entity>> = HashMap::new();
+        
+        for &trigger in &event.triggers {
+            if let Some(controller) = event.controllers.get(&trigger) {
+                player_triggers.entry(*controller)
+                    .or_default()
+                    .push(trigger);
+            }
+        }
+        
+        // Process in APNAP order
+        let active_player = game_state.turn_state.active_player;
+        let player_order = &game_state.turn_order.player_order;
+        
+        let mut ordered_players = player_triggers.keys().copied().collect::<Vec<_>>();
+        ordered_players.sort_by(|&a, &b| {
+            let a_pos = player_order.iter().position(|p| *p == a).unwrap_or(usize::MAX);
+            let b_pos = player_order.iter().position(|p| *p == b).unwrap_or(usize::MAX);
+            
+            let a_dist = (a_pos + player_order.len() - 
+                          game_state.turn_order.active_player_index) % 
+                          player_order.len();
+                          
+            let b_dist = (b_pos + player_order.len() - 
+                          game_state.turn_order.active_player_index) % 
+                          player_order.len();
+                          
+            a_dist.cmp(&b_dist)
+        });
+        
+        // For each player in APNAP order
+        for player in ordered_players {
+            if let Some(triggers) = player_triggers.get(&player) {
+                if triggers.len() > 1 {
+                    // If a player has multiple triggers, let them choose the order
+                    commands.spawn(ChooseTriggerOrderEvent {
+                        player,
+                        triggers: triggers.clone(),
+                        source_event: event.source_event,
+                    });
+                } else if let Some(trigger) = triggers.first() {
+                    // If just one trigger, put it on the stack directly
+                    put_trigger_on_stack(&mut commands, &mut stack, *trigger, player);
+                }
+            }
+        }
+    }
+}
+
+fn put_trigger_on_stack(
+    commands: &mut Commands,
+    stack: &mut Stack,
+    trigger: Entity,
+    controller: Entity,
+) {
+    // Logic to add a single trigger to the stack
+    stack.items.push(StackItem {
+        entity: trigger,
+        controller,
+        is_spell: false,
+        costs_paid: true,
+        targets: Vec::new(), // Will be chosen later
+        timestamp: stack.next_timestamp(),
+        flags: Default::default(),
+    });
+    
+    commands.spawn(StackItemAddedEvent {
+        item: trigger,
+        controller,
+        is_triggered_ability: true,
+    });
+}
+```
+
+### Handling Modal Abilities and Choices
+
+Commander games with complex choice timing:
+
+```rust
+fn handle_modal_ability_choices(
+    mut commands: Commands,
+    mut stack: ResMut<Stack>,
+    mut modal_events: EventReader<ModalAbilityEvent>,
+    controllers: Query<&Controller>,
+    game_state: Res<CommanderGameState>,
+) {
+    for event in modal_events.read() {
+        let ability = event.ability;
+        let modes_required = event.modes_required;
+        let mut controller = event.controller;
+        
+        // Check if the nominal controller is being controlled by another player
+        if let Ok(control) = controllers.get(controller) {
+            if control.is_controlled {
+                controller = control.controlled_by;
+            }
+        }
+        
+        // Put the ability on the stack
+        let stack_item = StackItem {
+            entity: ability,
+            controller,
+            is_spell: false,
+            costs_paid: false, // Modes need to be chosen before costs can be paid
+            targets: Vec::new(),
+            timestamp: stack.next_timestamp(),
+            flags: StackItemFlags {
+                is_modal: true,
+                modes_required,
+                modes_chosen: Vec::new(),
+                ..Default::default()
+            },
+        };
+        
+        let stack_index = stack.items.len();
+        stack.items.push(stack_item);
+        
+        // Pause priority for modal choices
+        stack.waiting_for_modal_choice = true;
+        stack.current_modal_ability = Some(stack_index);
+        
+        // Prompt the controller to choose modes
+        commands.spawn(ChooseModesEvent {
+            ability,
+            controller,
+            modes_required,
+            available_modes: event.available_modes.clone(),
+        });
+    }
+}
+```
+
+### Edge Case: Simultaneous Draw/Discard in Multiplayer
+
+When multiple players need to make decisions at once:
+
+```rust
+fn handle_simultaneous_decisions(
+    mut commands: Commands,
+    mut priority: ResMut<PrioritySystem>,
+    mut simultaneous_events: EventReader<SimultaneousDecisionEvent>,
+    game_state: Res<CommanderGameState>,
+) {
+    for event in simultaneous_events.read() {
+        match event.decision_type {
+            SimultaneousDecisionType::Draw(amount) => {
+                // Get players in APNAP order
+                let player_order = get_players_in_apnap_order(&game_state);
+                
+                // Queue up draw decisions for each player
+                for player in player_order {
+                    commands.spawn(DrawDecisionEvent {
+                        player,
+                        amount,
+                        decision_group: event.group_id,
+                    });
+                }
+                
+                // Pause normal priority
+                priority.paused_for_simultaneous_decision = true;
+                priority.current_decision_group = Some(event.group_id);
+            },
+            SimultaneousDecisionType::Discard(amount) => {
+                // Similar logic for discard
+                let player_order = get_players_in_apnap_order(&game_state);
+                
+                for player in player_order {
+                    commands.spawn(DiscardDecisionEvent {
+                        player,
+                        amount,
+                        decision_group: event.group_id,
+                    });
+                }
+                
+                priority.paused_for_simultaneous_decision = true;
+                priority.current_decision_group = Some(event.group_id);
+            },
+            // Other simultaneous decision types...
+        }
+    }
+}
+
+fn get_players_in_apnap_order(game_state: &CommanderGameState) -> Vec<Entity> {
+    let player_order = &game_state.turn_order.player_order;
+    let active_player_index = game_state.turn_order.active_player_index;
+    
+    // Start from the active player and go around in turn order
+    let mut result = Vec::new();
+    let player_count = player_order.len();
+    
+    for i in 0..player_count {
+        let player_index = (active_player_index + i) % player_count;
+        result.push(player_order[player_index]);
+    }
+    
+    result
+}
+```
+
+### Edge Case: Different Stack Items Targeting the Same Object
+
+In multiplayer games, multiple effects might target the same object:
+
+```rust
+fn handle_shared_target_interactions(
+    mut commands: Commands,
+    stack: Res<Stack>,
+    mut target_destroyed_events: EventReader<TargetDestroyedEvent>,
+) {
+    for event in target_destroyed_events.read() {
+        let destroyed_target = event.target;
+        
+        // Find all stack items targeting this permanent
+        let affected_items: Vec<Entity> = stack.items
+            .iter()
+            .filter(|item| item.targets.contains(&destroyed_target))
+            .map(|item| item.entity)
+            .collect();
+            
+        if !affected_items.is_empty() {
+            // Notify that these spell/abilities might fizzle
+            commands.spawn(SharedTargetDestroyedEvent {
+                target: destroyed_target,
+                affected_stack_items: affected_items,
+            });
+        }
+    }
+}
+```
+
+### Resolving Spells During Turn Transitions
+
+Handle spells that resolve during turn transitions:
+
+```rust
+fn handle_turn_transition_resolution(
+    mut commands: Commands,
+    stack: Res<Stack>,
+    mut turn_change_events: EventReader<TurnChangeEvent>,
+) {
+    for event in turn_change_events.read() {
+        // If there are items on the stack when a turn changes
+        if !stack.items.is_empty() {
+            // This is unusual, but can happen with certain effects
+            commands.spawn(StackDuringTurnTransitionEvent {
+                from_player: event.from_player,
+                to_player: event.to_player,
+                stack_items: stack.items.iter().map(|item| item.entity).collect(),
+            });
+        }
+    }
+}
+```
+
+### Testing Priority and Stack Edge Cases
+
+Comprehensive testing for priority and stack complexities:
+
+```rust
+#[test]
+fn test_priority_stack_edge_cases() {
+    let mut app = App::new();
+    app.add_plugins(CommanderStackTestPlugin);
+    
+    // Test cases for complex stack scenarios
+    
+    // 1. Split second triggered abilities resolution
+    // 2. Copy spell interactions with multiple targets
+    // 3. APNAP ordering with simultaneous triggers
+    // 4. Uncounterable commander spells
+    // 5. Mid-resolution state-based actions
+    // 6. Mode selection during controlled turns
+    // 7. Simultaneous draw/discard decisions
+    // 8. Multiple stack items targeting same object
+    // 9. Stack resolution during turn transition
+    // 10. Complex APNAP priority passing
+    
+    // Test execution...
+}
+``` 
