@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 
 use crate::text::{
-    components::{
-        CardTextBundle, CardTextContent, CardTextStyleBundle, CardTextType, TextLayoutInfo,
-    },
+    components::{CardTextStyleBundle, CardTextType, TextLayoutInfo},
     utils::{calculate_text_size, get_card_font_size, get_card_layout},
 };
 

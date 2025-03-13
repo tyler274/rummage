@@ -9,26 +9,35 @@ pub mod politics;
 pub mod priority;
 pub mod stack;
 pub mod state;
+// The tests module exists but is not used in the public API
+// pub mod tests;
 pub mod turns;
 pub mod zones;
 
-pub use actions::*;
-pub use combat::*;
-pub use commander::*;
-pub use phase::*;
-pub use politics::*;
-pub use priority::*;
-pub use stack::*;
-pub use state::*;
-pub use turns::{
-    PermanentController, TurnEndEvent, TurnManager, TurnStartEvent, handle_turn_end,
-    handle_turn_start, handle_untap_step, register_turn_systems,
+// Re-export important types for easier access
+pub use actions::GameAction;
+pub use combat::{CombatState, DeclareAttackersEvent, DeclareBlockersEvent};
+pub use commander::{CombatDamageEvent, CommanderZoneChoiceEvent, PlayerEliminatedEvent};
+pub use phase::Phase;
+pub use priority::{
+    EffectCounteredEvent, NextPhaseEvent, PassPriorityEvent, PrioritySystem, ResolveStackItemEvent,
 };
-pub use zones::{EntersBattlefieldEvent, ZoneChangeEvent, ZoneManager, register_zone_systems};
+pub use stack::{Effect, GameStack, StackItem, StackItemResolvedEvent};
+pub use state::{CheckStateBasedActionsEvent, GameState};
+pub use turns::{
+    TurnEndEvent, TurnManager, TurnStartEvent, handle_turn_end, handle_turn_start,
+    register_turn_systems,
+};
+pub use zones::{EntersBattlefieldEvent, ZoneChangeEvent, ZoneManager};
 
 use crate::menu::{GameMenuState, state::StateTransitionContext};
 use crate::player::Player;
 use bevy::prelude::*;
+
+/// Condition function to check if the game state is InGame
+pub fn game_state_condition(state: Res<State<GameMenuState>>) -> bool {
+    *state.get() == GameMenuState::InGame
+}
 
 /// Plugin that sets up the MTG Commander game engine
 pub struct GameEnginePlugin;
@@ -153,11 +162,6 @@ impl Plugin for GameEnginePlugin {
     }
 }
 
-/// Condition function to check if the game state is InGame
-pub fn game_state_condition(state: Res<State<GameMenuState>>) -> bool {
-    *state.get() == GameMenuState::InGame
-}
-
 /// Initializes the core game engine resources
 fn setup_game_engine(
     mut commands: Commands,
@@ -203,4 +207,21 @@ fn setup_game_engine(
 
     // Initialize game state
     commands.insert_resource(GameState::default());
+}
+
+/// Register core game engine systems with the app
+pub fn register_game_engine(app: &mut App) {
+    app.add_plugins(turns::TurnPlugin)
+        .add_plugins(zones::ZonePlugin)
+        .add_plugins(combat::CombatPlugin)
+        .add_plugins(commander::CommanderPlugin);
+
+    // Add the stack system
+    app.init_resource::<GameStack>();
+
+    // Add the priority system
+    app.init_resource::<PrioritySystem>();
+
+    // Register state systems
+    state::register_state_systems(app);
 }

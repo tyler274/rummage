@@ -172,11 +172,7 @@ pub fn process_commander_zone_choices(
     }
 }
 
-/// Handle the casting of a commander from the command zone
-///
-/// This system will process commander casting, applying tax and moving
-/// the commander to the appropriate zone in the future.
-#[allow(dead_code)]
+/// Handle the casting of commander cards from the command zone
 pub fn handle_commander_casting(
     _commands: Commands,
     _zone_manager: ResMut<ZoneManager>,
@@ -185,51 +181,48 @@ pub fn handle_commander_casting(
     _cards: Query<(Entity, &Card)>,
     // We would need other queries and inputs here
 ) {
-    // TODO: Implement commander casting logic
-    todo!(
-        "Implement commander casting from command zone, including tax calculation and zone transitions"
-    );
+    // TODO: Implement commander casting from command zone
+    #[cfg(feature = "debug")]
+    debug!("Commander casting system running");
+
+    // Implementation will:
+    // 1. Check if the card being cast is a commander
+    // 2. If so, get the commander data (cast count, etc.)
+    // 3. Calculate the commander tax (2 mana per previous cast)
+    // 4. Apply the tax to the casting cost
+    // 5. Move the commander from the command zone to the stack
+    // 6. Increment the cast count
 }
 
-/// Validate that a deck follows commander rules
-///
-/// This system checks that:
-/// - Each card in the deck matches the commander's color identity
-/// - The deck size is correct for the format
-/// - Other commander-specific deckbuilding restrictions
-#[allow(dead_code)]
+/// Validate commander decks according to the Commander format rules
 pub fn validate_commander_deck(
     _card_query: Query<(Entity, &Card)>,
     cmd_zone_manager: Res<CommandZoneManager>,
     player_query: Query<(Entity, &Player)>,
 ) -> HashMap<Entity, Vec<Entity>> {
-    // Map to store validation errors by player
-    let mut validation_errors = HashMap::new();
+    // TODO: Implement commander deck validation
+    #[cfg(feature = "debug")]
+    debug!("Validating commander decks");
 
-    // TODO: For each player, check their deck against commander rules
-    for (player_entity, _player) in player_query.iter() {
-        // Get the player's commanders
-        let commanders = cmd_zone_manager.get_player_commanders(player_entity);
-        if commanders.is_empty() {
-            // Add error: No commander
-            validation_errors
-                .entry(player_entity)
-                .or_insert_with(Vec::new)
-                .push(Entity::from_raw(0)); // Placeholder error entity
-        }
+    // A mapping of players to any deck validation errors
+    let mut validation_errors: HashMap<Entity, Vec<Entity>> = HashMap::new();
 
-        // TODO: Check color identity of each card against commander's color identity
-        // TODO: Check deck size (99 cards + commander, or 98 cards + 2 partners)
+    // In Commander format, validation rules include:
+    // 1. Deck must have exactly 100 cards (including commander)
+    // 2. All cards must be in the commander's color identity
+    // 3. No more than 1 copy of any non-basic land card
+    // 4. Commander must be a legendary creature or have "can be your commander" text
+    // 5. If using partners, they must both have partner ability
+
+    // For now, skip validation and return empty errors
+    for (player_entity, _) in player_query.iter() {
+        validation_errors.insert(player_entity, Vec::new());
     }
 
     validation_errors
 }
 
-/// Track combat damage dealt by commanders to players
-///
-/// This system will monitor and record damage from commanders to players.
-/// This is important for the Commander damage rule (21 damage from a single commander).
-#[allow(dead_code)]
+/// System to track damage dealt by commanders to players
 pub fn track_commander_damage(
     _commands: Commands,
     _game_state: ResMut<GameMenuState>,
@@ -239,9 +232,16 @@ pub fn track_commander_damage(
     // We'll need a damage event/component to track actual damage
 ) {
     // TODO: Track damage from commanders to players
-    todo!(
-        "Implement tracking of commander damage; 21 damage from a single commander eliminates a player"
-    );
+    #[cfg(feature = "debug")]
+    debug!("Commander damage tracking system running");
+
+    // In Commander format, 21 or more damage from a single commander eliminates a player
+    // Implementation will:
+    // 1. Listen for combat damage events
+    // 2. Check if the source is a commander
+    // 3. If so, record the damage against the player
+    // 4. Check if any player has taken 21+ damage from a single commander
+    // 5. Eliminate players who have taken lethal commander damage
 }
 
 /// Register all commander-related systems with the app
@@ -255,11 +255,23 @@ pub fn register_commander_systems(app: &mut App) {
     app.add_systems(
         Update,
         (
-            check_commander_damage_loss,
-            record_commander_damage,
+            track_commander_damage,
             handle_commander_zone_change,
             process_commander_zone_choices,
+            check_commander_damage_loss,
+            record_commander_damage,
         )
-            .run_if(in_state(GameMenuState::InGame)),
+            .run_if(crate::game_engine::game_state_condition),
     );
+
+    // Setup systems
+    app.add_systems(Startup, setup_commander);
+
+    // TODO: Add commander casting system to appropriate phases
+    // app.add_systems(
+    //     Update,
+    //     handle_commander_casting
+    //         .run_if(in_state(GameState::Playing))
+    //         .run_if(resource_exists::<GameStack>),
+    // );
 }

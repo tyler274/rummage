@@ -1,10 +1,7 @@
 use crate::card::Card;
 use crate::text::{
-    components::{CardTextBundle, CardTextType, TextLayoutInfo},
-    utils::{
-        CardTextLayout, calculate_text_position, calculate_text_size, get_card_font_size,
-        get_card_layout,
-    },
+    components::{CardTextType, TextLayoutInfo},
+    utils::{CardTextLayout, get_card_font_size, get_card_layout},
 };
 use bevy::prelude::*;
 

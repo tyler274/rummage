@@ -3,8 +3,8 @@ use bevy::text::JustifyText;
 
 use crate::text::{
     components::{CardTextContent, CardTextType, TextLayoutInfo},
-    mana_symbols::{get_mana_symbol_width, is_valid_mana_symbol},
-    utils::{calculate_text_size, get_card_font_size, get_card_layout, get_mana_symbol_color},
+    mana_symbols::is_valid_mana_symbol,
+    utils::{calculate_text_size, get_card_font_size, get_card_layout},
 };
 
 /// Directly replace mana symbols in text with their Unicode equivalents

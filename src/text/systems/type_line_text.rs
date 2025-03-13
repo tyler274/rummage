@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 
 use crate::text::{
-    components::{
-        CardTextBundle, CardTextContent, CardTextStyleBundle, CardTextType, TextLayoutInfo,
-    },
+    components::{CardTextContent, CardTextStyleBundle, CardTextType, TextLayoutInfo},
     utils::{calculate_text_size, get_card_font_size, get_card_layout},
 };
 
@@ -28,7 +26,8 @@ pub fn spawn_type_line_text(
     );
 
     // We don't need text_size for the simplified TextLayoutInfo
-    let _text_size = calculate_text_size(card_size, layout.type_line_width, layout.type_line_height);
+    let _text_size =
+        calculate_text_size(card_size, layout.type_line_width, layout.type_line_height);
 
     // Smaller font size for type line to better match MTG card proportions
     let font_size = get_card_font_size(card_size, 16.0);

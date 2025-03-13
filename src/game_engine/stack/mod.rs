@@ -14,9 +14,11 @@ pub trait Effect: Debug + Send + Sync {
     fn resolve(&self, commands: &mut Commands);
 
     /// Get the controller of this effect
+    #[allow(dead_code)]
     fn controller(&self) -> Entity;
 
     /// Get the targets of this effect
+    #[allow(dead_code)]
     fn targets(&self) -> Vec<Entity>;
 }
 
@@ -24,6 +26,7 @@ pub trait Effect: Debug + Send + Sync {
 #[derive(Event)]
 pub struct StackItemResolvedEvent {
     /// The controller of the resolved effect
+    #[allow(dead_code)]
     pub controller: Entity,
 }
 
@@ -55,6 +58,7 @@ pub struct StackItem {
     pub controller: Entity,
 
     /// The targets of the effect
+    #[allow(dead_code)]
     pub targets: Vec<Entity>,
 
     /// Entity ID for this stack item
@@ -64,6 +68,7 @@ pub struct StackItem {
     pub has_split_second: bool,
 
     /// Whether this item can be countered
+    #[allow(dead_code)]
     pub can_be_countered: bool,
 }
 
@@ -74,11 +79,13 @@ impl GameStack {
     }
 
     /// Get the number of items on the stack
+    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.items.len()
     }
 
     /// Add an item to the stack
+    #[allow(dead_code)]
     pub fn push(
         &mut self,
         effect: Box<dyn Effect>,
@@ -89,25 +96,26 @@ impl GameStack {
         let controller = effect.controller();
         let targets = effect.targets();
 
-        // Track if this item has split-second
-        if has_split_second {
-            self.contains_split_second = true;
-        }
-
-        // Track if this item can't be countered
-        if !can_be_countered {
-            self.uncounterable_items.insert(entity);
-        }
-
-        // Add the item to the stack (top of stack = end of vector)
-        self.items.push(StackItem {
+        let item = StackItem {
             effect,
             controller,
             targets,
             entity,
             has_split_second,
             can_be_countered,
-        });
+        };
+
+        self.items.push(item);
+
+        // Update split-second status
+        if has_split_second {
+            self.contains_split_second = true;
+        }
+
+        // Add to uncounterable items if it can't be countered
+        if !can_be_countered {
+            self.uncounterable_items.insert(entity);
+        }
 
         info!("Added item to stack. Stack size: {}", self.items.len());
     }
@@ -162,23 +170,25 @@ impl GameStack {
     }
 
     /// Check if targets for a specific stack item are still valid
+    #[allow(dead_code)]
     pub fn validate_item_targets(&self, item_entity: Entity) -> bool {
         if let Some(_item) = self.find_item(item_entity) {
-            // Validate all targets for this specific item
-            // Would involve checking if targets are still in appropriate zones,
-            // still match targeting restrictions, protection, hexproof, etc.
-            true // Simplified for now
+            // Logic to validate targets would go here
+            // For now, just return true as a stub
+            true
         } else {
             false
         }
     }
 
     /// Check if a stack item can be countered
+    #[allow(dead_code)]
     pub fn can_be_countered(&self, target: Entity) -> bool {
         !self.uncounterable_items.contains(&target)
     }
 
     /// Find a stack item by its entity ID
+    #[allow(dead_code)]
     pub fn find_item(&self, entity: Entity) -> Option<&StackItem> {
         self.items.iter().find(|item| item.entity == entity)
     }
