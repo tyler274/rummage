@@ -7,6 +7,7 @@ pub mod hdr;
 pub mod mtgjson;
 pub mod penacony;
 pub mod red;
+pub mod text;
 pub mod white;
 
 // Internal modules

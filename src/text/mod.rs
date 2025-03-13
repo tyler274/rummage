@@ -22,7 +22,7 @@ pub struct TextPlugin;
 
 impl Plugin for TextPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, systems::card_text::spawn_card_text)
+        app.add_systems(Update, crate::card::text::spawn_card_text)
             .add_systems(Update, mana_circles::update_mana_circles);
     }
 }
