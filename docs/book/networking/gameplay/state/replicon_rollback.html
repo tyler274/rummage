@@ -1,0 +1,793 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Replicon Integration - Rummage Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="Documentation for the Rummage MTG Commander game engine built with Bevy 0.15.x">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../../favicon.svg">
+        <link rel="shortcut icon" href="../../../favicon.png">
+        <link rel="stylesheet" href="../../../css/variables.css">
+        <link rel="stylesheet" href="../../../css/general.css">
+        <link rel="stylesheet" href="../../../css/chrome.css">
+        <link rel="stylesheet" href="../../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../../../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../../../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../../../theme/css/custom.css">
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../../../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../../../toc.js"></script>
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../../../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Rummage Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/your-org/rummage" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/your-org/rummage/edit/main/docs/./networking/gameplay/state/replicon_rollback.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="bevy-replicon-integration-for-rollback-with-rng-state-management"><a class="header" href="#bevy-replicon-integration-for-rollback-with-rng-state-management">Bevy Replicon Integration for Rollback with RNG State Management</a></h1>
+<p>This document details the integration of bevy_replicon with our rollback system, focusing on maintaining RNG state consistency across the network.</p>
+<h2 id="table-of-contents"><a class="header" href="#table-of-contents">Table of Contents</a></h2>
+<ol>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#replicon-and-rng-integration">Replicon and RNG Integration</a></li>
+<li><a href="#resources-and-components">Resources and Components</a></li>
+<li><a href="#systems-integration">Systems Integration</a></li>
+<li><a href="#state-preservation-and-recovery">State Preservation and Recovery</a></li>
+<li><a href="#implementation-examples">Implementation Examples</a></li>
+<li><a href="#performance-considerations">Performance Considerations</a></li>
+<li><a href="#testing-guidelines">Testing Guidelines</a></li>
+</ol>
+<h2 id="introduction"><a class="header" href="#introduction">Introduction</a></h2>
+<p>bevy_replicon is a lightweight, ECS-friendly networking library that provides replication for Bevy games. While it handles much of the complexity of network synchronization, maintaining deterministic RNG state during rollbacks requires additional mechanisms.</p>
+<p>This document outlines how we extend bevy_replicon to handle RNG state management during network disruptions, ensuring all clients maintain identical random number sequences after recovery.</p>
+<h2 id="replicon-and-rng-integration"><a class="header" href="#replicon-and-rng-integration">Replicon and RNG Integration</a></h2>
+<p>The key challenge is integrating bevy_replicon's entity replication with our RNG management system, particularly when:</p>
+<ol>
+<li>Replicating randomized game actions</li>
+<li>Handling rollbacks after connection interruptions</li>
+<li>Ensuring newly connected clients receive the correct RNG state</li>
+<li>Maintaining determinism during complex game scenarios</li>
+</ol>
+<p>Our solution uses bevy_replicon's server-authoritative model but adds RNG state tracking and distribution mechanisms.</p>
+<h3 id="architectural-overview"><a class="header" href="#architectural-overview">Architectural Overview</a></h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────────────┐
+│                           SERVER                                         │
+│                                                                         │
+│  ┌───────────────┐     ┌──────────────────┐     ┌────────────────────┐  │
+│  │               │     │                  │     │                    │  │
+│  │  REPLICON     │────▶│  RNG STATE       │────▶│  GAME STATE       │  │
+│  │  SERVER       │     │  MANAGER         │     │  MANAGER          │  │
+│  │               │     │                  │     │                    │  │
+│  └───────┬───────┘     └─────────┬────────┘     └────────┬───────────┘  │
+│          │                       │                       │              │
+│          │                       │                       │              │
+│          ▼                       ▼                       ▼              │
+│  ┌───────────────┐     ┌──────────────────┐     ┌────────────────────┐  │
+│  │               │     │                  │     │                    │  │
+│  │  REPLICON     │────▶│  ROLLBACK       │◀────│  SEQUENCE          │  │
+│  │  REPLICATION  │     │  COORDINATOR    │     │  TRACKER           │  │
+│  │               │     │                  │     │                    │  │
+│  └───────────────┘     └──────────────────┘     └────────────────────┘  │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           CLIENT                                         │
+│                                                                         │
+│  ┌───────────────┐     ┌──────────────────┐     ┌────────────────────┐  │
+│  │               │     │                  │     │                    │  │
+│  │  REPLICON     │────▶│  RNG STATE       │────▶│  GAME STATE       │  │
+│  │  CLIENT       │     │  APPLIER         │     │  RECEIVER         │  │
+│  │               │     │                  │     │                    │  │
+│  └───────┬───────┘     └─────────┬────────┘     └────────┬───────────┘  │
+│          │                       │                       │              │
+│          │                       │                       │              │
+│          ▼                       ▼                       ▼              │
+│  ┌───────────────┐     ┌──────────────────┐     ┌────────────────────┐  │
+│  │               │     │                  │     │                    │  │
+│  │  LOCAL        │────▶│  PREDICTION     │◀────│  HISTORY           │  │
+│  │  RNG MANAGER  │     │  RECONCILIATION │     │  TRACKER           │  │
+│  │               │     │                  │     │                    │  │
+│  └───────────────┘     └──────────────────┘     └────────────────────┘  │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+</code></pre>
+<h2 id="resources-and-components"><a class="header" href="#resources-and-components">Resources and Components</a></h2>
+<h3 id="core-resources"><a class="header" href="#core-resources">Core Resources</a></h3>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Resource that tracks RNG state for replication
+#[derive(Resource)]
+pub struct RngReplicationState {
+    /// Current global RNG state
+    pub global_state: Vec&lt;u8&gt;,
+    /// Player-specific RNG states
+    pub player_states: HashMap&lt;Entity, Vec&lt;u8&gt;&gt;,
+    /// Sequence number for the latest RNG state update
+    pub sequence: u64,
+    /// Timestamp of the last update
+    pub last_update: f32,
+    /// Flag indicating the state has changed
+    pub dirty: bool,
+}
+
+/// Resource for rollback checkpoints with RNG state
+#[derive(Resource)]
+pub struct RollbackCheckpoints {
+    /// Checkpoints with sequence IDs as keys
+    pub checkpoints: BTreeMap&lt;u64, RollbackCheckpoint&gt;,
+    /// Maximum number of checkpoints to maintain
+    pub max_checkpoints: usize,
+}
+
+/// Structure for a single rollback checkpoint
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RollbackCheckpoint {
+    /// Checkpoint sequence ID
+    pub sequence_id: u64,
+    /// Timestamp of the checkpoint
+    pub timestamp: f32,
+    /// Global RNG state
+    pub global_rng_state: Vec&lt;u8&gt;,
+    /// Player-specific RNG states
+    pub player_rng_states: HashMap&lt;Entity, Vec&lt;u8&gt;&gt;,
+    /// Replicated entities snapshot
+    pub replicated_entities: Vec&lt;EntityData&gt;,
+}
+
+/// Replicon channel for RNG synchronization
+#[derive(Default)]
+pub struct RngSyncChannel;
+
+/// Extension for RepliconServer to handle RNG state
+impl RepliconServerExt for RepliconServer {
+    /// Send RNG state to a specific client
+    fn send_rng_state(&amp;mut self, client_id: ClientId, rng_state: &amp;RngReplicationState) {
+        let message = RngStateMessage {
+            global_state: rng_state.global_state.clone(),
+            player_states: rng_state.player_states.clone(),
+            sequence: rng_state.sequence,
+            timestamp: rng_state.last_update,
+        };
+        
+        self.send_message(client_id, RngSyncChannel, bincode::serialize(&amp;message).unwrap());
+    }
+    
+    /// Broadcast RNG state to all clients
+    fn broadcast_rng_state(&amp;mut self, rng_state: &amp;RngReplicationState) {
+        let message = RngStateMessage {
+            global_state: rng_state.global_state.clone(),
+            player_states: rng_state.player_states.clone(),
+            sequence: rng_state.sequence,
+            timestamp: rng_state.last_update,
+        };
+        
+        self.broadcast_message(RngSyncChannel, bincode::serialize(&amp;message).unwrap());
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="components-for-entity-tracking"><a class="header" href="#components-for-entity-tracking">Components for Entity Tracking</a></h3>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Component to flag an entity as having randomized behavior
+#[derive(Component, Reflect, Default)]
+pub struct RandomizedBehavior {
+    /// The last RNG sequence ID used for this entity
+    pub last_rng_sequence: u64,
+    /// Whether this entity has pending randomized actions
+    pub has_pending_actions: bool,
+}
+
+/// Component for player-specific RNG
+#[derive(Component, Reflect)]
+pub struct PlayerRng {
+    /// Sequence of the last RNG state
+    pub sequence: u64,
+    /// Whether this RNG is remote (on another client)
+    pub is_remote: bool,
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="systems-integration"><a class="header" href="#systems-integration">Systems Integration</a></h2>
+<h3 id="server-side-systems"><a class="header" href="#server-side-systems">Server-Side Systems</a></h3>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Plugin that integrates bevy_replicon with our RNG and rollback systems
+pub struct RepliconRngRollbackPlugin;
+
+impl Plugin for RepliconRngRollbackPlugin {
+    fn build(&amp;self, app: &amp;mut App) {
+        // Register network channel
+        app.register_network_channel::&lt;RngSyncChannel&gt;(ChannelConfig {
+            channel_id: 100, // Use a unique channel ID
+            mode: ChannelMode::Unreliable,
+        });
+        
+        // Add resources
+        app.init_resource::&lt;RngReplicationState&gt;()
+            .init_resource::&lt;RollbackCheckpoints&gt;();
+            
+        // Server systems
+        app.add_systems(Update, (
+            capture_rng_state,
+            replicate_rng_state,
+            create_rollback_checkpoints,
+        ).run_if(resource_exists::&lt;RepliconServer&gt;()));
+        
+        // Client systems
+        app.add_systems(Update, (
+            apply_rng_state_updates,
+            handle_rollback_requests,
+        ).run_if(resource_exists::&lt;RepliconClient&gt;()));
+    }
+}
+
+/// System to capture RNG state for replication
+pub fn capture_rng_state(
+    mut global_rng: ResMut&lt;GlobalEntropy&lt;WyRand&gt;&gt;,
+    player_rngs: Query&lt;(Entity, &amp;PlayerRng)&gt;,
+    mut rng_state: ResMut&lt;RngReplicationState&gt;,
+    time: Res&lt;Time&gt;,
+    sequence: Res&lt;SequenceTracker&gt;,
+) {
+    // Don't update too frequently
+    if time.elapsed_seconds() - rng_state.last_update &lt; 1.0 {
+        return;
+    }
+    
+    // Capture global RNG state
+    if let Some(state) = global_rng.try_serialize_state() {
+        rng_state.global_state = state;
+        rng_state.dirty = true;
+    }
+    
+    // Capture player RNG states
+    for (entity, _) in player_rngs.iter() {
+        if let Some(player_rng) = player_rngs.get_component::&lt;Entropy&lt;WyRand&gt;&gt;(entity).ok() {
+            if let Some(state) = player_rng.try_serialize_state() {
+                rng_state.player_states.insert(entity, state);
+                rng_state.dirty = true;
+            }
+        }
+    }
+    
+    if rng_state.dirty {
+        rng_state.sequence = sequence.current_sequence;
+        rng_state.last_update = time.elapsed_seconds();
+    }
+}
+
+/// System to replicate RNG state to clients
+pub fn replicate_rng_state(
+    mut server: ResMut&lt;RepliconServer&gt;,
+    rng_state: Res&lt;RngReplicationState&gt;,
+) {
+    if rng_state.dirty {
+        server.broadcast_rng_state(&amp;rng_state);
+    }
+}
+
+/// System to create rollback checkpoints
+pub fn create_rollback_checkpoints(
+    mut checkpoints: ResMut&lt;RollbackCheckpoints&gt;,
+    rng_state: Res&lt;RngReplicationState&gt;,
+    time: Res&lt;Time&gt;,
+    replicated_query: Query&lt;Entity, With&lt;Replication&gt;&gt;,
+    entity_data: Res&lt;EntityData&gt;,
+) {
+    // Create a new checkpoint every few seconds
+    if time.elapsed_seconds() % 5.0 &lt; 0.1 {
+        // Collect replicated entity data
+        let mut entities = Vec::new();
+        for entity in replicated_query.iter() {
+            if let Some(data) = entity_data.get_entity_data(entity) {
+                entities.push(data.clone());
+            }
+        }
+        
+        // Create checkpoint
+        let checkpoint = RollbackCheckpoint {
+            sequence_id: rng_state.sequence,
+            timestamp: time.elapsed_seconds(),
+            global_rng_state: rng_state.global_state.clone(),
+            player_rng_states: rng_state.player_states.clone(),
+            replicated_entities: entities,
+        };
+        
+        // Add to checkpoints
+        checkpoints.checkpoints.insert(rng_state.sequence, checkpoint);
+        
+        // Prune old checkpoints
+        while checkpoints.checkpoints.len() &gt; checkpoints.max_checkpoints {
+            if let Some((&amp;oldest_key, _)) = checkpoints.checkpoints.iter().next() {
+                checkpoints.checkpoints.remove(&amp;oldest_key);
+            }
+        }
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="client-side-systems"><a class="header" href="#client-side-systems">Client-Side Systems</a></h3>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// System to apply RNG state updates from server
+pub fn apply_rng_state_updates(
+    mut client: ResMut&lt;RepliconClient&gt;,
+    mut global_rng: ResMut&lt;GlobalEntropy&lt;WyRand&gt;&gt;,
+    mut player_rngs: Query&lt;(Entity, &amp;mut PlayerRng)&gt;,
+    mut events: EventReader&lt;NetworkEvent&gt;,
+) {
+    for event in events.read() {
+        if let NetworkEvent::Message(_, RngSyncChannel, data) = event {
+            // Deserialize the RNG state message
+            if let Ok(message) = bincode::deserialize::&lt;RngStateMessage&gt;(data) {
+                // Apply global RNG state
+                if !message.global_state.is_empty() {
+                    global_rng.deserialize_state(&amp;message.global_state)
+                        .expect("Failed to deserialize global RNG state");
+                }
+                
+                // Apply player-specific RNG states
+                for (entity, mut player_rng) in player_rngs.iter_mut() {
+                    if let Some(state) = message.player_states.get(&amp;entity) {
+                        if let Some(rng) = player_rngs.get_component_mut::&lt;Entropy&lt;WyRand&gt;&gt;(entity).ok() {
+                            rng.deserialize_state(state).expect("Failed to deserialize player RNG state");
+                            player_rng.sequence = message.sequence;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// System to handle rollback requests
+pub fn handle_rollback_requests(
+    mut client: ResMut&lt;RepliconClient&gt;,
+    mut global_rng: ResMut&lt;GlobalEntropy&lt;WyRand&gt;&gt;,
+    mut player_rngs: Query&lt;(Entity, &amp;mut PlayerRng)&gt;,
+    mut events: EventReader&lt;NetworkEvent&gt;,
+    mut commands: Commands,
+) {
+    for event in events.read() {
+        if let NetworkEvent::Message(_, RollbackChannel, data) = event {
+            // Deserialize the rollback message
+            if let Ok(message) = bincode::deserialize::&lt;RollbackMessage&gt;(data) {
+                // Apply global RNG state from the checkpoint
+                if !message.checkpoint.global_rng_state.is_empty() {
+                    global_rng.deserialize_state(&amp;message.checkpoint.global_rng_state)
+                        .expect("Failed to deserialize checkpoint RNG state");
+                }
+                
+                // Apply player-specific RNG states from the checkpoint
+                for (entity, mut player_rng) in player_rngs.iter_mut() {
+                    if let Some(state) = message.checkpoint.player_rng_states.get(&amp;entity) {
+                        if let Some(rng) = player_rngs.get_component_mut::&lt;Entropy&lt;WyRand&gt;&gt;(entity).ok() {
+                            rng.deserialize_state(state).expect("Failed to deserialize player RNG state");
+                            player_rng.sequence = message.checkpoint.sequence_id;
+                        }
+                    }
+                }
+                
+                // Restore entity state from checkpoint
+                for entity_data in &amp;message.checkpoint.replicated_entities {
+                    // Restore entity or spawn if it doesn't exist
+                    // ...
+                }
+                
+                info!("Applied rollback to sequence {}", message.checkpoint.sequence_id);
+            }
+        }
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="state-preservation-and-recovery"><a class="header" href="#state-preservation-and-recovery">State Preservation and Recovery</a></h2>
+<p>The rollback process occurs in these steps:</p>
+<ol>
+<li><strong>Detection</strong>: Server detects desynchronization (via mismatch in action results)</li>
+<li><strong>Checkpoint Selection</strong>: Server selects appropriate rollback checkpoint</li>
+<li><strong>Notification</strong>: Server notifies affected clients of rollback</li>
+<li><strong>State Restoration</strong>: Both server and clients:
+<ul>
+<li>Restore game state</li>
+<li>Restore RNG state</li>
+<li>Replay necessary actions</li>
+</ul>
+</li>
+<li><strong>Verification</strong>: Server verifies all clients are synchronized</li>
+</ol>
+<h3 id="rollback-protocol"><a class="header" href="#rollback-protocol">Rollback Protocol</a></h3>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Enum for rollback types
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum RollbackType {
+    /// Full rollback with complete state restoration
+    Full,
+    /// Partial rollback for specific entities only
+    Partial,
+    /// RNG-only rollback for randomization issues
+    RngOnly,
+}
+
+/// Message for rollback requests
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RollbackMessage {
+    /// Type of rollback
+    pub rollback_type: RollbackType,
+    /// Rollback checkpoint
+    pub checkpoint: RollbackCheckpoint,
+    /// Reason for rollback
+    pub reason: String,
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="implementation-examples"><a class="header" href="#implementation-examples">Implementation Examples</a></h2>
+<h3 id="example-1-rollback-after-network-interruption"><a class="header" href="#example-1-rollback-after-network-interruption">Example 1: Rollback After Network Interruption</a></h3>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// System to detect and handle network interruptions
+pub fn handle_network_interruption(
+    mut server: ResMut&lt;RepliconServer&gt;,
+    checkpoints: Res&lt;RollbackCheckpoints&gt;,
+    clients: Query&lt;(Entity, &amp;ClientConnection)&gt;,
+    time: Res&lt;Time&gt;,
+) {
+    // Check for clients with high latency or disconnection
+    for (entity, connection) in clients.iter() {
+        if connection.latency &gt; 1.0 || !connection.connected {
+            // Find most recent valid checkpoint
+            if let Some((_, checkpoint)) = checkpoints.checkpoints.iter().rev().next() {
+                // Initiate rollback for all clients
+                let rollback_message = RollbackMessage {
+                    rollback_type: RollbackType::Full,
+                    checkpoint: checkpoint.clone(),
+                    reason: "Network interruption detected".to_string(),
+                };
+                
+                // Send to all clients
+                server.broadcast_message(RollbackChannel, bincode::serialize(&amp;rollback_message).unwrap());
+                
+                // Apply rollback on server too
+                apply_rollback_on_server(&amp;rollback_message);
+                
+                info!("Initiated rollback due to network interruption");
+            }
+            break;
+        }
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="example-2-handling-card-shuffle-during-rollback"><a class="header" href="#example-2-handling-card-shuffle-during-rollback">Example 2: Handling Card Shuffle During Rollback</a></h3>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// System to handle card shuffling during or after a rollback
+pub fn handle_shuffle_during_rollback(
+    mut commands: Commands,
+    mut shuffle_events: EventReader&lt;ShuffleLibraryEvent&gt;,
+    mut global_rng: ResMut&lt;GlobalEntropy&lt;WyRand&gt;&gt;,
+    player_rngs: Query&lt;(Entity, &amp;PlayerRng)&gt;,
+    libraries: Query&lt;(Entity, &amp;Library, &amp;Parent)&gt;,
+) {
+    for event in shuffle_events.read() {
+        if let Ok((library_entity, library, parent)) = libraries.get(event.library_entity) {
+            // Get the player entity (parent)
+            let player_entity = parent.get();
+            
+            // Get player's RNG
+            if let Ok((_, player_rng)) = player_rngs.get(player_entity) {
+                // Use the appropriate RNG for deterministic shuffle
+                let mut card_indices: Vec&lt;usize&gt; = (0..library.cards.len()).collect();
+                
+                if player_rng.is_remote {
+                    // Use global RNG for remote player to ensure consistency
+                    for i in (1..card_indices.len()).rev() {
+                        let j = global_rng.gen_range(0..=i);
+                        card_indices.swap(i, j);
+                    }
+                } else {
+                    // Use player-specific RNG for local player
+                    if let Some(rng) = player_rngs.get_component::&lt;Entropy&lt;WyRand&gt;&gt;(player_entity).ok() {
+                        for i in (1..card_indices.len()).rev() {
+                            let j = rng.gen_range(0..=i);
+                            card_indices.swap(i, j);
+                        }
+                    }
+                }
+                
+                // Apply shuffle result
+                // ...
+                
+                info!("Performed deterministic shuffle during/after rollback");
+            }
+        }
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="performance-considerations"><a class="header" href="#performance-considerations">Performance Considerations</a></h2>
+<p>When implementing RNG state management with bevy_replicon and rollbacks, consider these performance factors:</p>
+<ol>
+<li>
+<p><strong>RNG State Size</strong>:</p>
+<ul>
+<li>WyRand has a compact 8-byte state, ideal for frequent replication</li>
+<li>More complex PRNGs may have larger states, increasing network overhead</li>
+</ul>
+</li>
+<li>
+<p><strong>Checkpoint Frequency</strong>:</p>
+<ul>
+<li>More frequent checkpoints = better recovery granularity but higher overhead</li>
+<li>Recommended: 5-10 second intervals for most games</li>
+</ul>
+</li>
+<li>
+<p><strong>Selective Replication</strong>:</p>
+<ul>
+<li>Only replicate RNG state when it changes significantly</li>
+<li>Consider checksums to detect state changes efficiently</li>
+</ul>
+</li>
+<li>
+<p><strong>Bandwidth Usage</strong>:</p>
+<ul>
+<li>Use the appropriate channel mode (reliable for critical RNG updates)</li>
+<li>Batch RNG updates with other state replication when possible</li>
+</ul>
+</li>
+<li>
+<p><strong>Memory Overhead</strong>:</p>
+<ul>
+<li>Limit maximum checkpoints based on available memory (10-20 is reasonable)</li>
+<li>Use sliding window approach to discard old checkpoints</li>
+</ul>
+</li>
+</ol>
+<h2 id="testing-guidelines"><a class="header" href="#testing-guidelines">Testing Guidelines</a></h2>
+<p>For effective testing of replicon-based RNG rollback, follow these approaches:</p>
+<ol>
+<li>
+<p><strong>Determinism Tests</strong>:</p>
+<ul>
+<li>Verify identical seeds produce identical sequences on all clients</li>
+<li>Test saving and restoring RNG state produces identical future values</li>
+</ul>
+</li>
+<li>
+<p><strong>Network Disruption Tests</strong>:</p>
+<ul>
+<li>Simulate connection drops to trigger rollback</li>
+<li>Verify game state remains consistent after recovery</li>
+</ul>
+</li>
+<li>
+<p><strong>Performance Tests</strong>:</p>
+<ul>
+<li>Measure impact of RNG state replication on bandwidth</li>
+<li>Profile checkpoint creation and restoration overhead</li>
+</ul>
+</li>
+<li>
+<p><strong>Integration Tests</strong>:</p>
+<ul>
+<li>Test complex game scenarios like multi-player card shuffling</li>
+<li>Verify random outcomes remain consistent across network boundaries</li>
+</ul>
+</li>
+</ol>
+<p>For detailed testing examples, see the <a href="../../testing/rng_synchronization_tests.html">RNG Synchronization Tests</a> document.</p>
+<hr />
+<p>By following these guidelines, you can create a robust integration between bevy_replicon, our rollback system, and RNG state management that maintains deterministic behavior even during network disruptions.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../../networking/gameplay/state/rollback.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../../../networking/testing/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../../networking/gameplay/state/rollback.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../../../networking/testing/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="../../../ace.js"></script>
+        <script src="../../../editor.js"></script>
+        <script src="../../../mode-rust.js"></script>
+        <script src="../../../theme-dawn.js"></script>
+        <script src="../../../theme-tomorrow_night.js"></script>
+
+        <script src="../../../elasticlunr.min.js"></script>
+        <script src="../../../mark.min.js"></script>
+        <script src="../../../searcher.js"></script>
+
+        <script src="../../../clipboard.min.js"></script>
+        <script src="../../../highlight.js"></script>
+        <script src="../../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../../../theme/js/custom.js"></script>
+
+
+    </div>
+    </body>
+</html>

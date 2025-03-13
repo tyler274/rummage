@@ -1,0 +1,248 @@
+/* Rummage Documentation Custom CSS */
+
+:root {
+    --primary-color: #4a5568;
+    --secondary-color: #38a169;
+    --accent-color: #9f7aea;
+    --background-color: #f7fafc;
+    --text-color: #2d3748;
+    --code-bg-color: #edf2f7;
+    --border-color: #e2e8f0;
+    --link-color: #3182ce;
+    --link-hover-color: #2c5282;
+    --table-border-color: #cbd5e0;
+    --table-header-bg: #e2e8f0;
+    --table-row-even-bg: #f7fafc;
+    --table-row-odd-bg: #edf2f7;
+    --status-complete: #38a169;
+    --status-in-progress: #d69e2e;
+    --status-planned: #a0aec0;
+}
+
+/* Base styling */
+body {
+    font-family: "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    line-height: 1.6;
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+h1 {
+    font-size: 2.2em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.3em;
+}
+
+h2 {
+    font-size: 1.8em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.2em;
+}
+
+h3 {
+    font-size: 1.5em;
+}
+
+h4 {
+    font-size: 1.3em;
+}
+
+/* Links */
+a {
+    color: var(--link-color);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--link-hover-color);
+    text-decoration: underline;
+}
+
+/* Code blocks */
+pre {
+    background-color: var(--code-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 1em;
+    overflow: auto;
+}
+
+code {
+    font-family: "Fira Code", "Source Code Pro", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.9em;
+    background-color: var(--code-bg-color);
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+}
+
+pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+}
+
+th {
+    background-color: var(--table-header-bg);
+    text-align: left;
+    padding: 0.5em;
+    border: 1px solid var(--table-border-color);
+}
+
+td {
+    padding: 0.5em;
+    border: 1px solid var(--table-border-color);
+}
+
+tr:nth-child(even) {
+    background-color: var(--table-row-even-bg);
+}
+
+tr:nth-child(odd) {
+    background-color: var(--table-row-odd-bg);
+}
+
+/* Implementation status indicators */
+.status-complete {
+    color: var(--status-complete);
+}
+
+.status-in-progress {
+    color: var(--status-in-progress);
+}
+
+.status-planned {
+    color: var(--status-planned);
+}
+
+.status-indicator {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    border-radius: 50%;
+    margin-right: 0.5em;
+}
+
+.status-indicator.complete {
+    background-color: var(--status-complete);
+}
+
+.status-indicator.in-progress {
+    background-color: var(--status-in-progress);
+}
+
+.status-indicator.planned {
+    background-color: var(--status-planned);
+}
+
+/* Blockquotes */
+blockquote {
+    border-left: 4px solid var(--accent-color);
+    margin: 1em 0;
+    padding-left: 1em;
+    color: #4a5568;
+}
+
+/* Notice boxes */
+.notice {
+    padding: 1em;
+    margin: 1em 0;
+    border-radius: 4px;
+    border-left: 4px solid;
+}
+
+.notice.info {
+    background-color: rgba(49, 130, 206, 0.1);
+    border-left-color: var(--link-color);
+}
+
+.notice.warning {
+    background-color: rgba(214, 158, 46, 0.1);
+    border-left-color: var(--status-in-progress);
+}
+
+.notice.error {
+    background-color: rgba(229, 62, 62, 0.1);
+    border-left-color: #e53e3e;
+}
+
+.notice.success {
+    background-color: rgba(56, 161, 105, 0.1);
+    border-left-color: var(--status-complete);
+}
+
+/* Tabs for code examples */
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 1em 0;
+}
+
+.tab-label {
+    padding: 0.5em 1em;
+    cursor: pointer;
+    background-color: var(--code-bg-color);
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    margin-right: 0.5em;
+}
+
+.tab-label.active {
+    background-color: var(--background-color);
+    font-weight: bold;
+}
+
+.tab-content {
+    display: none;
+    width: 100%;
+    padding: 1em;
+    border: 1px solid var(--border-color);
+    border-radius: 0 4px 4px 4px;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2em;
+    }
+
+    h2 {
+        font-size: 1.6em;
+    }
+
+    h3 {
+        font-size: 1.3em;
+    }
+
+    pre {
+        padding: 0.5em;
+    }
+
+    table {
+        display: block;
+        overflow-x: auto;
+    }
+}

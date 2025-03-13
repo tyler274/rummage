@@ -1,0 +1,359 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Overview - Rummage Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="Documentation for the Rummage MTG Commander game engine built with Bevy 0.15.x">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/css/custom.css">
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Rummage Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/your-org/rummage" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/your-org/rummage/edit/main/docs/./game_gui/overview.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="game-ui-system-overview"><a class="header" href="#game-ui-system-overview">Game UI System Overview</a></h1>
+<p>This document provides a high-level overview of the user interface system for Rummage's Commander format game. For more detailed information on specific components, please see the related documentation files.</p>
+<h2 id="ui-architecture-overview"><a class="header" href="#ui-architecture-overview">UI Architecture Overview</a></h2>
+<p>The Rummage game UI is built using Bevy's Entity Component System (ECS) architecture, with a clear separation of concerns between game logic and visual presentation. The UI follows a layered approach to ensure clean organization, efficient rendering, and maintainable code.</p>
+<h3 id="key-components"><a class="header" href="#key-components">Key Components</a></h3>
+<p>The UI system uses non-deprecated Bevy 0.15.x components:</p>
+<ul>
+<li><code>Node</code> for layout containers (replacing deprecated <code>NodeBundle</code>)</li>
+<li><code>Text2d</code> for text display (replacing deprecated <code>Text2dBundle</code>)</li>
+<li><code>Sprite</code> for images (replacing deprecated <code>SpriteBundle</code>)</li>
+<li><code>Button</code> for interactive elements</li>
+<li><code>RenderLayers</code> for visibility control</li>
+</ul>
+<h3 id="layers"><a class="header" href="#layers">Layers</a></h3>
+<p>The UI architecture is organized into distinct render layers as defined in <code>src/camera/components.rs</code>:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub enum AppLayer {
+    #[default]
+    Shared,         // Layer 0: Shared elements visible to all cameras
+    Background,     // Layer 1: Game background elements
+    GameWorld,      // Layer 2: Game world elements
+    Cards,          // Layer 3: Card entities
+    GameUI,         // Layer 4: In-game UI elements
+    Effects,        // Layer 5: Visual effects
+    Overlay,        // Layer 6: Game overlays
+    Menu,           // Layer 7: Menu elements
+    Popup,          // Layer 8: Popup dialogs
+    Debug,          // Layer 9: Debug visuals
+    DebugText,      // Layer 10: Debug text
+    DebugGizmo,     // Layer 11: Debug gizmos
+    Wireframe,      // Layer 12: Wireframe visualization
+    Game = 31,      // Layer 31: Legacy game layer (backward compatibility)
+}
+<span class="boring">}</span></code></pre></pre>
+<p>These layers enable precise control over which UI elements are visible in different game states.</p>
+<h2 id="design-philosophy"><a class="header" href="#design-philosophy">Design Philosophy</a></h2>
+<p>The Rummage UI design follows these key principles:</p>
+<ol>
+<li><strong>Clarity First</strong>: Game state information must be clear and unambiguous</li>
+<li><strong>Accessibility</strong>: UI should be usable by players with diverse accessibility needs</li>
+<li><strong>Intuitive Interaction</strong>: Similar to physical Magic, but enhanced by digital capabilities</li>
+<li><strong>Visual Hierarchy</strong>: Important elements stand out through size, color, and animation</li>
+<li><strong>Responsive Design</strong>: Adapts to different screen sizes and orientations</li>
+<li><strong>Performance</strong>: Optimized rendering for smooth gameplay</li>
+</ol>
+<h2 id="core-ui-systems"><a class="header" href="#core-ui-systems">Core UI Systems</a></h2>
+<h3 id="1-layout-management"><a class="header" href="#1-layout-management">1. Layout Management</a></h3>
+<p>The game employs a flexible layout system that organizes UI elements into zones:</p>
+<ul>
+<li><strong>Player Zones</strong>: Hand, battlefield, graveyard, exile, library positions</li>
+<li><strong>Shared Zones</strong>: Stack, command zone, and turn structure indicators</li>
+<li><strong>Information Zones</strong>: Game log, phase indicators, and supplementary information</li>
+</ul>
+<p>Layouts adjust dynamically based on player count, screen size, and game state.</p>
+<h3 id="2-interaction-system"><a class="header" href="#2-interaction-system">2. Interaction System</a></h3>
+<p>The interaction system handles:</p>
+<ul>
+<li><strong>Drag and Drop</strong>: Moving cards between zones, with preview of valid targets</li>
+<li><strong>Targeting</strong>: Selecting targets for spells and abilities</li>
+<li><strong>Context Menus</strong>: Right-click (or long press) for additional card actions</li>
+<li><strong>Hotkeys</strong>: Keyboard shortcuts for common actions</li>
+</ul>
+<h3 id="3-state-visualization"><a class="header" href="#3-state-visualization">3. State Visualization</a></h3>
+<p>The UI visualizes game state through:</p>
+<ul>
+<li><strong>Card Transformations</strong>: Visual representation of card states (tapped, attacking, etc.)</li>
+<li><strong>Animations</strong>: Visual feedback for game events and transitions</li>
+<li><strong>Effects</strong>: Particles and visual flourishes for special events</li>
+</ul>
+<h3 id="4-information-display"><a class="header" href="#4-information-display">4. Information Display</a></h3>
+<p>Information is conveyed through:</p>
+<ul>
+<li><strong>Text</strong>: Game text, rules text, and reminders</li>
+<li><strong>Icons</strong>: Visual representation of card types, abilities, and states</li>
+<li><strong>Tooltips</strong>: Contextual help and explanations</li>
+<li><strong>Game Log</strong>: Record of game events and actions</li>
+</ul>
+<h2 id="integration-with-game-logic"><a class="header" href="#integration-with-game-logic">Integration with Game Logic</a></h2>
+<p>The UI system integrates with the game logic through:</p>
+<ul>
+<li><strong>Systems</strong>: Reacting to game state changes and updating visuals</li>
+<li><strong>Events</strong>: Processing user interactions and converting them to game actions</li>
+<li><strong>Resources</strong>: Accessing shared game state to reflect in the UI</li>
+</ul>
+<h2 id="technical-implementation"><a class="header" href="#technical-implementation">Technical Implementation</a></h2>
+<p>The UI system is implemented using Bevy's ECS pattern:</p>
+<ul>
+<li><strong>Components</strong>: Define UI element properties and behaviors</li>
+<li><strong>Systems</strong>: Update and render UI elements based on game state</li>
+<li><strong>Resources</strong>: Store shared UI state information</li>
+<li><strong>Events</strong>: Handle user input and trigger UI updates</li>
+</ul>
+<h2 id="accessibility-features"><a class="header" href="#accessibility-features">Accessibility Features</a></h2>
+<p>The game includes several accessibility features:</p>
+<ul>
+<li><strong>Color Blind Modes</strong>: Alternative color schemes for color-blind players</li>
+<li><strong>Text Scaling</strong>: Adjustable text size for readability</li>
+<li><strong>Screen Reader Support</strong>: Critical game information is accessible via screen readers</li>
+<li><strong>Keyboard Controls</strong>: Full game functionality available through keyboard</li>
+<li><strong>Animation Reduction</strong>: Option to reduce or disable animations</li>
+</ul>
+<h2 id="performance-considerations"><a class="header" href="#performance-considerations">Performance Considerations</a></h2>
+<p>The UI system is optimized for performance through:</p>
+<ul>
+<li><strong>Element Pooling</strong>: Reusing UI elements to reduce allocation</li>
+<li><strong>Batched Rendering</strong>: Minimizing draw calls</li>
+<li><strong>Culling</strong>: Only rendering visible elements</li>
+<li><strong>Async Loading</strong>: Loading assets in the background</li>
+</ul>
+<h2 id="future-enhancements"><a class="header" href="#future-enhancements">Future Enhancements</a></h2>
+<p>Planned enhancements to the UI system include:</p>
+<ul>
+<li><strong>Custom Themes</strong>: Player-selectable UI themes</li>
+<li><strong>UI Animations</strong>: Enhanced visual feedback</li>
+<li><strong>Mobile Optimization</strong>: Touch-specific controls and layouts</li>
+<li><strong>VR Mode</strong>: Virtual reality support for immersive gameplay</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../game_gui/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../game_gui/layout/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../game_gui/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../game_gui/layout/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="../ace.js"></script>
+        <script src="../editor.js"></script>
+        <script src="../mode-rust.js"></script>
+        <script src="../theme-dawn.js"></script>
+        <script src="../theme-tomorrow_night.js"></script>
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/js/custom.js"></script>
+
+
+    </div>
+    </body>
+</html>

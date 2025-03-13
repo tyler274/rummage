@@ -1,0 +1,1003 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Testing - Rummage Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="Documentation for the Rummage MTG Commander game engine built with Bevy 0.15.x">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../../theme/css/custom.css">
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../../toc.js"></script>
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Rummage Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/your-org/rummage" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/your-org/rummage/edit/main/docs/./game_gui/testing/index.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="game-ui-testing-guide"><a class="header" href="#game-ui-testing-guide">Game UI Testing Guide</a></h1>
+<p>This document outlines testing strategies and methodologies for Rummage's game UI system, with a focus on ensuring stability, correctness, and usability across different scenarios.</p>
+<h2 id="table-of-contents"><a class="header" href="#table-of-contents">Table of Contents</a></h2>
+<ol>
+<li><a href="#testing-philosophy">Testing Philosophy</a></li>
+<li><a href="#unit-testing">Unit Testing</a></li>
+<li><a href="#integration-testing">Integration Testing</a></li>
+<li><a href="#visual-regression-testing">Visual Regression Testing</a></li>
+<li><a href="#performance-testing">Performance Testing</a></li>
+<li><a href="#accessibility-testing">Accessibility Testing</a></li>
+<li><a href="#automation-framework">Automation Framework</a></li>
+<li><a href="#test-case-organization">Test Case Organization</a></li>
+</ol>
+<h2 id="testing-philosophy"><a class="header" href="#testing-philosophy">Testing Philosophy</a></h2>
+<p>The UI testing approach for Rummage follows these core principles:</p>
+<ol>
+<li><strong>Comprehensive Coverage</strong>: Test all UI components across different configurations</li>
+<li><strong>Behavior-Driven</strong>: Focus on testing functionality from a user perspective</li>
+<li><strong>Automated Where Possible</strong>: Leverage automation for regression testing</li>
+<li><strong>Visual Correctness</strong>: Ensure visual elements appear as designed</li>
+<li><strong>Performance Aware</strong>: Verify UI performs well under different conditions</li>
+</ol>
+<h2 id="unit-testing"><a class="header" href="#unit-testing">Unit Testing</a></h2>
+<p>Unit tests focus on testing individual UI components in isolation.</p>
+<h3 id="component-testing"><a class="header" href="#component-testing">Component Testing</a></h3>
+<p>Test each UI component separately to verify:</p>
+<ul>
+<li>Correct initialization</li>
+<li>Proper event handling</li>
+<li>State transitions</li>
+<li>Component lifecycle behaviors</li>
+</ul>
+<p>Example test for a component:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_hand_zone_initialization() {
+    // Create app with test plugins
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins)
+       .add_systems(Update, ui_systems::update_hand_zone);
+    
+    // Setup test state
+    let player_id = PlayerId(1);
+    let test_cards = vec![
+        Card::new("Test Card 1"),
+        Card::new("Test Card 2"),
+        Card::new("Test Card 3"),
+    ];
+    
+    // Spawn hand zone with test cards
+    app.world.spawn((
+        HandZone { player_id, expanded: false },
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Px(200.0),
+            ..default()
+        },
+    ));
+    
+    // Add cards to player's hand
+    let hand = Hand { cards: test_cards, player_id };
+    app.world.insert_resource(hand);
+    
+    // Run systems
+    app.update();
+    
+    // Verify hand zone contains correct number of card entities
+    let hand_entity = app.world.query_filtered::&lt;Entity, With&lt;HandZone&gt;&gt;().single(&amp;app.world);
+    let children = app.world.get::&lt;Children&gt;(hand_entity).unwrap();
+    assert_eq!(children.len(), 3, "Hand zone should contain 3 card entities");
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="event-handling-tests"><a class="header" href="#event-handling-tests">Event Handling Tests</a></h3>
+<p>Test that UI components respond correctly to events:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_card_drag_event_handling() {
+    // Create test app
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins)
+       .add_event::&lt;CardDragStartEvent&gt;()
+       .add_event::&lt;CardDragEndEvent&gt;()
+       .add_systems(Update, ui_systems::handle_card_drag_events);
+    
+    // Set up test entities
+    let card_entity = app.world.spawn(Card::new("Test Card")).id();
+    
+    // Trigger drag start event
+    app.world.send_event(CardDragStartEvent {
+        card_entity,
+        cursor_position: Vec2::new(100.0, 100.0),
+    });
+    
+    // Run systems
+    app.update();
+    
+    // Verify card is being dragged
+    let dragging = app.world.get::&lt;Dragging&gt;(card_entity).unwrap();
+    assert!(dragging.active, "Card should be in dragging state");
+    
+    // Trigger drag end event
+    app.world.send_event(CardDragEndEvent {
+        card_entity,
+        cursor_position: Vec2::new(200.0, 200.0),
+    });
+    
+    // Run systems
+    app.update();
+    
+    // Verify card is no longer being dragged
+    assert!(app.world.get::&lt;Dragging&gt;(card_entity).is_none(), "Dragging component should be removed");
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="layout-tests"><a class="header" href="#layout-tests">Layout Tests</a></h3>
+<p>Verify that UI layout components arrange children correctly:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_battlefield_layout() {
+    // Create test app
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins)
+       .add_systems(Update, ui_systems::position_battlefield_cards);
+    
+    // Set up battlefield entity with cards
+    let battlefield_entity = app.world.spawn((
+        BattlefieldZone {
+            player_id: PlayerId(1),
+            organization: BattlefieldOrganization::ByType,
+        },
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            ..default()
+        },
+        Transform::default(),
+        GlobalTransform::default(),
+    )).id();
+    
+    // Add some test cards to the battlefield
+    let card_entities = (0..5).map(|i| {
+        let card_entity = app.world.spawn((
+            Card::new(&amp;format!("Test Card {}", i)),
+            CardType::Creature,
+            Transform::default(),
+            GlobalTransform::default(),
+            Parent(battlefield_entity),
+        )).id();
+        app.world.entity_mut(battlefield_entity).add_child(card_entity);
+        card_entity
+    }).collect::&lt;Vec&lt;_&gt;&gt;();
+    
+    // Run systems
+    app.update();
+    
+    // Verify cards are positioned correctly
+    for (i, card_entity) in card_entities.iter().enumerate() {
+        let transform = app.world.get::&lt;Transform&gt;(*card_entity).unwrap();
+        // Cards should be arranged in a row with spacing
+        assert_approx_eq!(transform.translation.x, i as f32 * 120.0, 1.0);
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="integration-testing"><a class="header" href="#integration-testing">Integration Testing</a></h2>
+<p>Integration tests verify that multiple UI components work together correctly.</p>
+<h3 id="playmat-integration-tests"><a class="header" href="#playmat-integration-tests">Playmat Integration Tests</a></h3>
+<p>Test that all zones in a player's playmat interact correctly:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_card_movement_between_zones() {
+    // Create test app
+    let mut app = App::new();
+    app.add_plugins(GameUiTestPlugins)
+       .add_systems(Update, (
+           ui_systems::handle_card_movement,
+           ui_systems::update_zones,
+       ));
+    
+    // Set up test player and playmat
+    let player_id = PlayerId(1);
+    setup_test_playmat(&amp;mut app, player_id);
+    
+    // Get zone entities
+    let hand_entity = app.world.query_filtered::&lt;Entity, With&lt;HandZone&gt;&gt;().single(&amp;app.world);
+    let battlefield_entity = app.world.query_filtered::&lt;Entity, With&lt;BattlefieldZone&gt;&gt;().single(&amp;app.world);
+    
+    // Create test card in hand
+    let card_entity = app.world.spawn((
+        Card::new("Test Creature"),
+        CardType::Creature,
+        Transform::default(),
+        GlobalTransform::default(),
+        Parent(hand_entity),
+        InZone::Hand,
+    )).id();
+    app.world.entity_mut(hand_entity).add_child(card_entity);
+    
+    // Simulate playing card from hand to battlefield
+    app.world.send_event(PlayCardEvent {
+        card_entity,
+        source_zone: Zone::Hand,
+        destination_zone: Zone::Battlefield,
+        player_id,
+    });
+    
+    // Run systems
+    app.update();
+    
+    // Verify card moved to battlefield
+    let card_parent = app.world.get::&lt;Parent&gt;(card_entity).unwrap();
+    assert_eq!(card_parent.get(), battlefield_entity, "Card should be in battlefield");
+    
+    let in_zone = app.world.get::&lt;InZone&gt;(card_entity).unwrap();
+    assert_eq!(*in_zone, InZone::Battlefield, "Card zone should be Battlefield");
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="table-integration-tests"><a class="header" href="#table-integration-tests">Table Integration Tests</a></h3>
+<p>Test the entire table layout with multiple players:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_four_player_table_layout() {
+    // Create test app
+    let mut app = App::new();
+    app.add_plugins(GameUiTestPlugins)
+       .add_systems(Update, ui_systems::update_table_layout);
+    
+    // Set up game state with 4 players
+    let mut game_state = GameState::default();
+    game_state.player_count = 4;
+    app.world.insert_resource(game_state);
+    
+    // Set up virtual table
+    let table_entity = app.world.spawn((
+        VirtualTable,
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            ..default()
+        },
+    )).id();
+    
+    // Trigger table setup
+    app.world.send_event(SetupTableEvent { player_count: 4 });
+    
+    // Run systems
+    app.update();
+    
+    // Verify table has correct structure for 4 players
+    let children = app.world.get::&lt;Children&gt;(table_entity).unwrap();
+    
+    // Should have 5 children: 4 player playmats + shared area
+    assert_eq!(children.len(), 5, "Table should have 5 main areas for 4 players");
+    
+    // Verify each player's playmat exists and has correct position
+    let playmat_query = app.world.query_filtered::&lt;(&amp;PlayerPlaymat, &amp;Node), With&lt;Node&gt;&gt;();
+    assert_eq!(playmat_query.iter(&amp;app.world).count(), 4, "Should have 4 player playmats");
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="ui-flow-tests"><a class="header" href="#ui-flow-tests">UI Flow Tests</a></h3>
+<p>Test complete UI workflows from start to finish:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_cast_spell_targeting_ui_flow() {
+    // Create test app
+    let mut app = App::new();
+    app.add_plugins(GameUiTestPlugins)
+       .add_systems(Update, (
+           ui_systems::handle_card_selection,
+           ui_systems::handle_targeting,
+           ui_systems::update_stack_visualization,
+       ));
+    
+    // Set up game with 2 players
+    setup_test_game(&amp;mut app, 2);
+    
+    // Get player hand and opponent battlefield
+    let player_id = PlayerId(1);
+    let opponent_id = PlayerId(2);
+    let hand_entity = get_player_zone_entity(&amp;app, player_id, ZoneType::Hand);
+    let opp_battlefield_entity = get_player_zone_entity(&amp;app, opponent_id, ZoneType::Battlefield);
+    
+    // Add test spell to player's hand
+    let spell_entity = app.world.spawn((
+        Card::new("Test Lightning Bolt"),
+        CardType::Instant,
+        RequiresTarget { valid_targets: TargetType::CreatureOrPlayer },
+        Transform::default(),
+        GlobalTransform::default(),
+        Parent(hand_entity),
+        InZone::Hand,
+    )).id();
+    app.world.entity_mut(hand_entity).add_child(spell_entity);
+    
+    // Add creature to opponent's battlefield
+    let creature_entity = app.world.spawn((
+        Card::new("Test Creature"),
+        CardType::Creature,
+        Transform::default(),
+        GlobalTransform::default(),
+        Parent(opp_battlefield_entity),
+        InZone::Battlefield,
+    )).id();
+    app.world.entity_mut(opp_battlefield_entity).add_child(creature_entity);
+    
+    // Simulate spell cast
+    app.world.send_event(CardSelectedEvent {
+        card_entity: spell_entity,
+        player_id,
+    });
+    app.update();
+    
+    // Verify targeting mode is active
+    let ui_state = app.world.resource::&lt;UiState&gt;();
+    assert_eq!(ui_state.mode, UiMode::Targeting, "UI should be in targeting mode");
+    
+    // Simulate target selection
+    app.world.send_event(TargetSelectedEvent {
+        source_entity: spell_entity,
+        target_entity: creature_entity,
+        player_id,
+    });
+    app.update();
+    
+    // Verify spell is on stack
+    let stack_entity = app.world.query_filtered::&lt;Entity, With&lt;StackZone&gt;&gt;().single(&amp;app.world);
+    let stack_children = app.world.get::&lt;Children&gt;(stack_entity).unwrap();
+    assert!(!stack_children.is_empty(), "Stack should contain the cast spell");
+    
+    // Verify targeting visualization
+    let targeting = app.world.query_filtered::&lt;&amp;TargetingVisualization, With&lt;TargetingVisualization&gt;&gt;().single(&amp;app.world);
+    assert_eq!(targeting.source, spell_entity);
+    assert_eq!(targeting.target, creature_entity);
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="visual-regression-testing"><a class="header" href="#visual-regression-testing">Visual Regression Testing</a></h2>
+<p>Visual tests verify that UI components appear correctly.</p>
+<h3 id="screenshot-comparison-tests"><a class="header" href="#screenshot-comparison-tests">Screenshot Comparison Tests</a></h3>
+<p>Compare screenshots of UI elements against reference images:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_card_appearance() {
+    // Create test app
+    let mut app = App::new();
+    app.add_plugins(VisualTestPlugins)
+       .add_systems(Update, ui_systems::render_card);
+    
+    // Set up test card
+    let card = Card::new("Test Card");
+    card.card_type = CardType::Creature;
+    card.mana_cost = "2R".into();
+    
+    app.world.spawn((
+        card,
+        Transform::from_xyz(400.0, 300.0, 0.0),
+        GlobalTransform::default(),
+    ));
+    
+    // Render frame
+    app.update();
+    
+    // Take screenshot
+    let screenshot = take_screenshot(&amp;app);
+    
+    // Compare with reference image
+    let reference = load_reference_image("card_appearance.png");
+    let difference = compare_images(&amp;screenshot, &amp;reference);
+    
+    assert!(difference &lt; 0.01, "Card appearance doesn't match reference");
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="layout-verification-tests"><a class="header" href="#layout-verification-tests">Layout Verification Tests</a></h3>
+<p>Verify layout properties of UI elements:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_playmat_layout_proportions() {
+    // Create test app
+    let mut app = App::new();
+    app.add_plugins(GameUiTestPlugins);
+    
+    // Set up test playmat
+    setup_test_playmat(&amp;mut app, PlayerId(1));
+    
+    // Run systems
+    app.update();
+    
+    // Query zone entities
+    let hand_query = app.world.query_filtered::&lt;&amp;Node, With&lt;HandZone&gt;&gt;();
+    let battlefield_query = app.world.query_filtered::&lt;&amp;Node, With&lt;BattlefieldZone&gt;&gt;();
+    
+    // Verify hand zone height
+    let hand_node = hand_query.single(&amp;app.world);
+    match hand_node.height {
+        Val::Percent(percent) =&gt; {
+            assert!(percent &gt; 15.0 &amp;&amp; percent &lt; 25.0, "Hand zone height should be ~20%");
+        },
+        _ =&gt; panic!("Hand height should be a percentage"),
+    }
+    
+    // Verify battlefield zone height
+    let battlefield_node = battlefield_query.single(&amp;app.world);
+    match battlefield_node.height {
+        Val::Percent(percent) =&gt; {
+            assert!(percent &gt; 50.0 &amp;&amp; percent &lt; 70.0, "Battlefield height should be ~60%");
+        },
+        _ =&gt; panic!("Battlefield height should be a percentage"),
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="performance-testing"><a class="header" href="#performance-testing">Performance Testing</a></h2>
+<p>Performance tests verify that the UI performs well under different conditions.</p>
+<h3 id="card-volume-tests"><a class="header" href="#card-volume-tests">Card Volume Tests</a></h3>
+<p>Test UI performance with large numbers of cards:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_battlefield_performance_with_many_cards() {
+    // Create test app
+    let mut app = App::new();
+    app.add_plugins(GameUiTestPlugins)
+       .add_plugins(DiagnosticsPlugin);
+    
+    // Set up battlefield with many cards
+    let battlefield_entity = app.world.spawn((
+        BattlefieldZone {
+            player_id: PlayerId(1),
+            organization: BattlefieldOrganization::ByType,
+        },
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            ..default()
+        },
+    )).id();
+    
+    // Add 100 test cards to the battlefield
+    for i in 0..100 {
+        let card_entity = app.world.spawn((
+            Card::new(&amp;format!("Test Card {}", i)),
+            CardType::Creature,
+            Transform::default(),
+            GlobalTransform::default(),
+        )).id();
+        app.world.entity_mut(battlefield_entity).add_child(card_entity);
+    }
+    
+    // Run performance test
+    let mut frame_times = Vec::new();
+    for _ in 0..100 {
+        let start = std::time::Instant::now();
+        app.update();
+        frame_times.push(start.elapsed());
+    }
+    
+    // Calculate average frame time
+    let avg_frame_time = frame_times.iter().sum::&lt;std::time::Duration&gt;() / frame_times.len() as u32;
+    
+    // Average frame time should be under 16ms (60fps)
+    assert!(avg_frame_time.as_millis() &lt; 16, "UI is not performing well with many cards");
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="animation-performance-tests"><a class="header" href="#animation-performance-tests">Animation Performance Tests</a></h3>
+<p>Test performance of UI animations:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_card_draw_animation_performance() {
+    // Create test app
+    let mut app = App::new();
+    app.add_plugins(GameUiTestPlugins)
+       .add_plugins(DiagnosticsPlugin);
+    
+    // Set up player zones
+    setup_test_playmat(&amp;mut app, PlayerId(1));
+    
+    // Get zone entities
+    let library_entity = app.world.query_filtered::&lt;Entity, With&lt;LibraryZone&gt;&gt;().single(&amp;app.world);
+    let hand_entity = app.world.query_filtered::&lt;Entity, With&lt;HandZone&gt;&gt;().single(&amp;app.world);
+    
+    // Set up library with cards
+    for i in 0..50 {
+        let card_entity = app.world.spawn((
+            Card::new(&amp;format!("Library Card {}", i)),
+            Transform::default(),
+            GlobalTransform::default(),
+            Parent(library_entity),
+            InZone::Library,
+        )).id();
+        app.world.entity_mut(library_entity).add_child(card_entity);
+    }
+    
+    // Measure performance while drawing multiple cards
+    let mut frame_times = Vec::new();
+    for i in 0..7 {
+        // Draw a card
+        let card_entity = app.world.query_filtered::&lt;Entity, (With&lt;Card&gt;, With&lt;InZone&gt;)&gt;()
+            .iter(&amp;app.world)
+            .next()
+            .unwrap();
+            
+        app.world.send_event(DrawCardEvent {
+            player_id: PlayerId(1),
+            card_entity,
+        });
+        
+        // Run update and measure frame time
+        let start = std::time::Instant::now();
+        app.update();
+        frame_times.push(start.elapsed());
+    }
+    
+    // Calculate average and maximum frame time
+    let avg_frame_time = frame_times.iter().sum::&lt;std::time::Duration&gt;() / frame_times.len() as u32;
+    let max_frame_time = frame_times.iter().max().unwrap();
+    
+    // Performance assertions
+    assert!(avg_frame_time.as_millis() &lt; 16, "Card draw animation average performance is too slow");
+    assert!(max_frame_time.as_millis() &lt; 32, "Card draw animation maximum frame time is too slow");
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="accessibility-testing"><a class="header" href="#accessibility-testing">Accessibility Testing</a></h2>
+<p>Tests to verify UI accessibility features.</p>
+<h3 id="color-blind-mode-tests"><a class="header" href="#color-blind-mode-tests">Color Blind Mode Tests</a></h3>
+<p>Test that UI is usable in color blind modes:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_color_blind_mode_card_distinction() {
+    // Create test app
+    let mut app = App::new();
+    app.add_plugins(GameUiTestPlugins);
+    
+    // Set accessibility settings to deuteranopia mode
+    let mut settings = AccessibilitySettings::default();
+    settings.color_blind_mode = ColorBlindMode::Deuteranopia;
+    app.world.insert_resource(settings);
+    
+    // Set up cards of different colors
+    let red_card = app.world.spawn((
+        Card::new("Red Card"),
+        CardColor::Red,
+        Transform::from_xyz(100.0, 100.0, 0.0),
+        GlobalTransform::default(),
+    )).id();
+    
+    let green_card = app.world.spawn((
+        Card::new("Green Card"),
+        CardColor::Green,
+        Transform::from_xyz(300.0, 100.0, 0.0),
+        GlobalTransform::default(),
+    )).id();
+    
+    // Run systems to update card appearance
+    app.update();
+    
+    // Get card visual components
+    let red_card_appearance = app.world.get::&lt;CardAppearance&gt;(red_card).unwrap();
+    let green_card_appearance = app.world.get::&lt;CardAppearance&gt;(green_card).unwrap();
+    
+    // In deuteranopia mode, these colors should have distinct patterns or indicators
+    // rather than relying solely on red/green color difference
+    assert_ne!(
+        red_card_appearance.pattern_type,
+        green_card_appearance.pattern_type,
+        "Cards should have distinct patterns in color blind mode"
+    );
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="keyboard-navigation-tests"><a class="header" href="#keyboard-navigation-tests">Keyboard Navigation Tests</a></h3>
+<p>Test keyboard navigation through UI elements:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_keyboard_navigation() {
+    // Create test app
+    let mut app = App::new();
+    app.add_plugins(GameUiTestPlugins)
+       .add_systems(Update, ui_systems::handle_keyboard_input);
+    
+    // Set up test game
+    setup_test_game(&amp;mut app, 2);
+    
+    // Initialize UI focus state
+    app.world.insert_resource(UiFocus {
+        current_focus: None,
+        navigation_mode: true,
+    });
+    
+    // Simulate keyboard input to start navigation
+    app.world.send_event(KeyboardInput {
+        key: KeyCode::Tab,
+        state: ButtonState::Pressed,
+    });
+    app.update();
+    
+    // Verify navigation mode is active and something is focused
+    let ui_focus = app.world.resource::&lt;UiFocus&gt;();
+    assert!(ui_focus.navigation_mode, "Keyboard navigation mode should be active");
+    assert!(ui_focus.current_focus.is_some(), "An element should be focused");
+    
+    // Test navigation between elements
+    let first_focus = ui_focus.current_focus;
+    
+    // Simulate arrow key press
+    app.world.send_event(KeyboardInput {
+        key: KeyCode::ArrowRight,
+        state: ButtonState::Pressed,
+    });
+    app.update();
+    
+    // Verify focus changed
+    let ui_focus = app.world.resource::&lt;UiFocus&gt;();
+    assert_ne!(ui_focus.current_focus, first_focus, "Focus should have moved to a new element");
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="automation-framework"><a class="header" href="#automation-framework">Automation Framework</a></h2>
+<p>The testing framework uses several helper functions and utilities:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// Set up a test playmat with all zones for a player
+fn setup_test_playmat(app: &amp;mut App, player_id: PlayerId) -&gt; Entity {
+    // Create player entity
+    let player_entity = app.world.spawn((
+        Player { id: player_id, name: format!("Test Player {}", player_id.0) },
+    )).id();
+    
+    // Spawn playmat
+    let playmat_entity = app.world.spawn((
+        PlayerPlaymat { player_id },
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+    )).id();
+    
+    // Spawn hand zone
+    let hand_entity = app.world.spawn((
+        HandZone { player_id, expanded: false },
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(20.0),
+            ..default()
+        },
+        Parent(playmat_entity),
+    )).id();
+    app.world.entity_mut(playmat_entity).add_child(hand_entity);
+    
+    // Spawn battlefield zone
+    let battlefield_entity = app.world.spawn((
+        BattlefieldZone {
+            player_id,
+            organization: BattlefieldOrganization::ByType,
+        },
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(60.0),
+            ..default()
+        },
+        Parent(playmat_entity),
+    )).id();
+    app.world.entity_mut(playmat_entity).add_child(battlefield_entity);
+    
+    // Add other zones (library, graveyard, etc.)
+    // ...
+    
+    playmat_entity
+}
+
+/// Set up a test game with the specified number of players
+fn setup_test_game(app: &amp;mut App, player_count: usize) {
+    // Create game state
+    let mut game_state = GameState::default();
+    game_state.player_count = player_count;
+    app.world.insert_resource(game_state);
+    
+    // Create table
+    let table_entity = app.world.spawn((
+        VirtualTable,
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            ..default()
+        },
+    )).id();
+    
+    // Add playmats for each player
+    for i in 0..player_count {
+        let player_id = PlayerId(i as u32 + 1);
+        let playmat_entity = setup_test_playmat(app, player_id);
+        app.world.entity_mut(table_entity).add_child(playmat_entity);
+    }
+    
+    // Add shared zones
+    setup_shared_zones(app, table_entity);
+}
+
+/// Helper function to take screenshot in tests
+fn take_screenshot(app: &amp;App) -&gt; Image {
+    // Implementation would depend on rendering backend
+    // This is a simplified example
+    let mut image = Image::default();
+    
+    // Get main camera
+    let camera_entity = app.world.query_filtered::&lt;Entity, With&lt;Camera&gt;&gt;().single(&amp;app.world);
+    
+    // Render to texture
+    // (Implementation details would depend on Bevy's rendering API)
+    
+    image
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="test-case-organization"><a class="header" href="#test-case-organization">Test Case Organization</a></h2>
+<p>Test cases are organized into test suites that focus on specific aspects of the UI:</p>
+<ol>
+<li><strong>Layout Tests</strong>: Verify correct positioning and sizing of UI elements</li>
+<li><strong>Interaction Tests</strong>: Verify user interactions work correctly</li>
+<li><strong>Visual Tests</strong>: Verify visual appearance matches expectations</li>
+<li><strong>Performance Tests</strong>: Verify UI performance under different conditions</li>
+<li><strong>Accessibility Tests</strong>: Verify accessibility features work correctly</li>
+<li><strong>Integration Tests</strong>: Verify different UI components work together</li>
+</ol>
+<p>Each test suite is implemented as a separate module, with common helpers in a shared module:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>mod layout_tests {
+    use super::*;
+    
+    #[test]
+    fn test_two_player_table_layout() { /* ... */ }
+    
+    #[test]
+    fn test_four_player_table_layout() { /* ... */ }
+    
+    // More layout tests...
+}
+
+mod interaction_tests {
+    use super::*;
+    
+    #[test]
+    fn test_card_selection() { /* ... */ }
+    
+    #[test]
+    fn test_drag_and_drop() { /* ... */ }
+    
+    // More interaction tests...
+}
+
+// More test modules...
+<span class="boring">}</span></code></pre></pre>
+<p>When running tests, use tags to run specific categories:</p>
+<pre><code class="language-bash">cargo test ui::layout  # Run layout tests
+cargo test ui::visual  # Run visual tests
+cargo test ui::all     # Run all UI tests
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../game_gui/avatar/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../../networking/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../game_gui/avatar/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../../networking/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="../../ace.js"></script>
+        <script src="../../editor.js"></script>
+        <script src="../../mode-rust.js"></script>
+        <script src="../../theme-dawn.js"></script>
+        <script src="../../theme-tomorrow_night.js"></script>
+
+        <script src="../../elasticlunr.min.js"></script>
+        <script src="../../mark.min.js"></script>
+        <script src="../../searcher.js"></script>
+
+        <script src="../../clipboard.min.js"></script>
+        <script src="../../highlight.js"></script>
+        <script src="../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../../theme/js/custom.js"></script>
+
+
+    </div>
+    </body>
+</html>

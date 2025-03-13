@@ -1,0 +1,350 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Networking - Rummage Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="Documentation for the Rummage MTG Commander game engine built with Bevy 0.15.x">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/css/custom.css">
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Rummage Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/your-org/rummage" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/your-org/rummage/edit/main/docs/./networking/index.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="networking-documentation"><a class="header" href="#networking-documentation">Networking Documentation</a></h1>
+<p>This section outlines the implementation of multiplayer functionality for the Rummage MTG Commander game engine using bevy_replicon.</p>
+<h2 id="table-of-contents"><a class="header" href="#table-of-contents">Table of Contents</a></h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#key-components">Key Components</a></li>
+<li><a href="#implementation-status">Implementation Status</a></li>
+<li><a href="#recent-updates">Recent Updates</a></li>
+<li><a href="#getting-started">Getting Started</a></li>
+<li><a href="#future-enhancements">Future Enhancements</a></li>
+</ol>
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<p>The networking system enables multiplayer gameplay with features like state synchronization, lobby management, and rollback mechanisms for handling network disruptions. The implementation is built on bevy_replicon, providing a robust foundation for networked gameplay.</p>
+<p>For a comprehensive overview, see the <a href="core/architecture_overview.html">Core Architecture Overview</a>.</p>
+<h2 id="key-components"><a class="header" href="#key-components">Key Components</a></h2>
+<p>The networking system consists of the following major components:</p>
+<h3 id="core-networking"><a class="header" href="#core-networking">Core Networking</a></h3>
+<ul>
+<li><a href="core/architecture_overview.html">Architecture Overview</a> - Introduction to networking architecture and concepts</li>
+<li><a href="core/implementation_details.html">Implementation Details</a> - Detailed implementation guidelines and code structure</li>
+<li><a href="core/protocol_specification.html">Protocol Specification</a> - Networking protocol, message formats, and synchronization</li>
+<li><a href="core/multiplayer_overview.html">Multiplayer Overview</a> - High-level overview of multiplayer functionality</li>
+<li><a href="core/implementation_details.html#random-number-generator-synchronization">RNG Synchronization</a> - Managing random number generation across network boundaries</li>
+</ul>
+<h3 id="lobby-system"><a class="header" href="#lobby-system">Lobby System</a></h3>
+<ul>
+<li><a href="lobby/index.html">Lobby Index</a> - Overview of the lobby system</li>
+<li><a href="lobby/ui/">UI Components</a> - Documentation for user interface components</li>
+<li><a href="lobby/backend/">Backend</a> - Server-side implementation details</li>
+<li><a href="lobby/chat/">Chat System</a> - Chat functionality documentation</li>
+<li><a href="lobby/deck/">Deck Viewer</a> - Deck viewing and management</li>
+</ul>
+<h3 id="gameplay-networking"><a class="header" href="#gameplay-networking">Gameplay Networking</a></h3>
+<ul>
+<li><a href="gameplay/departure/handling.html">Departure Handling</a> - Handling player disconnections and departures</li>
+<li><a href="gameplay/state/">State Management</a> - Game state synchronization
+<ul>
+<li><a href="gameplay/state/rollback.html">Rollback System</a> - State recovery after network disruptions</li>
+<li><a href="gameplay/state/replicon_rollback.html">Replicon Rollback Integration</a> - Integrating bevy_replicon with RNG state for rollbacks</li>
+</ul>
+</li>
+<li><a href="gameplay/synchronization/">Synchronization</a> - Methods for keeping game state in sync</li>
+</ul>
+<h3 id="testing"><a class="header" href="#testing">Testing</a></h3>
+<ul>
+<li><a href="testing/overview.html">Testing Overview</a> - General testing approach</li>
+<li><a href="testing/advanced_techniques.html">Advanced Techniques</a> - Advanced testing techniques</li>
+<li><a href="testing/rng_synchronization_tests.html">RNG Synchronization Tests</a> - Testing RNG determinism in multiplayer</li>
+<li><a href="testing/replicon_rng_tests.html">Replicon RNG Tests</a> - Testing bevy_replicon integration with RNG state</li>
+<li><a href="testing/integration/">Integration Testing</a> - Integration testing methodologies</li>
+<li><a href="testing/security/">Security Testing</a> - Security-focused testing</li>
+</ul>
+<h3 id="security"><a class="header" href="#security">Security</a></h3>
+<ul>
+<li><a href="security/authentication.html">Authentication</a> - User authentication and authorization</li>
+<li><a href="security/anti_cheat.html">Anti-Cheat</a> - Preventing and detecting cheating</li>
+<li><a href="security/hidden_information.html">Hidden Information</a> - Managing hidden game information</li>
+</ul>
+<h2 id="implementation-status"><a class="header" href="#implementation-status">Implementation Status</a></h2>
+<p>This documentation represents the design and implementation of the networking system. Components are marked as follows:</p>
+<div class="table-wrapper"><table><thead><tr><th>Component</th><th>Status</th><th>Description</th></tr></thead><tbody>
+<tr><td>Core Network Architecture</td><td>✅</td><td>Basic network architecture using bevy_replicon</td></tr>
+<tr><td>Client-Server Communication</td><td>✅</td><td>Basic client-server messaging</td></tr>
+<tr><td>Lobby System</td><td>🔄</td><td>System for creating and joining game lobbies</td></tr>
+<tr><td>Game State Synchronization</td><td>🔄</td><td>Synchronizing game state across the network</td></tr>
+<tr><td>RNG Synchronization</td><td>✅</td><td>Maintaining consistent random number generation</td></tr>
+<tr><td>Rollback System</td><td>✅</td><td>Recovery from network disruptions</td></tr>
+<tr><td>Replicon Integration</td><td>✅</td><td>Integration with bevy_replicon for entity replication</td></tr>
+<tr><td>Auth System</td><td>⚠️</td><td>Player authentication and authorization</td></tr>
+<tr><td>Anti-Cheat</td><td>⚠️</td><td>Measures to prevent cheating</td></tr>
+<tr><td>Hidden Information</td><td>🔄</td><td>Managing information that should be hidden from certain players</td></tr>
+<tr><td>Chat System</td><td>⚠️</td><td>In-game communication</td></tr>
+<tr><td>Spectator Mode</td><td>⚠️</td><td>Support for non-player observers</td></tr>
+</tbody></table>
+</div>
+<p>Legend:</p>
+<ul>
+<li>✅ Implemented and tested</li>
+<li>🔄 In progress</li>
+<li>⚠️ Planned but not yet implemented</li>
+</ul>
+<h2 id="recent-updates"><a class="header" href="#recent-updates">Recent Updates</a></h2>
+<p>Recent updates to the networking documentation include:</p>
+<ul>
+<li><strong>Replicon Integration</strong>: Added detailed documentation for integrating bevy_replicon with our RNG state management system</li>
+<li><strong>Rollback Mechanism</strong>: Enhanced documentation of rollback mechanisms for handling network disruptions</li>
+<li><strong>Test Framework</strong>: Expanded testing documentation with new test cases for RNG synchronization</li>
+<li><strong>Performance Considerations</strong>: Added guidance on optimizing network performance</li>
+</ul>
+<h2 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h2>
+<p>To begin working on the networking implementation:</p>
+<ol>
+<li>Review the <a href="core/architecture_overview.html">Core Architecture Overview</a></li>
+<li>Understand the <a href="core/implementation_details.html">Implementation Details</a></li>
+<li>Set up a local development environment with bevy_replicon</li>
+<li>Start with the basic client-server connectivity</li>
+<li>Incrementally add features following the implementation plan</li>
+</ol>
+<h2 id="future-enhancements"><a class="header" href="#future-enhancements">Future Enhancements</a></h2>
+<p>In future versions, we plan to enhance the networking implementation with:</p>
+<ul>
+<li><strong>Spectator Mode</strong>: Allow non-players to watch games in progress</li>
+<li><strong>Replay System</strong>: Record and replay games for analysis or sharing</li>
+<li><strong>Tournament Support</strong>: Special features for organizing and running tournaments</li>
+<li><strong>Cross-Platform Play</strong>: Ensure compatibility across different platforms</li>
+<li><strong>Advanced Anti-Cheat</strong>: More sophisticated measures to prevent cheating</li>
+<li><strong>Voice Chat Integration</strong>: In-game communication between players</li>
+</ul>
+<hr />
+<p>This documentation will evolve as the networking implementation progresses. Check back regularly for updates and additional details.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../game_gui/testing/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../networking/core/architecture_overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../game_gui/testing/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../networking/core/architecture_overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="../ace.js"></script>
+        <script src="../editor.js"></script>
+        <script src="../mode-rust.js"></script>
+        <script src="../theme-dawn.js"></script>
+        <script src="../theme-tomorrow_night.js"></script>
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/js/custom.js"></script>
+
+
+    </div>
+    </body>
+</html>

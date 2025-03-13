@@ -1,0 +1,481 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>State Management - Rummage Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="Documentation for the Rummage MTG Commander game engine built with Bevy 0.15.x">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../../favicon.svg">
+        <link rel="shortcut icon" href="../../../favicon.png">
+        <link rel="stylesheet" href="../../../css/variables.css">
+        <link rel="stylesheet" href="../../../css/general.css">
+        <link rel="stylesheet" href="../../../css/chrome.css">
+        <link rel="stylesheet" href="../../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../../../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../../../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../../../theme/css/custom.css">
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../../../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../../../toc.js"></script>
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../../../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Rummage Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/your-org/rummage" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/your-org/rummage/edit/main/docs/./networking/gameplay/state/index.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="game-state-management-in-mtg-commander"><a class="header" href="#game-state-management-in-mtg-commander">Game State Management in MTG Commander</a></h1>
+<p>This document outlines the approach to managing game state in the MTG Commander game engine's multiplayer implementation.</p>
+<h2 id="table-of-contents"><a class="header" href="#table-of-contents">Table of Contents</a></h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#game-state-components">Game State Components</a></li>
+<li><a href="#implementation-approach">Implementation Approach</a></li>
+<li><a href="#state-snapshots">State Snapshots</a></li>
+<li><a href="#state-synchronization">State Synchronization</a></li>
+<li><a href="#deterministic-state-updates">Deterministic State Updates</a></li>
+<li><a href="#hidden-information">Hidden Information</a></li>
+<li><a href="#rollbacks-and-recovery">Rollbacks and Recovery</a></li>
+</ol>
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<p>Proper game state management is critical for a multiplayer card game like Magic: The Gathering. The game state includes all information about the current game, including cards in various zones, player life totals, turn structure, and active effects. In a networked environment, this state must be synchronized across all clients while maintaining security and performance.</p>
+<h2 id="game-state-components"><a class="header" href="#game-state-components">Game State Components</a></h2>
+<p>The game state in MTG Commander consists of several key components:</p>
+<ol>
+<li><strong>Zones</strong>: Battlefield, hands, libraries, graveyards, exile, stack, and command zone</li>
+<li><strong>Player Information</strong>: Life totals, mana pools, commander damage, etc.</li>
+<li><strong>Turn Structure</strong>: Current phase, active player, priority player</li>
+<li><strong>Effects</strong>: Ongoing effects, delayed triggers, replacement effects</li>
+<li><strong>Game Metadata</strong>: Game ID, start time, game mode, etc.</li>
+</ol>
+<h2 id="implementation-approach"><a class="header" href="#implementation-approach">Implementation Approach</a></h2>
+<h3 id="core-game-state-structure"><a class="header" href="#core-game-state-structure">Core Game State Structure</a></h3>
+<p>The game state is implemented as a collection of ECS components and resources:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Core game state resource
+#[derive(Resource)]
+pub struct GameState {
+    pub game_id: Uuid,
+    pub start_time: DateTime&lt;Utc&gt;,
+    pub game_mode: GameMode,
+    pub turn_number: u32,
+    pub current_phase: Phase,
+    pub active_player_id: PlayerId,
+    pub priority_player_id: Option&lt;PlayerId&gt;,
+    pub stack: Vec&lt;StackItem&gt;,
+}
+
+// Player component
+#[derive(Component)]
+pub struct Player {
+    pub id: PlayerId,
+    pub client_id: ClientId,
+    pub life_total: i32,
+    pub mana_pool: ManaPool,
+    pub commander_damage: HashMap&lt;PlayerId, i32&gt;,
+}
+
+// Zone components
+#[derive(Component)]
+pub struct Hand {
+    pub cards: Vec&lt;CardId&gt;,
+}
+
+#[derive(Component)]
+pub struct Library {
+    pub cards: Vec&lt;CardId&gt;,
+    pub top_revealed: bool,
+}
+
+#[derive(Component)]
+pub struct Graveyard {
+    pub cards: Vec&lt;CardId&gt;,
+}
+
+#[derive(Component)]
+pub struct CommandZone {
+    pub cards: Vec&lt;CardId&gt;,
+}
+
+// Battlefield is a shared resource
+#[derive(Resource)]
+pub struct Battlefield {
+    pub permanents: Vec&lt;Entity&gt;,
+}
+
+// Card component
+#[derive(Component)]
+pub struct Card {
+    pub id: CardId,
+    pub name: String,
+    pub card_type: CardType,
+    pub owner_id: PlayerId,
+    pub controller_id: PlayerId,
+    // Other card properties...
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="state-replication-with-bevy_replicon"><a class="header" href="#state-replication-with-bevy_replicon">State Replication with bevy_replicon</a></h3>
+<p>The game state is replicated using bevy_replicon, with careful control over what information is sent to each client:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Register components for replication
+fn register_replication(app: &amp;mut App) {
+    app.register_component_replication::&lt;Player&gt;()
+        .register_component_replication::&lt;Card&gt;()
+        // Only replicate public zone information
+        .register_component_replication::&lt;Graveyard&gt;()
+        .register_component_replication::&lt;CommandZone&gt;()
+        // Register resources
+        .register_resource_replication::&lt;GameState&gt;()
+        .register_resource_replication::&lt;Battlefield&gt;();
+        
+    // Hand and Library require special handling for hidden information
+    app.register_component_replication_with::&lt;Hand&gt;(
+        RuleFns {
+            serialize: |hand, ctx| {
+                // Only send full hand to the owner
+                if ctx.client_id == ctx.client_entity_map.get_client_id(hand.owner_entity) {
+                    bincode::serialize(hand).ok()
+                } else {
+                    // Send only card count to other players
+                    bincode::serialize(&amp;HandInfo { card_count: hand.cards.len() }).ok()
+                }
+            },
+            deserialize: |bytes, ctx| {
+                // Handle deserialization based on what was sent
+                // ...
+            },
+        }
+    );
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="state-synchronization"><a class="header" href="#state-synchronization">State Synchronization</a></h3>
+<p>The game state is synchronized across clients using a combination of techniques:</p>
+<ol>
+<li><strong>Initial State</strong>: Full game state is sent when a client connects</li>
+<li><strong>Incremental Updates</strong>: Only changes are sent during gameplay</li>
+<li><strong>Command-Based</strong>: Player actions are sent as commands, not direct state changes</li>
+<li><strong>Authoritative Server</strong>: Server validates all commands before applying them</li>
+</ol>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// System to process player commands
+fn process_player_commands(
+    mut commands: Commands,
+    mut command_events: EventReader&lt;PlayerCommand&gt;,
+    game_state: Res&lt;GameState&gt;,
+    players: Query&lt;(Entity, &amp;Player)&gt;,
+    // Other queries...
+) {
+    for command in command_events.read() {
+        // Validate the command
+        if !validate_command(command, &amp;game_state, &amp;players) {
+            continue;
+        }
+        
+        // Apply the command to the game state
+        match command {
+            PlayerCommand::PlayCard { player_id, card_id, targets } =&gt; {
+                // Handle playing a card
+                // ...
+            },
+            PlayerCommand::ActivateAbility { permanent_id, ability_index, targets } =&gt; {
+                // Handle activating an ability
+                // ...
+            },
+            // Other command types...
+        }
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="state-snapshots"><a class="header" href="#state-snapshots">State Snapshots</a></h2>
+<p>In networked games, maintaining state consistency despite network disruptions is essential. Our MTG Commander implementation employs a comprehensive state rollback system for resilience:</p>
+<ul>
+<li><strong>Complete documentation:</strong> <a href="rollback.html">State Rollback and Recovery</a></li>
+<li>Deterministic replay of game actions after network disruptions</li>
+<li>State snapshots at critical game moments</li>
+<li>RNG state preservation for consistent randomized outcomes</li>
+<li>Client-side prediction for responsive gameplay</li>
+</ul>
+<p>The rollback system integrates tightly with our deterministic RNG implementation to ensure that random events like shuffling and coin flips remain consistent across network boundaries, even during recovery from disruptions.</p>
+<h2 id="deterministic-state-updates"><a class="header" href="#deterministic-state-updates">Deterministic State Updates</a></h2>
+<p>Maintaining state consistency is critical for a fair game experience. Several mechanisms ensure consistency:</p>
+<ol>
+<li><strong>Sequence Numbers</strong>: Commands are processed in order</li>
+<li><strong>State Verification</strong>: Periodic full state verification</li>
+<li><strong>Reconciliation</strong>: Automatic correction of client-server state differences</li>
+<li><strong>Rollback</strong>: Ability to roll back to a previous state if needed</li>
+</ol>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// System to verify client state consistency
+fn verify_client_state_consistency(
+    mut server: ResMut&lt;RepliconServer&gt;,
+    game_state: Res&lt;GameState&gt;,
+    connected_clients: Res&lt;ConnectedClients&gt;,
+) {
+    // Periodically send state verification requests
+    if game_state.turn_number % 5 == 0 &amp;&amp; game_state.current_phase == Phase::Upkeep {
+        for client_id in connected_clients.clients.keys() {
+            // Generate state verification data
+            let verification_data = generate_state_verification_data(&amp;game_state);
+            
+            // Send verification request
+            server.send_message(*client_id, StateVerificationRequest {
+                turn: game_state.turn_number,
+                verification_data,
+            });
+        }
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="hidden-information"><a class="header" href="#hidden-information">Hidden Information</a></h2>
+<p>In networked games, it's important to protect sensitive information from unauthorized access. MTG Commander implements several mechanisms to hide sensitive information:</p>
+<ol>
+<li><strong>Encryption</strong>: All network communications are encrypted</li>
+<li><strong>Access Control</strong>: Only authorized clients can access certain game state information</li>
+<li><strong>Data Masking</strong>: Sensitive data is masked or obfuscated</li>
+</ol>
+<h2 id="rollbacks-and-recovery"><a class="header" href="#rollbacks-and-recovery">Rollbacks and Recovery</a></h2>
+<p>In networked games, maintaining state consistency despite network disruptions is essential. Our MTG Commander implementation employs a comprehensive state rollback system for resilience:</p>
+<ul>
+<li><strong>Complete documentation:</strong> <a href="rollback.html">State Rollback and Recovery</a></li>
+<li>Deterministic replay of game actions after network disruptions</li>
+<li>State snapshots at critical game moments</li>
+<li>RNG state preservation for consistent randomized outcomes</li>
+<li>Client-side prediction for responsive gameplay</li>
+</ul>
+<p>The rollback system integrates tightly with our deterministic RNG implementation to ensure that random events like shuffling and coin flips remain consistent across network boundaries, even during recovery from disruptions.</p>
+<h2 id="testing-game-state-management"><a class="header" href="#testing-game-state-management">Testing Game State Management</a></h2>
+<p>Testing the game state management system involves:</p>
+<ol>
+<li><strong>Unit Tests</strong>: Testing individual state components and transitions</li>
+<li><strong>Integration Tests</strong>: Testing state synchronization across multiple clients</li>
+<li><strong>Stress Tests</strong>: Testing state management under high load or poor network conditions</li>
+</ol>
+<p>For detailed testing procedures, see the <a href="../../testing/integration/strategy.html">Integration Testing Strategy</a>.</p>
+<h2 id="future-enhancements"><a class="header" href="#future-enhancements">Future Enhancements</a></h2>
+<p>Planned improvements to game state management include:</p>
+<ul>
+<li>Enhanced state compression for better network performance</li>
+<li>More sophisticated state reconciliation algorithms</li>
+<li>Support for game state snapshots and replays</li>
+<li>Improved handling of complex card interactions</li>
+</ul>
+<hr />
+<p>This documentation will be updated as game state management evolves.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../../networking/gameplay/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../../../networking/gameplay/state/rollback.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../../networking/gameplay/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../../../networking/gameplay/state/rollback.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <!-- Livereload script (if served using the cli tool) -->
+        <script>
+            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
+            const socket = new WebSocket(wsAddress);
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="../../../ace.js"></script>
+        <script src="../../../editor.js"></script>
+        <script src="../../../mode-rust.js"></script>
+        <script src="../../../theme-dawn.js"></script>
+        <script src="../../../theme-tomorrow_night.js"></script>
+
+        <script src="../../../elasticlunr.min.js"></script>
+        <script src="../../../mark.min.js"></script>
+        <script src="../../../searcher.js"></script>
+
+        <script src="../../../clipboard.min.js"></script>
+        <script src="../../../highlight.js"></script>
+        <script src="../../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../../../theme/js/custom.js"></script>
+
+
+    </div>
+    </body>
+</html>
