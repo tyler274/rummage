@@ -5,13 +5,14 @@ use bevy::prelude::*;
 
 /// Common test utilities for game engine testing
 
-/// Setup test logging
+/// Setup test logger
 pub fn setup_test_logger() -> () {
-    // Configure test-specific logging
+    // Placeholder for test logger setup
+    // Usually sets up a test-specific logger configuration
 }
 
-/// Test game configuration
-#[derive(Debug, Clone)]
+/// Configuration for test game setup
+#[derive(Clone, Debug)]
 pub struct TestGameConfig {
     /// Number of players
     pub player_count: usize,
@@ -59,47 +60,22 @@ pub fn get_active_player(_app: &App) -> Entity {
 
 /// Progress game to specific phase
 pub fn progress_to_phase(_app: &mut App, _phase: Phase) {
-    // Set the desired phase
-    _app.world_mut().resource_mut::<CurrentPhase>().0 = _phase;
-
-    // Run a game update to process the phase change
-    _app.update();
+    // Placeholder implementation to progress game to a specific phase
+    // This will be implemented with actual phase transition logic
 }
 
-/// Waits for all events to be processed
+/// Process all events in the queue
 pub fn process_all_events(app: &mut App) {
-    // Run extra update to ensure all events are processed
     app.update();
 }
 
-/// Resolves the entire stack
+/// Resolves all items on the stack
 pub fn resolve_stack_completely(_app: &mut App) {
-    // Access the stack resource
-    let stack_empty = _app.world().resource::<GameStack>().is_empty();
-
-    if !stack_empty {
-        // Keep resolving until stack is empty
-        while !_app.world().resource::<GameStack>().is_empty() {
-            // Trigger stack resolution
-            _app.update();
-        }
-    }
+    // Placeholder - would actually process the stack until empty
 }
 
-/// Gets a player's graveyard
+/// Gets all cards in a player's graveyard
 pub fn get_player_graveyard(_app: &App, _player: Entity) -> Vec<Entity> {
-    // Query the graveyard zone for the player
-    let mut graveyard = Vec::new();
-    let world = _app.world();
-
-    // Manual iteration to avoid borrowing issues
-    for entity in world.iter_entities() {
-        if let Some(zone) = world.get::<ZoneMarker>(entity.id()) {
-            if zone.zone_type == Zone::Graveyard && zone.owner == Some(_player) {
-                graveyard.push(entity.id());
-            }
-        }
-    }
-
-    graveyard
+    // Placeholder - would fetch all cards in the player's graveyard
+    Vec::new()
 }

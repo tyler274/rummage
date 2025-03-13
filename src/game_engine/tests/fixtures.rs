@@ -1,5 +1,9 @@
+use crate::card::Card;
+use crate::deck::Deck;
 use crate::game_engine::phase::{ActivePlayer, CurrentPhase, MAIN1};
 use crate::game_engine::zones::{Zone, ZoneMarker};
+use crate::mana::ManaPool;
+use crate::player::components::Player;
 use bevy::prelude::*;
 
 /// Test fixtures for the game engine
@@ -24,26 +28,34 @@ pub fn create_test_players(app: &mut App, count: usize) -> Vec<Entity> {
 
 /// Creates a test player entity
 pub fn create_test_player(app: &mut App, _name: &str, _position: Vec2) -> Entity {
-    // Create a player entity
-    let player = app
-        .world_mut()
+    let entity = app
+        .world()
         .spawn((
-            // Add player name component
-            Name::new(_name.to_string()),
-            // Add position component for layout
+            Player {
+                name: _name.to_string(),
+                life: 40,
+                mana_pool: ManaPool::default(),
+                cards: Vec::<Card>::new(),
+                deck: None,
+                player_index: 0,
+            },
             Transform::from_translation(Vec3::new(_position.x, _position.y, 0.0)),
-            // Additional player components would go here
         ))
         .id();
 
-    // Return the entity ID
-    player
+    entity
 }
 
-/// Creates a test card entity
-pub fn create_test_card(app: &mut App) -> Entity {
-    // Create a card entity
-    app.world_mut().spawn_empty().id()
+/// Creates multiple test cards in the app world
+pub fn create_test_cards(app: &mut App, count: usize) -> Vec<Entity> {
+    let mut entities = Vec::new();
+
+    for _i in 0..count {
+        let entity = app.world().spawn(()).id();
+        entities.push(entity);
+    }
+
+    entities
 }
 
 /// Setup function for four player game
@@ -55,7 +67,7 @@ pub fn setup_four_player_game(app: &mut App) -> [Entity; 4] {
 /// Creates a player with a test deck
 pub fn setup_test_player_with_card(app: &mut App) -> (Entity, Entity) {
     let player = create_test_players(app, 1)[0];
-    let card = create_test_card(app);
+    let card = create_test_cards(app, 1)[0];
 
     (player, card)
 }
@@ -75,7 +87,7 @@ pub fn setup_full_game(_app: &mut App) {
     for player in players.iter() {
         // Each player gets a starting deck
         for _ in 0..40 {
-            let card = create_test_card(_app);
+            let card = create_test_cards(_app, 1)[0];
             // Add card to player's library
             _app.world_mut().entity_mut(card).insert(ZoneMarker {
                 zone_type: Zone::Library,
@@ -182,7 +194,7 @@ pub fn setup_test_scenario(_app: &mut App, _scenario: &str) {
             // Each player gets 2 basic creatures
             for player in players.iter() {
                 for _ in 0..2 {
-                    let card = create_test_card(_app);
+                    let card = create_test_cards(_app, 1)[0];
                     // Add card to battlefield
                     _app.world_mut().entity_mut(card).insert(ZoneMarker {
                         zone_type: Zone::Battlefield,
@@ -201,4 +213,16 @@ pub fn setup_test_scenario(_app: &mut App, _scenario: &str) {
             setup_four_player_game(_app);
         }
     }
+}
+
+/// Sets up a basic test environment
+pub fn setup_test_environment(app: &mut App) {
+    // Register all required components and resources
+    app.init_resource::<Time>();
+
+    // Initialize other required systems and resources
+    // ...
+
+    // Run startup systems
+    app.update();
 }
