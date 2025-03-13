@@ -106,11 +106,15 @@ pub fn spawn_battlefield_zone(
 pub fn organize_battlefield_cards(
     battlefield_query: Query<(&BattlefieldZone, &Children)>,
     mut card_query: Query<(&mut Transform, Option<&PermanentType>)>,
-    windows: Query<&Window>,
+    windows: Query<&Window, With<bevy::window::PrimaryWindow>>,
 ) {
-    let window = windows.single();
-    let window_width = window.width();
-    let window_height = window.height();
+    // Safely get the window dimensions, defaulting to reasonable values if not available
+    let (window_width, window_height) = if let Ok(window) = windows.get_single() {
+        (window.width(), window.height())
+    } else {
+        // Default to standard HD resolution if window can't be queried
+        (1920.0, 1080.0)
+    };
 
     for (battlefield, children) in battlefield_query.iter() {
         let card_count = children.len();

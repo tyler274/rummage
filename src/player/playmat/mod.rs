@@ -48,6 +48,42 @@ pub struct ZoneFocusState {
     pub focused_zone_owner: Option<Entity>,
 }
 
+/// Resource to track playmat debug state to prevent log spam
+#[derive(Resource, Default)]
+pub struct PlaymatDebugState {
+    /// A hash of the last logged state for each player to prevent duplicate logs
+    last_logged_states: std::collections::HashMap<Entity, u64>,
+}
+
+impl PlaymatDebugState {
+    /// Check if the state has changed and should be logged
+    fn should_log(
+        &mut self,
+        player_entity: Entity,
+        player_name: &str,
+        player_index: usize,
+    ) -> bool {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        // Create a simple hash from the player state
+        let mut hasher = DefaultHasher::new();
+        player_name.hash(&mut hasher);
+        player_index.hash(&mut hasher);
+        let new_hash = hasher.finish();
+
+        // Check if state has changed
+        let state_changed = self.last_logged_states.get(&player_entity) != Some(&new_hash);
+
+        // Update state if changed
+        if state_changed {
+            self.last_logged_states.insert(player_entity, new_hash);
+        }
+
+        state_changed
+    }
+}
+
 /// Resource for tracking the current game phase for UI layout purposes
 #[derive(Resource, Default)]
 pub struct CurrentPhaseLayout {
@@ -98,6 +134,7 @@ impl Plugin for PlayerPlaymatPlugin {
     fn build(&self, app: &mut App) {
         info!("Initializing PlayerPlaymatPlugin");
         app.init_resource::<ZoneFocusState>()
+            .init_resource::<PlaymatDebugState>()
             .init_resource::<CurrentPhaseLayout>()
             .configure_sets(Update, PlaymatSystemSet::Core)
             // UI interaction systems - keep in Update for responsiveness
@@ -133,16 +170,19 @@ pub fn highlight_active_zones(
     player_query: Query<(Entity, &Player)>,
     playmat_query: Query<(&PlayerPlaymat, Entity)>,
     mut zone_query: Query<(&PlaymatZone, &mut Visibility)>,
+    mut debug_state: ResMut<PlaymatDebugState>,
 ) {
     for (player_entity, player) in player_query.iter() {
         // Find the playmat for this player
         for (playmat, _playmat_entity) in playmat_query.iter() {
             if playmat.player_id == player_entity {
-                // This is the player's playmat
-                debug!(
-                    "Processing playmat for player {} (index: {})",
-                    player.name, playmat.player_index
-                );
+                // This is the player's playmat - only log if state has changed
+                if debug_state.should_log(player_entity, &player.name, playmat.player_index) {
+                    debug!(
+                        "Processing playmat for player {} (index: {})",
+                        player.name, playmat.player_index
+                    );
+                }
 
                 // Process each zone
                 for (zone, mut visibility) in zone_query.iter_mut() {
@@ -254,10 +294,15 @@ pub fn handle_zone_interactions(
 pub fn adapt_zone_sizes(
     zone_focus: Res<ZoneFocusState>,
     mut query: Query<(&PlaymatZone, &mut Transform)>,
-    windows: Query<&Window>,
+    windows: Query<&Window, With<bevy::window::PrimaryWindow>>,
 ) {
-    let window = windows.single();
-    let is_landscape = window.width() > window.height();
+    // Safely get window aspect ratio, defaulting to landscape if not available
+    let is_landscape = if let Ok(window) = windows.get_single() {
+        window.width() > window.height()
+    } else {
+        // Default to landscape mode if window can't be queried
+        true
+    };
 
     // Only adjust sizes if a zone is focused
     if let Some(focused_zone_type) = zone_focus.focused_zone_type {

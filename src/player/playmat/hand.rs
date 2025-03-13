@@ -89,10 +89,15 @@ pub fn spawn_hand_zone(
 pub fn arrange_cards_in_hand(
     mut query: Query<(&HandZone, &Children, &mut Transform)>,
     mut card_query: Query<&mut Transform, Without<HandZone>>,
-    windows: Query<&Window>,
+    windows: Query<&Window, With<bevy::window::PrimaryWindow>>,
 ) {
-    let window = windows.single();
-    let window_width = window.width();
+    // Safely get window width, defaulting to a reasonable value if not available
+    let window_width = if let Ok(window) = windows.get_single() {
+        window.width()
+    } else {
+        // Default to standard widescreen width if window can't be queried
+        1920.0
+    };
 
     for (hand, children, _hand_transform) in query.iter_mut() {
         let card_count = children.len() as u32;
