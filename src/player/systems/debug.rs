@@ -1,4 +1,5 @@
 use crate::player::components::Player;
+use crate::player::resources::PlayerConfig;
 use bevy::prelude::*;
 use std::collections::HashMap;
 
@@ -17,7 +18,11 @@ pub fn debug_draw_player_positions(
     mut gizmos: Gizmos,
     player_query: Query<(Entity, &Transform, &Player)>,
     mut position_tracker: ResMut<PlayerPositionTracker>,
+    player_config: Option<Res<PlayerConfig>>,
 ) {
+    // Use default config if none exists
+    let config = player_config.map(|c| c.clone()).unwrap_or_default();
+
     for (entity, transform, player) in player_query.iter() {
         // Draw a circle at the player position
         let position = transform.translation.truncate();
@@ -45,9 +50,9 @@ pub fn debug_draw_player_positions(
 
         // Draw a line from the player to where their cards would spawn
         let card_y_pos = if player.player_index == 0 {
-            -700.0 // Doubled from -350.0 to match new Player 1 card position
+            config.player1_card_y_offset // Use config value instead of hard-coded value
         } else {
-            700.0 // Doubled from 350.0 to match new Player 2 card position
+            config.player2_card_y_offset // Use config value instead of hard-coded value
         };
 
         let card_center = Vec2::new(position.x, card_y_pos);

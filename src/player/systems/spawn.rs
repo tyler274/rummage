@@ -96,10 +96,10 @@ pub fn spawn_players(
             // Position cards near their player's position
             if player_index == 0 {
                 // Player 1 cards at bottom
-                card_position.y = -700.0; // Doubled from -350.0 to -700.0 for extreme spacing
+                card_position.y = config.player1_card_y_offset; // Use config value instead of hard-coded value
             } else if player_index == 1 {
                 // Player 2 cards at top
-                card_position.y = 700.0; // Doubled from 350.0 to 700.0 for extreme spacing
+                card_position.y = config.player2_card_y_offset; // Use config value instead of hard-coded value
             }
 
             spawn_visual_cards(
