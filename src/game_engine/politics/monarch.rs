@@ -1,9 +1,9 @@
-use bevy::prelude::*;
+use super::MonarchChangedEvent;
+use super::PoliticsSystem;
+use crate::game_engine::Phase;
 use crate::game_engine::state::GameState;
 use crate::game_engine::turns::TurnManager;
-use crate::game_engine::{Phase, EndingStep};
-use super::PoliticsSystem;
-use super::MonarchChangedEvent;
+use bevy::prelude::*;
 
 /// System to handle the monarch mechanic
 pub fn monarch_system(
@@ -18,21 +18,21 @@ pub fn monarch_system(
     for event in monarch_events.read() {
         // Store previous monarch for reference (even though currently unused)
         let _previous = politics.monarch;
-        
+
         // Update the current monarch
         politics.monarch = Some(event.new_monarch);
-        
+
         // TODO: Implement card draw trigger for when a player becomes monarch
         // This would be implemented when cards with monarch effects are added
-        
+
         info!("Player {:?} has become the monarch", event.new_monarch);
-        
+
         // Process previous_monarch for monarchy change effects
         if let Some(prev) = event.previous_monarch {
             // Handle any effects that trigger when losing monarch status
             info!("Player {:?} is no longer the monarch", prev);
         }
-        
+
         // Track source of monarchy change for future effects
         if let Some(source) = event.source {
             // Would be used for effects that care about how monarchy changed
@@ -47,11 +47,11 @@ pub fn monarch_system(
             Phase::Ending(_) => true,
             _ => false,
         };
-        
+
         if monarch == turn_manager.active_player && is_end_phase {
             // TODO: Implement card draw effect through a proper event system
             info!("Monarch draws a card at end of turn");
-            
+
             // This will be replaced with an actual card draw event when implemented
             // commands.spawn(DrawCardEvent { player: monarch, amount: 1 });
         }

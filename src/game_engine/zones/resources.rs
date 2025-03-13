@@ -1,40 +1,8 @@
-use crate::game_engine::PrioritySystem;
-use crate::game_engine::stack::{Effect, GameStack};
-use crate::player::Player;
+use super::types::Zone;
 use bevy::prelude::*;
 use std::collections::HashMap;
-use std::fmt::Debug;
 
-/// The zones in MTG
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Zone {
-    Library,
-    Hand,
-    Battlefield,
-    Graveyard,
-    Stack,
-    Exile,
-    CommandZone,
-}
-
-/// Event fired when a card changes zones
-#[derive(Event, Debug)]
-pub struct ZoneChangeEvent {
-    /// The card that changed zones
-    pub card: Entity,
-    /// The player who owns the card
-    pub owner: Entity,
-    /// The source zone
-    pub source: Zone,
-    /// The destination zone
-    pub destination: Zone,
-    /// Whether the card was visible in the source zone
-    pub was_visible: bool,
-    /// Whether the card is visible in the destination zone
-    pub is_visible: bool,
-}
-
-/// Manages the game zones and card movements
+/// Resource managing game zones and card movement between zones
 #[derive(Resource)]
 pub struct ZoneManager {
     /// Libraries (decks) for each player
@@ -74,11 +42,11 @@ impl Default for ZoneManager {
 }
 
 impl ZoneManager {
-    /// Initialize a new player's zones
+    /// Initialize zones for a new player
     pub fn init_player_zones(&mut self, player: Entity) {
-        self.libraries.insert(player, Vec::new());
-        self.hands.insert(player, Vec::new());
-        self.graveyards.insert(player, Vec::new());
+        self.libraries.entry(player).or_insert_with(Vec::new);
+        self.hands.entry(player).or_insert_with(Vec::new);
+        self.graveyards.entry(player).or_insert_with(Vec::new);
     }
 
     /// Move a card from one zone to another
@@ -89,39 +57,39 @@ impl ZoneManager {
         source: Zone,
         destination: Zone,
     ) -> bool {
-        // First, remove the card from its source zone
+        // Remove from source zone
         let removed = match source {
             Zone::Library => self.remove_from_library(card, owner),
             Zone::Hand => self.remove_from_hand(card, owner),
             Zone::Battlefield => self.remove_from_battlefield(card),
             Zone::Graveyard => self.remove_from_graveyard(card, owner),
-            Zone::Stack => true, // Stack is handled by the GameStack resource
             Zone::Exile => self.remove_from_exile(card),
             Zone::CommandZone => self.remove_from_command_zone(card),
+            Zone::Stack => true, // Stack items are removed when they resolve
         };
 
         if !removed {
             return false;
         }
 
-        // Then, add the card to its destination zone
+        // Add to destination zone
         match destination {
             Zone::Library => self.add_to_library(owner, card),
             Zone::Hand => self.add_to_hand(owner, card),
             Zone::Battlefield => self.add_to_battlefield(owner, card),
             Zone::Graveyard => self.add_to_graveyard(owner, card),
-            Zone::Stack => {} // Stack is handled by the GameStack resource
             Zone::Exile => self.add_to_exile(card),
             Zone::CommandZone => self.add_to_command_zone(card),
+            Zone::Stack => {} // Stack items are added via GameStack
         }
 
-        // Update the card's zone mapping
+        // Update zone mapping
         self.card_zone_map.insert(card, destination);
 
         true
     }
 
-    /// Add a card to the library
+    /// Add a card to a player's library
     pub fn add_to_library(&mut self, owner: Entity, card: Entity) {
         if let Some(library) = self.libraries.get_mut(&owner) {
             library.push(card);
@@ -129,19 +97,18 @@ impl ZoneManager {
         }
     }
 
-    /// Remove a card from the library
+    /// Remove a card from a player's library
     pub fn remove_from_library(&mut self, card: Entity, owner: Entity) -> bool {
         if let Some(library) = self.libraries.get_mut(&owner) {
             if let Some(index) = library.iter().position(|&c| c == card) {
                 library.remove(index);
-                self.card_zone_map.remove(&card);
                 return true;
             }
         }
         false
     }
 
-    /// Add a card to the hand
+    /// Add a card to a player's hand
     pub fn add_to_hand(&mut self, owner: Entity, card: Entity) {
         if let Some(hand) = self.hands.get_mut(&owner) {
             hand.push(card);
@@ -149,12 +116,11 @@ impl ZoneManager {
         }
     }
 
-    /// Remove a card from the hand
+    /// Remove a card from a player's hand
     pub fn remove_from_hand(&mut self, card: Entity, owner: Entity) -> bool {
         if let Some(hand) = self.hands.get_mut(&owner) {
             if let Some(index) = hand.iter().position(|&c| c == card) {
                 hand.remove(index);
-                self.card_zone_map.remove(&card);
                 return true;
             }
         }
@@ -171,13 +137,12 @@ impl ZoneManager {
     pub fn remove_from_battlefield(&mut self, card: Entity) -> bool {
         if let Some(index) = self.battlefield.iter().position(|&c| c == card) {
             self.battlefield.remove(index);
-            self.card_zone_map.remove(&card);
             return true;
         }
         false
     }
 
-    /// Add a card to the graveyard
+    /// Add a card to a player's graveyard
     pub fn add_to_graveyard(&mut self, owner: Entity, card: Entity) {
         if let Some(graveyard) = self.graveyards.get_mut(&owner) {
             graveyard.push(card);
@@ -185,12 +150,11 @@ impl ZoneManager {
         }
     }
 
-    /// Remove a card from the graveyard
+    /// Remove a card from a player's graveyard
     pub fn remove_from_graveyard(&mut self, card: Entity, owner: Entity) -> bool {
         if let Some(graveyard) = self.graveyards.get_mut(&owner) {
             if let Some(index) = graveyard.iter().position(|&c| c == card) {
                 graveyard.remove(index);
-                self.card_zone_map.remove(&card);
                 return true;
             }
         }
@@ -207,7 +171,6 @@ impl ZoneManager {
     fn remove_from_exile(&mut self, card: Entity) -> bool {
         if let Some(index) = self.exile.iter().position(|&c| c == card) {
             self.exile.remove(index);
-            self.card_zone_map.remove(&card);
             return true;
         }
         false
@@ -223,115 +186,53 @@ impl ZoneManager {
     fn remove_from_command_zone(&mut self, card: Entity) -> bool {
         if let Some(index) = self.command_zone.iter().position(|&c| c == card) {
             self.command_zone.remove(index);
-            self.card_zone_map.remove(&card);
             return true;
         }
         false
     }
 
-    /// Get a player's zone by type
+    /// Get a player's zone (library, hand, or graveyard)
     pub fn get_player_zone(&self, player: Entity, zone: Zone) -> Option<&Vec<Entity>> {
         match zone {
             Zone::Library => self.libraries.get(&player),
             Zone::Hand => self.hands.get(&player),
             Zone::Graveyard => self.graveyards.get(&player),
-            _ => None,
+            Zone::Battlefield => Some(&self.battlefield),
+            Zone::Exile => Some(&self.exile),
+            Zone::CommandZone => Some(&self.command_zone),
+            Zone::Stack => None, // Stack is managed separately
         }
     }
 
-    /// Get the owner of a card
+    /// Get the owner of a card (if found in a player zone)
     pub fn get_card_owner(&self, card: Entity) -> Option<Entity> {
-        // Check each player's zones to find the card
-        for (player, library) in &self.libraries {
+        // Check libraries
+        for (&player, library) in &self.libraries {
             if library.contains(&card) {
-                return Some(*player);
+                return Some(player);
             }
         }
 
-        for (player, hand) in &self.hands {
+        // Check hands
+        for (&player, hand) in &self.hands {
             if hand.contains(&card) {
-                return Some(*player);
+                return Some(player);
             }
         }
 
-        for (player, graveyard) in &self.graveyards {
+        // Check graveyards
+        for (&player, graveyard) in &self.graveyards {
             if graveyard.contains(&card) {
-                return Some(*player);
+                return Some(player);
             }
         }
 
-        // For shared zones, we need another way to track ownership
+        // For shared zones, we'd need to track ownership separately
         None
     }
 
     /// Get the current zone of a card
     pub fn get_card_zone(&self, card: Entity) -> Option<Zone> {
         self.card_zone_map.get(&card).copied()
-    }
-}
-
-/// Event for when a permanent enters the battlefield
-#[derive(Event)]
-pub struct EntersBattlefieldEvent {
-    /// The permanent that entered the battlefield
-    pub permanent: Entity,
-    /// The owner of the permanent
-    pub owner: Entity,
-    /// Whether the permanent entered tapped
-    pub enters_tapped: bool,
-}
-
-/// System to handle permanents entering the battlefield
-pub fn handle_enters_battlefield(
-    _commands: Commands,
-    mut enter_events: EventReader<EntersBattlefieldEvent>,
-    turn_manager: Option<Res<crate::game_engine::turns::TurnManager>>,
-) {
-    for event in enter_events.read() {
-        let _permanent = event.permanent;
-
-        // Handle "enters the battlefield tapped" effects
-        if event.enters_tapped {
-            // Add a Tapped component to the entity
-            // This would be implemented in a more complete system
-        }
-
-        // Only check summoning sickness if turn manager is available
-        if let Some(_turn_manager) = turn_manager.as_ref() {
-            // If it entered during the controller's first turn or later, it doesn't have summoning sickness
-            // This logic would be expanded in a complete implementation
-        }
-    }
-}
-
-/// Setup the zone manager
-pub fn setup_zone_manager(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
-    let mut zone_manager = ZoneManager::default();
-
-    // Initialize zones for each player
-    for player in player_query.iter() {
-        zone_manager.init_player_zones(player);
-    }
-
-    commands.insert_resource(zone_manager);
-}
-
-/// Register zone-related systems with the app
-pub fn register_zone_systems(app: &mut App) {
-    app.add_event::<ZoneChangeEvent>()
-        .add_event::<EntersBattlefieldEvent>()
-        .add_systems(Startup, setup_zone_manager)
-        .add_systems(Update, handle_enters_battlefield)
-        .add_systems(Update, handle_zone_changes);
-}
-
-pub fn handle_zone_changes(
-    _commands: Commands,
-    mut zone_manager: ResMut<ZoneManager>,
-    mut events: EventReader<ZoneChangeEvent>,
-    _turn_manager: Option<Res<crate::game_engine::turns::TurnManager>>,
-) {
-    for event in events.read() {
-        zone_manager.move_card(event.card, event.owner, event.source, event.destination);
     }
 }

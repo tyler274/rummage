@@ -4,9 +4,9 @@
 mod actions;
 pub mod combat;
 pub mod commander;
-mod phase;
+pub mod phase;
 pub mod politics;
-mod priority;
+pub mod priority;
 mod stack;
 pub mod state;
 pub mod turns;
@@ -121,7 +121,7 @@ impl Plugin for GameEnginePlugin {
         );
 
         // Register zone systems
-        register_zone_systems(app);
+        zones::register_zone_systems(app);
         // Register turn systems
         register_turn_systems(app);
         // Register commander systems
