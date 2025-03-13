@@ -1,195 +1,297 @@
 # Testing Overview
 
-## Introduction to Rummage Testing
+## Introduction
 
-The Rummage MTG Commander game engine employs a comprehensive testing strategy to ensure correctness, reliability, and performance. Our testing approach combines traditional software testing methodologies with specialized techniques for game engines, card game rules, and networked multiplayer interactions.
+The Rummage MTG Commander game engine employs a comprehensive testing strategy to ensure correctness, reliability, and performance across all game mechanics and user interactions.
 
-## Testing Philosophy
+## Core Testing Principles
 
-Our testing philosophy is built on these core principles:
+Our testing framework is built on these foundational principles:
 
-1. **Rules Correctness**: The MTG rule system is complex and precise. Our tests ensure that all rules are implemented correctly according to official MTG Comprehensive Rules.
+| Principle | Description | Implementation |
+|-----------|-------------|----------------|
+| **Rules Correctness** | All MTG rule implementations must be verified against official rules | Rule-specific test cases with expected outcomes |
+| **Determinism** | Game states must evolve consistently with the same inputs | Seeded random tests, state verification |
+| **Cross-Platform Consistency** | Behavior and visuals must be identical across platforms | Visual differential testing, behavior validation |
+| **Performance** | System must maintain responsiveness under various conditions | Load testing, benchmarking key operations |
+| **Accessibility** | Features must work with assistive technologies | Screen reader testing, keyboard navigation tests |
 
-2. **Determinism**: Game states must evolve deterministically based on inputs, especially critical for networked play.
+## Testing Pyramid
 
-3. **Cross-Platform Consistency**: Visual and behavioral consistency across different platforms and hardware.
+We implement a comprehensive testing pyramid with increasing scope and integration:
 
-4. **Performance Under Load**: Responsiveness and stability under various game conditions and player counts.
-
-5. **Accessibility**: Testing of accessibility features and compatibility with assistive technologies.
-
-## Testing Layers
-
-Our testing strategy is organized in layers, from isolated component testing to comprehensive end-to-end validation:
+```
+    ┌─────────────┐
+    │   E2E &     │
+    │  Visual     │
+    │  Testing    │
+    ├─────────────┤
+    │Integration  │
+    │  Testing    │
+    ├─────────────┤
+    │    Unit     │
+    │  Testing    │
+    └─────────────┘
+```
 
 ### [Unit Testing](unit_testing.md)
 
-Unit tests verify individual game engine components in isolation:
-
-- Rules implementations for specific card mechanics
-- Game state transitions and validations
-- Core game engine primitives
+Unit tests verify isolated components, focusing on correctness at the smallest levels:
 
 ```rust
 #[test]
 fn test_mana_cost_parsing() {
-    let cost = ManaCost::from_string("{2}{W}{W}");
+    // Given a mana cost string
+    let cost_string = "{2}{W}{W}";
+    
+    // When we parse it
+    let cost = ManaCost::from_string(cost_string);
+    
+    // Then the components should be correctly parsed
     assert_eq!(cost.generic, 2);
     assert_eq!(cost.white, 2);
     assert_eq!(cost.blue, 0);
-    // ...and so on
+    assert_eq!(cost.black, 0);
+    assert_eq!(cost.red, 0);
+    assert_eq!(cost.green, 0);
 }
 ```
+
+Key unit test categories:
+- **Component Tests**: Verify individual ECS components
+- **System Tests**: Test isolated ECS systems
+- **Rules Tests**: Verify specific rule implementations
+- **Parser Tests**: Test card text and effect parsing
+- **Utility Tests**: Validate helper functions
 
 ### [Integration Testing](integration_testing.md)
 
-Integration tests verify interactions between multiple game systems:
-
-- Card effects interacting with game state
-- Multi-step game processes (casting spells, combat)
-- Player action sequences
+Integration tests verify interactions between multiple systems:
 
 ```rust
 #[test]
-fn test_creature_cast_and_etb_trigger() {
-    // Test casting a creature and its ETB trigger resolving properly
+fn test_creature_etb_effects() {
+    // Create a test world with necessary systems
+    let mut app = App::new();
+    app.add_plugins(TestingPlugins)
+       .add_systems(Update, (cast_spell_system, resolve_etb_effects));
+    
+    // Set up a creature card with an ETB effect
+    let creature_entity = setup_test_creature(&mut app, "Mulldrifter");
+    
+    // Cast the creature spell
+    let player = setup_test_player(&mut app);
+    app.world.send_event(CastSpellEvent {
+        card: creature_entity,
+        controller: player,
+        targets: Vec::new(),
+    });
+    
+    // Run systems to resolve the spell
+    app.update();
+    
+    // Verify the ETB effect (draw 2 cards) occurred
+    let player_data = app.world.get::<PlayerData>(player).unwrap();
+    assert_eq!(player_data.hand.len(), 2, "Player should have drawn 2 cards from ETB effect");
 }
 ```
+
+Key integration test categories:
+- **Card Interactions**: Test how cards affect each other
+- **Game State Transitions**: Verify phase and turn changes
+- **Player Actions**: Test sequences of player actions
+- **Zone Transitions**: Validate card movement between zones
 
 ### [End-to-End Testing](end_to_end_testing.md)
 
-End-to-end tests validate complete game scenarios:
-
-- Full game simulations from start to finish
-- Player interaction sequences
-- Complex game state evolutions
+E2E tests validate complete game scenarios from start to finish:
 
 ```rust
 #[test]
-fn test_four_player_commander_game() {
-    // Simulate a complete 4-player game with predefined actions
+fn test_basic_commander_game() {
+    // Initialize complete game environment
+    let mut app = App::new();
+    app.add_plugins(CommanderGamePlugins);
+    
+    // Set up two players with predefined decks
+    let player1 = setup_player(&mut app, "Player1", "Atraxa_Deck.json");
+    let player2 = setup_player(&mut app, "Player2", "Muldrotha_Deck.json");
+    
+    // Define automated sequence of player actions
+    let game_script = GameScript::from_file("test_scripts/basic_commander_game.yaml");
+    app.insert_resource(game_script);
+    
+    // Run game simulation
+    while !app.world.resource::<GameState>().is_game_over {
+        app.update();
+    }
+    
+    // Verify final game state
+    let game_result = app.world.resource::<GameResult>();
+    assert_eq!(game_result.winner, Some(player1), "Player 1 should win this scripted game");
+    assert_eq!(game_result.turn_count, 12, "Game should last 12 turns");
 }
 ```
 
-### [Visual Differential Testing](visual_differential_testing.md)
+Key E2E test categories:
+- **Game Completion**: Test full games through to completion
+- **Scenario Tests**: Verify specific game scenarios
+- **Multiplayer Tests**: Validate multiplayer dynamics
+- **Tournament Rules**: Test format-specific rules
 
-Visual differential testing ensures consistent rendering across platforms:
+### [Visual Testing](visual_differential_testing.md)
 
-- Card rendering consistency
-- UI component appearance
-- Animation smoothness and correctness
-- Visual feedback for game actions
+Visual tests ensure consistent UI representation across platforms:
 
 ```rust
 #[test]
-fn test_card_rendering_across_platforms() {
-    // Compare card rendering against reference images
+fn test_card_rendering() {
+    // Initialize app with rendering plugins
+    let mut app = App::new();
+    app.add_plugins(RenderingTestPlugins);
+    
+    // Create test card
+    let card = setup_test_card(&mut app, "Lightning Bolt");
+    
+    // Render card to texture
+    let texture = render_card_to_texture(&mut app, card);
+    
+    // Compare with reference image with tolerance for slight rendering differences
+    let reference = load_reference_image("cards/lightning_bolt.png");
+    let comparison = compare_images(texture, reference);
+    
+    assert!(comparison.similarity > 0.99, 
+           "Card rendering should match reference image");
 }
 ```
+
+Key visual test categories:
+- **Card Rendering**: Verify cards appear correctly
+- **UI Components**: Test UI element appearance
+- **Animations**: Validate animation correctness
+- **Layout Tests**: Ensure responsive layouts work
 
 ### [Performance Testing](performance_testing.md)
 
-Performance tests measure and validate system responsiveness:
-
-- Frame rate under varying conditions
-- Memory usage during extended play
-- Network bandwidth requirements
-- Load time benchmarks
+Performance tests measure system responsiveness and resource usage:
 
 ```rust
 #[test]
-fn benchmark_large_board_state_performance() {
-    // Measure FPS and memory usage with 100+ permanents
+fn benchmark_large_board_state() {
+    use criterion::{black_box, criterion_group, criterion_main, Criterion};
+    
+    fn benchmark(c: &mut Criterion) {
+        c.bench_function("100 card battlefield update", |b| {
+            b.iter_batched(
+                || setup_large_battlefield(100), // Setup 100 cards
+                |mut app| {
+                    // Measure the time for a complete update cycle
+                    black_box(app.update());
+                },
+                criterion::BatchSize::SmallInput,
+            )
+        });
+    }
+    
+    criterion_group!(benches, benchmark);
+    criterion_main!(benches);
 }
 ```
 
-## Specialized Testing Areas
+Key performance test areas:
+- **Frame Rate**: Measure FPS under varying load
+- **Memory Usage**: Track memory consumption
+- **CPU Utilization**: Monitor processing requirements
+- **Load Scaling**: Test with increasing entity counts
+
+## Specialized Testing Systems
 
 ### Network Testing
 
-Network testing focuses on multiplayer functionality:
+Our network testing verifies the integrity of multiplayer functionality:
 
-- Synchronization of game state
-- Latency handling and prediction
-- Reconnection and state recovery
-- Deterministic RNG across clients
+- **State Synchronization**: Verify game states remain synchronized across clients
+- **Latency Simulation**: Test behavior under varying network conditions
+- **Disconnection Handling**: Validate reconnection and recovery
+- **Deterministic RNG**: Ensure random events produce identical results across clients
 
-### Rules Compliance Testing
+### Rules Compliance
 
-Rules testing verifies correct implementation of MTG rules:
+Rules compliance testing verifies correct implementation of MTG rules:
 
-- Comprehensive rules coverage
-- Corner cases and rule interactions
-- Official rulings validation
-- Tournament scenario validation
-
-### Accessibility Testing
-
-Accessibility testing ensures the game is usable by all players:
-
-- Screen reader compatibility
-- Keyboard navigation
-- Color contrast requirements
-- Text scaling support
+- **Comprehensive Rules Coverage**: Tests mapped to official rules
+- **Judge Corner Cases**: Special scenarios from tournament rulings
+- **Rule Interactions**: Tests for complex rule interactions
+- **Oracle Text Tests**: Validation against official card rulings
 
 ## Testing Infrastructure
 
-Our testing infrastructure includes:
-
 ### [CI/CD Pipeline](ci_cd_pipeline.md)
 
-Continuous integration ensures consistent quality:
+Our continuous integration pipeline ensures ongoing quality:
 
-- Automated test execution on each commit
-- Nightly full test suite runs
-- Performance regression detection
-- Cross-platform test matrix
+1. **Pull Request Checks**:
+   - Fast unit tests run on every PR
+   - Linting and formatting checks
+   - Build verification
+
+2. **Main Branch Validation**:
+   - Full test suite runs
+   - Performance regression checks
+   - Cross-platform test matrix
+
+3. **Release Preparation**:
+   - Complete E2E and integration tests
+   - Visual regression testing
+   - Performance benchmarking
 
 ### Test Data Management
 
-Structured test data supports comprehensive testing:
+We maintain structured test datasets:
 
-- Card database with test metadata
-- Predefined game scenarios
-- Recorded game sessions
-- Performance benchmarking datasets
+- **Card Database**: Test card definitions with expected behaviors
+- **Game Scenarios**: Predefined game states for testing
+- **Board States**: Complex battlefield configurations
+- **Performance Benchmarks**: Standard scenarios for consistency
 
-## Contributing to Testing
+## Contributing Tests
 
-We welcome contributions to our testing suite:
+To contribute new tests:
 
-1. **Adding Tests**: Particularly for new cards, mechanics, or edge cases
-2. **Test Infrastructure**: Improvements to testing tools and frameworks
-3. **Bug Reproduction**: Tests that reproduce reported issues
-4. **Performance Benchmarks**: New performance test scenarios
+1. **Identify Testing Gap**: Find an untested feature or edge case
+2. **Determine Test Level**: Choose appropriate test level (unit, integration, etc.)
+3. **Write Test**: Follow test pattern for that level
+4. **Verify Coverage**: Ensure test increases coverage metrics
+5. **Submit PR**: Include tests with implementation changes
 
-See our [contribution guidelines](../CONTRIBUTING.md) for more details on how to contribute.
+See our [contribution guidelines](../CONTRIBUTING.md) for more details.
 
-## Test-Driven Development
+## Testing Best Practices
 
-Rummage uses test-driven development for new features:
+Follow these best practices when writing tests for Rummage:
 
-1. Write tests that define expected behavior
-2. Implement the feature to pass the tests
-3. Refactor while maintaining test coverage
-4. Document both implementation and tests
+1. **Test Focused Behavior**: Each test should verify one specific behavior
+2. **Use Clear Assertions**: Make assertion messages descriptive 
+3. **Create Minimal Setup**: Use only what's necessary for the test
+4. **Use Test Abstractions**: Share setup code between similar tests
+5. **Test Edge Cases**: Include boundary conditions and error scenarios
 
-## Testing Metrics
+## Testing Metrics and Goals
 
-We track the following testing metrics:
+We track these key metrics for our test suite:
 
-- **Code Coverage**: Aiming for >90% code coverage
-- **Rules Coverage**: Percentage of MTG rules with dedicated tests
-- **Visual Coverage**: Percentage of UI components with visual tests
-- **Performance Baselines**: Key performance indicators and thresholds
+- **Code Coverage**: Maintain >90% coverage for core game logic
+- **Rules Coverage**: Document percentage of MTG rules with dedicated tests
+- **Test Performance**: Keep test suite execution time under 5 minutes
+- **Failure Rate**: Maintain <1% flaky test ratio
 
 ## Next Steps
 
-To dive deeper into our testing approach, explore these sections:
+To dive deeper into our testing approach:
 
-- [Unit Testing](unit_testing.md) - For component-level testing
-- [Integration Testing](integration_testing.md) - For system interaction testing
-- [End-to-End Testing](end_to_end_testing.md) - For complete gameplay testing
-- [Visual Differential Testing](visual_differential_testing.md) - For rendering consistency
-- [Performance Testing](performance_testing.md) - For system performance validation
-- [CI/CD Pipeline](ci_cd_pipeline.md) - For automated testing infrastructure 
+- [Unit Testing](unit_testing.md): Component-level testing guides
+- [Integration Testing](integration_testing.md): System interaction testing
+- [End-to-End Testing](end_to_end_testing.md): Complete gameplay testing
+- [Visual Testing](visual_differential_testing.md): UI consistency testing
+- [Performance Testing](performance_testing.md): System performance validation
+- [CI/CD Pipeline](ci_cd_pipeline.md): Automated testing infrastructure 

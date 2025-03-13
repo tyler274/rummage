@@ -1,105 +1,114 @@
-# Integration with Core Rules
+# Commander Format: Core Rules Integration
 
-This document explains how the Commander format rules integrate with and extend the core Magic: The Gathering rules in Rummage.
+This document explains how the Commander format extends and modifies the core Magic: The Gathering rules in Rummage.
 
-## Table of Contents
+## Architecture Overview
 
-1. [Overview](#overview)
-2. [Extension Points](#extension-points)
-3. [Commander-Specific Overrides](#commander-specific-overrides)
-4. [Implementation Approach](#implementation-approach)
-5. [Example: Commander Zone Implementation](#example-commander-zone-implementation)
+Commander builds upon the format-agnostic core MTG rules through a layered architecture:
 
-## Overview
+```
+┌───────────────────────────────────────────┐
+│             Commander Format              │
+│  ┌─────────────┐  ┌────────────────────┐  │
+│  │  Commander  │  │ Commander-Specific │  │
+│  │  Components │  │      Systems       │  │
+│  └─────────────┘  └────────────────────┘  │
+├───────────────────────────────────────────┤
+│            Extension Points               │
+│  ┌─────────────┐  ┌────────────────────┐  │
+│  │   Plugin    │  │     Override       │  │
+│  │ Registration│  │    Mechanisms      │  │
+│  └─────────────┘  └────────────────────┘  │
+├───────────────────────────────────────────┤
+│              Core MTG Rules               │
+│  ┌─────────────┐  ┌────────────────────┐  │
+│  │    Base     │  │       Base         │  │
+│  │  Components │  │      Systems       │  │
+│  └─────────────┘  └────────────────────┘  │
+└───────────────────────────────────────────┘
+```
 
-The Commander format builds upon the foundation of the core MTG rules, adding format-specific mechanics and modifications. In Rummage, we've designed the core rules to be format-agnostic, with well-defined extension points that allow format-specific plugins to modify or extend the base behavior.
+This approach provides:
+- **Clean Separation**: Format-specific code doesn't contaminate core rules
+- **Reusability**: Core rules can support multiple formats
+- **Testability**: Format mechanics can be tested in isolation
+- **Extensibility**: New formats can be added without modifying core code
 
-This approach allows us to:
-- Maintain a clean separation between core rules and format-specific rules
-- Reuse common game logic across different formats
-- Easily add support for new formats in the future
-- Test format-specific rules independently from core rules
+## Core Extension Points
 
-## Extension Points
+Commander leverages these primary extension mechanisms:
 
-The core rules provide several extension points that the Commander format leverages:
+### 1. Zone Management Extensions
 
-### Zone Extensions
-
-The core rules define the standard MTG zones (library, hand, battlefield, graveyard, stack, and exile), while the Commander format adds:
-- Enhanced Command Zone functionality
-- Commander-specific zone transfer rules
-- Zone visibility rules for multiplayer
-
-### Game Setup Extensions
-
-The core rules provide a basic game setup process, which Commander extends with:
-- Starting life total of 40 (instead of 20)
-- Commander placement in the Command Zone
-- Color identity validation for deck construction
-- Support for Partner Commanders
-
-### Turn Structure Extensions
-
-The core turn structure remains unchanged, but Commander adds:
-- Multiplayer turn order management
-- Commander-specific triggered abilities
-- Political mechanics for multiplayer interaction
-
-### State-Based Action Extensions
-
-Commander adds several state-based actions:
-- Commander damage tracking (21 damage from a single commander causes a loss)
-- Commander zone transfer options when a commander would change zones
-- Commander tax calculation
-
-## Commander-Specific Overrides
-
-In some cases, the Commander format needs to override core behavior:
-
-### Life Total
+The core rules provide standard zones (library, hand, battlefield, etc.) which Commander extends with:
 
 ```rust
-// Core implementation
-#[derive(Resource)]
-struct GameSetupConfig {
-    starting_life: i32,
-    // Other configuration
+// Core system handles standard zones
+fn core_zone_setup(mut commands: Commands) {
+    // Create standard zones for each player
+    // ...
 }
 
-// Commander override
-fn commander_setup_system(mut config: ResMut<GameSetupConfig>) {
-    config.starting_life = 40;
+// Commander plugin adds Command Zone support
+fn commander_zone_setup(mut commands: Commands, players: Query<Entity, With<Player>>) {
+    for player in &players {
+        // Create Command Zone for this player
+        commands.spawn((
+            ZoneType::Command,
+            ZoneContents::default(),
+            BelongsToPlayer(player),
+            CommandZone,
+            Name::new("Command Zone"),
+        ));
+    }
 }
 ```
 
-### Commander Zone Transfers
+### 2. Game Setup Extensions
+
+Commander modifies initial game parameters:
 
 ```rust
-// Core implementation handles standard zone transfers
-fn zone_change_system(/* ... */) {
-    // Standard zone transfer logic
+// Commander plugin modifies core game setup
+fn commander_game_setup(
+    mut game_config: ResMut<GameConfig>,
+    mut commands: Commands,
+    players: Query<Entity, With<Player>>,
+) {
+    // Set Commander-specific configuration
+    game_config.starting_life = 40;
+    game_config.mulligan_rule = MulliganRule::CommanderFreeFirst;
+    
+    // Add Commander-specific components to players
+    for player in &players {
+        commands.entity(player).insert(CommanderDamageTracker::default());
+    }
+}
+```
+
+### 3. Rules System Extensions
+
+Commander adds new rule checks and state-based actions:
+
+```rust
+// Core state-based action system
+fn core_state_based_actions(/* ... */) {
+    // Check creature death, player life, etc.
+    // ...
 }
 
-// Commander adds special handling for commanders
-fn commander_zone_change_system(
-    mut commands: Commands,
-    mut zone_change_events: EventReader<ZoneChangeEvent>,
-    commanders: Query<Entity, With<Commander>>,
-    mut player_choices: EventWriter<PlayerChoiceEvent>,
+// Commander adds additional state-based actions
+fn commander_state_based_actions(
+    players: Query<(Entity, &CommanderDamageTracker)>,
+    mut game_events: EventWriter<GameEvent>,
 ) {
-    for event in zone_change_events.iter() {
-        if commanders.contains(event.entity) {
-            // If a commander would go to graveyard/exile/hand/library
-            if matches!(event.to, ZoneType::Graveyard | ZoneType::Exile | ZoneType::Hand | ZoneType::Library) {
-                // Offer choice to move to command zone instead
-                player_choices.send(PlayerChoiceEvent {
-                    player: get_controller(event.entity),
-                    choices: vec![
-                        Choice::MoveToZone(event.entity, event.to),
-                        Choice::MoveToCommandZone(event.entity),
-                    ],
-                    // Other event data
+    // Check commander damage thresholds
+    for (player, damage_tracker) in &players {
+        for (&commander, &damage) in damage_tracker.damage_taken.iter() {
+            if damage >= 21 {
+                game_events.send(GameEvent::PlayerLost {
+                    player,
+                    reason: LossReason::CommanderDamage(commander),
                 });
             }
         }
@@ -107,102 +116,219 @@ fn commander_zone_change_system(
 }
 ```
 
-## Implementation Approach
+## Commander-Specific Overrides
 
-Rummage implements the Commander format as a Bevy plugin that extends the core rules:
+In certain cases, Commander needs to override default core behavior:
+
+### Zone Transfer Overrides
+
+When a commander would change zones, Commander rules allow for special handling:
+
+```rust
+// Commander zone transfer override
+fn commander_zone_transfer_system(
+    mut zone_events: EventReader<ZoneChangeEvent>,
+    mut player_choices: EventWriter<PlayerChoiceEvent>,
+    commanders: Query<Entity, With<Commander>>,
+) {
+    for event in zone_events.iter() {
+        // If this is a commander...
+        if commanders.contains(event.entity) {
+            // And it's moving to graveyard/exile/hand/library...
+            if matches!(event.to, 
+                ZoneType::Graveyard | ZoneType::Exile | 
+                ZoneType::Hand | ZoneType::Library
+            ) {
+                // Give the controller a choice
+                player_choices.send(PlayerChoiceEvent {
+                    player: get_controller(event.entity),
+                    choice_type: ChoiceType::CommanderZoneChange {
+                        commander: event.entity,
+                        default_zone: event.to,
+                        command_zone: ZoneType::Command,
+                    },
+                    timeout: Duration::from_secs(30),
+                });
+            }
+        }
+    }
+}
+```
+
+### Commander Tax Implementation
+
+The Commander format adds tax to casting commanders from the Command Zone:
+
+```rust
+// Commander casting cost modification
+fn apply_commander_tax(
+    mut cast_events: EventReader<PrepareTocastEvent>,
+    mut cast_costs: Query<&mut ManaCost>,
+    commanders: Query<&Commander>,
+    zones: Query<(&ZoneContents, &ZoneType)>,
+) {
+    for event in cast_events.iter() {
+        // Check if this is a commander being cast
+        if let Ok(commander) = commanders.get(event.card) {
+            // Check if it's being cast from Command Zone
+            if is_in_command_zone(event.card, &zones) {
+                // Apply commander tax
+                if let Ok(mut cost) = cast_costs.get_mut(event.card) {
+                    let tax_amount = commander.cast_count * 2;
+                    cost.add_generic(tax_amount);
+                }
+            }
+        }
+    }
+}
+```
+
+## Plugin Implementation
+
+The Commander format is implemented as a Bevy plugin:
 
 ```rust
 pub struct CommanderPlugin;
 
 impl Plugin for CommanderPlugin {
     fn build(&self, app: &mut App) {
-        app
-            // Register Commander-specific components
-            .register_type::<Commander>()
-            .register_type::<CommanderDamage>()
-            .register_type::<CommanderTax>()
-            
-            // Add Commander-specific resources
-            .init_resource::<CommanderConfig>()
-            
-            // Add Commander-specific systems
-            .add_systems(Startup, commander_setup)
-            .add_systems(
-                Update,
-                (
-                    commander_zone_change_system,
-                    commander_damage_system,
-                    commander_tax_system,
-                )
-            )
-            
-            // Add Commander-specific events
-            .add_event::<CommanderCastEvent>()
-            .add_event::<CommanderDamageEvent>();
+        // Register Commander-specific components
+        app.register_type::<Commander>()
+           .register_type::<CommanderDamageTracker>()
+           .register_type::<CommanderTax>();
+        
+        // Add Commander-specific resources
+        app.init_resource::<CommanderConfig>();
+        
+        // Add Commander setup systems
+        app.add_systems(Startup, (
+            commander_game_setup,
+            commander_zone_setup,
+        ));
+        
+        // Add Commander-specific gameplay systems
+        app.add_systems(PreUpdate, (
+            commander_zone_transfer_system
+                .after(core_zone_change_system),
+        ));
+        
+        // Add Commander rule enforcement systems
+        app.add_systems(Update, (
+            apply_commander_tax,
+            track_commander_damage,
+            commander_state_based_actions
+                .after(core_state_based_actions),
+        ));
+        
+        // Add Commander-specific events
+        app.add_event::<CommanderCastEvent>()
+           .add_event::<CommanderDamageEvent>();
     }
 }
 ```
 
-This plugin approach allows the Commander format to be cleanly layered on top of the core rules without modifying them directly.
+## Example: Commander Zone Integration
 
-## Example: Commander Zone Implementation
-
-The Command Zone is a key element of the Commander format. Here's how it's implemented in Rummage:
+The Command Zone is central to the Commander format. Here's its complete implementation:
 
 ```rust
 // Commander-specific components
-#[derive(Component)]
-struct Commander {
-    player: Entity,
-    times_cast: u32,
+#[derive(Component, Reflect)]
+pub struct Commander {
+    pub owner: Entity,
+    pub cast_count: u32,
 }
 
-#[derive(Component)]
-struct CommanderTax(u32);
+#[derive(Component, Reflect)]
+pub struct CommandZone;
 
-// Command Zone entity creation
-fn setup_command_zone(mut commands: Commands, players: Query<Entity, With<Player>>) {
-    for player_entity in &players {
-        // Create Command Zone entity for each player
+// Command Zone setup
+fn commander_zone_setup(
+    mut commands: Commands, 
+    players: Query<Entity, With<Player>>,
+    mut decks: Query<(&mut DeckList, &BelongsToPlayer)>,
+) {
+    // Create Command Zone for each player
+    for player in &players {
+        // Create Command Zone entity
         let command_zone = commands.spawn((
             ZoneType::Command,
-            ZoneContents { entities: Vec::new() },
-            BelongsToPlayer(player_entity),
+            ZoneContents::default(),
+            BelongsToPlayer(player),
             CommandZone,
+            Name::new("Command Zone"),
         )).id();
         
-        // Link player to their Command Zone
-        commands.entity(player_entity).insert(OwnedZone {
-            zone_type: ZoneType::Command,
-            zone_entity: command_zone,
-        });
-    }
-}
-
-// Commander casting with tax
-fn cast_commander_system(
-    mut commands: Commands,
-    mut cast_events: EventReader<CastSpellEvent>,
-    mut commanders: Query<(Entity, &mut Commander)>,
-    command_zones: Query<&ZoneContents, With<CommandZone>>,
-) {
-    for event in cast_events.iter() {
-        if let Ok((commander_entity, mut commander)) = commanders.get_mut(event.card) {
-            // Increase times cast counter
-            commander.times_cast += 1;
-            
-            // Calculate and apply Commander tax
-            let tax = (commander.times_cast - 1) * 2;
-            commands.entity(commander_entity).insert(AdditionalCost(tax));
-            
-            // Other commander casting logic
+        // Find player's deck and locate commander
+        if let Some((mut deck_list, _)) = decks
+            .iter_mut()
+            .find(|(_, belongs_to)| belongs_to.0 == player) 
+        {
+            // Extract commander(s) from deck
+            if let Some(commander_card) = deck_list.extract_commander() {
+                // Spawn commander entity
+                let commander_entity = commands.spawn((
+                    Card::from_definition(commander_card),
+                    Commander { 
+                        owner: player,
+                        cast_count: 0,
+                    },
+                    InZone(ZoneType::Command),
+                )).id();
+                
+                // Add commander to command zone
+                commands.entity(command_zone)
+                    .update_component(|mut contents: Mut<ZoneContents>| {
+                        contents.entities.push(commander_entity);
+                    });
+            }
         }
     }
 }
 ```
 
-This implementation demonstrates how Commander-specific mechanics are built on top of the core rules while maintaining a clean separation of concerns.
+## Testing Integration
 
----
+Commander integration testing focuses on verifying that format-specific rules correctly interact with core systems:
 
-For more details on specific Commander mechanics, see the [Commander Format Overview](overview/index.md) and related sections. 
+```rust
+#[test]
+fn test_commander_zone_transfer() {
+    // Setup test environment with both core and commander plugins
+    let mut app = App::new();
+    app.add_plugins(CoreRulesPlugin)
+       .add_plugins(CommanderPlugin);
+    
+    // Setup test commander and zones
+    let (player, commander) = setup_test_commander(&mut app);
+    
+    // Test that commander can move to command zone instead of graveyard
+    app.world.send_event(ZoneChangeEvent {
+        entity: commander,
+        from: ZoneType::Battlefield,
+        to: ZoneType::Graveyard,
+    });
+    
+    // Handle player choice to move to command zone
+    resolve_commander_zone_choice(&mut app, player, commander, ZoneType::Command);
+    
+    // Verify commander is in command zone
+    let zone = get_entity_zone(&app, commander);
+    assert_eq!(zone, ZoneType::Command, "Commander should be in Command Zone");
+}
+```
+
+## Conclusion
+
+The Commander format implementation builds upon the core MTG rules through a clean plugin architecture that:
+
+1. **Extends** base functionality with Commander-specific features
+2. **Overrides** certain behaviors to match Commander rules
+3. **Adds** new components and systems unique to Commander
+
+This approach maintains the integrity of the core rules while enabling the unique gameplay experience of the Commander format.
+
+For detailed information on specific Commander mechanics, see:
+- [Commander Damage](combat/commander_damage.md)
+- [Color Identity](player_mechanics/color_identity.md)
+- [Command Zone](zones/command_zone.md) 

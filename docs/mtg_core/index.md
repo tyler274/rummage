@@ -1,138 +1,150 @@
 # MTG Core Rules
 
-This section contains documentation about the core Magic: The Gathering rules implementation in Rummage. These are the fundamental rules that apply to all MTG formats, not just Commander.
+This section documents the implementation of fundamental Magic: The Gathering rules in the Rummage engine.
 
 ## Overview
 
-The MTG Core Rules module implements the foundational game mechanics defined in the [Magic: The Gathering Comprehensive Rules](https://magic.wizards.com/en/rules). These include:
+The MTG Core Rules module implements the foundational mechanics defined in the [Magic: The Gathering Comprehensive Rules](https://magic.wizards.com/en/rules), forming the basis for all supported game formats. These include:
 
-- Basic game structure and turn progression
-- Card types and properties
-- Zones and zone transitions
-- Stack implementation and spell/ability resolution
+- Turn structure and phase sequence
+- Card types, characteristics, and properties
+- Game zones and zone transitions
+- Stack implementation and resolution mechanics
 - State-based actions
-- Combat mechanics
+- Combat system
 - Mana and casting costs
 
-## ECS Implementation Approach
+## Implementation Architecture
 
-Rummage uses Bevy's Entity Component System (ECS) architecture to implement these rules in a way that is both performant and flexible:
+Rummage implements MTG rules using Bevy's Entity Component System (ECS) architecture:
 
-- **Entities** represent game objects like cards, players, and game zones
-- **Components** store data about these entities (e.g., a card's power/toughness, a player's life total)
-- **Systems** implement the game logic that processes these components
-- **Events** communicate game state changes between systems
+| MTG Concept | ECS Representation |
+|-------------|-------------------|
+| Cards, permanents, players | Entities |
+| Card characteristics, states | Components |
+| Rules procedures, actions | Systems |
+| Game transitions, triggers | Events |
 
-This approach allows for a clean separation between game data and logic, making the implementation more maintainable and testable. For details on how we use ECS, see the [Entity Component System](../development/bevy_guide/ecs.md) guide.
+This architecture creates a clean separation between game data and logic, enabling:
+- Higher testability of individual game mechanics
+- Parallel processing of independent game systems
+- Easier extension for format-specific rules
+- Greater code modularity and maintainability
+
+For implementation details, see [ECS Implementation](ecs_implementation.md).
 
 ## Core Game Elements
 
-The following core elements are implemented according to the MTG Comprehensive Rules:
+### Turn Structure
 
-### Turn Structure and Phases
+MTG turns follow a fixed sequence of phases and steps:
 
-The standard MTG turn structure consists of the following phases, each with specific steps:
+1. **Beginning Phase**
+   - Untap: Active player untaps their permanents
+   - Upkeep: Triggers "at beginning of upkeep" abilities
+   - Draw: Active player draws a card
 
-1. Beginning Phase
-   - Untap Step
-   - Upkeep Step
-   - Draw Step
-2. Main Phase (Pre-Combat)
-3. Combat Phase
-   - Beginning of Combat Step
-   - Declare Attackers Step
-   - Declare Blockers Step
-   - Combat Damage Step
-   - End of Combat Step
-4. Main Phase (Post-Combat)
-5. Ending Phase
-   - End Step
-   - Cleanup Step
+2. **Pre-Combat Main Phase**
+   - Player may play lands and cast spells
 
-Each phase and step is represented in the ECS as a distinct game state, with systems that handle the transitions between them and the actions that occur during each.
+3. **Combat Phase**
+   - Beginning of Combat: Last chance for effects before attacks
+   - Declare Attackers: Active player declares attacking creatures
+   - Declare Blockers: Defending players assign blockers
+   - Combat Damage: Creatures deal damage
+   - End of Combat: Triggers "at end of combat" abilities
+
+4. **Post-Combat Main Phase**
+   - Player may play lands (if not done in first main phase) and cast spells
+
+5. **Ending Phase**
+   - End Step: Triggers "at beginning of end step" abilities
+   - Cleanup: Damage clears, "until end of turn" effects end
+
+Each phase transition is implemented as a state change, with systems that execute appropriate actions for each phase.
 
 ### Game Zones
 
-MTG has the following game zones, each with specific rules for how cards interact with them:
+MTG defines distinct zones where cards can exist:
 
-- Library
-- Hand
-- Battlefield
-- Graveyard
-- Stack
-- Exile
-- Command (primarily used in Commander format)
+| Zone | Description | Implementation |
+|------|-------------|----------------|
+| Library | Player's deck | Ordered collection, face-down |
+| Hand | Cards held by a player | Private collection |
+| Battlefield | Cards in play | Public collection with positioning |
+| Graveyard | Discarded/destroyed cards | Ordered collection |
+| Stack | Spells being cast, abilities being activated | LIFO data structure |
+| Exile | Cards removed from game | Public collection |
+| Command | Format-specific zone (e.g., Commanders) | Special collection |
 
-In our implementation, zones are entities with components that track their contained cards. Systems handle the movement of cards between zones according to the rules.
+Each zone is implemented as an entity with components that track contained cards. Zone transitions trigger specific events and state updates.
 
-### Card Types
+### Card Types and Characteristics
 
-The system implements all standard MTG card types:
+The engine supports all standard MTG card types:
 
-- Land
-- Creature
-- Artifact
-- Enchantment
-- Planeswalker
-- Instant
-- Sorcery
+- **Land**: Produces mana
+- **Creature**: Can attack and block
+- **Artifact**: Represents magical items
+- **Enchantment**: Ongoing magical effects
+- **Planeswalker**: Powerful ally with loyalty abilities
+- **Instant**: One-time effect at any time
+- **Sorcery**: One-time effect during main phase
 
-Cards are represented as entities with components that define their properties, abilities, and current state.
+Cards are represented as entities with components describing their characteristics (name, types, mana cost, etc.) and current state.
 
 ### Stack and Priority
 
-The stack is a fundamental MTG mechanic that determines the order in which spells and abilities resolve:
+The stack is MTG's core mechanic for resolving spells and abilities:
 
-- Players receive priority in turn order
-- The active player gets priority first
-- Spells and abilities use the stack (with exceptions like mana abilities)
-- The stack resolves in LIFO (Last In, First Out) order
+1. Active player receives priority first in each step/phase
+2. Players may cast spells/activate abilities when they have priority
+3. Spells/abilities go on the stack when cast/activated
+4. When all players pass priority consecutively, the top item on the stack resolves
+5. After resolution, active player receives priority again
 
-Our implementation uses a dedicated stack system that manages the ordering and resolution of spells and abilities, integrated with the priority system that determines which player can act.
+Our implementation uses a dedicated stack system integrated with a priority manager that tracks which player can act.
 
 ### State-Based Actions
 
-State-based actions are checks that the game performs whenever a player would receive priority, handling conditions such as:
+State-based actions are automatic game rules that check and apply whenever a player would receive priority:
 
-- Creatures with 0 or less toughness being put into graveyards
-- Players with 0 or less life losing the game
-- Auras without legal enchantment targets being put into graveyards
-- And many more
+- Creatures with toughness ≤ 0 are put into their owners' graveyards
+- Players with life ≤ 0 lose the game
+- Auras without legal targets are put into owners' graveyards
+- Legendary permanents with the same name are put into graveyards
+- And many more...
 
-State-based actions are implemented as systems that run at specific points in the game loop, checking for and applying these conditions.
+These are implemented as systems that run at specific points in the game loop to enforce rules consistency.
 
-## Implementation Details
+## Format Extensibility
 
-The core rules are implemented in a format-agnostic way to allow for:
+The core rules are implemented in a format-agnostic way to enable:
 
-1. Consistent behavior across different formats
-2. Extension points for format-specific rules
-3. Reuse of common game logic
+1. **Consistent Base Behavior**: All formats share the same fundamental mechanics
+2. **Extension Points**: Format-specific plugins can override or extend core behavior
+3. **Configuration**: Format-specific parameters (starting life, deck requirements, etc.)
 
-This modularity is achieved through Bevy's plugin system, which allows format-specific code to modify or extend the core behavior.
+For Commander-specific implementations that build upon these core rules, see the [Commander Format](../formats/commander/index.md) section.
 
-## Format Customization
+## Technical Components
 
-The format-specific rules (like those for Commander) build upon these core rules by:
+The core rules implementation includes these key technical components:
 
-1. Overriding certain behaviors where the format differs
-2. Adding new rules and mechanics specific to the format
-3. Adjusting starting parameters (life totals, deck construction rules, etc.)
+- **Turn Manager**: Controls phase/step progression
+- **Zone Manager**: Handles card movement between zones
+- **Stack Resolution Engine**: Manages spell/ability resolution
+- **State-Based Action Checker**: Enforces automatic game rules
+- **Combat Resolver**: Handles attack/block/damage processes
+- **Mana System**: Tracks and processes mana production/consumption
 
-## Connecting to Commander Format
+Each component is implemented as a Bevy plugin that adds relevant systems, components, and resources.
 
-The Commander format extends these core rules with specific additions and modifications:
+## Next Steps
 
-- The Command Zone becomes a central element of gameplay
-- Commander Tax is applied when casting your commander from the Command Zone
-- Starting life totals are increased to 40
-- Decks must adhere to Color Identity restrictions
-- Commander Damage tracking becomes relevant
-
-These extensions are implemented through additional components, systems, and events that interact with the core rule systems. The interface between core rules and format-specific rules is carefully designed to maintain consistency while allowing for format uniqueness.
-
-For the complete implementation of Commander-specific rules and mechanics, proceed to the [Commander Format](../formats/commander/index.md) section.
-
----
-
-Next: [Turn Structure](turn_structure/index.md) 
+- [Turn Structure](turn_structure/index.md): Detailed implementation of turn phases and steps
+- [Zones](zones/index.md): Implementation of game zones and zone transitions
+- [Stack](stack/index.md): Stack implementation and priority system
+- [State-Based Actions](state_actions/index.md): Implementation of automatic game rules
+- [Combat](combat/index.md): Combat phase implementation
+- [ECS Implementation](ecs_implementation.md): Technical details of the ECS approach 
