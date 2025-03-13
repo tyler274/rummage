@@ -51,6 +51,7 @@
   - [Integration Testing](testing/integration_testing.md)
   - [End-to-End Testing](testing/end_to_end_testing.md)
   - [Visual Differential Testing](testing/visual_differential_testing.md)
+    - [Visual Testing Guide](testing/visual_differential.md)
   - [Performance Testing](testing/performance_testing.md)
   - [CI/CD Pipeline](testing/ci_cd_pipeline.md)
 

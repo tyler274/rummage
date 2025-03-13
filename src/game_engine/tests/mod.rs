@@ -2,16 +2,24 @@
 pub mod assertions;
 pub mod common;
 pub mod fixtures;
-pub mod visual_diff;
 
 pub use assertions::*;
 pub use common::*;
 pub use fixtures::*;
-pub use visual_diff::{
-    ComparisonMethod, ComparisonResult, VisualTestConfig, VisualTestingPlugin,
-    capture_entity_rendering, compare_images, load_reference_image, save_difference_visualization,
-    save_reference_image, take_screenshot,
+
+// Re-export visual testing functionality
+pub use crate::game_engine::visual_testing::capture::{capture_entity_rendering, take_screenshot};
+pub use crate::game_engine::visual_testing::comparison::{
+    ComparisonResult, compare_images, save_difference_visualization,
 };
+pub use crate::game_engine::visual_testing::config::{
+    ComparisonMethod, VisualTestConfig, VisualTestingPlugin,
+};
+pub use crate::game_engine::visual_testing::fixtures::{
+    generate_reference_images, setup_animation_keyframe, setup_animation_test, setup_card_state,
+    setup_test_scene, setup_ui_state, setup_ui_test_scene, setup_visual_test_fixtures,
+};
+pub use crate::game_engine::visual_testing::utils::{load_reference_image, save_reference_image};
 
 /// Sets up a minimal test environment for game engine testing
 pub fn setup_test_environment(app: &mut bevy::app::App) {
@@ -31,13 +39,11 @@ pub fn setup_visual_test_environment(app: &mut bevy::app::App) {
     use bevy::prelude::*;
 
     app.add_plugins(MinimalPlugins)
-        .add_plugin(visual_diff::VisualTestingPlugin)
-        .add_systems(Startup, setup_visual_test_scene);
-}
-
-/// Sets up a visual test scene with standard elements
-fn setup_visual_test_scene() {
-    // Placeholder for visual test scene setup
+        .add_plugin(crate::game_engine::visual_testing::config::VisualTestingPlugin)
+        .add_systems(
+            Startup,
+            crate::game_engine::visual_testing::fixtures::setup_test_scene,
+        );
 }
 
 /// Test states for use in game engine testing

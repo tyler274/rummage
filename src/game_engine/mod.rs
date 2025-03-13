@@ -9,9 +9,9 @@ pub mod politics;
 pub mod priority;
 pub mod stack;
 pub mod state;
-// The tests module exists but is not used in the public API
-// pub mod tests;
+pub mod tests;
 pub mod turns;
+pub mod visual_testing;
 pub mod zones;
 
 // Re-export important types for easier access
