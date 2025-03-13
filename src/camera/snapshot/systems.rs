@@ -11,7 +11,14 @@ impl Plugin for CameraSnapshotPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SnapshotConfig>()
             .add_event::<SnapshotEvent>()
-            .add_systems(Update, (handle_snapshot_events, process_pending_snapshots));
+            .add_systems(
+                Update,
+                (
+                    handle_snapshot_events,
+                    process_pending_snapshots,
+                    check_snapshot_key_input,
+                ),
+            );
     }
 }
 
@@ -139,4 +146,28 @@ pub fn take_snapshot(
         description,
         include_debug: Some(true),
     });
+}
+
+/// System to check for snapshot key presses and take snapshots on demand
+pub fn check_snapshot_key_input(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut commands: Commands,
+    mut snapshot_events: EventWriter<SnapshotEvent>,
+    game_cameras: Query<Entity, With<GameCamera>>,
+) {
+    // Take a snapshot when F5 is pressed
+    if keyboard.just_pressed(KeyCode::F5) {
+        // Get the first game camera
+        if let Some(camera) = game_cameras.iter().next() {
+            info!("Taking manual debug snapshot (F5 pressed)");
+            take_snapshot(
+                &mut commands,
+                &mut snapshot_events,
+                Some(camera),
+                Some("manual_debug_snapshot".to_string()),
+            );
+        } else {
+            error!("No game camera found for manual snapshot");
+        }
+    }
 }

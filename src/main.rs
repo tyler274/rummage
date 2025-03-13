@@ -25,7 +25,7 @@ use deck::DeckPlugin;
 use drag::DragPlugin;
 use game_engine::GameEnginePlugin;
 use menu::{GameMenuState, MenuPlugin, state::StateTransitionContext};
-use player::{resources::PlayerConfig, spawn_players};
+use player::{PlayerPlugin, resources::PlayerConfig, spawn_players};
 use text::DebugConfig;
 
 // Plugin for the actual game systems
@@ -38,8 +38,9 @@ impl Plugin for GamePlugin {
             .add_plugins(DeckPlugin)
             .add_plugins(GameEnginePlugin)
             .add_plugins(text::TextPlugin)
+            .add_plugins(PlayerPlugin)
             .insert_resource(DebugConfig {
-                show_text_positions: false,
+                show_text_positions: true,
             })
             .insert_resource(CameraConfig::default())
             .insert_resource(CameraPanState::default())
