@@ -23,7 +23,7 @@ use deck::DeckPlugin;
 use drag::DragPlugin;
 use game_engine::GameEnginePlugin;
 use menu::{GameMenuState, MenuPlugin, state::StateTransitionContext};
-use player::spawn_hand;
+use player::{resources::PlayerConfig, spawn_players};
 use text::DebugConfig;
 
 // Plugin for the actual game systems
@@ -42,6 +42,11 @@ impl Plugin for GamePlugin {
             })
             .insert_resource(CameraConfig::default())
             .insert_resource(CameraPanState::default())
+            .insert_resource(PlayerConfig {
+                player_count: 2,        // Set up for two players
+                spawn_all_cards: false, // Only spawn cards for player 1
+                ..default()
+            })
             .add_systems(
                 OnEnter(GameMenuState::InGame),
                 (
@@ -64,8 +69,10 @@ fn setup_game(
     asset_server: Res<AssetServer>,
     game_cameras: Query<Entity, With<GameCamera>>,
     context: Res<StateTransitionContext>,
+    player_config: Res<PlayerConfig>,
 ) {
     info!("Setting up game environment...");
+    info!("Game engine initializing game engine resources...");
 
     // Skip camera setup if we're coming from the pause menu and already have a camera
     if context.from_pause_menu {
@@ -80,9 +87,9 @@ fn setup_game(
         info!("Setting up game camera...");
         setup_camera(&mut commands);
 
-        // Spawn the player's hand only for a new game
+        // Spawn the players using the new system
         info!("Spawning initial hand...");
-        spawn_hand(commands, asset_server, game_cameras);
+        spawn_players(commands, asset_server, game_cameras, Some(player_config));
     }
 
     info!("Game setup complete!");
