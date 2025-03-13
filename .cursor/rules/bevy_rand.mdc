@@ -1,3 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
 # bevy_rand Rules
 
 ## Version Requirements
