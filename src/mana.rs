@@ -151,9 +151,13 @@ bitflags! {
 /// This struct tracks both the colors present in the mana cost and
 /// the specific amounts of each type of mana required.
 ///
-#[derive(Component, Default, Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(
+    Component, Default, Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect,
+)]
+#[reflect(Serialize, Deserialize)]
 pub struct Mana {
     /// The colors present in this mana cost
+    #[reflect(ignore)]
     pub color: Color,
     /// Amount of white mana
     pub white: u64,

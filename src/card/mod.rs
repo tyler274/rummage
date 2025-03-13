@@ -10,6 +10,9 @@ pub mod red;
 pub mod text;
 pub mod white;
 
+// New module organization
+pub mod sets;
+
 // Internal modules
 mod builder;
 mod components;
@@ -35,16 +38,58 @@ use crate::mana::Mana;
 use crate::menu::GameMenuState;
 use bevy::prelude::*;
 
+/// Card rarity in Magic: The Gathering
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+pub enum Rarity {
+    Common,
+    Uncommon,
+    Rare,
+    MythicRare,
+    Special,
+    Bonus,
+    Promo,
+}
+
+impl From<&str> for Rarity {
+    fn from(s: &str) -> Self {
+        match s.to_lowercase().as_str() {
+            "common" => Rarity::Common,
+            "uncommon" => Rarity::Uncommon,
+            "rare" => Rarity::Rare,
+            "mythic" | "mythic rare" => Rarity::MythicRare,
+            "special" => Rarity::Special,
+            "bonus" => Rarity::Bonus,
+            "promo" => Rarity::Promo,
+            _ => Rarity::Common, // Default to common
+        }
+    }
+}
+
+/// Component that identifies which set a card belongs to
+#[derive(Component, Debug, Clone, PartialEq, Eq, Hash, Reflect)]
+pub struct CardSet {
+    /// Set code (e.g., "MID" for Innistrad: Midnight Hunt)
+    pub code: String,
+    /// Full name of the set
+    pub name: String,
+    /// Release date of the set
+    pub release_date: String,
+}
+
 /// Represents a Magic: The Gathering card with all its properties
-#[derive(Component, Debug, Clone)]
+#[derive(Component, Debug, Clone, Reflect)]
 pub struct Card {
     pub name: String,
+    #[reflect(ignore)]
     pub cost: Mana,
+    #[reflect(ignore)]
     pub types: CardTypes,
+    #[reflect(ignore)]
     pub card_details: CardDetails,
     pub rules_text: String,
     /// Keyword abilities the card has
     #[allow(dead_code)]
+    #[reflect(ignore)]
     pub keywords: KeywordAbilities,
 }
 
@@ -115,10 +160,20 @@ pub struct CardPlugin;
 
 impl Plugin for CardPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (handle_card_dragging, debug_render_text_positions)
-                .run_if(in_state(GameMenuState::InGame)),
-        );
+        app
+            // Register components for ECS queries
+            .register_type::<Card>()
+            .register_type::<CardSet>()
+            .register_type::<Rarity>()
+            // Initialize the card registry
+            .add_systems(Startup, sets::systems::init_card_registry)
+            // Register card when added
+            .add_systems(Update, sets::systems::register_card)
+            // Register systems
+            .add_systems(
+                Update,
+                (handle_card_dragging, debug_render_text_positions)
+                    .run_if(in_state(GameMenuState::InGame)),
+            );
     }
 }

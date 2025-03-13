@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
 /// Magic keyword abilities
-#[derive(Component, Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Component, Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq, Reflect)]
+#[reflect(Serialize, Deserialize)]
 pub struct KeywordAbilities {
     pub abilities: HashSet<KeywordAbility>,
     /// For abilities with values like "Protection from X" or "Ward X"
@@ -11,7 +12,8 @@ pub struct KeywordAbilities {
 }
 
 /// All keyword abilities in Magic: The Gathering
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
+#[reflect(Serialize, Deserialize)]
 pub enum KeywordAbility {
     // Evergreen keywords
     Deathtouch,

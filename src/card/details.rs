@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use super::types::CreatureType;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Reflect)]
+#[reflect(Serialize, Deserialize)]
 pub enum CardDetails {
     Creature(CreatureCard),
     Planeswalker { loyalty: i32 },
@@ -15,42 +16,55 @@ pub enum CardDetails {
     Other,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+impl Default for CardDetails {
+    fn default() -> Self {
+        CardDetails::Other
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Reflect)]
+#[reflect(Serialize, Deserialize)]
 pub struct SpellCard {
     pub spell_type: SpellType,
     pub targets: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Reflect)]
+#[reflect(Serialize, Deserialize)]
 pub enum SpellType {
     Instant,
     Sorcery,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Reflect)]
+#[reflect(Serialize, Deserialize)]
 pub struct EnchantmentCard {
     pub enchantment_type: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Reflect)]
+#[reflect(Serialize, Deserialize)]
 pub struct ArtifactCard {
     pub artifact_type: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Reflect)]
+#[reflect(Serialize, Deserialize)]
 pub struct LandCard {
     pub land_type: Option<String>,
     pub produces: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Reflect)]
+#[reflect(Serialize, Deserialize)]
 pub struct CreatureCard {
     pub power: i32,
     pub toughness: i32,
+    #[reflect(ignore)]
     pub creature_type: CreatureType,
 }
 
-#[derive(Component, Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Component, Default, Debug, Clone, PartialEq, Eq, Reflect)]
 pub struct CreatureOnField {
     pub power_modifier: i64,
     pub toughness_modifier: i64,
