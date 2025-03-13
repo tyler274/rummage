@@ -77,17 +77,17 @@ impl MTGClient for MockClient {
 
 #[allow(dead_code)]
 pub fn create_test_card() -> Card {
-    Card {
-        name: "Test Card".to_string(),
-        types: CardTypes::CREATURE,
-        cost: Mana::default(),
-        card_details: CardDetails::Creature(CreatureCard {
+    Card::new(
+        "Test Card",
+        Mana::default(),
+        CardTypes::CREATURE,
+        CardDetails::Creature(CreatureCard {
             power: 1,
             toughness: 1,
             creature_type: CreatureType::NONE,
         }),
-        rules_text: "Test rules text".to_string(),
-    }
+        "Test rules text",
+    )
 }
 
 #[allow(dead_code)]

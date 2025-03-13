@@ -742,13 +742,17 @@ pub fn convert_mtgjson_to_card(mtg_card: MTGJSONCard) -> Option<Card> {
         CardDetails::Other
     };
 
-    Some(Card {
-        name: mtg_card.name,
-        cost: mana_cost,
+    let rules_text = mtg_card.text.unwrap_or_default();
+    let name = mtg_card.name;
+    
+    // Use Card::new which will automatically parse keywords from rules text
+    Some(Card::new(
+        &name,
+        mana_cost,
         types,
         card_details,
-        rules_text: mtg_card.text.unwrap_or_default(),
-    })
+        &rules_text,
+    ))
 }
 
 /// Determines the card types from type strings
