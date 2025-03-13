@@ -154,23 +154,23 @@ fn spawn_visual_cards(
     // - Player 3 (left): vertical column, cards to the left side
     let (start_pos, card_direction) = match player_index % 4 {
         0 => (
-            Vec3::new(start_x, player_position.y, 0.0),
+            Vec3::new(start_x, player_position.y - 1200.0, 0.0),
             Vec3::new(spacing, 0.0, 0.0),
-        ), // bottom: cards in row
+        ), // bottom: cards in row, with vertical offset
         1 => (
-            Vec3::new(player_position.x + 1500.0, start_x, 0.0),
+            Vec3::new(player_position.x + 3000.0, start_x, 0.0),
             Vec3::new(0.0, spacing, 0.0),
-        ), // right: cards in column, additional horizontal offset
+        ), // right: cards in column, larger horizontal offset
         2 => (
-            Vec3::new(start_x, player_position.y, 0.0),
+            Vec3::new(start_x, player_position.y + 1200.0, 0.0),
             Vec3::new(spacing, 0.0, 0.0),
-        ), // top: cards in row
+        ), // top: cards in row, with vertical offset
         3 => (
-            Vec3::new(player_position.x - 1500.0, start_x, 0.0),
+            Vec3::new(player_position.x - 3000.0, start_x, 0.0),
             Vec3::new(0.0, spacing, 0.0),
-        ), // left: cards in column, additional horizontal offset
+        ), // left: cards in column, larger horizontal offset
         _ => (
-            Vec3::new(start_x, player_position.y, 0.0),
+            Vec3::new(start_x, player_position.y - 1200.0, 0.0),
             Vec3::new(spacing, 0.0, 0.0),
         ), // default
     };
