@@ -55,6 +55,7 @@ fn register_default_decks(_deck_registry: ResMut<DeckRegistry>) {
 
 // Get a collection of example cards that can be used to create a deck
 // This moves the functionality from src/card/mod.rs to here
+#[allow(dead_code)]
 pub fn get_example_cards(_owner: Entity) -> Vec<crate::card::Card> {
     let mut cards = Vec::new();
     cards.extend(crate::card::artifacts::get_artifact_cards());
@@ -66,11 +67,50 @@ pub fn get_example_cards(_owner: Entity) -> Vec<crate::card::Card> {
     cards
 }
 
+// Get unique cards for a player based on their player index
+// This ensures different players get different cards
+pub fn get_player_specific_cards(_owner: Entity, player_index: usize) -> Vec<crate::card::Card> {
+    let mut cards = Vec::new();
+
+    // Use different card subsets based on player index to ensure variety
+    if player_index % 2 == 0 {
+        // Even-indexed players (like Player 1) get artifact, black, and red cards
+        cards.extend(crate::card::artifacts::get_artifact_cards());
+        cards.extend(crate::card::black::get_black_cards());
+        cards.extend(crate::card::red::get_red_cards());
+    } else {
+        // Odd-indexed players (like Player 2) get blue, green, and white cards
+        cards.extend(crate::card::blue::get_blue_cards());
+        cards.extend(crate::card::green::get_green_cards());
+        cards.extend(crate::card::white::get_white_cards());
+    }
+
+    cards
+}
+
 // Return a shuffled deck of cards
+#[allow(dead_code)]
 pub fn get_shuffled_deck(owner: Entity) -> Deck {
     let cards = get_example_cards(owner);
 
     let mut deck = Deck::new("Example Deck".to_string(), DeckType::Standard, cards);
+
+    deck.shuffle();
+    deck
+}
+
+// Return a player-specific shuffled deck of cards
+pub fn get_player_shuffled_deck(
+    owner: Entity,
+    player_index: usize,
+    deck_name: Option<&str>,
+) -> Deck {
+    let cards = get_player_specific_cards(owner, player_index);
+
+    let name = deck_name
+        .unwrap_or(&format!("Player {} Deck", player_index + 1))
+        .to_string();
+    let mut deck = Deck::new(name, DeckType::Standard, cards);
 
     deck.shuffle();
     deck

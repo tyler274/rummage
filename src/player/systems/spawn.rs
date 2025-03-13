@@ -1,6 +1,6 @@
 use crate::camera::components::{AppLayer, GameCamera};
 use crate::card::{Card, CardDetails, Draggable};
-use crate::deck::{get_example_cards, get_shuffled_deck};
+use crate::deck::{get_player_shuffled_deck, get_player_specific_cards};
 use crate::mana::convert_rules_text_to_symbols;
 use crate::player::components::Player;
 use crate::player::resources::PlayerConfig;
@@ -57,13 +57,18 @@ pub fn spawn_players(
 
         // Only spawn cards for player 1 or if spawn_all_cards is true
         if player_index == 0 || config.spawn_all_cards {
-            // Get example cards and clone them for display
-            let cards = get_example_cards(player_entity);
-            // Take the first 7 cards for display
+            // Get player-specific cards and clone them for display
+            let cards = get_player_specific_cards(player_entity, player_index);
+
+            // Take the first 7 cards for display (representing a starting hand)
             let display_cards = cards.iter().take(7).cloned().collect::<Vec<_>>();
 
-            // Create a deck for the player
-            let deck = get_shuffled_deck(player_entity);
+            // Create a player-specific deck
+            let deck = get_player_shuffled_deck(
+                player_entity,
+                player_index,
+                Some(&format!("Player {} Deck", player_index + 1)),
+            );
 
             info!(
                 "Added {} cards and a deck with {} cards to player {}",
@@ -88,11 +93,13 @@ pub fn spawn_players(
             // Adjust visual card position based on player index
             let mut card_position = player_transform.translation;
 
-            // For player 2 (index 1), position cards at the top of the screen
-            // but maintain the same orientation as player 1
-            if player_index == 1 {
-                // Position at top of screen but without rotation
-                card_position.y = 30.0; // Mirror of player 1's -30.0
+            // Position cards near their player's position
+            if player_index == 0 {
+                // Player 1 cards at bottom
+                card_position.y = -30.0;
+            } else if player_index == 1 {
+                // Player 2 cards at top
+                card_position.y = 30.0;
             }
 
             spawn_visual_cards(
@@ -154,7 +161,7 @@ fn spawn_visual_cards(
     game_cameras: &Query<Entity, With<GameCamera>>,
     card_size: &Vec2,
     spacing_multiplier: f32,
-    player_position: Vec3, // Add player position parameter
+    player_position: Vec3, // Player position parameter
 ) {
     // Increase the spacing between cards
     let spacing = card_size.x * spacing_multiplier * 1.5; // Increased spacing by 50%
@@ -190,10 +197,8 @@ fn spawn_visual_cards(
         // Position cards at player position
         let x_pos = start_x + i as f32 * spacing + player_position.x;
 
-        // Position cards at the very bottom fifth of the screen
-        // With camera zoom 5.0, visible height range is roughly -25 to 25
-        // Place cards at a much lower position to ensure they're at the very bottom
-        let y_pos = -30.0; // Further down to ensure they're clearly in the bottom fifth
+        // Use the provided player position y-coordinate instead of hardcoding it
+        let y_pos = player_position.y;
 
         let transform = Transform::from_xyz(x_pos, y_pos, z);
 
