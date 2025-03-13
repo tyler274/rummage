@@ -16,7 +16,8 @@ bevy_rand = { git = "https://github.com/Bluefinger/bevy_rand", branch = "main", 
     "wyrand",
     "experimental",
 ] }
-bevy_replicon = { git = "https://github.com/projectharmonia/bevy_replicon", branch = "main" }
+# Commenting out bevy_replicon - repository URL issues
+# bevy_replicon = { git = "https://github.com/projectharmonia/bevy_replicon", branch = "main" }
 bitflags = "2.9.0"
 bzip2 = "0.5.2"
 chrono = "0.4.40"
