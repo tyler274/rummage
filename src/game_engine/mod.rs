@@ -11,7 +11,6 @@ pub mod stack;
 pub mod state;
 pub mod tests;
 pub mod turns;
-pub mod visual_testing;
 pub mod zones;
 
 // Re-export important types for easier access
