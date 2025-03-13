@@ -193,4 +193,5 @@
   - [Commander-Specific Rules](mtg_rules/commander_specific.md)
 - [Contribution Guidelines](CONTRIBUTING.md)
 - [Documentation Guide](contributing/documentation.md)
+- [Git Workflow Guidelines](contributing/git_workflow.md)
 - [Glossary](reference/glossary.md) 

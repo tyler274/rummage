@@ -125,7 +125,7 @@ By integrating testing throughout the development process, we ensure that Rummag
 
 ## Contributing
 
-We welcome contributions to the Rummage project! Please see our [contribution guidelines](../CONTRIBUTING.md) for information on how to submit changes, report issues, and suggest improvements.
+We welcome contributions to the Rummage project! Please see our [contribution guidelines](../CONTRIBUTING.md) for information on how to submit changes, report issues, and suggest improvements. For specific guidance on our git workflow and commit message format, refer to our [Git Workflow Guidelines](../contributing/git_workflow.md).
 
 ## Next Steps
 
