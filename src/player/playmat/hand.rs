@@ -181,7 +181,7 @@ fn calculate_hand_layout(
 pub fn toggle_hand_expansion(
     mouse_button_input: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window>,
-    camera_query: Query<(&Camera, &GlobalTransform)>,
+    camera_query: Query<(&Camera, &GlobalTransform), With<crate::camera::components::GameCamera>>,
     mut hand_query: Query<(&mut HandZone, &GlobalTransform)>,
 ) {
     // Only process on mouse click

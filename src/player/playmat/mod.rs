@@ -10,6 +10,7 @@ mod library;
 mod zones;
 
 use crate::camera::components::AppLayer;
+use crate::camera::components::GameCamera;
 use crate::game_engine::zones::Zone;
 use crate::player::components::Player;
 use crate::player::resources::PlayerConfig;
@@ -176,7 +177,7 @@ pub fn handle_zone_interactions(
     key_input: Res<ButtonInput<KeyCode>>,
     _player_query: Query<(Entity, &Player)>,
     zone_query: Query<(Entity, &PlaymatZone, &GlobalTransform)>,
-    camera_query: Query<(&Camera, &GlobalTransform)>,
+    camera_query: Query<(&Camera, &GlobalTransform), With<GameCamera>>,
     windows: Query<&Window>,
 ) {
     // Check for mouse and keyboard interactions
