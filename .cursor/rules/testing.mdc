@@ -1,3 +1,8 @@
+---
+description: Writing and organizing tests
+globs: 
+alwaysApply: false
+---
 # Module Testing Pattern
 
 ## Overview
