@@ -3,8 +3,6 @@ use crate::deck::Deck;
 use crate::mana::ManaPool;
 use bevy::prelude::*;
 
-use super::builder::PlayerBuilder;
-
 /// Represents a player in the game with their associated state
 #[derive(Component, Default, Debug, Clone)]
 pub struct Player {
@@ -26,8 +24,46 @@ pub struct Player {
 }
 
 impl Player {
-    /// Creates a new Player builder to use a chainable API for constructing a Player
-    pub fn builder(name: &str) -> PlayerBuilder {
-        PlayerBuilder::new(name)
+    /// Creates a new player with default values
+    pub fn new(name: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            life: 40, // Default life total for Commander format
+            mana_pool: ManaPool::default(),
+            cards: Vec::new(),
+            deck: None,
+            player_index: 0,
+        }
+    }
+
+    /// Sets the player's life total
+    pub fn with_life(mut self, life: i32) -> Self {
+        self.life = life;
+        self
+    }
+
+    /// Sets the player's mana pool
+    #[allow(dead_code)]
+    pub fn with_mana_pool(mut self, mana_pool: ManaPool) -> Self {
+        self.mana_pool = mana_pool;
+        self
+    }
+
+    /// Sets the player's cards
+    pub fn with_cards(mut self, cards: Vec<Card>) -> Self {
+        self.cards = cards;
+        self
+    }
+
+    /// Sets the player's deck
+    pub fn with_deck(mut self, deck: Deck) -> Self {
+        self.deck = Some(deck);
+        self
+    }
+
+    /// Sets the player's index
+    pub fn with_player_index(mut self, index: usize) -> Self {
+        self.player_index = index;
+        self
     }
 }

@@ -1,5 +1,4 @@
 use crate::card::Card;
-use crate::deck::Deck;
 use crate::game_engine::phase::{ActivePlayer, CurrentPhase, MAIN1};
 use crate::game_engine::zones::{Zone, ZoneMarker};
 use crate::mana::ManaPool;
@@ -9,6 +8,7 @@ use bevy::prelude::*;
 /// Test fixtures for the game engine
 
 /// Creates test players
+#[allow(dead_code)]
 pub fn create_test_players(app: &mut App, count: usize) -> Vec<Entity> {
     let mut players = Vec::with_capacity(count);
 
@@ -27,6 +27,7 @@ pub fn create_test_players(app: &mut App, count: usize) -> Vec<Entity> {
 }
 
 /// Creates a test player entity
+#[allow(dead_code)]
 pub fn create_test_player(app: &mut App, _name: &str, _position: Vec2) -> Entity {
     let entity = app
         .world_mut()
@@ -47,6 +48,7 @@ pub fn create_test_player(app: &mut App, _name: &str, _position: Vec2) -> Entity
 }
 
 /// Creates multiple test cards in the app world
+#[allow(dead_code)]
 pub fn create_test_cards(app: &mut App, count: usize) -> Vec<Entity> {
     let mut entities = Vec::new();
 
@@ -59,12 +61,14 @@ pub fn create_test_cards(app: &mut App, count: usize) -> Vec<Entity> {
 }
 
 /// Setup function for four player game
+#[allow(dead_code)]
 pub fn setup_four_player_game(app: &mut App) -> [Entity; 4] {
     let players = create_test_players(app, 4);
     [players[0], players[1], players[2], players[3]]
 }
 
 /// Creates a player with a test deck
+#[allow(dead_code)]
 pub fn setup_test_player_with_card(app: &mut App) -> (Entity, Entity) {
     let player = create_test_players(app, 1)[0];
     let card = create_test_cards(app, 1)[0];
@@ -73,6 +77,7 @@ pub fn setup_test_player_with_card(app: &mut App) -> (Entity, Entity) {
 }
 
 /// Sets up a full game with players, cards, etc.
+#[allow(dead_code)]
 pub fn setup_full_game(_app: &mut App) {
     // Set up 4 players
     let players = setup_four_player_game(_app);
@@ -98,6 +103,7 @@ pub fn setup_full_game(_app: &mut App) {
 }
 
 /// Saves the current game state for comparison
+#[allow(dead_code)]
 pub fn save_game_state(_app: &App, _name: &str) {
     use std::fs::File;
     use std::io::Write;
@@ -112,10 +118,10 @@ pub fn save_game_state(_app: &App, _name: &str) {
 
     // Serialize players - manual iteration to avoid borrowing issues
     for entity in world.iter_entities() {
-        if let Some(player_name) = world.get::<Name>(entity.id()) {
+        if let Some(player) = world.get::<Player>(entity.id()) {
             state_data.push(format!(
                 "Player: {} (Entity: {:?})",
-                player_name,
+                player.name,
                 entity.id()
             ));
         }
@@ -130,6 +136,7 @@ pub fn save_game_state(_app: &App, _name: &str) {
 }
 
 /// Compares the current game state with a saved one
+#[allow(dead_code)]
 pub fn compare_with_saved_state(_app: &App, _name: &str) -> bool {
     use std::fs::File;
     use std::io::{BufRead, BufReader};
@@ -144,10 +151,10 @@ pub fn compare_with_saved_state(_app: &App, _name: &str) -> bool {
 
     // Serialize current players - manual iteration to avoid borrowing issues
     for entity in world.iter_entities() {
-        if let Some(player_name) = world.get::<Name>(entity.id()) {
+        if let Some(player) = world.get::<Player>(entity.id()) {
             current_state.push(format!(
                 "Player: {} (Entity: {:?})",
-                player_name,
+                player.name,
                 entity.id()
             ));
         }
@@ -181,6 +188,7 @@ pub fn compare_with_saved_state(_app: &App, _name: &str) -> bool {
 }
 
 /// Sets up a specific test scenario
+#[allow(dead_code)]
 pub fn setup_test_scenario(_app: &mut App, _scenario: &str) {
     match _scenario {
         "empty_board" => {
@@ -216,6 +224,7 @@ pub fn setup_test_scenario(_app: &mut App, _scenario: &str) {
 }
 
 /// Sets up a basic test environment
+#[allow(dead_code)]
 pub fn setup_test_environment(app: &mut App) {
     // Register all required components and resources
     app.init_resource::<Time>();
