@@ -96,10 +96,10 @@ pub fn spawn_players(
             // Position cards near their player's position
             if player_index == 0 {
                 // Player 1 cards at bottom
-                card_position.y = -60.0; // Increased from -30.0 to -60.0 for more spacing
+                card_position.y = -150.0; // Increased from -60.0 to -150.0 for much more spacing
             } else if player_index == 1 {
                 // Player 2 cards at top
-                card_position.y = 60.0; // Increased from 30.0 to 60.0 for more spacing
+                card_position.y = 150.0; // Increased from 60.0 to 150.0 for much more spacing
             }
 
             spawn_visual_cards(
