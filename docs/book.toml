@@ -6,9 +6,9 @@ src = "."
 language = "en"
 
 [output.html]
-git-repository-url = "https://github.com/your-org/rummage"
+git-repository-url = "https://github.com/tyler274/rummage"
 git-repository-icon = "fa-github"
-edit-url-template = "https://github.com/your-org/rummage/edit/main/docs/{path}"
+edit-url-template = "https://github.com/tyler274/rummage/edit/main/docs/{path}"
 additional-css = ["theme/css/custom.css"]
 additional-js = ["theme/js/custom.js"]
 mathjax-support = true
