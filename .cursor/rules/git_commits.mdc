@@ -1,0 +1,87 @@
+---
+description: Git commit message guidelines
+globs: 
+alwaysApply: false
+---
+# Git Commit Message Guidelines
+
+## Overview
+This rule outlines best practices for creating clear, informative git commit messages that make the repository history easy to understand and navigate. All commit messages should follow this standard format.
+
+## Message Structure
+Each commit message should follow this structure:
+
+```
+<type>: <subject>
+
+<body>
+
+<footer>
+```
+
+## Types
+Begin your commit message with one of these types:
+
+- `feat`: A new feature
+- `fix`: A bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, indentation)
+- `refactor`: Code refactoring (no functional changes)
+- `perf`: Performance improvements
+- `test`: Adding or updating tests
+- `chore`: Maintenance tasks, build changes, etc.
+- `ci`: CI/CD related changes
+
+## Subject Guidelines
+- Write in imperative mood (e.g., "Add" not "Added" or "Adds")
+- Keep it under 50 characters
+- Don't end with a period
+- Capitalize the first letter
+
+## Body Guidelines
+- Separate from subject with a blank line
+- Explain the "what" and "why" (not "how")
+- Use bullet points when appropriate (- or *)
+- Wrap text at ~72 characters
+- Reference issues and user stories when applicable
+
+## Footer Guidelines
+- Reference issues with "Fixes #123" or "Closes #123"
+- Breaking changes should be noted with "BREAKING CHANGE:"
+
+## Examples
+
+```
+feat: Add user authentication system
+
+Implement JWT-based authentication flow with refresh tokens.
+- Add login/logout endpoints
+- Create token generation service
+- Add middleware for protected routes
+
+Closes #45
+```
+
+```
+fix: Prevent race condition in database connection pool
+
+When multiple requests arrived simultaneously during
+initialization, connections were being created beyond
+the configured maximum. Added mutex lock to ensure
+proper counting.
+
+Fixes #123
+```
+
+```
+docs: Update API documentation with authentication examples
+
+Add code samples for all authentication flows and
+improve explanations of token usage.
+```
+
+## Additional Guidelines
+- When possible, limit commits to a single logical change
+- Small, focused commits are easier to understand and review
+- Avoid mixing multiple unrelated changes in a single commit
+- When incorporating feedback from PR reviews, reference the PR number 
