@@ -7,6 +7,7 @@ This section provides comprehensive information for developers who want to contr
 1. [Introduction](#introduction)
 2. [Key Development Areas](#key-development-areas)
 3. [Development Environment](#development-environment)
+4. [Working with Bevy](#working-with-bevy)
 
 ## Introduction
 
@@ -32,9 +33,9 @@ The development documentation is organized into these key areas:
    - Best practices
 
 4. [Working with Bevy](bevy_guide/index.md)
-   - Entity Component System patterns
-   - Plugin development
-   - Rendering system usage
+   - [Entity Component System](bevy_guide/ecs.md) - Understanding and working with ECS
+   - [Plugin Architecture](bevy_guide/plugins.md) - Creating and using plugins
+   - [Rendering](bevy_guide/rendering.md) - Card rendering and UI components
 
 ## Development Environment
 
@@ -71,6 +72,17 @@ cargo run
 # Run tests
 cargo test
 ```
+
+## Working with Bevy
+
+Rummage is built on the Bevy game engine, which provides a data-driven, entity-component-system (ECS) architecture. The [Working with Bevy](bevy_guide/index.md) section provides detailed guidance on:
+
+- **Understanding ECS**: How Rummage organizes game elements into entities, components, and systems
+- **Plugin Development**: Creating and working with Bevy plugins
+- **Rendering Systems**: Implementing visual elements and UI components
+- **Bevy 0.15.x Specifics**: Working with the latest Bevy APIs
+
+Bevy 0.15.x introduces some important changes, including deprecated UI components like `Text2dBundle`, `SpriteBundle`, and `NodeBundle` which are replaced by `Text2d`, `Sprite`, and `Node` respectively. Our documentation provides guidance on using these newer APIs correctly.
 
 ## Contributing
 
