@@ -45,9 +45,9 @@ pub fn debug_draw_player_positions(
 
         // Draw a line from the player to where their cards would spawn
         let card_y_pos = if player.player_index == 0 {
-            -350.0 // Updated to match new Player 1 card position
+            -700.0 // Doubled from -350.0 to match new Player 1 card position
         } else {
-            350.0 // Updated to match new Player 2 card position
+            700.0 // Doubled from 350.0 to match new Player 2 card position
         };
 
         let card_center = Vec2::new(position.x, card_y_pos);
