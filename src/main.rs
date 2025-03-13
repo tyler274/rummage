@@ -1,5 +1,6 @@
 mod camera;
 mod card;
+mod deck;
 mod drag;
 mod game_engine;
 mod mana;
@@ -18,6 +19,7 @@ use camera::{
     systems::{camera_movement, handle_window_resize, set_initial_zoom, setup_camera},
 };
 use card::CardPlugin;
+use deck::DeckPlugin;
 use drag::DragPlugin;
 use game_engine::GameEnginePlugin;
 use menu::{GameMenuState, MenuPlugin, state::StateTransitionContext};
@@ -32,6 +34,7 @@ impl Plugin for GamePlugin {
         app.add_plugins(DragPlugin)
             .add_plugins(EntropyPlugin::<WyRand>::default())
             .add_plugins(CardPlugin)
+            .add_plugins(DeckPlugin)
             .add_plugins(GameEnginePlugin)
             .add_plugins(text::TextPlugin)
             .insert_resource(DebugConfig {

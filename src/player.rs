@@ -23,11 +23,11 @@ use crate::camera::components::{AppLayer, GameCamera};
 ///
 /// Each text component is spawned as a child entity of the card,
 /// ensuring proper positioning and movement during drag operations.
-use crate::card::{Card, CardDetails, Draggable, get_example_cards};
+use crate::card::{Card, CardDetails, Draggable};
+use crate::deck::{Deck, get_example_cards, get_shuffled_deck};
 use crate::mana::{ManaPool, convert_rules_text_to_symbols};
 use crate::text::CardTextContent;
 use bevy::prelude::*;
-use rand::seq::SliceRandom;
 
 /// Represents a player in the game with their associated state
 #[allow(dead_code)]
@@ -41,6 +41,8 @@ pub struct Player {
     pub mana_pool: ManaPool,
     /// Cards in the player's possession
     pub cards: Vec<Card>,
+    /// Player's deck
+    pub deck: Option<Deck>,
 }
 
 /// Spawns the initial hand of cards for a player
@@ -65,6 +67,7 @@ pub fn spawn_hand(
         life: 20,
         mana_pool: ManaPool::default(),
         cards: Vec::new(),
+        deck: None,
     };
 
     // Spawn the player entity
@@ -77,15 +80,18 @@ pub fn spawn_hand(
 
     // Get example cards and clone them for display
     let mut cards = get_example_cards(player_entity);
-    // Shuffle the initial hand
-    cards.shuffle(&mut rand::rng());
     // Take the first 7 cards for display
     let display_cards = cards.iter().take(7).cloned().collect::<Vec<_>>();
 
+    // Create a deck for the player
+    let deck = get_shuffled_deck(player_entity);
+
     // Update the player's cards while preserving other fields
-    commands
-        .entity(player_entity)
-        .insert(Player { cards, ..player });
+    commands.entity(player_entity).insert(Player {
+        cards,
+        deck: Some(deck),
+        ..player
+    });
 
     let card_size = Vec2::new(672.0, 936.0);
     let spacing = card_size.x * 1.1; // Reduced spacing multiplier for tighter layout

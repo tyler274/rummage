@@ -1513,22 +1513,7 @@ pub struct CardPlugin;
 
 impl Plugin for CardPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (handle_card_dragging, debug_render_text_positions)
-                .run_if(in_state(GameMenuState::InGame)),
-        );
+        app.add_systems(Update, handle_card_dragging)
+            .add_systems(Update, debug_render_text_positions);
     }
-}
-
-// Add get_example_cards function from cards module
-pub fn get_example_cards(_owner: Entity) -> Vec<Card> {
-    let mut cards = Vec::new();
-    cards.extend(artifacts::get_artifact_cards());
-    cards.extend(black::get_black_cards());
-    cards.extend(blue::get_blue_cards());
-    cards.extend(green::get_green_cards());
-    cards.extend(red::get_red_cards());
-    cards.extend(white::get_white_cards());
-    cards
 }
