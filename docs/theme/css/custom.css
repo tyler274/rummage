@@ -351,3 +351,326 @@ blockquote {
         color: #fcd34d;
     }
 }
+
+/* Specific overrides for Coal theme */
+.coal {
+    --bg: #141617;
+    --fg: #ffffff;
+    --sidebar-bg: #1d2021;
+    --sidebar-fg: #ffffff;
+    --sidebar-non-existant: #5c6773;
+    --sidebar-active: #e2e8f0;
+    --sidebar-spacer: #3c3836;
+    --scrollbar: #4a5568;
+    --icons: #e2e8f0;
+    --icons-hover: #ffffff;
+    --links: #63b3ed;
+    --inline-code-color: #f7fafc;
+    --theme-popup-bg: #222526;
+    --theme-popup-border: #4a5568;
+    --theme-hover: #2d3748;
+    --quote-bg: #2d3748;
+    --quote-border: #4ade80;
+    --table-border-color: #4a5568;
+    --table-header-bg: #2d3748;
+    --table-alternate-bg: #222526;
+    --searchbar-border-color: #4a5568;
+    --searchbar-bg: #242728;
+    --searchbar-fg: #f7fafc;
+    --searchbar-shadow-color: #0f1112;
+    --searchresults-header-fg: #f7fafc;
+    --searchresults-border-color: #4a5568;
+    --searchresults-li-bg: #242728;
+    --search-mark-bg: #fcd34d;
+    --search-mark-fg: #141617;
+}
+
+.coal code {
+    color: #f7fafc !important;
+}
+
+.coal .content {
+    color: #f7fafc !important;
+}
+
+.coal .content p,
+.coal .content li {
+    color: #f7fafc !important;
+}
+
+.coal .content h1,
+.coal .content h2,
+.coal .content h3,
+.coal .content h4,
+.coal .content h5 {
+    color: #e2e8f0 !important;
+}
+
+.coal .content a {
+    color: #63b3ed !important;
+}
+
+.coal .content a:hover {
+    color: #90cdf4 !important;
+}
+
+.coal .content code {
+    background-color: #2d3748 !important;
+}
+
+.coal .content pre {
+    background-color: #2d3748 !important;
+}
+
+.coal blockquote {
+    border-left: 4px solid #4ade80 !important;
+    color: #e2e8f0 !important;
+}
+
+/* Specific overrides for Navy theme */
+.navy {
+    --bg: #161923;
+    --fg: #ffffff;
+    --sidebar-bg: #1e2029;
+    --sidebar-fg: #ffffff;
+    --sidebar-non-existant: #5c6773;
+    --sidebar-active: #e2e8f0;
+    --sidebar-spacer: #2d334f;
+    --scrollbar: #4a5568;
+    --icons: #e2e8f0;
+    --icons-hover: #ffffff;
+    --links: #63b3ed;
+    --inline-code-color: #f7fafc;
+    --theme-popup-bg: #212330;
+    --theme-popup-border: #4a5568;
+    --theme-hover: #2d3748;
+    --quote-bg: #2d3748;
+    --quote-border: #4ade80;
+    --table-border-color: #4a5568;
+    --table-header-bg: #2d3748;
+    --table-alternate-bg: #212330;
+    --searchbar-border-color: #4a5568;
+    --searchbar-bg: #1e2029;
+    --searchbar-fg: #f7fafc;
+    --searchbar-shadow-color: #0f1112;
+    --searchresults-header-fg: #f7fafc;
+    --searchresults-border-color: #4a5568;
+    --searchresults-li-bg: #1e2029;
+    --search-mark-bg: #fcd34d;
+    --search-mark-fg: #141617;
+}
+
+.navy code {
+    color: #f7fafc !important;
+}
+
+.navy .content {
+    color: #f7fafc !important;
+}
+
+.navy .content p,
+.navy .content li {
+    color: #f7fafc !important;
+}
+
+.navy .content h1,
+.navy .content h2,
+.navy .content h3,
+.navy .content h4,
+.navy .content h5 {
+    color: #e2e8f0 !important;
+}
+
+.navy .content a {
+    color: #63b3ed !important;
+}
+
+.navy .content a:hover {
+    color: #90cdf4 !important;
+}
+
+.navy .content code {
+    background-color: #2d3748 !important;
+}
+
+.navy .content pre {
+    background-color: #2d3748 !important;
+}
+
+.navy blockquote {
+    border-left: 4px solid #4ade80 !important;
+    color: #e2e8f0 !important;
+}
+
+/* Specific overrides for Ayu theme */
+.ayu {
+    --bg: #0f1419;
+    --fg: #ffffff;
+    --sidebar-bg: #14191f;
+    --sidebar-fg: #ffffff;
+    --sidebar-non-existant: #5c6773;
+    --sidebar-active: #e2e8f0;
+    --sidebar-spacer: #2d3741;
+    --scrollbar: #4a5568;
+    --icons: #e2e8f0;
+    --icons-hover: #ffffff;
+    --links: #63b3ed;
+    --inline-code-color: #f7fafc;
+    --theme-popup-bg: #14191f;
+    --theme-popup-border: #4a5568;
+    --theme-hover: #191f26;
+    --quote-bg: #191f26;
+    --quote-border: #4ade80;
+    --table-border-color: #4a5568;
+    --table-header-bg: #191f26;
+    --table-alternate-bg: #14191f;
+    --searchbar-border-color: #4a5568;
+    --searchbar-bg: #14191f;
+    --searchbar-fg: #f7fafc;
+    --searchbar-shadow-color: #0f1419;
+    --searchresults-header-fg: #f7fafc;
+    --searchresults-border-color: #4a5568;
+    --searchresults-li-bg: #14191f;
+    --search-mark-bg: #fcd34d;
+    --search-mark-fg: #0f1419;
+}
+
+.ayu code {
+    color: #f7fafc !important;
+}
+
+.ayu .content {
+    color: #f7fafc !important;
+}
+
+.ayu .content p,
+.ayu .content li {
+    color: #f7fafc !important;
+}
+
+.ayu .content h1,
+.ayu .content h2,
+.ayu .content h3,
+.ayu .content h4,
+.ayu .content h5 {
+    color: #e2e8f0 !important;
+}
+
+.ayu .content a {
+    color: #63b3ed !important;
+}
+
+.ayu .content a:hover {
+    color: #90cdf4 !important;
+}
+
+.ayu .content code {
+    background-color: #2d3748 !important;
+}
+
+.ayu .content pre {
+    background-color: #2d3748 !important;
+}
+
+.ayu blockquote {
+    border-left: 4px solid #4ade80 !important;
+    color: #e2e8f0 !important;
+}
+
+/* Improve syntax highlighting for all dark themes */
+.coal .hljs,
+.navy .hljs,
+.ayu .hljs {
+    background-color: #2d3748 !important;
+    color: #e2e8f0 !important;
+}
+
+.coal .hljs-keyword,
+.coal .hljs-selector-tag,
+.coal .hljs-built_in,
+.coal .hljs-name,
+.coal .hljs-tag,
+.navy .hljs-keyword,
+.navy .hljs-selector-tag,
+.navy .hljs-built_in,
+.navy .hljs-name,
+.navy .hljs-tag,
+.ayu .hljs-keyword,
+.ayu .hljs-selector-tag,
+.ayu .hljs-built_in,
+.ayu .hljs-name,
+.ayu .hljs-tag {
+    color: #d8b4fe !important;
+}
+
+.coal .hljs-string,
+.coal .hljs-title,
+.coal .hljs-section,
+.coal .hljs-attribute,
+.coal .hljs-literal,
+.coal .hljs-template-tag,
+.coal .hljs-template-variable,
+.coal .hljs-type,
+.coal .hljs-addition,
+.navy .hljs-string,
+.navy .hljs-title,
+.navy .hljs-section,
+.navy .hljs-attribute,
+.navy .hljs-literal,
+.navy .hljs-template-tag,
+.navy .hljs-template-variable,
+.navy .hljs-type,
+.navy .hljs-addition,
+.ayu .hljs-string,
+.ayu .hljs-title,
+.ayu .hljs-section,
+.ayu .hljs-attribute,
+.ayu .hljs-literal,
+.ayu .hljs-template-tag,
+.ayu .hljs-template-variable,
+.ayu .hljs-type,
+.ayu .hljs-addition {
+    color: #4ade80 !important;
+}
+
+.coal .hljs-comment,
+.coal .hljs-quote,
+.coal .hljs-meta,
+.coal .hljs-deletion,
+.navy .hljs-comment,
+.navy .hljs-quote,
+.navy .hljs-meta,
+.navy .hljs-deletion,
+.ayu .hljs-comment,
+.ayu .hljs-quote,
+.ayu .hljs-meta,
+.ayu .hljs-deletion {
+    color: #a0aec0 !important;
+}
+
+.coal .hljs-number,
+.coal .hljs-regexp,
+.coal .hljs-symbol,
+.coal .hljs-variable,
+.coal .hljs-template-variable,
+.coal .hljs-link,
+.coal .hljs-selector-attr,
+.coal .hljs-selector-pseudo,
+.navy .hljs-number,
+.navy .hljs-regexp,
+.navy .hljs-symbol,
+.navy .hljs-variable,
+.navy .hljs-template-variable,
+.navy .hljs-link,
+.navy .hljs-selector-attr,
+.navy .hljs-selector-pseudo,
+.ayu .hljs-number,
+.ayu .hljs-regexp,
+.ayu .hljs-symbol,
+.ayu .hljs-variable,
+.ayu .hljs-template-variable,
+.ayu .hljs-link,
+.ayu .hljs-selector-attr,
+.ayu .hljs-selector-pseudo {
+    color: #fcd34d !important;
+}

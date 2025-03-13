@@ -15,6 +15,8 @@ mathjax-support = true
 copy-fonts = true
 no-section-label = false
 site-url = "/rummage/"
+default-theme = "coal"
+preferred-dark-theme = "coal"
 
 [output.html.search]
 enable = true
