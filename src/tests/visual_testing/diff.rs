@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy::render::RenderApp;
 use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
 use std::fs;
 use std::path::Path;
@@ -52,12 +51,11 @@ pub struct VisualTestingPlugin;
 impl Plugin for VisualTestingPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<VisualTestConfig>()
+            .init_resource::<ScreenshotRequests>()
             .add_systems(Update, capture_screenshot_system);
 
-        // Add render extraction systems
-        if let Some(_render_app) = app.get_sub_app_mut(RenderApp) {
-            // Add render extraction systems here
-        }
+        // Render extraction systems would be added in a real implementation
+        // This comment preserves the intent while removing the error
     }
 }
 
@@ -88,17 +86,15 @@ struct ScreenshotRequest {
 /// System that processes screenshot requests
 fn capture_screenshot_system(world: &mut World) {
     // Get a copy of the pending requests before taking the screenshot
-    let mut screenshot_requests = world.resource_mut::<ScreenshotRequests>();
-    if screenshot_requests.pending.is_empty() {
-        return;
-    }
+    let requests = {
+        let mut screenshot_requests = world.resource_mut::<ScreenshotRequests>();
+        if screenshot_requests.pending.is_empty() {
+            return;
+        }
+        std::mem::take(&mut screenshot_requests.pending)
+    };
 
-    // Take all pending requests
-    let requests = std::mem::take(&mut screenshot_requests.pending);
-
-    // Drop the mutable borrow before taking screenshot
-    drop(screenshot_requests);
-
+    // Take the screenshot outside of the borrow scope
     if let Some(image) = take_screenshot(world) {
         // Process all pending requests with this screenshot
         for request in requests {
@@ -257,8 +253,8 @@ fn perceptual_hash_compare(image1: &DynamicImage, image2: &DynamicImage) -> Comp
     let threshold2 = img2_values[median_idx];
 
     // Create binary hash
-    let mut hash1 = Vec::with_capacity((size as usize) * (size as usize));
-    let mut hash2 = Vec::with_capacity((size as usize) * (size as usize));
+    let mut hash1 = Vec::with_capacity(size as usize * size as usize);
+    let mut hash2 = Vec::with_capacity(size as usize * size as usize);
 
     for y in 0..size {
         for x in 0..size {
@@ -891,8 +887,11 @@ pub fn generate_reference_images(app: &mut App, test_states: &[&str]) {
     // Setup the test environment
     app.add_plugins(VisualTestingPlugin);
 
-    let mut config = app.world_mut().resource_mut::<VisualTestConfig>();
-    config.update_references = true;
+    // Configure to update references
+    app.insert_resource(VisualTestConfig {
+        update_references: true,
+        ..VisualTestConfig::default()
+    });
 
     // Capture and save reference images for each test state
     for &state in test_states {
