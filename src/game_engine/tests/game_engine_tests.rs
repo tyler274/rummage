@@ -134,9 +134,15 @@ fn test_stack_resolution() {
     }
 
     let mut stack = GameStack::default();
-    stack.push(Box::new(TestEffect {
-        controller: player1,
-    }));
+    let effect_entity = Entity::from_raw(999); // Use a unique entity ID for testing
+    stack.push(
+        Box::new(TestEffect {
+            controller: player1,
+        }),
+        effect_entity,
+        false, // not split second
+        true,  // can be countered
+    );
 
     // Add resources to the app
     app.insert_resource(game_state)

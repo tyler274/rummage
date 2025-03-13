@@ -24,7 +24,7 @@ pub use turns::{
     TurnEndEvent, TurnManager, TurnStartEvent, handle_untap_step, register_turn_systems,
     turn_end_system, turn_start_system,
 };
-pub use zones::*;
+pub use zones::{EntersBattlefieldEvent, ZoneChangeEvent, ZoneManager, register_zone_systems};
 
 use crate::menu::{GameMenuState, state::StateTransitionContext};
 use crate::player::Player;
@@ -60,6 +60,11 @@ impl Plugin for GameEnginePlugin {
             .add_event::<CreatureBlocksEvent>()
             .add_event::<CreatureBlockedEvent>()
             .add_event::<CombatDamageCompleteEvent>()
+            // Register priority events
+            .add_event::<PassPriorityEvent>()
+            .add_event::<ResolveStackItemEvent>()
+            .add_event::<NextPhaseEvent>()
+            .add_event::<EffectCounteredEvent>()
             // Register battlefield events
             .add_event::<EntersBattlefieldEvent>()
             // Register politics events
@@ -79,6 +84,10 @@ impl Plugin for GameEnginePlugin {
         app.add_systems(
             Update,
             priority_system.run_if(in_state(GameMenuState::InGame)),
+        );
+        app.add_systems(
+            Update,
+            priority_passing_system.run_if(in_state(GameMenuState::InGame)),
         );
         app.add_systems(
             Update,
@@ -162,6 +171,11 @@ fn setup_game_engine(
     // Get all player entities
     let players: Vec<Entity> = player_query.iter().collect();
 
+    // Initialize turn manager with player list first
+    let mut turn_manager = TurnManager::default();
+    turn_manager.initialize(players.clone());
+    commands.insert_resource(turn_manager);
+
     // Initialize the phase system starting at Beginning::Untap
     commands.insert_resource(Phase::Beginning(BeginningStep::Untap));
 
@@ -176,11 +190,6 @@ fn setup_game_engine(
 
     // Initialize combat state
     commands.insert_resource(CombatState::default());
-
-    // Initialize turn manager with player list
-    let mut turn_manager = TurnManager::default();
-    turn_manager.initialize(players);
-    commands.insert_resource(turn_manager);
 
     // Initialize the commander zone and manager
     commands.insert_resource(CommandZone::default());

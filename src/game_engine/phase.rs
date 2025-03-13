@@ -1,3 +1,5 @@
+use crate::game_engine::PrioritySystem;
+use crate::game_engine::priority::NextPhaseEvent;
 use crate::game_engine::state::GameState;
 use crate::game_engine::turns::TurnManager;
 use crate::player::Player;
@@ -120,27 +122,72 @@ impl Default for Phase {
 
 /// System to handle phase transitions
 pub fn phase_transition_system(
-    _commands: Commands,
-    mut game_state: ResMut<GameState>,
+    mut commands: Commands,
     mut phase: ResMut<Phase>,
-    mut turn_manager: ResMut<TurnManager>,
+    mut turn_manager: ResMut<crate::game_engine::turns::TurnManager>,
+    mut game_state: ResMut<crate::game_engine::state::GameState>,
     mut priority_system: ResMut<crate::game_engine::PrioritySystem>,
-    stack: Res<crate::game_engine::GameStack>,
+    mut next_phase_events: EventReader<NextPhaseEvent>,
     player_query: Query<Entity, With<Player>>,
+) {
+    // Process next phase events specifically triggered by priority system
+    let has_next_phase_event = !next_phase_events.is_empty();
+    for _ in next_phase_events.read() {
+        advance_phase(
+            &mut commands,
+            &mut phase,
+            &mut turn_manager,
+            &mut game_state,
+            &mut priority_system,
+            &player_query,
+        );
+    }
+
+    // Handle automatic phase transitions and all-players-passed case
+    if !has_next_phase_event && priority_system.all_players_passed {
+        let current_phase = *phase;
+
+        // Check if we need to advance to the next phase
+        if priority_system.stack_is_empty
+            && !priority_system.has_processed_phase(current_phase, turn_manager.turn_number)
+        {
+            advance_phase(
+                &mut commands,
+                &mut phase,
+                &mut turn_manager,
+                &mut game_state,
+                &mut priority_system,
+                &player_query,
+            );
+
+            // Mark this phase as processed
+            priority_system.mark_phase_processed(current_phase, turn_manager.turn_number);
+        }
+    }
+}
+
+/// Advance to the next phase
+fn advance_phase(
+    _commands: &mut Commands,
+    phase: &mut Phase,
+    turn_manager: &mut TurnManager,
+    game_state: &mut GameState,
+    priority_system: &mut PrioritySystem,
+    player_query: &Query<Entity, With<Player>>,
 ) {
     // Store current phase to detect if we've already processed this transition
     let current_phase = *phase;
 
     // If this phase has already been processed for the current turn, skip
     if priority_system.has_processed_phase(current_phase, turn_manager.turn_number)
-        && priority_system.all_players_passed == true
+        && priority_system.all_players_passed
     {
         // This specific phase combination has already been fully processed this turn
         return;
     }
 
     // If all players have passed priority and the stack is empty, move to the next phase
-    if priority_system.all_players_passed && stack.is_empty() {
+    if priority_system.all_players_passed && priority_system.stack_is_empty {
         let next_phase = phase.next();
 
         // If we're about to wrap around to a new turn
@@ -194,13 +241,14 @@ pub fn phase_transition_system(
 
         // If we're in a phase that doesn't allow actions, immediately mark all players as passed
         if !next_phase.allows_actions() {
-            for _ in 0..priority_system.priority_queue.len() {
+            priority_system.reset_passing_status();
+            for _ in 0..priority_system.player_order.len() {
                 priority_system.pass_priority();
             }
         }
 
         // Update priority holder in game state
-        game_state.priority_holder = active_player;
+        game_state.priority_holder = priority_system.priority_player;
 
         // Mark this as a different phase so we know it's a new state
         if start_new_turn {

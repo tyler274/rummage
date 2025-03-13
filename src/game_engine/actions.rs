@@ -97,7 +97,7 @@ pub fn process_game_actions(
 
             GameAction::PassPriority { player } => {
                 // Check if it's this player's priority
-                if priority.active_player == *player && priority.has_priority {
+                if priority.has_priority(*player) {
                     // Pass priority to the next player
                     priority.pass_priority();
                 }
