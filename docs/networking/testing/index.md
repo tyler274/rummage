@@ -159,4 +159,116 @@ When adding new tests:
 
 ---
 
-By following this comprehensive testing strategy, we can ensure our networked MTG Commander implementation is robust, performant, and faithful to the rules of the game. Our testing suite provides confidence that the game will work correctly across a variety of real-world conditions and player interactions. 
+By following this comprehensive testing strategy, we can ensure our networked MTG Commander implementation is robust, performant, and faithful to the rules of the game. Our testing suite provides confidence that the game will work correctly across a variety of real-world conditions and player interactions.
+
+# Networking Testing Documentation
+
+This section provides comprehensive documentation on testing methodologies for our networked MTG Commander game engine.
+
+## Testing Overview
+
+Testing networked applications presents unique challenges due to:
+
+1. **Variable Network Conditions**: Latency, packet loss, and disconnections
+2. **State Synchronization**: Ensuring all clients see the same game state
+3. **Randomization Consistency**: Maintaining deterministic behavior across network boundaries
+4. **Security Concerns**: Preventing cheating and unauthorized access
+
+Our testing approach addresses these challenges through a multi-layered strategy, combining unit tests, integration tests, and end-to-end tests with specialized tools for network simulation.
+
+## Testing Categories
+
+### Unit Tests
+
+Unit tests verify individual components and systems in isolation:
+
+- [Basic Network Component Tests](overview.md#unit-tests)
+- [RNG Synchronization Unit Tests](rng_synchronization_tests.md#unit-tests)
+- [Replicon RNG Integration Tests](replicon_rng_tests.md#unit-tests)
+
+### Integration Tests
+
+Integration tests verify that multiple components work together correctly:
+
+- [Client-Server Integration](integration/strategy.md#client-server-integration)
+- [Game State Synchronization](overview.md#game-state-synchronization-tests)
+- [RNG Integration Tests](rng_synchronization_tests.md#integration-tests)
+- [Replicon RNG Integration Tests](replicon_rng_tests.md#integration-tests)
+
+### End-to-End Tests
+
+End-to-end tests verify complete game scenarios from start to finish:
+
+- [Full Game Scenarios](overview.md#full-game-scenarios)
+- [Network Disruption Tests](advanced_techniques.md#network-disruption-testing)
+- [Card Interactions Over Network](overview.md#card-interaction-tests)
+- [Replicon Rollback Tests](replicon_rng_tests.md#end-to-end-tests)
+
+### Performance Tests
+
+Performance tests measure the efficiency and scalability of our networking code:
+
+- [Bandwidth Utilization](advanced_techniques.md#bandwidth-testing)
+- [Latency Impact](advanced_techniques.md#latency-testing)
+- [Scaling Tests](advanced_techniques.md#scaling-tests)
+- [RNG State Replication Performance](replicon_rng_tests.md#performance-tests)
+
+### Security Tests
+
+Security tests verify that our game is resistant to cheating and unauthorized access:
+
+- [Authentication Testing](security/strategy.md#authentication-tests)
+- [Authorization Tests](security/strategy.md#authorization-tests)
+- [Anti-Cheat Verification](security/strategy.md#anti-cheat-tests)
+- [Hidden Information Protection](security/strategy.md#hidden-information-tests)
+
+## Test Implementation Guide
+
+When implementing tests for our networked MTG Commander game, follow these guidelines:
+
+1. **Test Each Layer**: Test network communication, state synchronization, and game logic separately
+2. **Simulate Real Conditions**: Use network simulators to test under realistic conditions
+3. **Automation**: Automate as many tests as possible for continuous integration
+4. **Determinism**: Ensure tests are deterministic and repeatable
+5. **RNG Testing**: Pay special attention to randomized game actions
+
+## Testing Tools
+
+Our testing infrastructure includes these specialized tools:
+
+1. **Network Simulators**: Tools to simulate various network conditions
+2. **Test Harnesses**: Specialized test environments for network testing
+3. **RNG Test Utilities**: Tools for verifying random number determinism
+4. **Benchmarking Tools**: Performance measurement utilities
+
+## Key Test Scenarios
+
+Ensure these critical scenarios are thoroughly tested:
+
+1. **Client Connection/Disconnection**: Test proper handling of clients joining and leaving
+2. **State Synchronization**: Verify all clients see the same game state
+3. **Randomized Actions**: Test that shuffling, coin flips, etc. are deterministic
+4. **Network Disruption**: Test recovery after connection issues
+5. **Latency Compensation**: Test playability under various latency conditions
+
+## Testing RNG with Replicon
+
+Our new approach using bevy_replicon for RNG state management requires specialized testing:
+
+- [Replicon RNG Testing Overview](replicon_rng_tests.md)
+- [RNG State Serialization Tests](replicon_rng_tests.md#testing-rng-state-serialization-and-deserialization)
+- [Checkpoint Testing](replicon_rng_tests.md#testing-checkpoint-creation-and-restoration)
+- [Network Disruption Recovery](replicon_rng_tests.md#testing-rollback-due-to-network-disruption)
+- [Card Shuffling Tests](replicon_rng_tests.md#testing-card-shuffling-during-network-disruption)
+
+## Test Fixtures and Harnesses
+
+We provide several test fixtures to simplify test implementation:
+
+- [Basic Network Test Fixture](overview.md#test-fixtures)
+- [RNG Test Harness](rng_synchronization_tests.md#test-fixtures)
+- [Replicon RNG Test Harness](replicon_rng_tests.md#test-environment-setup)
+
+---
+
+For more detailed information on specific testing areas, refer to the corresponding documentation links above. 

@@ -40,7 +40,8 @@ The Lobby System documentation is further organized into:
 
 - [Departure Handling](gameplay/departure/handling.md) - Handling player disconnections and departures
 - [State Management](gameplay/state/) - Game state synchronization
-- [Rollback System](gameplay/state/rollback.md) - State recovery after network disruptions
+  - [Rollback System](gameplay/state/rollback.md) - State recovery after network disruptions
+  - [Replicon Rollback Integration](gameplay/state/replicon_rollback.md) - Integrating bevy_replicon with RNG state for rollbacks
 - [Synchronization](gameplay/synchronization/) - Methods for keeping game state in sync
 
 ## Testing
@@ -48,6 +49,7 @@ The Lobby System documentation is further organized into:
 - [Testing Overview](testing/overview.md) - General testing approach
 - [Advanced Techniques](testing/advanced_techniques.md) - Advanced testing techniques
 - [RNG Synchronization Tests](testing/rng_synchronization_tests.md) - Testing RNG determinism in multiplayer
+- [Replicon RNG Tests](testing/replicon_rng_tests.md) - Testing bevy_replicon integration with RNG state
 - [Integration Testing](testing/integration/) - Integration testing methodologies
   - [Strategy](testing/integration/strategy.md) - Integration testing strategy
 - [Security Testing](testing/security/) - Security-focused testing
@@ -68,6 +70,15 @@ To begin working on the networking implementation:
 3. Set up a local development environment with bevy_replicon
 4. Start with the basic client-server connectivity
 5. Incrementally add features following the implementation plan
+
+## Recent Updates
+
+Recent updates to the networking documentation include:
+
+- **Replicon Integration**: Added detailed documentation for integrating bevy_replicon with our RNG state management system
+- **Rollback Mechanism**: Enhanced documentation of rollback mechanisms for handling network disruptions
+- **Test Framework**: Expanded testing documentation with new test cases for RNG synchronization
+- **Performance Considerations**: Added guidance on optimizing network performance
 
 ## Future Enhancements
 
