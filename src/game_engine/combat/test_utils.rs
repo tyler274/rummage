@@ -48,31 +48,37 @@ pub fn setup_test_combat(
 #[allow(dead_code)]
 pub fn apply_combat_damage(app: &mut App, damage_events: Vec<CombatDamageEvent>) {
     let mut world = app.world_mut();
-    let mut combat_state = world.resource_mut::<CombatState>();
 
-    // Add all damage events to pending list
-    for event in damage_events {
-        combat_state.pending_combat_damage.push(event);
-    }
-
-    // Process each damage event
-    let pending_events = combat_state
+    // Get pending combat damage
+    let mut pending_events = world
+        .resource_mut::<CombatState>()
         .pending_combat_damage
         .drain(..)
         .collect::<Vec<_>>();
-    for event in pending_events {
-        // Get the player entity and apply damage
-        if let Some((player_entity, mut player)) = world
-            .query::<(Entity, &mut Player)>()
-            .iter_mut(&mut world)
-            .find(|(id, _)| *id == event.target)
-        {
-            player.life -= event.damage as i32;
-            world
-                .resource_mut::<GameState>()
-                .state_based_actions_performed = true;
 
-            // If it was a commander, track commander damage
+    // Add the provided damage events
+    pending_events.extend(damage_events);
+
+    // Process each damage event
+    for event in pending_events {
+        // Get the entity first
+        let entity_opt = world
+            .query_filtered::<Entity, With<Player>>()
+            .iter(&world)
+            .find(|&id| id == event.target);
+
+        if let Some(player_entity) = entity_opt {
+            // Then get the player component mutably
+            if let Some(mut player) = world.get_mut::<Player>(player_entity) {
+                player.life -= event.damage as i32;
+            }
+
+            // Update game state
+            if let Some(mut game_state) = world.get_resource_mut::<GameState>() {
+                game_state.state_based_actions_performed = true;
+            }
+
+            // Handle commander damage separately
             if event.source_is_commander {
                 if let Some(mut commander) = world.get_mut::<Commander>(event.source) {
                     // Update the commander's damage tracking
@@ -126,23 +132,21 @@ pub fn assign_blocker(app: &mut App, attacker: Entity, blocker: Entity) {
 /// Deal damage to all players
 #[allow(dead_code)]
 pub fn deal_damage_to_players(app: &mut App, amount: i32) {
-    let world = app.world_mut();
+    let mut world = app.world_mut();
 
     // Deal damage to all players
     if amount > 0 {
         // Get all player entities
-        let players: Vec<Entity> = world.query::<Entity>().iter(&world).collect();
+        let players: Vec<Entity> = world
+            .query_filtered::<Entity, With<Player>>()
+            .iter(&world)
+            .collect();
 
-        // Then apply damage to each player
+        // Then apply damage to each player one at a time
         for player_entity in players {
             if let Some(mut player) = world.get_mut::<Player>(player_entity) {
                 player.life -= amount;
             }
-        }
-
-        // Finally update game state
-        if let Some(mut game_state) = world.get_resource_mut::<GameState>() {
-            game_state.state_based_actions_performed = true;
         }
     }
 }

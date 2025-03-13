@@ -102,9 +102,9 @@ pub fn spawn_battlefield_zone(
     battlefield_entity
 }
 
-/// System to organize cards on the battlefield by type and in a grid
+/// Organize the cards on the battlefield in a grid layout
 pub fn organize_battlefield_cards(
-    mut query: Query<(&BattlefieldZone, &Children, &mut Transform)>,
+    battlefield_query: Query<(&BattlefieldZone, &Children)>,
     mut card_query: Query<(&mut Transform, Option<&PermanentType>)>,
     windows: Query<&Window>,
 ) {
@@ -112,7 +112,7 @@ pub fn organize_battlefield_cards(
     let window_width = window.width();
     let window_height = window.height();
 
-    for (battlefield, children, _) in query.iter_mut() {
+    for (battlefield, children) in battlefield_query.iter() {
         let card_count = children.len();
 
         // Skip if no cards on battlefield

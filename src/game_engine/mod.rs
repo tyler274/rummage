@@ -49,11 +49,7 @@ use crate::game_engine::priority::{priority_passing_system, priority_system};
 
 use crate::menu::{GameMenuState, state::StateTransitionContext};
 use crate::player::Player;
-use bevy::ecs::schedule::ScheduleLabel;
-use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
-use bevy::time::common_conditions::on_timer;
-use std::time::Duration;
 
 /// Custom schedule for fixed timestep game logic updates
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
