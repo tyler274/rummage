@@ -6,7 +6,7 @@ mod position;
 mod table;
 
 use crate::camera::components::{AppLayer, GameCamera};
-use crate::deck::{PlayerDeck, get_player_shuffled_deck, get_player_specific_cards};
+use crate::deck::{PlayerDeck, get_player_shuffled_deck};
 use crate::player::components::Player;
 use crate::player::playmat::spawn_player_playmat; // Import the new playmat function
 use crate::player::resources::PlayerConfig;
@@ -97,18 +97,25 @@ pub fn spawn_players(
 
         // Only spawn visual cards for player 1 or if spawn_all_cards is true
         if player_index == 0 || config.spawn_all_cards {
-            // Get player-specific cards and clone them for display
-            let cards = get_player_specific_cards(player_entity, player_index);
+            // Instead of getting new cards, draw from the player's own deck
+            // Make a copy of the deck to draw from without modifying the original
+            let mut temp_deck = deck.clone();
 
-            // Take the first 7 cards for display (representing a starting hand)
-            let display_cards = cards.iter().take(7).cloned().collect::<Vec<_>>();
+            // Draw 7 cards from the player's own deck as a starting hand
+            let display_cards = temp_deck.draw_multiple(7);
+
+            info!(
+                "Drew {} cards from player {}'s own deck for display",
+                display_cards.len(),
+                player_index
+            );
 
             // Update the player's cards while preserving other fields
             commands.entity(player_entity).insert(
                 Player::new(&player.name)
                     .with_life(player.life)
                     .with_player_index(player.player_index)
-                    .with_cards(cards),
+                    .with_cards(display_cards.clone()),
             );
 
             // Spawn visual cards for all players that have cards

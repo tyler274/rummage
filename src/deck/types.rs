@@ -199,7 +199,16 @@ impl Deck {
 
     /// Shuffle the deck
     pub fn shuffle(&mut self) {
-        self.cards.shuffle(&mut rand::rng());
+        use rand::SeedableRng;
+        use rand::rngs::StdRng;
+
+        // Create a fresh random number generator with a unique seed
+        // This ensures each shuffle is independent
+        let seed = rand::random::<u64>();
+        let mut rng = StdRng::seed_from_u64(seed);
+
+        // Shuffle using our independent RNG
+        self.cards.shuffle(&mut rng);
     }
 
     /// Draw a card from the top of the deck
