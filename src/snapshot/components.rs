@@ -25,7 +25,6 @@ pub struct SnapshotSettings {
     /// Filename to save the snapshot
     ///
     /// This field is used by snapshot handling systems to determine where to save the image
-    #[allow(dead_code)]
     pub filename: String,
 
     /// Whether to include debug information in the snapshot
@@ -34,13 +33,11 @@ pub struct SnapshotSettings {
     /// Optional description to include in the filename
     ///
     /// Used for creating more descriptive snapshot filenames
-    #[allow(dead_code)]
     pub description: Option<String>,
 
     /// Whether to save automatically - if false, will only create the RenderTarget
     ///
     /// Currently all snapshots are saved automatically by default
-    #[allow(dead_code)]
     pub auto_save: bool,
 }
 

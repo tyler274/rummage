@@ -6,7 +6,6 @@ pub struct SnapshotConfig {
     /// Directory to save snapshots to (default: workspace root)
     ///
     /// This path will be used for saving snapshots when screenshot functionality is fully implemented
-    #[allow(dead_code)]
     pub output_dir: String,
     /// Prefix for snapshot filenames
     pub filename_prefix: String,
@@ -15,12 +14,10 @@ pub struct SnapshotConfig {
     /// Resolution of snapshots (default: 1920x1080)
     ///
     /// This will be used when screenshot functionality is fully implemented to specify custom resolutions
-    #[allow(dead_code)]
     pub resolution: Vec2,
     /// Whether to enable automatic snapshots on particular events
     ///
     /// This will be used to trigger snapshots on specific game events without manual intervention
-    #[allow(dead_code)]
     pub auto_snapshot_enabled: bool,
     /// Whether to capture debug visualization in snapshots
     pub include_debug_by_default: bool,
