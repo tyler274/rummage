@@ -37,7 +37,6 @@ pub fn create_test_player(app: &mut App, _name: &str, _position: Vec2) -> Entity
                 life: 40,
                 mana_pool: ManaPool::default(),
                 cards: Vec::<Card>::new(),
-                deck: None,
                 player_index: 0,
             },
             Transform::from_translation(Vec3::new(_position.x, _position.y, 0.0)),

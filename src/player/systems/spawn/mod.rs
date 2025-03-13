@@ -6,7 +6,7 @@ mod position;
 mod table;
 
 use crate::camera::components::{AppLayer, GameCamera};
-use crate::deck::{get_player_shuffled_deck, get_player_specific_cards};
+use crate::deck::{PlayerDeck, get_player_shuffled_deck, get_player_specific_cards};
 use crate::player::components::Player;
 use crate::player::playmat::spawn_player_playmat; // Import the new playmat function
 use crate::player::resources::PlayerConfig;
@@ -19,6 +19,7 @@ use bevy::prelude::*;
 /// 2. Creates player entities with appropriate positioning
 /// 3. Only spawns cards for player 1 by default (or all if configured)
 /// 4. Creates a playmat for each player using the game engine Zone structure
+/// 5. Creates independent deck components for each player
 pub fn spawn_players(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -76,7 +77,25 @@ pub fn spawn_players(
             player_transform.translation,
         );
 
-        // Only spawn cards for player 1 or if spawn_all_cards is true
+        // Create a player-specific deck for ALL players
+        let deck = get_player_shuffled_deck(
+            player_entity,
+            player_index,
+            Some(&format!("Player {} Deck", player_index + 1)),
+        );
+
+        // Add the PlayerDeck component to the player entity
+        commands
+            .entity(player_entity)
+            .insert(PlayerDeck::new(deck.clone()));
+
+        info!(
+            "Added independent deck component with {} cards to player {}",
+            deck.cards.len(),
+            player_index
+        );
+
+        // Only spawn visual cards for player 1 or if spawn_all_cards is true
         if player_index == 0 || config.spawn_all_cards {
             // Get player-specific cards and clone them for display
             let cards = get_player_specific_cards(player_entity, player_index);
@@ -84,27 +103,12 @@ pub fn spawn_players(
             // Take the first 7 cards for display (representing a starting hand)
             let display_cards = cards.iter().take(7).cloned().collect::<Vec<_>>();
 
-            // Create a player-specific deck
-            let deck = get_player_shuffled_deck(
-                player_entity,
-                player_index,
-                Some(&format!("Player {} Deck", player_index + 1)),
-            );
-
-            info!(
-                "Added {} cards and a deck with {} cards to player {}",
-                cards.len(),
-                deck.cards.len(),
-                player_index
-            );
-
             // Update the player's cards while preserving other fields
             commands.entity(player_entity).insert(
                 Player::new(&player.name)
                     .with_life(player.life)
                     .with_player_index(player.player_index)
-                    .with_cards(cards)
-                    .with_deck(deck),
+                    .with_cards(cards),
             );
 
             // Spawn visual cards for all players that have cards

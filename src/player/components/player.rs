@@ -1,5 +1,4 @@
 use crate::card::Card;
-use crate::deck::Deck;
 use crate::mana::ManaPool;
 use bevy::prelude::*;
 
@@ -16,9 +15,6 @@ pub struct Player {
     /// Cards in the player's possession
     #[allow(dead_code)]
     pub cards: Vec<Card>,
-    /// Player's deck
-    #[allow(dead_code)]
-    pub deck: Option<Deck>,
     /// Player index (0-based) for positioning and identification
     pub player_index: usize,
 }
@@ -31,7 +27,6 @@ impl Player {
             life: 40, // Default life total for Commander format
             mana_pool: ManaPool::default(),
             cards: Vec::new(),
-            deck: None,
             player_index: 0,
         }
     }
@@ -52,12 +47,6 @@ impl Player {
     /// Sets the player's cards
     pub fn with_cards(mut self, cards: Vec<Card>) -> Self {
         self.cards = cards;
-        self
-    }
-
-    /// Sets the player's deck
-    pub fn with_deck(mut self, deck: Deck) -> Self {
-        self.deck = Some(deck);
         self
     }
 

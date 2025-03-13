@@ -25,6 +25,33 @@ pub struct Deck {
     pub owner: Option<Entity>,
 }
 
+/// Component to track a player's deck
+/// This allows decks to be a proper ECS component that can be independently queried and modified
+#[derive(Component, Debug, Clone)]
+pub struct PlayerDeck {
+    /// The actual deck data
+    pub deck: Deck,
+}
+
+impl PlayerDeck {
+    /// Create a new player deck component
+    pub fn new(deck: Deck) -> Self {
+        Self { deck }
+    }
+
+    /// Draw a card from the top of the deck
+    #[allow(dead_code)]
+    pub fn draw(&mut self) -> Option<crate::card::Card> {
+        self.deck.draw()
+    }
+
+    /// Draw multiple cards from the top of the deck
+    #[allow(dead_code)]
+    pub fn draw_multiple(&mut self, count: usize) -> Vec<crate::card::Card> {
+        self.deck.draw_multiple(count)
+    }
+}
+
 /// Represents different types of Magic decks
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum DeckType {

@@ -1,7 +1,7 @@
 mod builder;
 mod types;
 
-pub use types::{Deck, DeckType};
+pub use types::{Deck, DeckType, PlayerDeck};
 
 // Re-export any other types or functions that should be public
 
@@ -14,8 +14,22 @@ impl Plugin for DeckPlugin {
     fn build(&self, app: &mut App) {
         // Register any systems related to decks
         app.init_resource::<DeckRegistry>()
-            .add_systems(Startup, register_default_decks);
+            .add_systems(Startup, register_default_decks)
+            .add_systems(Startup, shuffle_all_player_decks);
     }
+}
+
+/// System to ensure all player decks are properly shuffled independently
+/// This is run during startup to ensure each player starts with a randomized deck
+fn shuffle_all_player_decks(mut player_decks: Query<&mut PlayerDeck>) {
+    info!("Shuffling all player decks...");
+
+    for (index, mut player_deck) in player_decks.iter_mut().enumerate() {
+        player_deck.deck.shuffle();
+        info!("Shuffled deck for player {}", index);
+    }
+
+    info!("All player decks have been independently shuffled");
 }
 
 // Registry for storing predefined decks
