@@ -49,7 +49,15 @@ use crate::game_engine::priority::{priority_passing_system, priority_system};
 
 use crate::menu::{GameMenuState, state::StateTransitionContext};
 use crate::player::Player;
+use bevy::ecs::schedule::ScheduleLabel;
+use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
+use bevy::time::common_conditions::on_timer;
+use std::time::Duration;
+
+/// Custom schedule for fixed timestep game logic updates
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+pub struct FixedGameLogicSet;
 
 /// Condition function to check if the game state is InGame
 pub fn game_state_condition(state: Res<State<GameMenuState>>) -> bool {
@@ -65,6 +73,35 @@ impl Plugin for GameEnginePlugin {
         if !app.world().contains_resource::<Phase>() {
             app.insert_resource(Phase::default());
         }
+
+        // Register all game logic systems in the FixedUpdate schedule
+        // This ensures they run at a fixed timestep decoupled from the frame rate
+        app.add_systems(
+            FixedUpdate,
+            (
+                // Core game systems
+                phase_transition_system,
+                priority_system.after(phase_transition_system),
+                priority_passing_system.after(priority_system),
+                stack::stack_resolution_system.after(priority_passing_system),
+                state::state_based_actions_system.after(stack::stack_resolution_system),
+                state::trigger_state_based_actions_system.after(state::state_based_actions_system),
+                process_game_actions.after(state::trigger_state_based_actions_system),
+                // Turn systems
+                handle_turn_start.after(process_game_actions),
+                handle_turn_end.after(handle_turn_start),
+                // Combat systems in sequence
+                initialize_combat_phase.after(handle_turn_end),
+                handle_declare_attackers_event.after(initialize_combat_phase),
+                declare_attackers_system.after(handle_declare_attackers_event),
+                handle_declare_blockers_event.after(declare_attackers_system),
+                declare_blockers_system.after(handle_declare_blockers_event),
+                assign_combat_damage_system.after(declare_blockers_system),
+                process_combat_damage_system.after(assign_combat_damage_system),
+                end_combat_system.after(process_combat_damage_system),
+            )
+                .run_if(in_state(GameMenuState::InGame)),
+        );
 
         // Register events
         app.add_event::<GameAction>()
@@ -112,63 +149,6 @@ impl Plugin for GameEnginePlugin {
         register_turn_systems(app);
         // Register commander systems
         commander::register_commander_systems(app);
-
-        // Register each system individually with the condition
-        // Core systems
-        app.add_systems(
-            Update,
-            phase_transition_system.run_if(in_state(GameMenuState::InGame)),
-        );
-        app.add_systems(
-            Update,
-            priority_system.run_if(in_state(GameMenuState::InGame)),
-        );
-        app.add_systems(
-            Update,
-            priority_passing_system.run_if(in_state(GameMenuState::InGame)),
-        );
-        app.add_systems(
-            Update,
-            stack::stack_resolution_system.run_if(in_state(GameMenuState::InGame)),
-        );
-        app.add_systems(
-            Update,
-            state::state_based_actions_system.run_if(in_state(GameMenuState::InGame)),
-        );
-        app.add_systems(
-            Update,
-            state::trigger_state_based_actions_system.run_if(in_state(GameMenuState::InGame)),
-        );
-        app.add_systems(
-            Update,
-            process_game_actions.run_if(in_state(GameMenuState::InGame)),
-        );
-
-        // Turn systems - Add these AFTER registering turn systems
-        app.add_systems(
-            Update,
-            handle_turn_start.run_if(in_state(GameMenuState::InGame)),
-        );
-        app.add_systems(
-            Update,
-            handle_turn_end.run_if(in_state(GameMenuState::InGame)),
-        );
-
-        // Combat systems
-        app.add_systems(
-            Update,
-            (
-                initialize_combat_phase,
-                handle_declare_attackers_event.after(initialize_combat_phase),
-                declare_attackers_system.after(handle_declare_attackers_event),
-                handle_declare_blockers_event.after(declare_attackers_system),
-                declare_blockers_system.after(handle_declare_blockers_event),
-                assign_combat_damage_system.after(declare_blockers_system),
-                process_combat_damage_system.after(assign_combat_damage_system),
-                end_combat_system.after(process_combat_damage_system),
-            )
-                .run_if(in_state(GameMenuState::InGame)),
-        );
 
         // Allow politics systems to register additional systems
         politics::register_politics_systems(app);
@@ -229,11 +209,25 @@ pub fn register_game_engine(app: &mut App) {
     turns::register_turn_systems(app);
     zones::register_zone_systems(app);
 
-    // For combat and commander, let's create simple plugins if needed
+    // Add the stack system
+    app.init_resource::<GameStack>();
+
+    // Add the priority system
+    app.init_resource::<PrioritySystem>();
+
+    // Add all game systems to FixedUpdate schedule for consistent timing
     app.add_systems(
-        Update,
+        FixedUpdate,
         (
-            initialize_combat_phase,
+            // Core game systems
+            phase_transition_system,
+            priority_system.after(phase_transition_system),
+            priority_passing_system.after(priority_system),
+            stack::stack_resolution_system.after(priority_passing_system),
+            state::state_based_actions_system.after(stack::stack_resolution_system),
+            state::trigger_state_based_actions_system.after(state::state_based_actions_system),
+            // Combat systems
+            initialize_combat_phase.after(state::trigger_state_based_actions_system),
             handle_declare_attackers_event.after(initialize_combat_phase),
             declare_attackers_system.after(handle_declare_attackers_event),
             handle_declare_blockers_event.after(declare_attackers_system),
@@ -247,20 +241,4 @@ pub fn register_game_engine(app: &mut App) {
 
     // Register commander systems
     commander::register_commander_systems(app);
-
-    // Add the stack system
-    app.init_resource::<GameStack>();
-
-    // Add the priority system
-    app.init_resource::<PrioritySystem>();
-
-    // Register state systems
-    app.add_systems(
-        Update,
-        (
-            state::state_based_actions_system,
-            state::trigger_state_based_actions_system,
-        )
-            .run_if(in_state(GameMenuState::InGame)),
-    );
 }

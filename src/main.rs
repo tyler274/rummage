@@ -18,6 +18,7 @@ mod utils;
 use bevy::DefaultPlugins;
 use bevy::log::Level;
 use bevy::prelude::*;
+use bevy::time::Fixed;
 use bevy::window::WindowResolution;
 use camera::CameraPlugin;
 use docs::Docs;
@@ -53,6 +54,9 @@ fn main() {
     }
 
     let mut app = App::new();
+
+    // Configure the fixed timestep update rate (20 Hz)
+    app.insert_resource(Time::<Fixed>::from_seconds(0.05));
 
     app.add_plugins(
         DefaultPlugins
@@ -104,7 +108,7 @@ fn main() {
 
     // Add the SnapshotDisabled resource if the snapshot feature is enabled
     #[cfg(feature = "snapshot")]
-    app.insert_resource(SnapshotDisabled::disabled()); // Disable snapshots to debug panic
+    app.insert_resource(SnapshotDisabled::enabled()); // Enable snapshots
 
     app.add_systems(Update, utils::handle_exit).run();
 }

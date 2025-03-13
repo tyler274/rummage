@@ -61,14 +61,18 @@ pub struct CurrentPhaseLayout {
 pub enum GamePhase {
     #[default]
     Main,
+    #[allow(dead_code)]
     Combat,
+    #[allow(dead_code)]
     Drawing,
+    #[allow(dead_code)]
     Searching,
 }
 
 // Add a helper method to get the phase name for display
 impl GamePhase {
     /// Get a display name for the current phase
+    #[allow(dead_code)]
     pub fn display_name(&self) -> &'static str {
         match self {
             GamePhase::Main => "Main Phase",
@@ -79,28 +83,47 @@ impl GamePhase {
     }
 }
 
+/// System set to identify all playmat-related systems for proper ordering
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+pub enum PlaymatSystemSet {
+    /// Core playmat systems
+    Core,
+}
+
 /// Plugin for player playmat functionality
 pub struct PlayerPlaymatPlugin;
 
 impl Plugin for PlayerPlaymatPlugin {
     fn build(&self, app: &mut App) {
+        info!("Initializing PlayerPlaymatPlugin");
         app.init_resource::<ZoneFocusState>()
             .init_resource::<CurrentPhaseLayout>()
+            .configure_sets(Update, PlaymatSystemSet::Core)
+            // UI interaction systems - keep in Update for responsiveness
+            .add_systems(
+                Update,
+                (
+                    handle_zone_interactions,
+                    hand::toggle_hand_expansion,
+                    battlefield::toggle_battlefield_grouping,
+                    battlefield::adjust_battlefield_zoom,
+                )
+                    .in_set(PlaymatSystemSet::Core),
+            )
+            // Layout and rendering systems - can be in Update but after UI interactions
             .add_systems(
                 Update,
                 (
                     highlight_active_zones,
-                    handle_zone_interactions,
                     adapt_zone_sizes,
                     update_phase_based_layout,
-                    // Add our new systems for improved card handling
                     hand::arrange_cards_in_hand,
-                    hand::toggle_hand_expansion,
                     battlefield::organize_battlefield_cards,
-                    battlefield::toggle_battlefield_grouping,
-                    battlefield::adjust_battlefield_zoom,
-                ),
+                )
+                    .in_set(PlaymatSystemSet::Core)
+                    .after(handle_zone_interactions),
             );
+        info!("PlayerPlaymatPlugin initialization complete");
     }
 }
 

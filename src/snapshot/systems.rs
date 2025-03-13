@@ -68,26 +68,39 @@ pub fn handle_snapshot_events(
     game_cameras: Query<Entity, With<GameCamera>>,
     snapshots: Query<&CameraSnapshot>,
 ) {
+    debug!("Entering handle_snapshot_events system");
+    let event_count = events.len();
+    debug!("Processing {} snapshot events", event_count);
+
     for event in events.read() {
+        debug!("Processing snapshot event: {:?}", event);
         // Find the camera to use for the snapshot
         let camera_entity = match event.camera_entity {
-            Some(entity) => entity,
+            Some(entity) => {
+                debug!("Using specified camera entity: {:?}", entity);
+                entity
+            }
             None => {
+                debug!("No camera specified, looking for game cameras");
                 // Use the first game camera if none specified
                 let cameras: Vec<Entity> = game_cameras.iter().collect();
                 if cameras.is_empty() {
                     error!("No game cameras found for snapshot!");
+                    debug!("Skipping event due to missing camera");
                     continue;
                 }
+                debug!("Using default game camera: {:?}", cameras[0]);
                 cameras[0]
             }
         };
 
         // Generate filename based on settings
         let timestamp = if config.include_timestamp {
+            debug!("Including timestamp in filename");
             let now = Local::now();
             now.format("_%Y%m%d_%H%M%S").to_string()
         } else {
+            debug!("Timestamp disabled in config");
             String::new()
         };
 
@@ -97,14 +110,17 @@ pub fn handle_snapshot_events(
             .or(Some(&"debug".to_string()))
             .map(|desc| format!("_{}", desc))
             .unwrap_or_default();
+        debug!("Using description for filename: {}", description);
 
         let filename = event.filename.clone().unwrap_or(format!(
             "{}{}{}.png",
             config.filename_prefix, timestamp, description
         ));
+        debug!("Generated filename: {}", filename);
 
         // Set up the snapshot components
         if !snapshots.contains(camera_entity) {
+            debug!("Camera does not have snapshot components, adding them now");
             // Add snapshot components only if they don't exist using chainable constructors
             commands.entity(camera_entity).insert((
                 CameraSnapshot::new(),
@@ -123,18 +139,23 @@ pub fn handle_snapshot_events(
                 camera_entity, filename
             );
         } else {
+            debug!("Camera already has snapshot components, skipping");
             info!(
                 "Camera {:?} is already set up for snapshot, ignoring additional request",
                 camera_entity
             );
         }
     }
+    debug!("Exiting handle_snapshot_events system");
 }
 
 /// Exclusive system to process pending snapshots and set up screenshot capture
 /// This approach avoids threading conflicts by having full world access
 pub fn process_pending_snapshots_exclusive(world: &mut World) {
+    debug!("Entering process_pending_snapshots_exclusive");
+
     // Get the snapshots query results
+    debug!("Querying for pending snapshots");
     let snapshot_entities = world
         .query::<(Entity, &CameraSnapshot, &SnapshotSettings)>()
         .iter(world)
@@ -142,17 +163,24 @@ pub fn process_pending_snapshots_exclusive(world: &mut World) {
         .map(|(entity, _, settings)| (entity, settings.clone()))
         .collect::<Vec<_>>();
 
+    debug!("Found {} pending snapshots", snapshot_entities.len());
+
     // Process only one snapshot per frame
     if let Some((camera_entity, settings)) = snapshot_entities.first() {
         let camera_entity = *camera_entity;
+        debug!("Processing snapshot for camera entity: {:?}", camera_entity);
 
         // Mark as taken
         if let Some(mut snapshot) = world.get_mut::<CameraSnapshot>(camera_entity) {
+            debug!("Marking snapshot as taken");
             snapshot.taken = true;
+        } else {
+            debug!("Failed to get CameraSnapshot component for marking");
         }
 
         // If debug info should be included, ensure debug layers are visible
         if settings.include_debug {
+            debug!("Debug info requested, ensuring debug layers are visible");
             let debug_entities = world
                 .query_filtered::<Entity, With<AppLayer>>()
                 .iter(world)
@@ -164,6 +192,7 @@ pub fn process_pending_snapshots_exclusive(world: &mut World) {
             );
 
             for debug_entity in debug_entities {
+                debug!("Processing debug entity: {:?}", debug_entity);
                 let has_visibility = world.get::<Visibility>(debug_entity).is_some();
                 let has_global_transform = world.get::<GlobalTransform>(debug_entity).is_some();
                 let has_inherited_visibility =
@@ -195,8 +224,24 @@ pub fn process_pending_snapshots_exclusive(world: &mut World) {
                 if world.get::<ViewVisibility>(debug_entity).is_none() {
                     world.entity_mut(debug_entity).insert(view_visible);
                 }
+
+                // Ensure visibility is set to visible for the snapshot
+                if let Some(mut visibility) = world.get_mut::<Visibility>(debug_entity) {
+                    debug!(
+                        "Setting Visibility to Visible for entity {:?}",
+                        debug_entity
+                    );
+                    *visibility = Visibility::Visible;
+                }
             }
+        } else {
+            debug!("Debug info not requested for this snapshot");
         }
+
+        debug!(
+            "Snapshot processing complete for entity {:?}",
+            camera_entity
+        );
 
         info!("Taking snapshot with camera {:?}", camera_entity);
 
@@ -207,13 +252,18 @@ pub fn process_pending_snapshots_exclusive(world: &mut World) {
         );
         info!("Or press F12 during gameplay for a manual screenshot");
 
+        debug!("Cleanup: removing snapshot components from camera");
         // Clean up the components after processing
         let mut entity = world.entity_mut(camera_entity);
         entity.remove::<CameraSnapshot>();
         entity.remove::<SnapshotSettings>();
 
         info!("Removed snapshot components from camera entity");
+    } else {
+        debug!("No pending snapshots to process");
     }
+
+    debug!("Exiting process_pending_snapshots_exclusive");
 }
 
 /// Utility function to trigger a snapshot programmatically
@@ -277,5 +327,100 @@ pub fn check_snapshot_key_input(
         } else {
             error!("No game camera found for manual snapshot");
         }
+    }
+}
+
+/// Non-exclusive system to process pending snapshots using standard system parameters
+/// instead of direct world access, avoiding threading conflicts
+pub fn process_pending_snapshots(
+    mut commands: Commands,
+    snapshot_query: Query<(Entity, &CameraSnapshot, &SnapshotSettings)>,
+    app_layer_query: Query<Entity, With<AppLayer>>,
+    mut snapshot_components: Query<&mut CameraSnapshot>,
+    visibility_query: Query<&Visibility>,
+    transform_query: Query<&GlobalTransform>,
+    inherited_visibility_query: Query<&InheritedVisibility>,
+    view_visibility_query: Query<&ViewVisibility>,
+) {
+    debug!("Entering process_pending_snapshots");
+
+    // Get the snapshots that need processing
+    let pending_snapshots: Vec<(Entity, SnapshotSettings)> = snapshot_query
+        .iter()
+        .filter(|(_, snapshot, _)| !snapshot.taken)
+        .map(|(entity, _, settings)| (entity, settings.clone()))
+        .collect();
+
+    debug!("Found {} pending snapshots", pending_snapshots.len());
+
+    // Process only one snapshot per frame to avoid overwhelming the system
+    if let Some((camera_entity, settings)) = pending_snapshots.first() {
+        let camera_entity = *camera_entity;
+        debug!("Processing snapshot for camera entity: {:?}", camera_entity);
+
+        // Mark the snapshot as taken
+        if let Ok(mut snapshot) = snapshot_components.get_mut(camera_entity) {
+            debug!("Marking snapshot as taken");
+            snapshot.taken = true;
+        } else {
+            debug!("Failed to get CameraSnapshot component for marking");
+        }
+
+        // If debug info should be included, ensure debug layers are visible
+        if settings.include_debug {
+            debug!("Debug info requested, ensuring debug layers are visible");
+            let debug_entities: Vec<Entity> = app_layer_query.iter().collect();
+
+            info!(
+                "Including debug visuals in snapshot, found {} debug layer entities",
+                debug_entities.len()
+            );
+
+            for debug_entity in debug_entities {
+                debug!("Processing debug entity: {:?}", debug_entity);
+
+                // Check if the entity has necessary components
+                let has_visibility = visibility_query.get(debug_entity).is_ok();
+                let has_global_transform = transform_query.get(debug_entity).is_ok();
+                let has_inherited_visibility = inherited_visibility_query.get(debug_entity).is_ok();
+                let has_view_visibility = view_visibility_query.get(debug_entity).is_ok();
+
+                // Add missing components using commands (safer than direct world access)
+                let mut entity_commands = commands.entity(debug_entity);
+
+                if !has_visibility {
+                    debug!("Adding Visibility to entity {:?}", debug_entity);
+                    entity_commands.insert(Visibility::Visible);
+                }
+
+                if !has_global_transform {
+                    debug!("Adding GlobalTransform to entity {:?}", debug_entity);
+                    entity_commands.insert(GlobalTransform::default());
+                }
+
+                if !has_inherited_visibility {
+                    debug!("Adding InheritedVisibility to entity {:?}", debug_entity);
+                    entity_commands.insert(InheritedVisibility::default());
+                }
+
+                if !has_view_visibility {
+                    debug!("Adding ViewVisibility to entity {:?}", debug_entity);
+                    entity_commands.insert(ViewVisibility::default());
+                }
+
+                // If the entity already has visibility, set it to visible for the snapshot
+                // (We'll need to do this in the next frame since we can't query and modify the same component)
+                if has_visibility {
+                    // Using a deferred operation via commands
+                    entity_commands.insert(Visibility::Visible);
+                }
+            }
+        }
+
+        debug!(
+            "Snapshot processing complete for entity {:?}",
+            camera_entity
+        );
+        info!("Taking snapshot with camera {:?}", camera_entity);
     }
 }

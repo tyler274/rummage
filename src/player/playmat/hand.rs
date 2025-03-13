@@ -12,6 +12,7 @@ use super::PlaymatZone;
 #[derive(Component, Debug)]
 pub struct HandZone {
     /// Player owning this hand
+    #[allow(dead_code)]
     pub player_id: Entity,
     /// Maximum cards that can be displayed without scaling
     pub optimal_card_count: u32,

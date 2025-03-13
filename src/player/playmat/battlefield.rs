@@ -13,6 +13,7 @@ use super::PlaymatZone;
 #[derive(Component, Debug)]
 pub struct BattlefieldZone {
     /// Player owning this battlefield
+    #[allow(dead_code)]
     pub player_id: Entity,
     /// Grid rows for layout
     pub grid_rows: u32,
@@ -38,6 +39,7 @@ impl Default for BattlefieldZone {
 
 /// Tag component for different permanent types on the battlefield
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
 pub enum PermanentType {
     Creature,
     Land,

@@ -1,9 +1,8 @@
 use crate::camera::components::GameCamera;
+use crate::snapshot::components::{CameraSnapshot, SnapshotSettings};
+use crate::snapshot::plugin::{SnapshotExclusiveSet, SnapshotPlugin};
+use crate::snapshot::resources::{SnapshotConfig, SnapshotDisabled, SnapshotEvent};
 use crate::snapshot::systems::{handle_snapshot_events, process_pending_snapshots_exclusive};
-use crate::snapshot::{
-    CameraSnapshot, SnapshotConfig, SnapshotDisabled, SnapshotEvent, SnapshotPlugin,
-    SnapshotSettings,
-};
 use bevy::prelude::*;
 
 #[test]
@@ -83,11 +82,20 @@ fn test_comprehensive_snapshot_workflow() {
     app.init_resource::<SnapshotConfig>()
         .insert_resource(SnapshotDisabled::enabled())
         .add_event::<SnapshotEvent>()
-        .init_resource::<Time>()
-        .add_systems(
-            Update,
-            (handle_snapshot_events, process_pending_snapshots_exclusive),
-        );
+        .init_resource::<Time>();
+
+    // Create a separate schedule for exclusive systems
+    let mut snapshot_schedule = Schedule::new(SnapshotExclusiveSet);
+    snapshot_schedule.add_systems(process_pending_snapshots_exclusive);
+    app.add_schedule(snapshot_schedule);
+
+    // Add a system to run the schedule after regular systems
+    app.add_systems(Last, |world: &mut World| {
+        world.run_schedule(SnapshotExclusiveSet);
+    });
+
+    // Add only the regular snapshot handling system to Update
+    app.add_systems(Update, handle_snapshot_events);
 
     // Customize the snapshot configuration to test all fields previously marked as dead code
     app.insert_resource(
