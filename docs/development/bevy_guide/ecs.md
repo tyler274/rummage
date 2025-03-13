@@ -222,6 +222,8 @@ app
     );
 ```
 
+Now that we understand how systems are organized and scheduled, let's explore how systems access and manipulate entity data through queries.
+
 ## Queries and Filters
 
 Queries are the primary way to access entity data in systems. Here are some common query patterns used in Rummage:
@@ -381,6 +383,8 @@ fn card_draw_system(mut event_reader: EventReader<DrawCardEvent>) {
 }
 ```
 
+The pitfalls discussed above highlight some of the common issues you might encounter when working with Bevy's ECS. In the next section, we'll explore more advanced techniques to prevent these issues from occurring in the first place.
+
 ## Safely Using Parameter Sets
 
 Bevy's ECS enforces strict borrowing rules to maintain memory safety and enable parallelism. A common cause of runtime panics is query parameter conflicts, especially when working with complex systems. This section covers techniques to write robust systems that avoid these issues.
@@ -455,4 +459,371 @@ fn other_card_system(
 
 ### Avoiding World References
 
-While it's possible to access the entire ECS `World`
+While it's possible to access the entire ECS `World` in a system, this approach bypasses Bevy's safety mechanisms and should be avoided whenever possible:
+
+**Problematic Approach**:
+```rust
+fn unsafe_world_system(world: &mut World) {
+    // Direct world access bypasses Bevy's safety checks
+    let mut cards = world.query::<&mut Card>();
+    
+    for mut card in cards.iter_mut(world) {
+        // This might conflict with other systems
+    }
+}
+```
+
+**Safer Alternative**:
+```rust
+fn safe_system(mut query: Query<&mut Card>) {
+    for mut card in &mut query {
+        // Bevy will handle safety and scheduling
+    }
+}
+```
+
+### Query Lifetimes and Temporary Storage
+
+This example shows how to safely implement card manipulation systems that would otherwise conflict with each other. By either using `ParamSet` or breaking the operation into separate systems with clear dependencies, we avoid the common causes of ECS panics.
+
+### Testing for Query Conflicts
+
+```rust
+#[test]
+fn verify_system_sets_compatibility() {
+    let mut app = App::new();
+    
+    // Add systems that should be compatible
+    app.add_systems(Update, (system_a, system_b));
+    
+    // Verify no conflicts using Bevy's built-in detection
+    app.world_mut().get_archetypes();
+}
+```
+
+While the techniques above apply broadly to all ECS systems, some specific system types present unique challenges. One particularly complex area in game development is state snapshotting and replay, which we'll explore next.
+
+### Working with Snapshot Systems
+
+Game state snapshot systems can be particularly prone to query conflicts since they often need to access a wide range of components. Here are patterns to make snapshot systems more robust:
+
+#### Isolating Snapshot Systems
+
+Place snapshot-related systems in dedicated sets that run at specific points in the frame:
+
+```rust
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+enum SnapshotSystemSet {
+    PrepareSnapshot,
+    ProcessEvents,
+    ApplySnapshot,
+}
+
+app
+    .configure_sets(
+        Update,
+        (
+            // Run snapshot systems after regular game systems
+            GameSystemSet::All,
+            SnapshotSystemSet::PrepareSnapshot,
+            SnapshotSystemSet::ProcessEvents,
+            SnapshotSystemSet::ApplySnapshot,
+        ).chain()
+    );
+```
+
+#### Deferred Snapshot Processing
+
+Instead of trying to query and modify components immediately, gather snapshot data and defer processing:
+
+```rust
+#[derive(Resource, Default)]
+struct PendingSnapshots {
+    snapshots: Vec<GameSnapshot>,
+}
+
+// First system: collect snapshot data
+fn handle_snapshot_events(
+    mut event_reader: EventReader<SnapshotEvent>,
+    mut pending: ResMut<PendingSnapshots>,
+    query: Query<&GameState>,
+) {
+    for event in event_reader.iter() {
+        // Collect necessary data without modifying anything
+        let snapshot = create_snapshot(&query, event);
+        pending.snapshots.push(snapshot);
+    }
+}
+
+// Second system: process collected snapshots
+fn process_pending_snapshots(
+    mut commands: Commands,
+    mut pending: ResMut<PendingSnapshots>,
+) {
+    for snapshot in pending.snapshots.drain(..) {
+        // Now apply changes using commands
+        apply_snapshot(&mut commands, snapshot);
+    }
+}
+```
+
+#### Read-Only Snapshots
+
+When possible, make snapshots read-only operations that don't modify components directly:
+
+```rust
+fn create_snapshot(
+    query: Query<(Entity, &Transform, &Health), With<Snapshotable>>,
+) -> GameSnapshot {
+    let mut snapshot = GameSnapshot::default();
+    
+    for (entity, transform, health) in &query {
+        snapshot.entities.push(SnapshotEntry {
+            entity,
+            position: transform.translation,
+            health: health.current,
+        });
+    }
+    
+    snapshot
+}
+```
+
+#### Command-Based Modifications
+
+When applying snapshots, use Commands to defer actual entity modifications:
+
+```rust
+fn apply_snapshot_system(
+    mut commands: Commands,
+    snapshots: Res<SnapshotRepository>,
+    entities: Query<Entity, With<Snapshotable>>,
+) {
+    if let Some(snapshot) = snapshots.get_latest() {
+        // First remove outdated entities
+        for entity in &entities {
+            if !snapshot.contains(entity) {
+                commands.entity(entity).despawn_recursive();
+            }
+        }
+        
+        // Then apply snapshot data using commands
+        for entry in &snapshot.entities {
+            commands.spawn((
+                Snapshotable,
+                Transform::from_translation(entry.position),
+                Health { current: entry.health, maximum: entry.max_health },
+            ));
+        }
+    }
+}
+```
+
+This approach ensures that entity modifications happen at safe times controlled by Bevy's command buffer system.
+
+#### Debugging Snapshot Systems with Trace Logging
+
+Snapshot systems can be particularly difficult to debug due to their complex interactions with the ECS. Structured logging can help identify where issues occur:
+
+```rust
+fn handle_snapshot_events(
+    mut event_reader: EventReader<SnapshotEvent>,
+    mut pending: ResMut<PendingSnapshots>,
+) {
+    // Log system entry with count of events
+    trace!(system = "handle_snapshot_events", event_count = event_reader.len(), "Entering system");
+    
+    // Process events
+    for event in event_reader.iter() {
+        trace!(system = "handle_snapshot_events", event_id = ?event.id, "Processing event");
+        
+        match process_event(event, &mut pending) {
+            Ok(_) => trace!(system = "handle_snapshot_events", event_id = ?event.id, "Successfully processed"),
+            Err(e) => error!(system = "handle_snapshot_events", event_id = ?event.id, error = ?e, "Failed to process"),
+        }
+    }
+    
+    // Log system exit
+    trace!(system = "handle_snapshot_events", "Exiting system");
+}
+```
+
+When debugging snapshot systems, look for these common patterns in logs:
+
+1. Systems that enter but never exit (indicating a panic or infinite loop)
+2. Mismatched counts between processed and expected items
+3. Systems that execute in unexpected orders
+4. Repeated errors processing the same entities
+
+For complex debugging, consider a custom snapshot debug viewer:
+
+```rust
+#[derive(Resource)]
+struct SnapshotDebugger {
+    history: Vec<SnapshotDebugEntry>,
+    active_systems: HashSet<&'static str>,
+}
+
+impl SnapshotDebugger {
+    fn system_enter(&mut self, name: &'static str) {
+        self.active_systems.insert(name);
+        self.history.push(SnapshotDebugEntry {
+            timestamp: std::time::Instant::now(),
+            event: format!("System entered: {}", name),
+        });
+    }
+    
+    fn system_exit(&mut self, name: &'static str) {
+        self.active_systems.remove(name);
+        self.history.push(SnapshotDebugEntry {
+            timestamp: std::time::Instant::now(),
+            event: format!("System exited: {}", name),
+        });
+    }
+}
+
+// Add to app startup
+app.init_resource::<SnapshotDebugger>();
+
+// Modified system with detailed tracing
+fn handle_snapshot_events(
+    mut debugger: ResMut<SnapshotDebugger>,
+    mut event_reader: EventReader<SnapshotEvent>,
+    mut pending: ResMut<PendingSnapshots>,
+) {
+    let system_name = "handle_snapshot_events";
+    debugger.system_enter(system_name);
+    
+    // System logic here
+    
+    debugger.system_exit(system_name);
+}
+```
+
+This approach creates a permanent record of system execution that persists even if the system panics, making it easier to reconstruct what happened.
+
+### MTG-Specific Example: Card Manipulation Safety
+
+Now that we've covered the general techniques for safe ECS usage, let's apply these concepts to a concrete example in our Magic: The Gathering implementation. Card manipulation systems are a perfect illustration of where these safety techniques are crucial.
+
+```rust
+// Define components for MTG cards
+#[derive(Component)]
+struct Card {
+    id: String,
+    power: Option<i32>,
+    toughness: Option<i32>,
+}
+
+#[derive(Component)]
+enum CardZone {
+    Battlefield,
+    Graveyard,
+    Hand,
+    Library,
+    Exile,
+}
+
+// ParamSet approach for a card movement system
+fn move_card_system(
+    mut param_set: ParamSet<(
+        // Queries for different card zones
+        Query<(Entity, &Card), With<CardZone>>,
+        Query<&mut CardZone>,
+    )>,
+    commands: Commands,
+) {
+    // First gather all relevant card entities
+    let mut cards_to_move = Vec::new();
+    
+    // Using the first query to find cards
+    for (entity, card) in param_set.p0().iter() {
+        if should_move_card(card) {
+            cards_to_move.push(entity);
+        }
+    }
+    
+    // Then use the second query to update zone components
+    for entity in cards_to_move {
+        if let Ok(mut zone) = param_set.p1().get_mut(entity) {
+            // Update the zone safely
+            *zone = CardZone::Graveyard;
+        }
+    }
+}
+
+// Alternative approach using system sets for battlefield organization
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+enum CardSystemSet {
+    Preparation,
+    ZoneChanges,
+    StatUpdates,
+    Cleanup,
+}
+
+// First system: identify cards to organize
+fn identify_battlefield_cards(
+    query: Query<Entity, With<CardZone>>,
+    mut card_commands: ResMut<CardCommands>,
+) {
+    card_commands.to_organize.clear();
+    
+    for entity in &query {
+        if should_organize(entity) {
+            card_commands.to_organize.push(entity);
+        }
+    }
+}
+
+// Second system: update card positions
+fn organize_battlefield_cards(
+    mut query: Query<&mut Transform>,
+    card_commands: Res<CardCommands>,
+) {
+    for (index, &entity) in card_commands.to_organize.iter().enumerate() {
+        if let Ok(mut transform) = query.get_mut(entity) {
+            // Calculate new position
+            let position = calculate_card_position(index);
+            transform.translation = position;
+        }
+    }
+}
+
+// Register systems in the correct order
+app
+    .configure_sets(
+        Update,
+        (
+            CardSystemSet::Preparation,
+            CardSystemSet::ZoneChanges,
+            CardSystemSet::StatUpdates,
+            CardSystemSet::Cleanup,
+        ).chain()
+    )
+    .add_systems(
+        Update,
+        identify_battlefield_cards.in_set(CardSystemSet::Preparation)
+    )
+    .add_systems(
+        Update,
+        organize_battlefield_cards.in_set(CardSystemSet::ZoneChanges)
+    );
+```
+
+This example shows how to safely implement card manipulation systems that would otherwise conflict with each other. By either using `ParamSet` or breaking the operation into separate systems with clear dependencies, we avoid the common causes of ECS panics.
+
+## Conclusion
+
+Bevy's ECS provides a powerful foundation for building complex game systems, but it requires careful attention to system design and query patterns to avoid runtime panics. By following the best practices and safety techniques outlined in this guide, you can build robust, maintainable systems for your Magic: The Gathering implementation.
+
+Remember these key principles:
+- Keep components focused and well-documented
+- Use appropriate query filters to target exactly the entities you need
+- Handle potential conflicts with ParamSet and system ordering
+- Use Commands for deferred modifications when appropriate
+- Add detailed logging for complex system interactions
+- Test your systems thoroughly, including compatibility verification
+
+---
+
+Next: [Plugin Architecture](plugins.md)
