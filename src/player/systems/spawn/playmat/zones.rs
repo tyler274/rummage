@@ -1,10 +1,37 @@
 //! Coordinates spawning of all player playmat zones
 
+use crate::camera::components::AppLayer;
 use crate::player::components::Player;
 use crate::player::resources::PlayerConfig;
 use bevy::prelude::*;
 
 use super::{battlefield, command, exile, graveyard, hand, library};
+
+/// Zone component for all playmat zones
+#[derive(Component, Debug)]
+pub struct PlaymatZone {
+    /// The player this zone belongs to
+    pub player_id: Entity,
+    /// The type of zone
+    pub zone_type: ZoneType,
+}
+
+/// Types of zones on a player's playmat
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ZoneType {
+    /// Main play area for permanents
+    Battlefield,
+    /// Player's hand
+    Hand,
+    /// Player's deck/library
+    Library,
+    /// Player's discard pile
+    Graveyard,
+    /// Cards removed from game
+    Exile,
+    /// Special zone for commanders and emblems
+    Command,
+}
 
 /// Spawns all zones for a player's playmat
 pub fn spawn_player_zones(
