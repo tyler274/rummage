@@ -264,6 +264,7 @@ impl KeywordAbilities {
     }
 
     /// Parse keywords from a list of keyword strings (e.g., from MTGJSON)
+    #[allow(dead_code)]
     pub fn from_keyword_list(keywords: &[String]) -> Self {
         let mut abilities = HashSet::new();
         let mut ability_values = HashMap::new();

@@ -21,10 +21,9 @@ mod types;
 // Re-export types for external use
 pub use builder::CardBuilder;
 pub use components::{Draggable, NoUntapCondition, NoUntapEffect, PermanentState};
-pub use counters::PermanentCounters;
 pub use details::{
-    ArtifactCard, CardBundle, CardDetails, CreatureCard, CreatureOnField, EnchantmentCard,
-    LandCard, SpellCard, SpellType,
+    ArtifactCard, CardDetails, CreatureCard, CreatureOnField, EnchantmentCard, LandCard, SpellCard,
+    SpellType,
 };
 pub use keywords::{KeywordAbilities, KeywordAbility};
 pub use systems::{debug_render_text_positions, handle_card_dragging};
@@ -44,6 +43,7 @@ pub struct Card {
     pub card_details: CardDetails,
     pub rules_text: String,
     /// Keyword abilities the card has
+    #[allow(dead_code)]
     pub keywords: KeywordAbilities,
 }
 
@@ -79,11 +79,13 @@ impl Card {
     }
 
     /// Add a keyword ability to the card
+    #[allow(dead_code)]
     pub fn add_keyword(&mut self, keyword: KeywordAbility) {
         self.keywords.abilities.insert(keyword);
     }
 
     /// Add a keyword ability with a value (like "Protection from black")
+    #[allow(dead_code)]
     pub fn add_keyword_with_value(&mut self, keyword: KeywordAbility, value: &str) {
         self.keywords.abilities.insert(keyword);
         self.keywords
@@ -92,11 +94,13 @@ impl Card {
     }
 
     /// Check if the card has a specific keyword
+    #[allow(dead_code)]
     pub fn has_keyword(&self, keyword: KeywordAbility) -> bool {
         self.keywords.abilities.contains(&keyword)
     }
 
     /// Get the value for a keyword if it exists (e.g., "black" for "Protection from black")
+    #[allow(dead_code)]
     pub fn get_keyword_value(&self, keyword: KeywordAbility) -> Option<&str> {
         self.keywords
             .ability_values

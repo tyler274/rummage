@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::card::{Card, CardDetails};
 use crate::text::{
-    components::{CardTextContent, CardTextType, DebugConfig, SpawnedText, TextLayoutInfo},
+    components::{CardTextContent, DebugConfig, SpawnedText},
     systems::{
         debug_visualization::spawn_debug_visualization, mana_cost_text::create_mana_cost_text,
         name_text::create_name_text, power_toughness_text::spawn_power_toughness_text,

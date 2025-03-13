@@ -4,11 +4,11 @@ mod events;
 mod manager;
 mod systems;
 
-pub use builder::*;
-pub use controller::*;
-pub use events::*;
-pub use manager::*;
-pub use systems::*;
+// Re-export types for external use
+pub use controller::PermanentController;
+pub use events::{TurnEndEvent, TurnEventTracker, TurnStartEvent};
+pub use manager::TurnManager;
+pub use systems::{handle_turn_end, handle_turn_start, handle_untap_step};
 
 // Register all turn-related systems with the app
 pub fn register_turn_systems(app: &mut bevy::prelude::App) {

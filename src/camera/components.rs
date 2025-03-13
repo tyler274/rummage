@@ -9,6 +9,7 @@ pub enum AppLayer {
     /// Layer for menu elements (menus, Stars of David, etc.)
     Menu = 1,
     /// Shared layer for elements that should appear in both views
+    #[allow(dead_code)]
     Shared = 2,
 
     // Extended layers for more granular control
@@ -27,12 +28,16 @@ pub enum AppLayer {
     /// Layer for overlay notifications
     Overlay = 9,
     /// Layer for wireframe rendering
+    #[allow(dead_code)]
     Wireframe = 10,
     /// Layer for debug visuals
+    #[allow(dead_code)]
     Debug = 11,
     /// Layer for debug text
+    #[allow(dead_code)]
     DebugText = 12,
     /// Layer for debug gizmos/shapes
+    #[allow(dead_code)]
     DebugGizmo = 13,
 }
 
@@ -48,6 +53,7 @@ impl AppLayer {
     }
 
     /// Get a RenderLayers component including the shared layer
+    #[allow(dead_code)]
     pub fn with_shared(&self) -> RenderLayers {
         RenderLayers::from_layers(&[self.as_usize(), AppLayer::Shared.as_usize()])
     }
@@ -71,16 +77,19 @@ impl AppLayer {
     }
 
     /// Get the combined RenderLayers for debug layers
+    #[allow(dead_code)]
     pub fn debug_layers() -> RenderLayers {
         Self::Debug.layer() | Self::DebugText.layer() | Self::DebugGizmo.layer()
     }
 
     /// Get the RenderLayers for wireframe visualization
+    #[allow(dead_code)]
     pub fn wireframe_layers() -> RenderLayers {
         Self::Wireframe.layer()
     }
 
     /// Get the combined RenderLayers for all layers
+    #[allow(dead_code)]
     pub fn all_layers() -> RenderLayers {
         Self::game_layers()
             | Self::menu_layers()

@@ -1,8 +1,5 @@
-use bevy::prelude::*;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-
 use super::counters::PermanentCounters;
+use bevy::prelude::*;
 
 /// Component for tracking the state of permanents on the battlefield
 #[derive(Component, Debug, Clone, Default)]
@@ -14,6 +11,7 @@ pub struct PermanentState {
     /// The turn this permanent entered the battlefield
     pub turn_entered_battlefield: u32,
     /// Counters on the permanent
+    #[allow(dead_code)]
     pub counters: PermanentCounters,
 }
 
@@ -21,6 +19,7 @@ pub struct PermanentState {
 #[derive(Component, Debug, Clone)]
 pub struct NoUntapEffect {
     /// The source of the effect (e.g., the card that applied this effect)
+    #[allow(dead_code)]
     pub source: Option<Entity>,
     /// The condition that must be met for the permanent to not untap
     /// If None, the permanent never untaps during untap step
@@ -31,14 +30,19 @@ pub struct NoUntapEffect {
 #[derive(Debug, Clone)]
 pub enum NoUntapCondition {
     /// The permanent doesn't untap during its controller's next untap step only
+    #[allow(dead_code)]
     NextUntapStep,
     /// The permanent doesn't untap as long as a specified permanent exists
+    #[allow(dead_code)]
     WhilePermanentExists(Entity),
     /// The permanent doesn't untap as long as the controller controls another specific permanent
+    #[allow(dead_code)]
     WhileControlling(Entity),
     /// The permanent doesn't untap as long as the controller has less than X life
+    #[allow(dead_code)]
     WhileLifeLessThan(i32),
     /// Custom textual description of the condition (for display purposes)
+    #[allow(dead_code)]
     Custom(String),
 }
 
@@ -50,6 +54,7 @@ pub struct Draggable {
 }
 
 impl PermanentState {
+    #[allow(dead_code)]
     pub fn new(turn_number: u32) -> Self {
         Self {
             is_tapped: false,
@@ -60,6 +65,7 @@ impl PermanentState {
     }
 
     /// Tap a permanent. Returns false if already tapped.
+    #[allow(dead_code)]
     pub fn tap(&mut self) -> bool {
         if self.is_tapped {
             return false;
@@ -69,6 +75,7 @@ impl PermanentState {
     }
 
     /// Untap a permanent. Returns false if already untapped.
+    #[allow(dead_code)]
     pub fn untap(&mut self) -> bool {
         if !self.is_tapped {
             return false;
@@ -78,6 +85,7 @@ impl PermanentState {
     }
 
     /// Check if the permanent can be tapped (not already tapped and no summoning sickness for creatures)
+    #[allow(dead_code)]
     pub fn can_tap(&self, is_creature: bool) -> bool {
         !self.is_tapped && (!is_creature || !self.has_summoning_sickness)
     }

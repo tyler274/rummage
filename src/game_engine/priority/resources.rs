@@ -28,12 +28,15 @@ pub struct PrioritySystem {
     pub stack_is_empty: bool,
 
     /// Current phase and step
+    #[allow(dead_code)]
     pub current_phase: Phase,
 
     /// Whether we're waiting for a response to a triggered ability or similar
+    #[allow(dead_code)]
     pub waiting_for_response: bool,
 
     /// Optional timeout for responses
+    #[allow(dead_code)]
     pub response_timeout: Option<Instant>,
 
     /// Players who need to make simultaneous decisions
@@ -46,11 +49,13 @@ pub struct PrioritySystem {
     pub last_processed_turn: u32,
 
     /// Decision timeouts for simultaneous decisions
+    #[allow(dead_code)]
     pub decision_timeouts: HashMap<Entity, std::time::Duration>,
 }
 
 impl PrioritySystem {
     /// Creates a new PrioritySystemBuilder for chainable construction
+    #[allow(dead_code)]
     pub fn builder() -> PrioritySystemBuilder {
         PrioritySystemBuilder::new()
     }
@@ -118,7 +123,8 @@ impl PrioritySystem {
         self.all_players_passed = false;
     }
 
-    /// Set whether the stack is empty
+    /// Set whether the stack is empty (affects priority passing)
+    #[allow(dead_code)]
     pub fn set_stack_empty(&mut self, is_empty: bool) {
         self.stack_is_empty = is_empty;
     }
@@ -154,6 +160,7 @@ impl PrioritySystem {
     }
 
     /// Check if a player has passed priority
+    #[allow(dead_code)]
     pub fn has_passed(&self, player: Entity) -> bool {
         self.has_priority_passed
             .get(&player)
@@ -161,12 +168,14 @@ impl PrioritySystem {
             .unwrap_or(false)
     }
 
-    /// Set a decision timeout for a player
+    /// Set a timeout for a player's decision
+    #[allow(dead_code)]
     pub fn set_decision_timeout(&mut self, player: Entity, duration: std::time::Duration) {
         self.decision_timeouts.insert(player, duration);
     }
 
     /// Add a player to the simultaneous decision list
+    #[allow(dead_code)]
     pub fn add_simultaneous_decision_player(&mut self, player: Entity) {
         if !self.simultaneous_decision_players.contains(&player) {
             self.simultaneous_decision_players.push(player);
@@ -174,6 +183,7 @@ impl PrioritySystem {
     }
 
     /// Remove a player from the simultaneous decision list
+    #[allow(dead_code)]
     pub fn remove_simultaneous_decision_player(&mut self, player: Entity) {
         self.simultaneous_decision_players.retain(|p| *p != player);
     }
@@ -226,84 +236,98 @@ impl PrioritySystemBuilder {
     }
 
     /// Sets the active player
+    #[allow(dead_code)]
     pub fn active_player(mut self, active_player: Entity) -> Self {
         self.active_player = active_player;
         self
     }
 
     /// Sets the priority player
+    #[allow(dead_code)]
     pub fn priority_player(mut self, priority_player: Entity) -> Self {
         self.priority_player = priority_player;
         self
     }
 
-    /// Sets the priority passed status for all players
+    /// Sets the priority passing status for all players
+    #[allow(dead_code)]
     pub fn has_priority_passed(mut self, has_priority_passed: HashMap<Entity, bool>) -> Self {
         self.has_priority_passed = has_priority_passed;
         self
     }
 
-    /// Sets whether all players have passed priority
+    /// Sets whether all players have passed
+    #[allow(dead_code)]
     pub fn all_players_passed(mut self, all_players_passed: bool) -> Self {
         self.all_players_passed = all_players_passed;
         self
     }
 
-    /// Sets the player order for priority passing
+    /// Sets the player order
+    #[allow(dead_code)]
     pub fn player_order(mut self, player_order: Vec<Entity>) -> Self {
         self.player_order = player_order;
         self
     }
 
     /// Sets the current index in the player order
+    #[allow(dead_code)]
     pub fn priority_index(mut self, priority_index: usize) -> Self {
         self.priority_index = priority_index;
         self
     }
 
     /// Sets whether the stack is empty
+    #[allow(dead_code)]
     pub fn stack_is_empty(mut self, stack_is_empty: bool) -> Self {
         self.stack_is_empty = stack_is_empty;
         self
     }
 
     /// Sets the current phase
+    #[allow(dead_code)]
     pub fn current_phase(mut self, current_phase: Phase) -> Self {
         self.current_phase = current_phase;
         self
     }
 
-    /// Sets whether the system is waiting for a response
+    /// Sets whether we're waiting for a response
+    #[allow(dead_code)]
     pub fn waiting_for_response(mut self, waiting_for_response: bool) -> Self {
         self.waiting_for_response = waiting_for_response;
         self
     }
 
-    /// Sets the response timeout
+    /// Sets the timeout for responses
+    #[allow(dead_code)]
     pub fn response_timeout(mut self, response_timeout: Option<Instant>) -> Self {
         self.response_timeout = response_timeout;
         self
     }
 
     /// Sets the players who need to make simultaneous decisions
+    #[allow(dead_code)]
     pub fn simultaneous_decision_players(mut self, players: Vec<Entity>) -> Self {
         self.simultaneous_decision_players = players;
         self
     }
 
     /// Sets the last processed phase
+    #[allow(dead_code)]
     pub fn last_processed_phase(mut self, phase: Option<Phase>) -> Self {
         self.last_processed_phase = phase;
         self
     }
 
     /// Sets the last processed turn number
+    #[allow(dead_code)]
     pub fn last_processed_turn(mut self, turn_number: u32) -> Self {
         self.last_processed_turn = turn_number;
         self
     }
 
-    /// Sets the decision timeouts
+    /// Sets decision timeouts
+    #[allow(dead_code)]
     pub fn decision_timeouts(mut self, timeouts: HashMap<Entity, std::time::Duration>) -> Self {
         self.decision_timeouts = timeouts;
         self

@@ -1,6 +1,5 @@
 use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 
 // Import from other modules
 use super::details::CardDetails;

@@ -8,6 +8,7 @@ use crate::menu::state::GameMenuState;
 /// Component to mark an entity as an HDR emissive card for visual effects
 #[derive(Component)]
 pub struct EmissiveCard {
+    #[allow(dead_code)]
     pub original_card: Entity,
     pub glow_intensity: f32,
     pub pulse_timer: Timer,

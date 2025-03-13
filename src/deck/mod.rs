@@ -1,8 +1,7 @@
 mod builder;
 mod types;
 
-pub use builder::DeckBuilder;
-pub use types::{Deck, DeckType, DeckValidationError};
+pub use types::{Deck, DeckType};
 
 // Re-export any other types or functions that should be public
 
@@ -21,6 +20,7 @@ impl Plugin for DeckPlugin {
 
 // Registry for storing predefined decks
 #[derive(Resource, Default)]
+#[allow(dead_code)]
 pub struct DeckRegistry {
     decks: std::collections::HashMap<String, Deck>,
 }

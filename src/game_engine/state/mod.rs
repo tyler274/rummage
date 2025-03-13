@@ -6,18 +6,20 @@ use crate::game_engine::commander::{Commander, EliminationReason, PlayerEliminat
 use crate::game_engine::zones::{Zone, ZoneChangeEvent, ZoneManager};
 use crate::player::Player;
 use bevy::prelude::*;
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 
 /// The global game state for an MTG game
 #[derive(Resource)]
 pub struct GameState {
     /// The current turn number
+    #[allow(dead_code)]
     pub turn_number: u32,
 
     /// The player whose turn it is
     pub active_player: Entity,
 
     /// The player currently with priority
+    #[allow(dead_code)]
     pub priority_holder: Entity,
 
     /// The turn order of players
@@ -45,16 +47,19 @@ pub struct GameState {
     pub commander_damage_threshold: u32,
 
     /// Commander specific rule - starting life total (typically 40)
+    #[allow(dead_code)]
     pub starting_life: i32,
 }
 
 impl GameState {
     /// Creates a new GameStateBuilder to use a chainable API for constructing a GameState
+    #[allow(dead_code)]
     pub fn builder() -> GameStateBuilder {
         GameStateBuilder::new()
     }
 
     /// Set the turn order for the game
+    #[allow(dead_code)]
     pub fn set_turn_order(&mut self, players: Vec<Entity>) {
         self.turn_order = VecDeque::from(players);
 
@@ -66,6 +71,7 @@ impl GameState {
     }
 
     /// Move to the next player in turn order
+    #[allow(dead_code)]
     pub fn advance_active_player(&mut self) {
         if self.turn_order.is_empty() {
             return;
@@ -148,6 +154,7 @@ impl GameState {
     }
 
     /// Get the player index in the turn order
+    #[allow(dead_code)]
     pub fn get_player_index(&self, player: Entity) -> Option<usize> {
         self.turn_order.iter().position(|p| *p == player)
     }
@@ -166,6 +173,7 @@ impl GameState {
     }
 
     /// Record that a player has drawn a card this turn
+    #[allow(dead_code)]
     pub fn record_draw(&mut self, player: Entity) {
         if !self.drawn_this_turn.contains(&player) {
             self.drawn_this_turn.push(player);

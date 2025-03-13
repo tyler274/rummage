@@ -5,14 +5,12 @@ pub mod rules;
 pub mod systems;
 
 // Re-export the core components and types for easier access
-pub use components::{Commander, CommanderZoneLocation, EliminationReason};
+pub use components::{Commander, EliminationReason};
 pub use events::{CombatDamageEvent, CommanderZoneChoiceEvent, PlayerEliminatedEvent};
 pub use resources::{CommandZone, CommandZoneManager};
-pub use rules::CommanderRules;
 pub use systems::{
-    calculate_commander_cost, check_commander_damage_loss, handle_commander_casting,
-    handle_commander_zone_change, process_commander_zone_choices, record_commander_damage,
-    setup_commander, track_commander_damage, validate_commander_deck,
+    check_commander_damage_loss, handle_commander_zone_change, process_commander_zone_choices,
+    record_commander_damage, track_commander_damage,
 };
 
 use bevy::prelude::*;

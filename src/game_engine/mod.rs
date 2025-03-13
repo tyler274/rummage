@@ -22,7 +22,7 @@ pub use phase::Phase;
 pub use priority::{
     EffectCounteredEvent, NextPhaseEvent, PassPriorityEvent, PrioritySystem, ResolveStackItemEvent,
 };
-pub use stack::{Effect, GameStack, StackItem, StackItemResolvedEvent};
+pub use stack::{GameStack, StackItemResolvedEvent};
 pub use state::{CheckStateBasedActionsEvent, GameState};
 pub use turns::{
     TurnEndEvent, TurnManager, TurnStartEvent, handle_turn_end, handle_turn_start,
@@ -47,7 +47,6 @@ use crate::game_engine::politics::{
     ApplyCombatRestrictionEvent, GoadEvent, RemoveCombatRestrictionEvent,
 };
 use crate::game_engine::priority::{priority_passing_system, priority_system};
-use crate::game_engine::turns::handle_untap_step;
 
 use crate::menu::{GameMenuState, state::StateTransitionContext};
 use crate::player::Player;
@@ -154,10 +153,6 @@ impl Plugin for GameEnginePlugin {
         app.add_systems(
             Update,
             handle_turn_end.run_if(in_state(GameMenuState::InGame)),
-        );
-        app.add_systems(
-            Update,
-            handle_untap_step.run_if(in_state(GameMenuState::InGame)),
         );
 
         // Combat systems

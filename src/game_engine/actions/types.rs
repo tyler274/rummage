@@ -1,4 +1,3 @@
-use crate::card::{Card, CardTypes};
 use crate::mana::Mana;
 use bevy::prelude::*;
 

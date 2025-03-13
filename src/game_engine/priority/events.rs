@@ -11,6 +11,7 @@ pub struct PassPriorityEvent {
 #[derive(Event)]
 pub struct ResolveStackItemEvent {
     /// The stack item to resolve
+    #[allow(dead_code)]
     pub item: Entity,
 }
 
@@ -22,10 +23,12 @@ pub struct NextPhaseEvent;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CounterReason {
     /// Explicitly countered by a spell or ability
+    #[allow(dead_code)]
     CounterSpell,
     /// Countered due to invalid targets on resolution
     InvalidTargets,
     /// Countered due to rules (e.g., illegal targets)
+    #[allow(dead_code)]
     RulesBased,
 }
 
@@ -33,7 +36,9 @@ pub enum CounterReason {
 #[derive(Event)]
 pub struct EffectCounteredEvent {
     /// The item that was countered
+    #[allow(dead_code)]
     pub item: Entity,
     /// The reason it was countered
+    #[allow(dead_code)]
     pub reason: CounterReason,
 }
