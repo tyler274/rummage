@@ -11,6 +11,7 @@ This document provides detailed implementation guidelines for integrating bevy_r
 5. [Serialization Strategy](#serialization-strategy)
 6. [Game-Specific Replication](#game-specific-replication)
 7. [Testing Strategy](#testing-strategy)
+8. [Random Number Generator Synchronization](#random-number-generator-synchronization)
 
 ## Project Structure
 
@@ -671,4 +672,243 @@ pub fn initialize_networking(
 }
 ```
 
-This detailed implementation guide should help with integrating bevy_replicon into the MTG Commander game engine. The approach focuses on maintaining game rules integrity while providing a smooth multiplayer experience. 
+## Random Number Generator Synchronization
+
+### Overview
+
+Deterministic random number generation is critical for multiplayer games to ensure that all clients produce identical results when processing the same game actions. This section outlines how to use `bevy_rand` and `bevy_prng` to maintain synchronized RNG state across network boundaries.
+
+```rust
+// src/networking/rng/plugin.rs
+use bevy::prelude::*;
+use bevy_prng::WyRand;
+use bevy_rand::prelude::*;
+use crate::networking::server::resources::GameServer;
+
+/// Plugin for handling RNG synchronization in networked games
+pub struct NetworkedRngPlugin;
+
+impl Plugin for NetworkedRngPlugin {
+    fn build(&self, app: &mut App) {
+        // Register the WyRand PRNG with bevy_rand
+        app.add_plugins(EntropyPlugin::<WyRand>::default())
+            .add_systems(Update, synchronize_rng_state)
+            .add_systems(PostUpdate, handle_rng_state_replication);
+    }
+}
+
+/// Resource to track the RNG state for replication
+#[derive(Resource)]
+pub struct RngStateTracker {
+    /// The current state of the global RNG
+    pub global_state: Vec<u8>,
+    /// Last synchronization timestamp
+    pub last_sync: f32,
+    /// Whether the RNG state has changed since last sync
+    pub dirty: bool,
+}
+
+impl Default for RngStateTracker {
+    fn default() -> Self {
+        Self {
+            global_state: Vec::new(),
+            last_sync: 0.0,
+            dirty: false,
+        }
+    }
+}
+
+/// System to capture RNG state for replication
+pub fn synchronize_rng_state(
+    mut rng: GlobalEntropy<WyRand>,
+    mut state_tracker: ResMut<RngStateTracker>,
+    time: Res<Time>,
+) {
+    // Only sync periodically to reduce network traffic
+    if time.elapsed_seconds() - state_tracker.last_sync > 5.0 {
+        // Serialize the RNG state
+        if let Some(serialized_state) = rng.try_serialize_state() {
+            state_tracker.global_state = serialized_state;
+            state_tracker.last_sync = time.elapsed_seconds();
+            state_tracker.dirty = true;
+        }
+    }
+}
+
+/// System to handle replication of RNG state to clients
+pub fn handle_rng_state_replication(
+    server: Option<Res<GameServer>>,
+    rng_state: Res<RngStateTracker>,
+    mut client: ResMut<RepliconClient>,
+    mut server_res: ResMut<RepliconServer>,
+) {
+    // Only the server should send RNG state updates
+    if let Some(server) = server {
+        if rng_state.dirty {
+            // Send RNG state to all clients
+            for client_id in server.client_player_map.keys() {
+                server_res.send_message(
+                    *client_id,
+                    ServerChannel::Reliable,
+                    bincode::serialize(&RngStateMessage {
+                        state: rng_state.global_state.clone(),
+                        timestamp: rng_state.last_sync,
+                    }).unwrap(),
+                );
+            }
+        }
+    }
+}
+
+/// Message for RNG state synchronization
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct RngStateMessage {
+    /// Serialized RNG state
+    pub state: Vec<u8>,
+    /// Timestamp of the state
+    pub timestamp: f32,
+}
+```
+
+### Player-Specific RNG Components
+
+Each player should have their own RNG component that is deterministically seeded from the global source:
+
+```rust
+// src/player/components/player_rng.rs
+use bevy::prelude::*;
+use bevy_prng::WyRand;
+use bevy_rand::prelude::*;
+
+/// Component for player-specific randomization
+#[derive(Component)]
+pub struct PlayerRng {
+    /// The player's RNG component
+    pub rng: Entropy<WyRand>,
+    /// Whether this RNG is remotely controlled
+    pub is_remote: bool,
+}
+
+/// System to initialize player RNGs
+pub fn setup_player_rngs(
+    mut commands: Commands,
+    players: Query<(Entity, &Player), Without<PlayerRng>>,
+    mut global_rng: GlobalEntropy<WyRand>,
+    server: Option<Res<GameServer>>,
+) {
+    for (entity, player) in players.iter() {
+        // On the server, create a new RNG for each player
+        let is_remote = server.is_none() || !server.unwrap().is_server_player(entity);
+        
+        // Fork from the global RNG to maintain determinism
+        commands.entity(entity).insert(PlayerRng {
+            rng: global_rng.fork_rng(),
+            is_remote,
+        });
+    }
+}
+```
+
+### Client-Side RNG Management
+
+Clients need to apply RNG state updates from the server:
+
+```rust
+// src/networking/client/systems.rs
+use bevy::prelude::*;
+use bevy_prng::WyRand;
+use bevy_rand::prelude::*;
+use crate::networking::rng::RngStateMessage;
+
+/// System to handle RNG state updates from server
+pub fn handle_rng_state_update(
+    mut client_rng: GlobalEntropy<WyRand>,
+    mut incoming_messages: EventReader<NetworkMessage>,
+) {
+    for message in incoming_messages.read() {
+        if let Ok(rng_message) = bincode::deserialize::<RngStateMessage>(&message.data) {
+            // Apply the server's RNG state
+            client_rng.deserialize_state(&rng_message.state).expect("Failed to deserialize RNG state");
+            
+            // Now client and server have synchronized RNG state
+        }
+    }
+}
+```
+
+### Deterministic Usage in Game Actions
+
+To ensure deterministic behavior, game actions must use RNG components in a consistent way:
+
+```rust
+// src/game_engine/actions/dice_roll.rs
+use bevy::prelude::*;
+use crate::player::components::PlayerRng;
+use rand::Rng;
+
+/// System to handle dice roll actions
+pub fn handle_dice_roll(
+    mut commands: Commands,
+    mut dice_roll_events: EventReader<DiceRollEvent>,
+    mut players: Query<(&mut PlayerRng, &Player)>,
+) {
+    for event in dice_roll_events.read() {
+        if let Ok((mut player_rng, player)) = players.get_mut(event.player_entity) {
+            // Use the player's RNG to get a deterministic result
+            let roll_result = player_rng.rng.gen_range(1..=event.sides);
+            
+            // Create the effect based on the roll result
+            let effect_entity = commands.spawn(DiceRollEffect {
+                player: event.player_entity,
+                result: roll_result,
+                sides: event.sides,
+            }).id();
+            
+            // The effect is determined by the RNG, ensuring all clients get the same result
+            // as long as they have the same RNG state and process events in the same order
+        }
+    }
+}
+```
+
+### Ensuring Consistency
+
+To maintain RNG consistency across clients:
+
+1. The server is the authoritative source of RNG state
+2. All random operations use player-specific RNGs or the global RNG, never `thread_rng()` or other non-deterministic sources
+3. RNG state is synchronized periodically
+4. Game actions that use randomness include a sequence ID to ensure they're processed in the same order on all clients
+5. When a new player joins, they receive the current global RNG state as part of initialization
+
+### Advanced: Network Partitioning
+
+For scenarios where different subsets of players may need different random sequences (like shuffling a deck that only certain players should know the order of):
+
+```rust
+// src/game_engine/zones/library.rs
+use bevy::prelude::*;
+use crate::player::components::PlayerRng;
+
+/// System to shuffle a player's library
+pub fn shuffle_library(
+    mut libraries: Query<(&mut Library, &Owner)>,
+    mut players: Query<&mut PlayerRng>,
+    shuffle_events: EventReader<ShuffleLibraryEvent>,
+) {
+    for event in shuffle_events.read() {
+        if let Ok((mut library, owner)) = libraries.get_mut(event.library_entity) {
+            // Get the owner's RNG
+            if let Ok(mut player_rng) = players.get_mut(owner.entity) {
+                // Use the player's RNG to shuffle the library deterministically
+                library.shuffle_with_rng(&mut player_rng.rng);
+                
+                // This ensures that all clients who have access to this player's 
+                // library will see the same shuffle result
+            }
+        }
+    }
+}
+```
+
+By following these patterns, your MTG Commander game will maintain consistent random results across all networked clients, ensuring fair gameplay regardless of network conditions.

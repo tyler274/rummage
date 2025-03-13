@@ -1,0 +1,30 @@
+# bevy_rand Rules
+
+## Version Requirements
+
+When working with bevy_rand and bevy_prng in this project, always use the following:
+
+- **ALWAYS** use the upstream git version from the main branch:
+```toml
+bevy_rand = { git = "https://github.com/Bluefinger/bevy_rand", branch = "main", features = ["wyrand", "experimental"] }
+bevy_prng = { git = "https://github.com/Bluefinger/bevy_rand", branch = "main", features = ["wyrand"] }
+```
+
+- Do not use specific versions from crates.io
+- Ensure compatibility with our current Bevy 0.15.x version
+
+## Feature Selection
+
+- Always include the "wyrand" feature for both bevy_rand and bevy_prng
+- Include the "experimental" feature for bevy_rand
+
+## Usage Guidelines
+
+- Use `WyRand` as the preferred PRNG algorithm for general randomization needs
+- Register PRNGs via the EntropyPlugin: `app.add_plugins(EntropyPlugin::<WyRand>::default())`
+- For deterministic behavior in tests, remember to use a specific seed
+
+## Compatibility Notes
+
+- bevy_rand and bevy_prng from the main branch require uuid 1.13.1 or newer
+- When updating these dependencies, ensure other dependencies are compatible 

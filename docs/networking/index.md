@@ -18,6 +18,7 @@ The networking documentation is organized into the following major sections:
 - [Implementation Details](core/implementation_details.md) - Detailed implementation guidelines and code structure
 - [Protocol Specification](core/protocol_specification.md) - Networking protocol, message formats, and synchronization
 - [Multiplayer Overview](core/multiplayer_overview.md) - High-level overview of multiplayer functionality
+- [RNG Synchronization](core/implementation_details.md#random-number-generator-synchronization) - Managing random number generation across network boundaries
 
 ## Lobby System
 
@@ -45,6 +46,7 @@ The Lobby System documentation is further organized into:
 
 - [Testing Overview](testing/overview.md) - General testing approach
 - [Advanced Techniques](testing/advanced_techniques.md) - Advanced testing techniques
+- [RNG Synchronization Tests](testing/rng_synchronization_tests.md) - Testing RNG determinism in multiplayer
 - [Integration Testing](testing/integration/) - Integration testing methodologies
   - [Strategy](testing/integration/strategy.md) - Integration testing strategy
 - [Security Testing](testing/security/) - Security-focused testing
