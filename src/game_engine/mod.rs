@@ -7,7 +7,7 @@ pub mod commander;
 pub mod phase;
 pub mod politics;
 pub mod priority;
-mod stack;
+pub mod stack;
 pub mod state;
 pub mod turns;
 pub mod zones;
@@ -91,15 +91,15 @@ impl Plugin for GameEnginePlugin {
         );
         app.add_systems(
             Update,
-            stack_resolution_system.run_if(in_state(GameMenuState::InGame)),
+            stack::stack_resolution_system.run_if(in_state(GameMenuState::InGame)),
         );
         app.add_systems(
             Update,
-            state_based_actions_system.run_if(in_state(GameMenuState::InGame)),
+            state::state_based_actions_system.run_if(in_state(GameMenuState::InGame)),
         );
         app.add_systems(
             Update,
-            trigger_state_based_actions_system.run_if(in_state(GameMenuState::InGame)),
+            state::trigger_state_based_actions_system.run_if(in_state(GameMenuState::InGame)),
         );
         app.add_systems(
             Update,
