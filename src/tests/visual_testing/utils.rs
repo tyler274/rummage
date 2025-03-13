@@ -5,7 +5,6 @@ use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::tests::visual_testing::config::VisualTestConfig;
-use std::io::Write;
 
 /// Saves a reference image
 pub fn save_reference_image(image: DynamicImage, name: &str) -> Result<(), String> {

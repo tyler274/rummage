@@ -1,5 +1,4 @@
 use crate::tests::visual_testing::config::{ComparisonMethod, VisualTestConfig};
-use bevy::prelude::*;
 use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
 use std::fs;
 use std::path::Path;

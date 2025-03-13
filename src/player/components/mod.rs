@@ -1,4 +1,3 @@
-mod builder;
 mod player;
 
 // Only export Player which is what's actually used

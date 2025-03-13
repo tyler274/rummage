@@ -27,10 +27,9 @@ pub fn spawn_players(
     // Spawn each player
     for player_index in 0..config.player_count {
         // Create a new player using the builder pattern
-        let player = Player::builder(&format!("Player {}", player_index + 1))
-            .life(config.starting_life)
-            .player_index(player_index)
-            .build();
+        let player = Player::new(&format!("Player {}", player_index + 1))
+            .with_life(config.starting_life)
+            .with_player_index(player_index);
 
         info!(
             "Creating player with index {} and name '{}'",
@@ -79,12 +78,11 @@ pub fn spawn_players(
 
             // Update the player's cards while preserving other fields
             commands.entity(player_entity).insert(
-                Player::builder(&player.name)
-                    .life(player.life)
-                    .player_index(player.player_index)
-                    .cards(cards)
-                    .deck(deck)
-                    .build(),
+                Player::new(&player.name)
+                    .with_life(player.life)
+                    .with_player_index(player.player_index)
+                    .with_cards(cards)
+                    .with_deck(deck),
             );
 
             // Spawn visual cards for all players that have cards

@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use image::{DynamicImage, ImageBuffer, Rgba};
-use std::sync::{Arc, Mutex};
 
 /// Resource to track screenshot requests
 #[derive(Resource, Default)]

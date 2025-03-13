@@ -598,8 +598,6 @@ pub fn capture_entity_rendering(_app: &App, _entity: Entity) -> DynamicImage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::prelude::*;
-
     // Test for card rendering consistency across different contexts
     #[test]
     fn test_card_rendering_consistency() {
