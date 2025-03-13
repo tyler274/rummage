@@ -6,17 +6,23 @@ Welcome to the official documentation for Rummage, a robust end-to-end tested Ma
 
 The documentation is organized into the following major sections:
 
-1. **[Commander Rules](commander/index.md)** - Implementation of MTG Commander format rules and mechanics
-2. **[Game UI](game_gui/index.md)** - User interface systems and components
-3. **[Networking](networking/index.md)** - Multiplayer functionality using bevy_replicon
+1. **[MTG Core Rules](mtg_core/index.md)** - Implementation of fundamental Magic: The Gathering rules
+2. **[Game Formats](formats/commander/index.md)** - Format-specific rules implementation (currently Commander)
+3. **[Game UI](game_gui/index.md)** - User interface systems and components
+4. **[Networking](networking/index.md)** - Multiplayer functionality using bevy_replicon
+5. **[Card Systems](card_systems/index.md)** - Card representation, effects, and interactions
+6. **[Testing](testing/index.md)** - Testing framework and methodologies
+7. **[Development](development/index.md)** - Development guidelines and tools
+8. **[API Reference](api/index.md)** - Technical API documentation
 
 ## Getting Started
 
 If you're new to the project, we recommend starting with the following documents:
 
-- [Commander Format Overview](commander/overview/index.md) - Introduction to the Commander format
+- [MTG Core Rules Overview](mtg_core/index.md) - Introduction to the core MTG rules implementation
+- [Commander Format Overview](formats/commander/overview/index.md) - Introduction to the Commander format
 - [Game UI Overview](game_gui/overview.md) - Introduction to the game's user interface
-- [Networking Overview](networking/core/architecture_overview.md) - Introduction to the networking architecture
+- [Development Guide](development/getting_started.md) - How to get started with development
 
 ## Implementation Status
 
@@ -25,6 +31,21 @@ This documentation represents both implemented features and design specification
 - ✅ Implemented and tested
 - 🔄 In progress
 - ⚠️ Planned but not yet implemented
+
+## Technical Architecture
+
+Rummage is built on the following key technologies:
+
+1. **Bevy 0.15.x** - Entity Component System (ECS) game engine
+2. **Bevy Replicon** - Networking and state synchronization
+3. **Rust** - Memory-safe, high-performance language
+
+The architecture follows these principles:
+
+1. **Entity Component System** - Game elements are composed of entities with components
+2. **Event-driven Architecture** - Systems communicate through events
+3. **Data-oriented Design** - Optimized for cache coherence and performance
+4. **Deterministic Game Logic** - Ensures consistency across network play
 
 ## Development Standards
 
@@ -39,9 +60,9 @@ The Rummage codebase adheres to the following standards:
 
 If you're interested in contributing to the Rummage project, please review:
 
-1. The [GitHub repository](https://github.com/your-org/rummage)
-2. Our [contribution guidelines](CONTRIBUTING.md)
-3. The [code of conduct](CODE_OF_CONDUCT.md)
+1. [Contribution Guidelines](CONTRIBUTING.md)
+2. [Documentation Guide](contributing/documentation.md)
+3. [Code Style Guide](development/code_style.md)
 
 ## Reference Materials
 

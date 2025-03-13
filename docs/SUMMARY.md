@@ -168,6 +168,8 @@
     - [Entity Component System](development/bevy_guide/ecs.md)
     - [Plugin Architecture](development/bevy_guide/plugins.md)
     - [Rendering](development/bevy_guide/rendering.md)
+    - [Deprecated APIs](development/bevy_guide/deprecated_apis.md)
+  - [Snapshot System](development/snapshots.md)
 
 # Reference
 

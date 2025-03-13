@@ -9,10 +9,11 @@ This guide explains Rummage's snapshot system, which is used for game state seri
 3. [Creating Snapshots](#creating-snapshots)
 4. [Processing Snapshots](#processing-snapshots)
 5. [Snapshot Events](#snapshot-events)
-6. [Integration with Networking](#integration-with-networking)
-7. [Testing Snapshots](#testing-snapshots)
-8. [Best Practices](#best-practices)
-9. [Troubleshooting](#troubleshooting)
+6. [Debugging Snapshots](#debugging-snapshots)
+7. [Integration with Networking](#integration-with-networking)
+8. [Testing Snapshots](#testing-snapshots)
+9. [Best Practices](#best-practices)
+10. [Troubleshooting](#troubleshooting)
 
 ## Introduction to Snapshots
 
@@ -251,6 +252,55 @@ pub fn handle_snapshot_events(
         }
     }
 }
+```
+
+## Debugging Snapshots
+
+The snapshot system includes extensive debug logging to help diagnose issues. When debug logging is enabled, you'll see output like:
+
+```
+2025-03-13T21:09:34.058311Z DEBUG rummage::snapshot::systems: Entering handle_snapshot_events system
+2025-03-13T21:09:34.058311Z DEBUG rummage::snapshot::systems: Processing 0 snapshot events
+2025-03-13T21:09:34.058311Z DEBUG rummage::snapshot::systems: Exiting handle_snapshot_events system
+2025-03-13T21:09:34.058630Z DEBUG rummage::snapshot::systems: Entering process_pending_snapshots
+2025-03-13T21:09:34.058650Z DEBUG rummage::snapshot::systems: Found 0 pending snapshots
+```
+
+### Key Debug Points
+
+The snapshot system logs at these key points:
+
+1. **Entering/Exiting Event Handling**: Logs when the snapshot event handling system begins and ends processing
+2. **Event Processing**: Reports how many snapshot events are being processed
+3. **Pending Snapshots**: Logs how many pending snapshots were found during processing
+4. **Snapshot Creation**: Logs details about each created snapshot
+5. **Snapshot Restoration**: Logs information during the restoration process
+
+### Interpreting Debug Output
+
+- **Zero Events/Snapshots**: When the debug output shows "Processing 0 snapshot events" or "Found 0 pending snapshots", this is normal during idle periods when no snapshot operations are queued.
+- **High Volume of Events**: If you see a large number of events being processed, this might indicate either heavy snapshot usage (expected during replay or networked play) or a potential issue with snapshot event generation.
+- **Regular Timing Intervals**: Debug entries should appear at regular intervals, corresponding to system updates.
+
+### Enabling Debug Logging
+
+To enable detailed snapshot debugging, set the log level for the snapshot module:
+
+```rust
+use tracing_subscriber::EnvFilter;
+
+tracing_subscriber::fmt()
+    .with_env_filter(
+        EnvFilter::from_default_env()
+            .add_directive("rummage::snapshot=debug".parse().unwrap()),
+    )
+    .init();
+```
+
+Alternatively, use the `RUST_LOG` environment variable:
+
+```bash
+RUST_LOG=rummage::snapshot=debug cargo run
 ```
 
 ## Integration with Networking
