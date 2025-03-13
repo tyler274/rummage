@@ -39,9 +39,9 @@ pub fn set_initial_zoom(
     mut query: Query<&mut OrthographicProjection, (With<Camera>, With<GameCamera>)>,
 ) {
     if let Ok(mut projection) = query.get_single_mut() {
-        // Set to 10.0 for a much more zoomed out view
+        // Set to 10.0 for a balanced view of the playing field
         // In OrthographicProjection, higher scale = more zoomed out
-        // This provides a better overview of the entire playing field
+        // This provides a good overview of the entire playing field while still seeing details
         projection.scale = 10.0;
 
         info!("Set initial camera zoom level to {:.2}", projection.scale);
@@ -184,10 +184,13 @@ pub fn camera_movement(
         let zoom_delta = ev.y * config.zoom_speed;
         target_scale *= 1.0 - zoom_delta;
     }
-    // Clamp the target scale
+
+    // Clamp the target scale to configured min/max zoom levels
+    // Lower scale = more zoomed in, higher scale = more zoomed out
     target_scale = target_scale.clamp(config.min_zoom, config.max_zoom);
 
     // Smoothly interpolate to the target scale
+    // This creates a more natural zoom feel rather than abrupt changes
     let delta = target_scale - projection.scale;
     let interpolation_factor = (config.zoom_interpolation_speed * time.delta_secs()).min(1.0);
     projection.scale += delta * interpolation_factor;

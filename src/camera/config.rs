@@ -25,10 +25,10 @@ impl Default for CameraConfig {
         Self {
             move_speed: 500.0,
             zoom_speed: 1.0, // Adjusted for smoother zooming
-            // In OrthographicProjection, min_zoom limits how far you can zoom out (higher value)
-            // and max_zoom limits how far you can zoom in (lower value)
+            // In OrthographicProjection, min_zoom limits how far you can zoom in (lower value)
+            // and max_zoom limits how far you can zoom out (higher value)
             min_zoom: 0.1,                 // Most zoomed in
-            max_zoom: 5.0,                 // Most zoomed out
+            max_zoom: 10.0,                // Most zoomed out, matching initial camera scale
             pan_sensitivity: 1.0,          // Base sensitivity, adjust if needed
             zoom_interpolation_speed: 5.0, // Controls how smoothly zoom changes are applied
         }
