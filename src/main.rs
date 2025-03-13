@@ -1,6 +1,7 @@
 mod camera;
 mod card;
 mod deck;
+mod docs;
 mod drag;
 mod game_engine;
 mod mana;
@@ -22,6 +23,7 @@ use camera::{
 };
 use card::CardPlugin;
 use deck::DeckPlugin;
+use docs::Docs;
 use drag::DragPlugin;
 use game_engine::GameEnginePlugin;
 use menu::{GameMenuState, MenuPlugin, state::StateTransitionContext};
@@ -138,6 +140,30 @@ fn handle_exit(mut exit_events: EventReader<AppExit>) {
 }
 
 fn main() {
+    // Check if we're being called with documentation commands
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() > 1 {
+        if args[1] == "docs-build" {
+            if let Err(e) = Docs::build() {
+                eprintln!("Documentation build error: {}", e);
+                std::process::exit(1);
+            }
+            std::process::exit(0);
+        } else if args[1] == "docs-serve" {
+            if let Err(e) = Docs::serve() {
+                eprintln!("Documentation server error: {}", e);
+                std::process::exit(1);
+            }
+            std::process::exit(0);
+        } else if args[1] == "docs-check" {
+            if let Err(e) = Docs::check() {
+                eprintln!("Documentation check error: {}", e);
+                std::process::exit(1);
+            }
+            std::process::exit(0);
+        }
+    }
+    
     App::new()
         .add_plugins(
             DefaultPlugins

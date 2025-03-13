@@ -1,18 +1,27 @@
 # Networking Documentation
 
-Welcome to the restructured networking documentation for the MTG Commander game engine. This section outlines the implementation for multiplayer functionality using bevy_replicon.
+This section outlines the implementation of multiplayer functionality for the Rummage MTG Commander game engine using bevy_replicon.
 
-## Organization
+## Table of Contents
 
-The networking documentation is organized into the following major sections:
+1. [Overview](#overview)
+2. [Key Components](#key-components)
+3. [Implementation Status](#implementation-status)
+4. [Recent Updates](#recent-updates)
+5. [Getting Started](#getting-started)
+6. [Future Enhancements](#future-enhancements)
 
-1. **[Core Networking](core/)** - Foundational networking concepts and architecture
-2. **[Lobby System](lobby/)** - Documentation for the multiplayer lobby system
-3. **[Gameplay Networking](gameplay/)** - In-game networking features and behaviors
-4. **[Testing](testing/)** - Testing strategies and methodologies
-5. **[Security](security/)** - Security considerations and implementation
+## Overview
 
-## Core Networking
+The networking system enables multiplayer gameplay with features like state synchronization, lobby management, and rollback mechanisms for handling network disruptions. The implementation is built on bevy_replicon, providing a robust foundation for networked gameplay.
+
+For a comprehensive overview, see the [Core Architecture Overview](core/architecture_overview.md).
+
+## Key Components
+
+The networking system consists of the following major components:
+
+### Core Networking
 
 - [Architecture Overview](core/architecture_overview.md) - Introduction to networking architecture and concepts
 - [Implementation Details](core/implementation_details.md) - Detailed implementation guidelines and code structure
@@ -20,23 +29,15 @@ The networking documentation is organized into the following major sections:
 - [Multiplayer Overview](core/multiplayer_overview.md) - High-level overview of multiplayer functionality
 - [RNG Synchronization](core/implementation_details.md#random-number-generator-synchronization) - Managing random number generation across network boundaries
 
-## Lobby System
-
-The Lobby System documentation is further organized into:
+### Lobby System
 
 - [Lobby Index](lobby/index.md) - Overview of the lobby system
 - [UI Components](lobby/ui/) - Documentation for user interface components
-  - [Overview](lobby/ui/overview.md) - General overview of the lobby UI
-  - [Detail View](lobby/ui/detail_view.md) - Detailed lobby UI implementation
 - [Backend](lobby/backend/) - Server-side implementation details
-  - [Implementation](lobby/backend/implementation.md) - Backend implementation
-  - [Networking](lobby/backend/networking.md) - Backend networking details
 - [Chat System](lobby/chat/) - Chat functionality documentation
-  - [UI](lobby/chat/ui.md) - Chat UI implementation
 - [Deck Viewer](lobby/deck/) - Deck viewing and management
-  - [Viewer](lobby/deck/viewer.md) - Deck viewer implementation
 
-## Gameplay Networking
+### Gameplay Networking
 
 - [Departure Handling](gameplay/departure/handling.md) - Handling player disconnections and departures
 - [State Management](gameplay/state/) - Game state synchronization
@@ -44,32 +45,44 @@ The Lobby System documentation is further organized into:
   - [Replicon Rollback Integration](gameplay/state/replicon_rollback.md) - Integrating bevy_replicon with RNG state for rollbacks
 - [Synchronization](gameplay/synchronization/) - Methods for keeping game state in sync
 
-## Testing
+### Testing
 
 - [Testing Overview](testing/overview.md) - General testing approach
 - [Advanced Techniques](testing/advanced_techniques.md) - Advanced testing techniques
 - [RNG Synchronization Tests](testing/rng_synchronization_tests.md) - Testing RNG determinism in multiplayer
 - [Replicon RNG Tests](testing/replicon_rng_tests.md) - Testing bevy_replicon integration with RNG state
 - [Integration Testing](testing/integration/) - Integration testing methodologies
-  - [Strategy](testing/integration/strategy.md) - Integration testing strategy
 - [Security Testing](testing/security/) - Security-focused testing
-  - [Strategy](testing/security/strategy.md) - Security testing strategy
 
-## Security
+### Security
 
 - [Authentication](security/authentication.md) - User authentication and authorization
 - [Anti-Cheat](security/anti_cheat.md) - Preventing and detecting cheating
 - [Hidden Information](security/hidden_information.md) - Managing hidden game information
 
-## Getting Started with Development
+## Implementation Status
 
-To begin working on the networking implementation:
+This documentation represents the design and implementation of the networking system. Components are marked as follows:
 
-1. Review the [Core Architecture Overview](core/architecture_overview.md)
-2. Understand the [Implementation Details](core/implementation_details.md)
-3. Set up a local development environment with bevy_replicon
-4. Start with the basic client-server connectivity
-5. Incrementally add features following the implementation plan
+| Component | Status | Description |
+|-----------|--------|-------------|
+| Core Network Architecture | ✅ | Basic network architecture using bevy_replicon |
+| Client-Server Communication | ✅ | Basic client-server messaging |
+| Lobby System | 🔄 | System for creating and joining game lobbies |
+| Game State Synchronization | 🔄 | Synchronizing game state across the network |
+| RNG Synchronization | ✅ | Maintaining consistent random number generation |
+| Rollback System | ✅ | Recovery from network disruptions |
+| Replicon Integration | ✅ | Integration with bevy_replicon for entity replication |
+| Auth System | ⚠️ | Player authentication and authorization |
+| Anti-Cheat | ⚠️ | Measures to prevent cheating |
+| Hidden Information | 🔄 | Managing information that should be hidden from certain players |
+| Chat System | ⚠️ | In-game communication |
+| Spectator Mode | ⚠️ | Support for non-player observers |
+
+Legend:
+- ✅ Implemented and tested
+- 🔄 In progress
+- ⚠️ Planned but not yet implemented
 
 ## Recent Updates
 
@@ -79,6 +92,16 @@ Recent updates to the networking documentation include:
 - **Rollback Mechanism**: Enhanced documentation of rollback mechanisms for handling network disruptions
 - **Test Framework**: Expanded testing documentation with new test cases for RNG synchronization
 - **Performance Considerations**: Added guidance on optimizing network performance
+
+## Getting Started
+
+To begin working on the networking implementation:
+
+1. Review the [Core Architecture Overview](core/architecture_overview.md)
+2. Understand the [Implementation Details](core/implementation_details.md)
+3. Set up a local development environment with bevy_replicon
+4. Start with the basic client-server connectivity
+5. Incrementally add features following the implementation plan
 
 ## Future Enhancements
 

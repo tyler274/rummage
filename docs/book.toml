@@ -1,0 +1,55 @@
+[book]
+title = "Rummage Documentation"
+authors = ["Rummage Development Team"]
+description = "Documentation for the Rummage MTG Commander game engine built with Bevy 0.15.x"
+src = "."
+language = "en"
+
+[output.html]
+git-repository-url = "https://github.com/your-org/rummage"
+git-repository-icon = "fa-github"
+edit-url-template = "https://github.com/your-org/rummage/edit/main/docs/{path}"
+additional-css = ["theme/css/custom.css"]
+additional-js = ["theme/js/custom.js"]
+mathjax-support = true
+copy-fonts = true
+no-section-label = false
+site-url = "/rummage/"
+
+[output.html.search]
+enable = true
+limit-results = 20
+use-boolean-and = true
+boost-title = 2
+boost-hierarchy = 2
+boost-paragraph = 1
+expand = true
+heading-split-level = 2
+
+[output.html.fold]
+enable = true
+level = 0
+
+[output.html.playground]
+editable = true
+copyable = true
+copy-js = true
+line-numbers = true
+
+[output.html.print]
+enable = true
+
+# Temporarily disabled linkcheck until all pages are created
+# [output.linkcheck]
+# follow-web-links = true
+# cache-timeout = 86400
+# warning-policy = "warn"
+
+# Disable the index preprocessor to avoid README.md conversion warnings
+[preprocessor.index]
+renderers = []
+
+[preprocessor.links]
+
+[rust]
+edition = "2021"

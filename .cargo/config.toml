@@ -7,3 +7,9 @@ rustflags = [
     "-C",
     "link-arg=-fuse-ld=/usr/bin/mold",
 ]
+
+[alias]
+# Documentation aliases
+docs-build = "run --package mdbook -- build docs"
+docs-serve = "run --package mdbook -- serve docs --open"
+docs-check = "run --package mdbook -- test docs"

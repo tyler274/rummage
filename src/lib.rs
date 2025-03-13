@@ -10,6 +10,7 @@
 pub mod camera;
 pub mod card;
 pub mod deck;
+pub mod docs;
 pub mod drag;
 pub mod game_engine;
 pub mod mana;

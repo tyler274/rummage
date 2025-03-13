@@ -1,495 +1,237 @@
-# Networking Testing Strategy
+# Networking Testing Overview
 
-This document outlines the testing strategy for the multiplayer networking implementation in our MTG Commander game engine.
+This document provides a comprehensive overview of the testing approach for the Rummage MTG Commander game engine's networking functionality.
 
 ## Table of Contents
 
-1. [Testing Goals](#testing-goals)
-2. [Testing Environments](#testing-environments)
-3. [Test Types](#test-types)
-4. [Game-Specific Tests](#game-specific-tests)
-5. [Network Condition Simulation](#network-condition-simulation)
-6. [Performance Testing](#performance-testing)
-7. [Security Testing](#security-testing)
-8. [Continuous Integration](#continuous-integration)
+1. [Introduction](#introduction)
+2. [Testing Principles](#testing-principles)
+3. [Testing Levels](#testing-levels)
+4. [Test Fixtures](#test-fixtures)
+5. [Network Simulation](#network-simulation)
+6. [Automation Approach](#automation-approach)
 
-## Testing Goals
+## Introduction
 
-Our networking testing aims to ensure:
+Networking code is inherently complex due to its asynchronous nature, potential for race conditions, and sensitivity to network conditions. Our testing approach is designed to address these challenges by employing a combination of unit tests, integration tests, and end-to-end tests, with a focus on simulating real-world network conditions.
 
-1. **Correctness**: Game state is properly synchronized between server and clients
-2. **Consistency**: All clients see the same game state with appropriate visibility rules
-3. **Performance**: Networking adds minimal overhead to gameplay
-4. **Robustness**: System handles network disruptions, edge cases, and high loads
-5. **Security**: Hidden information stays hidden and cheating is prevented
+## Testing Principles
 
-## Testing Environments
+Our networking testing follows these core principles:
 
-We'll use several testing environments:
+1. **Deterministic Tests**: Tests should be repeatable and produce the same results given the same inputs
+2. **Isolation**: Individual tests should run independently without relying on state from other tests
+3. **Real-World Conditions**: Tests should simulate various network conditions including latency, packet loss, and disconnections
+4. **Comprehensive Coverage**: Tests should cover all networking components and their interactions
+5. **Performance Validation**: Tests should validate that networking performs adequately under expected loads
 
-### Local Development Environment
-
-- Single process running both server and client
-- Fast development cycle
-- No real network latency or issues
-
-```rust
-// Example setup for local development testing
-pub fn setup_local_test_environment(app: &mut App) {
-    app.insert_resource(NetworkingConfig {
-        is_server: true,
-        is_client: true,
-        server_address: Some("127.0.0.1".to_string()),
-        port: 5000,
-        max_clients: 4,
-    });
-
-    app.add_plugins(NetworkingPlugin);
-}
-```
-
-### Simulated Network Environment
-
-- Multiple processes communicating over loopback interface
-- Artificial latency, packet loss, and jitter
-- Closer to real-world conditions while remaining deterministic
-
-```rust
-pub fn setup_simulated_network_test() {
-    // Start server process
-    let server_process = std::process::Command::new("cargo")
-        .args(&["run", "--", "--server"])
-        .spawn()
-        .expect("Failed to start server");
-
-    // Give server time to start
-    std::thread::sleep(std::time::Duration::from_secs(1));
-
-    // Start client processes
-    let mut client_processes = Vec::new();
-    for i in 0..4 {
-        let client = std::process::Command::new("cargo")
-            .args(&["run", "--", "--client", "--id", &i.to_string()])
-            .spawn()
-            .expect("Failed to start client");
-        client_processes.push(client);
-    }
-
-    // Run test scenario
-    // ...
-
-    // Cleanup processes
-    server_process.kill().expect("Failed to kill server");
-    for mut client in client_processes {
-        client.kill().expect("Failed to kill client");
-    }
-}
-```
-
-### Distributed Test Environment
-
-- Multiple machines or containers on a real network
-- Real-world network conditions
-- Final validation of the networking implementation
-
-## Test Types
+## Testing Levels
 
 ### Unit Tests
 
-Focus on testing individual networking components in isolation:
+Unit tests focus on individual networking components in isolation:
 
 ```rust
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use bevy::prelude::*;
-
-    #[test]
-    fn test_message_serialization() {
-        let message = NetworkMessage {
-            message_type: MessageType::Action,
-            payload: "Test payload".to_string(),
-            sequence: 1,
-            timestamp: 1234.5678,
-        };
-
-        let serialized = bincode::serialize(&message).unwrap();
-        let deserialized: NetworkMessage<String> = bincode::deserialize(&serialized).unwrap();
-
-        assert_eq!(message.message_type, deserialized.message_type);
-        assert_eq!(message.payload, deserialized.payload);
-        assert_eq!(message.sequence, deserialized.sequence);
-        assert_eq!(message.timestamp, deserialized.timestamp);
-    }
-
-    #[test]
-    fn test_client_connection() {
-        // Setup minimal test app
-        let mut app = App::new();
-        
-        // Add required plugins and systems
-        app.add_plugins(MinimalPlugins)
-            .add_plugins(bevy_replicon::prelude::ClientPlugin::default())
-            .add_systems(Update, handle_connection_status);
-        
-        // Initialize resources
-        app.insert_resource(GameClient::default());
-        
-        // Update client status and run systems
-        let mut client_status = RepliconClientStatus::Connecting;
-        app.insert_resource(client_status);
-        app.update();
-        
-        // Check the result
-        let client = app.world.resource::<GameClient>();
-        assert_eq!(client.connection_status, ConnectionStatus::Connecting);
-        
-        // Test connection established
-        client_status = RepliconClientStatus::Connected;
-        app.insert_resource(client_status);
-        app.update();
-        
-        let client = app.world.resource::<GameClient>();
-        assert_eq!(client.connection_status, ConnectionStatus::Connected);
-    }
+#[test]
+fn test_message_serialization() {
+    // Create a test message
+    let message = NetworkMessage::GameAction {
+        sequence_id: 123,
+        player_id: 456,
+        action: GameAction::DrawCard { player_id: 456, count: 1 },
+    };
+    
+    // Serialize the message
+    let serialized = bincode::serialize(&message).expect("Serialization failed");
+    
+    // Deserialize the message
+    let deserialized: NetworkMessage = bincode::deserialize(&serialized).expect("Deserialization failed");
+    
+    // Verify the deserialized message matches the original
+    assert_eq!(message, deserialized);
 }
 ```
 
 ### Integration Tests
 
-Test how networking components work together:
+Integration tests verify that multiple components work together correctly:
 
 ```rust
 #[test]
-fn test_client_server_communication() {
-    // Create test app with both server and client
-    let mut app = App::new();
+fn test_client_server_connection() {
+    // Set up a server
+    let mut server_app = App::new();
+    server_app.add_plugins(MinimalPlugins)
+        .add_plugins(RepliconServerPlugin::default());
     
-    app.add_plugins(MinimalPlugins)
-        .add_plugins(bevy_replicon::prelude::ServerPlugin::default())
-        .add_plugins(bevy_replicon::prelude::ClientPlugin::default())
-        .add_systems(Startup, setup_test)
-        .add_systems(Update, (
-            send_test_message,
-            receive_test_message,
-            verify_communication,
-        ));
+    // Set up a client
+    let mut client_app = App::new();
+    client_app.add_plugins(MinimalPlugins)
+        .add_plugins(RepliconClientPlugin::default());
     
-    // Run enough updates to allow for communication
+    // Start the server
+    server_app.world.resource_mut::<RepliconServer>()
+        .start_endpoint(ServerEndpoint::new(8080));
+    
+    // Connect the client
+    client_app.world.resource_mut::<RepliconClient>()
+        .connect_endpoint(ClientEndpoint::new("127.0.0.1", 8080));
+    
+    // Run updates to establish connection
     for _ in 0..10 {
-        app.update();
+        server_app.update();
+        client_app.update();
     }
     
-    // Verify communication occurred
-    let test_results = app.world.resource::<TestResults>();
-    assert!(test_results.message_received);
+    // Verify the client is connected
+    let client = client_app.world.resource::<RepliconClient>();
+    assert!(client.is_connected());
 }
 ```
 
 ### End-to-End Tests
 
-Test the entire networking stack in a game scenario:
+End-to-end tests verify complete game scenarios:
 
 ```rust
 #[test]
 fn test_multiplayer_game_flow() {
-    // Setup complete game environment
-    let mut app = setup_multiplayer_test_app();
+    // Set up a server with a game
+    let mut server_app = setup_server_with_game();
     
-    // Simulate game actions
-    app.world.resource_mut::<TestController>().queue_action(
-        TestAction::ConnectPlayers(4)
-    );
-    
-    // Run updates to process actions
-    app.update();
-    
-    // Verify all players connected
-    let connected_clients = app.world.resource::<ConnectedClients>();
-    assert_eq!(connected_clients.len(), 4);
-    
-    // Simulate a full game turn
-    app.world.resource_mut::<TestController>().queue_action(
-        TestAction::ExecuteGameTurn
-    );
-    
-    // Run enough updates for a full turn
-    for _ in 0..100 {
-        app.update();
-    }
-    
-    // Verify game state consistency across clients
-    verify_client_consistency(&app);
-}
-```
-
-## Game-Specific Tests
-
-### Hidden Information Tests
-
-Verify that cards in hidden zones are only visible to appropriate players:
-
-```rust
-#[test]
-fn test_hidden_information() {
-    let mut app = setup_multiplayer_test_app();
-    
-    // Setup test scenario with 4 players
-    // ...
-    
-    // Player 1 draws a card
-    app.world.resource_mut::<TestController>()
-        .execute_action_for_player(1, TestAction::DrawCard);
-    app.update();
-    
-    // Verify only player 1 can see the card
-    let player1_client = app.world.resource::<ClientRegistry>().get_client(1);
-    let other_clients = app.world.resource::<ClientRegistry>()
-        .get_all_except(1);
-    
-    assert!(player1_client.can_see_card(card_id));
-    
-    for client in other_clients {
-        assert!(!client.can_see_card(card_id));
-    }
-}
-```
-
-### Game Rules Tests
-
-Verify that networked game rules are enforced correctly:
-
-```rust
-#[test]
-fn test_priority_passing() {
-    let mut app = setup_multiplayer_test_app();
-    
-    // Setup test with 4 players
-    // ...
-    
-    // Active player attempts to pass priority
-    app.world.resource_mut::<TestController>()
-        .execute_action_for_player(
-            1, 
-            TestAction::PlayerAction(NetworkedActionType::PassPriority)
-        );
-    app.update();
-    
-    // Verify priority passed to the next player
-    let priority_system = app.world.resource::<PrioritySystem>();
-    assert_eq!(priority_system.current_player, 2);
-    
-    // Non-priority player attempts to cast spell (should fail)
-    let result = app.world.resource_mut::<TestController>()
-        .execute_action_for_player(
-            3, 
-            TestAction::PlayerAction(NetworkedActionType::CastSpell)
-        );
-    app.update();
-    
-    assert_eq!(result, ActionResult::Rejected(ErrorCode::NotYourPriority));
-}
-```
-
-### State Synchronization Tests
-
-Verify that all clients maintain the same game state:
-
-```rust
-#[test]
-fn test_game_state_synchronization() {
-    let mut app = setup_multiplayer_test_app();
-    
-    // Setup test scenario
-    // ...
-    
-    // Execute complex game actions
-    let actions = [
-        TestAction::PlayLand(player_id: 1, card_id: 101),
-        TestAction::CastSpell(player_id: 1, card_id: 102, targets: vec![201]),
-        TestAction::PassPriority(player_id: 1),
-        TestAction::PassPriority(player_id: 2),
-        TestAction::CastSpell(player_id: 3, card_id: 103, targets: vec![102]),
-        // ...
+    // Set up clients for multiple players
+    let mut client_apps = vec![
+        setup_client_app(0),
+        setup_client_app(1),
+        setup_client_app(2),
+        setup_client_app(3),
     ];
     
-    for action in actions {
-        app.world.resource_mut::<TestController>().execute_action(action);
-        app.update_n_times(5); // Allow time for replication
-    }
+    // Connect all clients
+    connect_all_clients(&mut server_app, &mut client_apps);
     
-    // Verify all client states match the server state for public information
-    let server_state = extract_server_game_state(&app);
-    let client_states = extract_all_client_game_states(&app);
+    // Run a full game turn cycle
+    run_game_turn_cycle(&mut server_app, &mut client_apps);
     
-    for (client_id, client_state) in client_states {
-        assert_eq!(
-            server_state.public_state, 
-            client_state.public_state,
-            "Client {} state does not match server state", 
-            client_id
-        );
-    }
+    // Verify game state is consistent across all clients
+    verify_consistent_game_state(&server_app, &client_apps);
 }
 ```
 
-## Network Condition Simulation
+## Test Fixtures
 
-Test how the game behaves under various network conditions:
-
-```rust
-pub fn test_under_network_conditions(
-    latency_ms: u64,
-    packet_loss_percent: f32,
-    jitter_ms: u64,
-) {
-    // Setup test app with network condition simulation
-    let mut app = setup_multiplayer_test_app();
-    
-    // Configure network simulation
-    app.insert_resource(NetworkSimulation {
-        latency: Some(latency_ms),
-        packet_loss: Some(packet_loss_percent / 100.0),
-        jitter: Some(jitter_ms),
-    });
-    
-    // Run standard test scenario
-    // ...
-    
-    // Verify game functions correctly despite network conditions
-    // ...
-}
-
-#[test]
-fn test_high_latency() {
-    test_under_network_conditions(200, 0.0, 0);
-}
-
-#[test]
-fn test_packet_loss() {
-    test_under_network_conditions(50, 5.0, 0);
-}
-
-#[test]
-fn test_jitter() {
-    test_under_network_conditions(50, 0.0, 50);
-}
-
-#[test]
-fn test_terrible_connection() {
-    test_under_network_conditions(300, 10.0, 100);
-}
-```
-
-## Performance Testing
-
-Measure networking performance:
+### Basic Network Test Fixture
 
 ```rust
-#[test]
-fn test_networking_performance() {
-    let mut app = setup_multiplayer_test_app();
+/// Sets up a standard network test environment with server and clients
+pub fn setup_network_test(app: &mut App, is_server: bool, is_client: bool) {
+    // Add required plugins
+    app.add_plugins(MinimalPlugins);
     
-    // Add performance metrics collection
-    app.add_systems(Update, collect_network_metrics);
-    
-    // Run a standard game scenario
-    // ...
-    
-    // Collect metrics
-    let metrics = app.world.resource::<NetworkMetrics>();
-    
-    // Assert performance meets requirements
-    assert!(metrics.average_message_size < 1024); // Average message under 1KB
-    assert!(metrics.messages_per_second < 100);  // Under 100 messages per second
-    assert!(metrics.average_processing_time < 5.0); // Under 5ms processing time
-}
-```
-
-## Security Testing
-
-Test for security vulnerabilities:
-
-```rust
-#[test]
-fn test_hidden_information_leak() {
-    let mut app = setup_multiplayer_test_app();
-    
-    // Setup game with known cards in player's hand
-    // ...
-    
-    // Try to exploit by sending specially crafted messages
-    send_malicious_request(&mut app, MaliciousRequest::RevealHand(other_player_id));
-    
-    // Verify other player's hand remains hidden
-    let client = app.world.resource::<ClientRegistry>().get_client(1);
-    let other_player_hand = app.world.resource::<GameState>().get_player_hand(2);
-    
-    for card in other_player_hand {
-        assert!(!client.can_see_card(card));
+    // Add either server or client plugins
+    if is_server {
+        app.add_plugins(RepliconServerPlugin::default());
     }
+    
+    if is_client {
+        app.add_plugins(RepliconClientPlugin::default());
+    }
+    
+    // Add networking resources
+    app.init_resource::<NetworkConfig>()
+        .init_resource::<ConnectionStatus>();
+    
+    // Add core networking systems
+    app.add_systems(Update, network_connection_status_update);
+}
+```
+
+### Game State Test Fixture
+
+```rust
+/// Sets up a test environment with a standard game state
+pub fn setup_test_game_state(app: &mut App) {
+    // Add game state
+    app.init_resource::<GameState>();
+    
+    // Set up players
+    let player_entities = spawn_test_players(app);
+    
+    // Set up initial game board
+    setup_test_board_state(app, &player_entities);
+    
+    // Initialize game systems
+    app.add_systems(Update, (
+        update_game_state,
+        process_game_actions,
+        sync_game_state,
+    ));
+}
+```
+
+## Network Simulation
+
+To test under various network conditions, we use a network condition simulator:
+
+```rust
+/// Simulates network conditions for testing
+pub struct NetworkConditionSimulator {
+    /// Simulated latency in milliseconds
+    pub latency: u32,
+    /// Packet loss percentage (0-100)
+    pub packet_loss: u8,
+    /// Jitter in milliseconds
+    pub jitter: u32,
+    /// Bandwidth cap in KB/s
+    pub bandwidth: u32,
 }
 
-#[test]
-fn test_action_validation() {
-    let mut app = setup_multiplayer_test_app();
-    
-    // Setup game state
-    // ...
-    
-    // Try to perform illegal actions
-    let illegal_actions = [
-        TestAction::PlayExtraLand,
-        TestAction::CastWithoutMana,
-        TestAction::TargetInvalid,
-        // ...
-    ];
-    
-    for action in illegal_actions {
-        let result = app.world.resource_mut::<TestController>()
-            .execute_action(action);
-        app.update();
+impl NetworkConditionSimulator {
+    /// Applies network conditions to a packet
+    pub fn process_packet(&self, packet: &mut Packet) {
+        // Apply packet loss
+        if rand::random::<u8>() < self.packet_loss {
+            packet.dropped = true;
+            return;
+        }
         
-        // Verify action was rejected
-        assert!(matches!(result, ActionResult::Rejected(_)));
+        // Apply latency with jitter
+        let jitter_amount = if self.jitter > 0 {
+            rand::thread_rng().gen_range(0..self.jitter)
+        } else {
+            0
+        };
+        
+        packet.delay = Duration::from_millis((self.latency + jitter_amount) as u64);
+        
+        // Apply bandwidth limitation
+        if self.bandwidth > 0 {
+            packet.throttled = packet.size > self.bandwidth;
+        }
     }
 }
 ```
 
-## Continuous Integration
+## Automation Approach
 
-Automated tests in CI pipeline:
+Our testing automation strategy focuses on:
 
-```yaml
-# .github/workflows/networking-tests.yml
-name: Networking Tests
+1. **Continuous Integration**: All networking tests run on every PR and merge to main
+2. **Matrix Testing**: Tests run against multiple configurations (OS, Bevy version, etc.)
+3. **Performance Benchmarks**: Regular testing of networking performance metrics
+4. **Stress Testing**: Load tests to verify behavior under heavy usage
+5. **Long-running Tests**: Tests that run for extended periods to catch time-dependent issues
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+## Key Test Scenarios
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
-    - name: Build
-      run: cargo build --verbose
-    - name: Run networking unit tests
-      run: cargo test --verbose networking::unit_tests
-    - name: Run networking integration tests
-      run: cargo test --verbose networking::integration_tests
-    - name: Run simulated network tests
-      run: cargo test --verbose networking::simulation
-```
+The following critical scenarios must pass for all networking changes:
+
+1. **Connection Handling**: Establishing connections, handling disconnections, and reconnections
+2. **State Synchronization**: Ensuring all clients see the same game state
+3. **Latency Compensation**: Verifying the game remains playable under various latency conditions
+4. **Error Recovery**: Testing recovery from network errors and disruptions
+5. **Security**: Validating that security measures work as expected
 
 ---
 
-This testing strategy provides a comprehensive approach to verifying the correctness, performance, and security of our multiplayer networking implementation. By covering different types of tests across various environments, we can ensure a robust and enjoyable multiplayer experience for our MTG Commander game engine. 
+For more detailed testing information, see the [RNG Synchronization Tests](rng_synchronization_tests.md) and [Replicon RNG Tests](replicon_rng_tests.md) documents. 
