@@ -12,6 +12,17 @@ This guide explains how the Entity Component System (ECS) architecture is implem
 6. [Queries and Filters](#queries-and-filters)
 7. [ECS Best Practices](#ecs-best-practices)
 8. [Common Pitfalls](#common-pitfalls)
+9. [Safely Using Parameter Sets](#safely-using-parameter-sets)
+   - [Understanding Parameter Sets](#understanding-parameter-sets)
+   - [Disjoint Queries with Param Sets](#disjoint-queries-with-param-sets)
+   - [Using Component Access for Safety](#using-component-access-for-safety)
+   - [Avoiding World References](#avoiding-world-references)
+   - [Query Lifetimes and Temporary Storage](#query-lifetimes-and-temporary-storage)
+   - [Using System Sets for Dependency Management](#using-system-sets-for-dependency-management)
+   - [Testing for Query Conflicts](#testing-for-query-conflicts)
+   - [Working with Snapshot Systems](#working-with-snapshot-systems)
+   - [Debugging Snapshot Systems with Trace Logging](#debugging-snapshot-systems-with-trace-logging)
+   - [MTG-Specific Example: Card Manipulation Safety](#mtg-specific-example-card-manipulation-safety)
 
 ## Introduction to ECS
 
@@ -370,6 +381,78 @@ fn card_draw_system(mut event_reader: EventReader<DrawCardEvent>) {
 }
 ```
 
----
+## Safely Using Parameter Sets
 
-Next: [Plugin Architecture](plugins.md) 
+Bevy's ECS enforces strict borrowing rules to maintain memory safety and enable parallelism. A common cause of runtime panics is query parameter conflicts, especially when working with complex systems. This section covers techniques to write robust systems that avoid these issues.
+
+### Understanding Parameter Sets
+
+Parameter sets provide a way to group related parameters and control how they interact with each other. By explicitly defining parameter sets, you can prevent Bevy from attempting to run systems with conflicting queries in parallel, which would cause runtime panics.
+
+### Disjoint Queries with Param Sets
+
+The `ParamSet` type allows you to create multiple queries that would otherwise conflict with each other:
+
+```rust
+use bevy::ecs::system::ParamSet;
+
+fn safe_system(
+    mut param_set: ParamSet<(
+        Query<&mut Transform, With<Player>>,
+        Query<&mut Transform, With<Enemy>>
+    )>
+) {
+    // Access the first query (player transforms)
+    for mut transform in param_set.p0().iter_mut() {
+        // Modify player transforms
+    }
+    
+    // Access the second query (enemy transforms)
+    for mut transform in param_set.p1().iter_mut() {
+        // Modify enemy transforms
+    }
+}
+```
+
+This approach is safer than trying to use separate queries because `ParamSet` guarantees that access to each query is sequential rather than simultaneous.
+
+### Using Component Access for Safety
+
+For more complex systems, you can use the `ComponentAccess` trait to explicitly control which components your system accesses:
+
+```rust
+#[derive(Default, Resource)]
+struct SafeComponentAccess {
+    processing_cards: bool,
+}
+
+fn card_system(
+    mut access: ResMut<SafeComponentAccess>,
+    mut query: Query<&mut Card>,
+) {
+    // Set flag to indicate we're processing cards
+    access.processing_cards = true;
+    
+    for mut card in &mut query {
+        // Process cards safely
+    }
+    
+    // Release the lock
+    access.processing_cards = false;
+}
+
+fn other_card_system(
+    access: Res<SafeComponentAccess>,
+    mut commands: Commands,
+) {
+    // Check if another system is processing cards
+    if !access.processing_cards {
+        // Safe to spawn or modify cards
+        commands.spawn(Card::default());
+    }
+}
+```
+
+### Avoiding World References
+
+While it's possible to access the entire ECS `World`
