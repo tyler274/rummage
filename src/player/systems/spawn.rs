@@ -158,17 +158,17 @@ fn spawn_visual_cards(
             Vec3::new(spacing, 0.0, 0.0),
         ), // bottom: cards in row
         1 => (
-            Vec3::new(player_position.x, start_x, 0.0),
+            Vec3::new(player_position.x + 1500.0, start_x, 0.0),
             Vec3::new(0.0, spacing, 0.0),
-        ), // right: cards in column
+        ), // right: cards in column, additional horizontal offset
         2 => (
             Vec3::new(start_x, player_position.y, 0.0),
             Vec3::new(spacing, 0.0, 0.0),
         ), // top: cards in row
         3 => (
-            Vec3::new(player_position.x, start_x, 0.0),
+            Vec3::new(player_position.x - 1500.0, start_x, 0.0),
             Vec3::new(0.0, spacing, 0.0),
-        ), // left: cards in column
+        ), // left: cards in column, additional horizontal offset
         _ => (
             Vec3::new(start_x, player_position.y, 0.0),
             Vec3::new(spacing, 0.0, 0.0),
