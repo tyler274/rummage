@@ -79,9 +79,9 @@ impl TableLayout {
             // Standard 4-player layout
             match player_index % 4 {
                 0 => Vec3::new(0.0, -1200.0, 0.0), // Bottom: below player
-                1 => Vec3::new(3000.0, 0.0, 0.0),  // Right: to the right
+                1 => Vec3::new(4500.0, 0.0, 0.0),  // Right: to the right (increased from 3000)
                 2 => Vec3::new(0.0, 1200.0, 0.0),  // Top: above player
-                3 => Vec3::new(-3000.0, 0.0, 0.0), // Left: to the left
+                3 => Vec3::new(-4500.0, 0.0, 0.0), // Left: to the left (increased from -3000)
                 _ => Vec3::ZERO,                   // Fallback
             }
         } else {

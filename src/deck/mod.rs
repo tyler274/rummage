@@ -92,26 +92,37 @@ pub fn get_example_cards(_owner: Entity) -> Vec<crate::card::Card> {
     cards
 }
 
-// Get unique cards for a player based on their player index
-// This ensures different players get different cards
-pub fn get_player_specific_cards(_owner: Entity, player_index: usize) -> Vec<crate::card::Card> {
+// Create a deck containing all implemented cards for a player
+// This gives all players access to the full collection of cards
+pub fn get_player_specific_cards() -> Vec<crate::card::Card> {
     let mut cards = Vec::new();
 
-    // Use different card subsets based on player index to ensure variety
-    if player_index % 2 == 0 {
-        // Even-indexed players (like Player 1) get red and black-aligned cards
-        cards.push(crate::card::sets::alpha::fireball::get_card());
-        cards.push(crate::card::sets::alpha::lightning_bolt::get_card());
-        cards.push(crate::card::sets::alpha::wheel_of_fortune::get_card());
-        cards.push(crate::card::sets::scourge::dragon_mage::get_card());
-    } else {
-        // Odd-indexed players (like Player 2) get blue and white-aligned cards
-        cards.push(crate::card::sets::alpha::ancestral_recall::get_card());
-        cards.push(crate::card::sets::alpha::counterspell::get_card());
-        cards.push(crate::card::sets::alpha::time_walk::get_card());
-        cards.push(crate::card::sets::alliances::force_of_will::get_card());
-        cards.push(crate::card::sets::legends::mana_drain::get_card());
-    }
+    // Include all implemented cards regardless of player index
+    // Alpha set
+    cards.push(crate::card::sets::alpha::ancestral_recall::get_card());
+    cards.push(crate::card::sets::alpha::counterspell::get_card());
+    cards.push(crate::card::sets::alpha::fireball::get_card());
+    cards.push(crate::card::sets::alpha::lightning_bolt::get_card());
+    cards.push(crate::card::sets::alpha::shivan_dragon::get_card());
+    cards.push(crate::card::sets::alpha::time_walk::get_card());
+    cards.push(crate::card::sets::alpha::wheel_of_fortune::get_card());
+
+    // Alliances set
+    cards.push(crate::card::sets::alliances::force_of_will::get_card());
+
+    // Legends set
+    cards.push(crate::card::sets::legends::mana_drain::get_card());
+
+    // Scourge set
+    cards.push(crate::card::sets::scourge::dragon_mage::get_card());
+
+    // Innistrad Midnight Hunt set
+    cards.push(crate::card::sets::innistrad_midnight_hunt::briarbridge_tracker::get_card());
+    cards.push(crate::card::sets::innistrad_midnight_hunt::brutal_cathar::get_card());
+    cards.push(crate::card::sets::innistrad_midnight_hunt::cathars_call::get_card());
+    cards.push(crate::card::sets::innistrad_midnight_hunt::champion_of_the_perished::get_card());
+    cards.push(crate::card::sets::innistrad_midnight_hunt::delver_of_secrets::get_card());
+    cards.push(crate::card::sets::innistrad_midnight_hunt::moonveil_regent::get_card());
 
     cards
 }
@@ -129,11 +140,11 @@ pub fn get_shuffled_deck(owner: Entity) -> Deck {
 
 // Return a player-specific shuffled deck of cards
 pub fn get_player_shuffled_deck(
-    owner: Entity,
+    _owner: Entity,
     player_index: usize,
     deck_name: Option<&str>,
 ) -> Deck {
-    let cards = get_player_specific_cards(owner, player_index);
+    let cards = get_player_specific_cards();
 
     let name = deck_name
         .unwrap_or(&format!("Player {} Deck", player_index + 1))
