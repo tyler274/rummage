@@ -7,7 +7,7 @@ pub mod components;
 pub mod config;
 pub mod state;
 pub mod systems;
-// mod tests; // Will be added when tests are implemented
+mod tests; // Will be expanded on when tests are implemented
 
 // snapshot module has been moved to its own top-level module at src/snapshot
 

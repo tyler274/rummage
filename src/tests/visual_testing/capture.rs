@@ -55,6 +55,7 @@ pub fn capture_screenshot_system(
     }
 }
 
+#[allow(dead_code)]
 /// Takes a screenshot of the current frame from world
 fn take_screenshot_from_window(window: &Window) -> Option<DynamicImage> {
     // Create a blank image with the window size

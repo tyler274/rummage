@@ -1,6 +1,5 @@
 use crate::tests::visual_testing::capture::capture_screenshot_system;
 use bevy::prelude::*;
-use bevy::render::RenderApp;
 
 /// Configuration for visual testing
 #[derive(Resource)]
@@ -38,13 +37,8 @@ impl Plugin for VisualTestingPlugin {
         app.init_resource::<VisualTestConfig>()
             .add_systems(Update, capture_screenshot_system);
 
-        // Add render extraction systems
-        if let Some(_render_app) = app.get_sub_app_mut(RenderApp) {
-            // Configure render app for visual testing
-            _render_app
-                .init_resource::<VisualTestConfig>()
-                .add_systems(bevy::render::Render, setup_screenshot_rendering);
-        }
+        // Don't add render systems for now - we'll implement this properly later
+        // This is causing a panic in the main app
     }
 }
 
@@ -108,10 +102,4 @@ pub fn setup_headless_visual_test_environment(app: &mut App) {
     // 3. Set up deterministic rendering conditions
     app.add_plugins(MinimalPlugins)
         .add_plugins(VisualTestingPlugin);
-}
-
-// Setup rendering system for screenshots
-fn setup_screenshot_rendering() {
-    // This would setup any render-specific resources needed for screenshots
-    // For example, configuring render targets, shaders, etc.
 }
