@@ -33,6 +33,12 @@ pub fn cleanup_menu_camera(mut commands: Commands, menu_cameras: Query<Entity, W
 }
 
 /// Cleans up Star of David entities
+///
+/// This is a utility function for cleaning up star of david entities when they are no longer needed.
+/// The more thorough version (cleanup_star_of_david_thoroughly) is currently used instead.
+///
+/// TODO: Evaluate if this simplified version should be used in certain scenarios for performance reasons
+#[allow(dead_code)]
 pub fn cleanup_star_of_david(mut commands: Commands, stars: Query<Entity, With<StarOfDavid>>) {
     let count = stars.iter().count();
     info!("Cleaning up {} Star of David entities", count);

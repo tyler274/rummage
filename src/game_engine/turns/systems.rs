@@ -96,7 +96,7 @@ pub fn handle_untap_step(
     >,
     turn_manager: Res<TurnManager>,
     phase: Res<Phase>,
-    player_query: Query<&Player>,
+    _player_query: Query<&Player>,
     mut event_tracker: Local<TurnEventTracker>,
 ) {
     // Only process during untap step

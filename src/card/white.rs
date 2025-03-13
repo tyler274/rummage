@@ -1,5 +1,5 @@
 use crate::card::{Card, CardDetails, CardTypes, CreatureCard, CreatureType};
-use crate::mana::{Color, Mana};
+use crate::mana::Mana;
 
 pub fn get_white_cards() -> Vec<Card> {
     vec![

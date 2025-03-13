@@ -12,6 +12,9 @@ pub struct CommandZone {
 
 impl CommandZone {
     /// Creates a new CommandZoneBuilder for chainable construction
+    ///
+    /// Will be used in future implementations for more flexible initialization
+    #[allow(dead_code)]
     pub fn builder() -> CommandZoneBuilder {
         CommandZoneBuilder::new()
     }
@@ -39,19 +42,22 @@ impl CommandZone {
     }
 }
 
-/// Builder for CommandZone with a chainable API
-#[derive(Debug, Clone)]
+/// Builder for CommandZone to enable chainable construction
+#[derive(Debug, Default)]
+#[allow(dead_code)]
 pub struct CommandZoneBuilder {
     cards: Vec<Entity>,
 }
 
 impl CommandZoneBuilder {
-    /// Creates a new CommandZoneBuilder with default values
+    /// Creates a new builder with default values
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self { cards: Vec::new() }
     }
 
-    /// Adds a card to the command zone
+    /// Add a card to the command zone being built
+    #[allow(dead_code)]
     pub fn add_card(mut self, card: Entity) -> Self {
         if !self.cards.contains(&card) {
             self.cards.push(card);
@@ -59,19 +65,21 @@ impl CommandZoneBuilder {
         self
     }
 
-    /// Sets all cards in the command zone at once
+    /// Set the cards in the command zone
+    #[allow(dead_code)]
     pub fn cards(mut self, cards: Vec<Entity>) -> Self {
         self.cards = cards;
         self
     }
 
-    /// Builds the CommandZone instance
+    /// Build the CommandZone with configured values
+    #[allow(dead_code)]
     pub fn build(self) -> CommandZone {
         CommandZone { cards: self.cards }
     }
 }
 
-/// Manager for the Command Zone and Commander state
+/// Manager for commander-specific rules and state
 #[derive(Resource, Debug, Default)]
 pub struct CommandZoneManager {
     /// Maps player entities to their commander entities
@@ -92,16 +100,19 @@ pub struct CommandZoneManager {
 
 impl CommandZoneManager {
     /// Creates a new CommandZoneManagerBuilder for chainable construction
+    ///
+    /// Will be used in future implementations for more flexible manager initialization
+    #[allow(dead_code)]
     pub fn builder() -> CommandZoneManagerBuilder {
         CommandZoneManagerBuilder::new()
     }
 
-    /// Initialize with a list of players and their commanders
+    /// Initialize the commander manager with player-commander mappings
     pub fn initialize(&mut self, player_commanders: HashMap<Entity, Vec<Entity>>) {
-        self.player_commanders = player_commanders.clone();
+        self.player_commanders = player_commanders;
 
-        // Initialize all commanders as being in the command zone
-        for commanders in player_commanders.values() {
+        // Initialize commanders to be in the command zone
+        for commanders in self.player_commanders.values() {
             for &commander in commanders {
                 self.commander_zone_status
                     .insert(commander, CommanderZoneLocation::CommandZone);
@@ -110,7 +121,7 @@ impl CommandZoneManager {
         }
     }
 
-    /// Set the color identity for a commander
+    /// Sets the color identity for a commander
     pub fn set_commander_color_identity(
         &mut self,
         commander: Entity,
@@ -119,7 +130,7 @@ impl CommandZoneManager {
         self.commander_colors.insert(commander, color_identity);
     }
 
-    /// Get the commanders for a player
+    /// Gets a player's commanders
     pub fn get_player_commanders(&self, player: Entity) -> Vec<Entity> {
         self.player_commanders
             .get(&player)
@@ -127,37 +138,47 @@ impl CommandZoneManager {
             .unwrap_or_default()
     }
 
-    /// Get the current zone of a commander
+    /// Gets a commander's current zone
     pub fn get_commander_zone(&self, commander: Entity) -> CommanderZoneLocation {
         self.commander_zone_status
             .get(&commander)
-            .cloned()
+            .copied()
             .unwrap_or(CommanderZoneLocation::CommandZone)
     }
 
-    /// Get the number of times a commander has been cast
+    /// Gets the cast count for a commander
     pub fn get_cast_count(&self, commander: Entity) -> u32 {
         self.zone_transition_count
             .get(&commander)
-            .cloned()
+            .copied()
             .unwrap_or(0)
     }
 
-    /// Update the zone of a commander
+    /// Updates a commander's zone and increments its transition count if needed
     pub fn update_commander_zone(&mut self, commander: Entity, new_zone: CommanderZoneLocation) {
-        // Update zone status
+        // Update the commander's location
         self.commander_zone_status.insert(commander, new_zone);
 
-        // If the zone is the command zone, don't increment the counter
-        if new_zone != CommanderZoneLocation::CommandZone {
-            let count = self.zone_transition_count.entry(commander).or_insert(0);
-            *count += 1;
+        if new_zone == CommanderZoneLocation::Battlefield {
+            // Commander was cast, so increment the commander tax counter
+            let current_count = self
+                .zone_transition_count
+                .get(&commander)
+                .copied()
+                .unwrap_or(0);
+            self.zone_transition_count
+                .insert(commander, current_count + 1);
         }
     }
 }
 
-/// Builder for CommandZoneManager with a chainable API
-#[derive(Debug, Clone)]
+/// Builder for CommandZoneManager to enable chainable construction
+///
+/// This builder is part of the commander management design but is not
+/// actively used in the current implementation. It will be needed
+/// for future commander rule implementations.
+#[derive(Debug, Default)]
+#[allow(dead_code)]
 pub struct CommandZoneManagerBuilder {
     player_commanders: HashMap<Entity, Vec<Entity>>,
     commander_zone_status: HashMap<Entity, CommanderZoneLocation>,
@@ -168,6 +189,7 @@ pub struct CommandZoneManagerBuilder {
 
 impl CommandZoneManagerBuilder {
     /// Creates a new CommandZoneManagerBuilder with default values
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             player_commanders: HashMap::new(),
@@ -178,62 +200,68 @@ impl CommandZoneManagerBuilder {
         }
     }
 
-    /// Adds a commander for a player
+    /// Add a commander for a player
+    #[allow(dead_code)]
     pub fn add_commander(mut self, player: Entity, commander: Entity) -> Self {
         self.player_commanders
             .entry(player)
             .or_insert_with(Vec::new)
             .push(commander);
 
-        // Initialize commander in command zone with 0 transitions
+        // By default, commanders start in the command zone
         self.commander_zone_status
             .insert(commander, CommanderZoneLocation::CommandZone);
         self.zone_transition_count.insert(commander, 0);
-
         self
     }
 
-    /// Sets all player commanders at once
+    /// Set all player commanders at once
+    #[allow(dead_code)]
     pub fn player_commanders(mut self, player_commanders: HashMap<Entity, Vec<Entity>>) -> Self {
-        self.player_commanders = player_commanders.clone();
+        self.player_commanders = player_commanders;
 
-        // Initialize all commanders as being in the command zone
-        for commanders in player_commanders.values() {
+        // Initialize all commanders to command zone
+        for commanders in self.player_commanders.values() {
             for &commander in commanders {
                 self.commander_zone_status
                     .insert(commander, CommanderZoneLocation::CommandZone);
                 self.zone_transition_count.insert(commander, 0);
             }
         }
-
         self
     }
 
-    /// Sets a commander's zone
+    /// Set the zone for a commander
+    #[allow(dead_code)]
     pub fn set_commander_zone(mut self, commander: Entity, zone: CommanderZoneLocation) -> Self {
         self.commander_zone_status.insert(commander, zone);
         self
     }
 
-    /// Sets a commander's transition count
+    /// Set the transition count for a commander
+    #[allow(dead_code)]
     pub fn set_transition_count(mut self, commander: Entity, count: u32) -> Self {
         self.zone_transition_count.insert(commander, count);
         self
     }
 
-    /// Sets a commander partnership
+    /// Set two commanders as partners
+    #[allow(dead_code)]
     pub fn add_partner(mut self, commander1: Entity, commander2: Entity) -> Self {
         self.commander_partners.insert(commander1, commander2);
+        self.commander_partners.insert(commander2, commander1);
         self
     }
 
-    /// Sets a commander's color identity
+    /// Set the color identity for a commander
+    #[allow(dead_code)]
     pub fn set_color_identity(mut self, commander: Entity, colors: HashSet<Color>) -> Self {
         self.commander_colors.insert(commander, colors);
         self
     }
 
-    /// Builds the CommandZoneManager instance
+    /// Build the CommandZoneManager with configured values
+    #[allow(dead_code)]
     pub fn build(self) -> CommandZoneManager {
         CommandZoneManager {
             player_commanders: self.player_commanders,

@@ -1,5 +1,5 @@
 use crate::card::{Card, CardDetails, CardTypes};
-use crate::mana::{Color, Mana};
+use crate::mana::Mana;
 
 pub fn get_blue_cards() -> Vec<Card> {
     vec![

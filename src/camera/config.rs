@@ -4,22 +4,6 @@ use bevy::prelude::*;
 ///
 /// This resource controls how the camera responds to user input,
 /// including movement speed and zoom limits.
-///
-/// # Examples
-///
-/// ```
-/// use rummage::camera::CameraConfig;
-///
-/// let config = CameraConfig {
-///     move_speed: 500.0,
-///     zoom_speed: 1.0,
-///     min_zoom: 0.1,
-///     max_zoom: 10.0,
-///     pan_sensitivity: 1.0,
-/// };
-///
-/// assert!(config.min_zoom < config.max_zoom);
-/// ```
 #[derive(Resource)]
 pub struct CameraConfig {
     /// Movement speed in units per second (for keyboard movement)

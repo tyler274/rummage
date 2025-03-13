@@ -43,6 +43,8 @@ impl Default for ZoneManager {
 
 impl ZoneManager {
     /// Initialize zones for a new player
+    /// TODO: Implement when initializing zones for a player
+    #[allow(dead_code)]
     pub fn init_player_zones(&mut self, player: Entity) {
         self.libraries.entry(player).or_insert_with(Vec::new);
         self.hands.entry(player).or_insert_with(Vec::new);
@@ -191,16 +193,18 @@ impl ZoneManager {
         false
     }
 
-    /// Get a player's zone (library, hand, or graveyard)
+    /// Get the zone for a specific player
+    /// TODO: Implement when querying zone contents is needed
+    #[allow(dead_code)]
     pub fn get_player_zone(&self, player: Entity, zone: Zone) -> Option<&Vec<Entity>> {
         match zone {
             Zone::Library => self.libraries.get(&player),
             Zone::Hand => self.hands.get(&player),
-            Zone::Graveyard => self.graveyards.get(&player),
             Zone::Battlefield => Some(&self.battlefield),
+            Zone::Graveyard => self.graveyards.get(&player),
             Zone::Exile => Some(&self.exile),
             Zone::CommandZone => Some(&self.command_zone),
-            Zone::Stack => None, // Stack is managed separately
+            Zone::Stack => None, // Stack is managed separately by the GameStack resource
         }
     }
 
@@ -231,7 +235,9 @@ impl ZoneManager {
         None
     }
 
-    /// Get the current zone of a card
+    /// Get the zone of a specific card
+    /// TODO: Implement when tracking card locations is needed
+    #[allow(dead_code)]
     pub fn get_card_zone(&self, card: Entity) -> Option<Zone> {
         self.card_zone_map.get(&card).copied()
     }

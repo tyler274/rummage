@@ -4,13 +4,19 @@ use bevy::prelude::*;
 #[derive(Event, Debug)]
 pub struct TurnStartEvent {
     /// The player whose turn is starting
+    /// TODO: Use this field when implementing turn start handling
+    #[allow(dead_code)]
     pub player: Entity,
     /// The turn number that is starting
+    /// TODO: Use this field when implementing turn tracking
+    #[allow(dead_code)]
     pub turn_number: u32,
 }
 
 impl TurnStartEvent {
     /// Creates a new turn start event
+    /// TODO: Use this constructor when implementing turn start events
+    #[allow(dead_code)]
     pub fn new(player: Entity, turn_number: u32) -> Self {
         Self {
             player,
@@ -23,13 +29,19 @@ impl TurnStartEvent {
 #[derive(Event, Debug)]
 pub struct TurnEndEvent {
     /// The player whose turn is ending
+    /// TODO: Use this field when implementing turn end handling
+    #[allow(dead_code)]
     pub player: Entity,
     /// The turn number that is ending
+    /// TODO: Use this field when implementing turn tracking
+    #[allow(dead_code)]
     pub turn_number: u32,
 }
 
 impl TurnEndEvent {
     /// Creates a new turn end event
+    /// TODO: Use this constructor when implementing turn end events
+    #[allow(dead_code)]
     pub fn new(player: Entity, turn_number: u32) -> Self {
         Self {
             player,
@@ -53,11 +65,15 @@ pub struct TurnEventTracker {
 
 impl TurnEventTracker {
     /// Creates a new TurnEventTrackerBuilder for chainable construction
+    /// TODO: Implement this when turn event tracking is needed
+    #[allow(dead_code)]
     pub fn builder() -> crate::game_engine::turns::builder::TurnEventTrackerBuilder {
         crate::game_engine::turns::builder::TurnEventTrackerBuilder::new()
     }
 
     /// Reset all event processing flags
+    /// TODO: Implement this when turn event tracking is needed
+    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.turn_start_processed = false;
         self.turn_end_processed = false;
@@ -65,6 +81,8 @@ impl TurnEventTracker {
     }
 
     /// Update the turn number and reset flags if it's a new turn
+    /// TODO: Implement this when turn tracking is needed
+    #[allow(dead_code)]
     pub fn update_turn(&mut self, turn_number: u32) {
         if turn_number != self.last_processed_turn {
             self.reset();

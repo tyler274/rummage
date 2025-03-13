@@ -10,7 +10,9 @@ pub struct PermanentController {
 
 impl PermanentController {
     /// Creates a new controller component
+    /// TODO: Implement when adding permanents to the battlefield with controller tracking
+    #[allow(dead_code)]
     pub fn new(player: Entity) -> Self {
         Self { player }
     }
-} 
+}

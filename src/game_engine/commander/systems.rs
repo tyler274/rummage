@@ -12,12 +12,19 @@ use bevy::prelude::*;
 use std::collections::{HashMap, HashSet};
 
 /// Initialize Commander-specific resources and components
+///
+/// This system will be used during setup to initialize commander-related resources.
+/// Currently not actively called as setup is handled elsewhere.
+#[allow(dead_code)]
 pub fn setup_commander(mut commands: Commands) {
     commands.insert_resource(CommandZone::default());
     commands.insert_resource(CommandZoneManager::default());
 }
 
 /// Calculate the mana cost of a Commander including the Commander tax
+///
+/// Commanders cost an additional {2} for each time they've been cast from the command zone previously.
+#[allow(dead_code)]
 pub fn calculate_commander_cost(
     commander: Entity,
     base_cost: Mana,
@@ -165,7 +172,11 @@ pub fn process_commander_zone_choices(
     }
 }
 
-/// Handle casting a commander from the command zone
+/// Handle the casting of a commander from the command zone
+///
+/// This system will process commander casting, applying tax and moving
+/// the commander to the appropriate zone in the future.
+#[allow(dead_code)]
 pub fn handle_commander_casting(
     _commands: Commands,
     _zone_manager: ResMut<ZoneManager>,
@@ -174,41 +185,51 @@ pub fn handle_commander_casting(
     _cards: Query<(Entity, &Card)>,
     // We would need other queries and inputs here
 ) {
-    // Implementation will be added later
+    // TODO: Implement commander casting logic
+    todo!(
+        "Implement commander casting from command zone, including tax calculation and zone transitions"
+    );
 }
 
-/// Validate that all cards in a player's deck match their commander's color identity
+/// Validate that a deck follows commander rules
+///
+/// This system checks that:
+/// - Each card in the deck matches the commander's color identity
+/// - The deck size is correct for the format
+/// - Other commander-specific deckbuilding restrictions
+#[allow(dead_code)]
 pub fn validate_commander_deck(
     _card_query: Query<(Entity, &Card)>,
     cmd_zone_manager: Res<CommandZoneManager>,
     player_query: Query<(Entity, &Player)>,
 ) -> HashMap<Entity, Vec<Entity>> {
-    // Map to store players and their illegal cards
-    let illegal_cards = HashMap::new();
+    // Map to store validation errors by player
+    let mut validation_errors = HashMap::new();
 
-    // For each player, check their deck against their commander's color identity
-    for (player_entity, _) in player_query.iter() {
+    // TODO: For each player, check their deck against commander rules
+    for (player_entity, _player) in player_query.iter() {
+        // Get the player's commanders
         let commanders = cmd_zone_manager.get_player_commanders(player_entity);
         if commanders.is_empty() {
-            continue;
+            // Add error: No commander
+            validation_errors
+                .entry(player_entity)
+                .or_insert_with(Vec::new)
+                .push(Entity::from_raw(0)); // Placeholder error entity
         }
 
-        // Get combined color identity of all commanders
-        let mut combined_identity = HashSet::new();
-        for &commander in &commanders {
-            if let Some(colors) = cmd_zone_manager.commander_colors.get(&commander) {
-                combined_identity.extend(colors.iter().cloned());
-            }
-        }
-
-        // TODO: This would need to check all cards in a player's deck
-        // For now, this is just a placeholder implementation
+        // TODO: Check color identity of each card against commander's color identity
+        // TODO: Check deck size (99 cards + commander, or 98 cards + 2 partners)
     }
 
-    illegal_cards
+    validation_errors
 }
 
-/// Track commander damage for UI display and game rules
+/// Track combat damage dealt by commanders to players
+///
+/// This system will monitor and record damage from commanders to players.
+/// This is important for the Commander damage rule (21 damage from a single commander).
+#[allow(dead_code)]
 pub fn track_commander_damage(
     _commands: Commands,
     _game_state: ResMut<GameMenuState>,
@@ -217,5 +238,28 @@ pub fn track_commander_damage(
     _cmd_zone_manager: Res<CommandZoneManager>,
     // We'll need a damage event/component to track actual damage
 ) {
-    // Implementation will be added later
+    // TODO: Track damage from commanders to players
+    todo!(
+        "Implement tracking of commander damage; 21 damage from a single commander eliminates a player"
+    );
+}
+
+/// Register all commander-related systems with the app
+pub fn register_commander_systems(app: &mut App) {
+    // Register events
+    app.add_event::<CommanderZoneChoiceEvent>()
+        .add_event::<PlayerEliminatedEvent>()
+        .add_event::<CombatDamageEvent>();
+
+    // Register systems that will run during the game
+    app.add_systems(
+        Update,
+        (
+            check_commander_damage_loss,
+            record_commander_damage,
+            handle_commander_zone_change,
+            process_commander_zone_choices,
+        )
+            .run_if(in_state(GameMenuState::InGame)),
+    );
 }

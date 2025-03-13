@@ -1,7 +1,7 @@
 // This module contains the core components for the MTG Commander game engine
 // It follows the implementation plan outlined in docs/game_loop.md
 
-mod actions;
+pub mod actions;
 pub mod combat;
 pub mod commander;
 pub mod phase;

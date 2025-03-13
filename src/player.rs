@@ -141,7 +141,7 @@ pub fn spawn_hand(
         .id();
 
     // Get example cards and clone them for display
-    let mut cards = get_example_cards(player_entity);
+    let cards = get_example_cards(player_entity);
     // Take the first 7 cards for display
     let display_cards = cards.iter().take(7).cloned().collect::<Vec<_>>();
 

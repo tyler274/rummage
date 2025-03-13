@@ -1,5 +1,5 @@
 use crate::card::{ArtifactCard, Card, CardDetails, CardTypes};
-use crate::mana::{Color, Mana};
+use crate::mana::Mana;
 
 pub fn get_artifact_cards() -> Vec<Card> {
     vec![sol_ring(), mana_crypt(), arcane_signet()]

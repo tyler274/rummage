@@ -1,6 +1,6 @@
 # Networking Documentation
 
-Welcome to the restructured networking documentation for the MTG Commander game engine. This section outlines the planned implementation for multiplayer functionality using bevy_replicon.
+Welcome to the restructured networking documentation for the MTG Commander game engine. This section outlines the implementation for multiplayer functionality using bevy_replicon.
 
 ## Organization
 
@@ -25,21 +25,36 @@ The Lobby System documentation is further organized into:
 
 - [Lobby Index](lobby/index.md) - Overview of the lobby system
 - [UI Components](lobby/ui/) - Documentation for user interface components
+  - [Overview](lobby/ui/overview.md) - General overview of the lobby UI
+  - [Detail View](lobby/ui/detail_view.md) - Detailed lobby UI implementation
 - [Backend](lobby/backend/) - Server-side implementation details
+  - [Implementation](lobby/backend/implementation.md) - Backend implementation
+  - [Networking](lobby/backend/networking.md) - Backend networking details
 - [Chat System](lobby/chat/) - Chat functionality documentation
+  - [UI](lobby/chat/ui.md) - Chat UI implementation
 - [Deck Viewer](lobby/deck/) - Deck viewing and management
+  - [Viewer](lobby/deck/viewer.md) - Deck viewer implementation
 
 ## Gameplay Networking
 
+- [Departure Handling](gameplay/departure/handling.md) - Handling player disconnections and departures
 - [State Management](gameplay/state/) - Game state synchronization
 - [Synchronization](gameplay/synchronization/) - Methods for keeping game state in sync
-- [Departure Handling](gameplay/departure/) - Handling player disconnections and departures
 
 ## Testing
 
 - [Testing Overview](testing/overview.md) - General testing approach
+- [Advanced Techniques](testing/advanced_techniques.md) - Advanced testing techniques
 - [Integration Testing](testing/integration/) - Integration testing methodologies
+  - [Strategy](testing/integration/strategy.md) - Integration testing strategy
 - [Security Testing](testing/security/) - Security-focused testing
+  - [Strategy](testing/security/strategy.md) - Security testing strategy
+
+## Security
+
+- [Authentication](security/authentication.md) - User authentication and authorization
+- [Anti-Cheat](security/anti_cheat.md) - Preventing and detecting cheating
+- [Hidden Information](security/hidden_information.md) - Managing hidden game information
 
 ## Getting Started with Development
 

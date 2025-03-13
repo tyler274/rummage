@@ -179,8 +179,9 @@ impl Default for GameState {
     }
 }
 
-/// Builder for GameState with a chainable API
-#[derive(Clone, Debug)]
+/// Builder for GameState to enable chainable construction
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct GameStateBuilder {
     turn_number: u32,
     active_player: Entity,
@@ -216,72 +217,96 @@ impl GameStateBuilder {
     }
 
     /// Sets the current turn number
+    /// TODO: Implement turn number tracking and management
+    #[allow(dead_code)]
     pub fn turn_number(mut self, turn_number: u32) -> Self {
         self.turn_number = turn_number;
         self
     }
 
     /// Sets the active player
+    /// TODO: Implement active player management
+    #[allow(dead_code)]
     pub fn active_player(mut self, active_player: Entity) -> Self {
         self.active_player = active_player;
         self
     }
 
     /// Sets the priority holder
+    /// TODO: Implement priority system
+    #[allow(dead_code)]
     pub fn priority_holder(mut self, priority_holder: Entity) -> Self {
         self.priority_holder = priority_holder;
         self
     }
 
     /// Sets the turn order
+    /// TODO: Implement turn order management
+    #[allow(dead_code)]
     pub fn turn_order(mut self, turn_order: VecDeque<Entity>) -> Self {
         self.turn_order = turn_order;
         self
     }
 
     /// Sets the lands played
+    /// TODO: Implement land play tracking
+    #[allow(dead_code)]
     pub fn lands_played(mut self, lands_played: Vec<(Entity, u32)>) -> Self {
         self.lands_played = lands_played;
         self
     }
 
     /// Sets whether a main phase action has been taken
+    /// TODO: Implement main phase action tracking
+    #[allow(dead_code)]
     pub fn main_phase_action_taken(mut self, main_phase_action_taken: bool) -> Self {
         self.main_phase_action_taken = main_phase_action_taken;
         self
     }
 
     /// Sets the players who have drawn this turn
+    /// TODO: Implement card draw tracking
+    #[allow(dead_code)]
     pub fn drawn_this_turn(mut self, drawn_this_turn: Vec<Entity>) -> Self {
         self.drawn_this_turn = drawn_this_turn;
         self
     }
 
     /// Sets whether state-based actions were performed
+    /// TODO: Implement state-based actions system
+    #[allow(dead_code)]
     pub fn state_based_actions_performed(mut self, state_based_actions_performed: bool) -> Self {
         self.state_based_actions_performed = state_based_actions_performed;
         self
     }
 
     /// Sets the eliminated players
+    /// TODO: Implement player elimination system
+    #[allow(dead_code)]
     pub fn eliminated_players(mut self, eliminated_players: Vec<Entity>) -> Self {
         self.eliminated_players = eliminated_players;
         self
     }
 
     /// Sets whether commander damage is tracked
+    /// TODO: Implement commander damage tracking
+    #[allow(dead_code)]
     pub fn use_commander_damage(mut self, use_commander_damage: bool) -> Self {
         self.use_commander_damage = use_commander_damage;
         self
     }
 
     /// Sets the commander damage threshold
+    /// TODO: Implement commander damage threshold system
+    #[allow(dead_code)]
     pub fn commander_damage_threshold(mut self, commander_damage_threshold: u32) -> Self {
         self.commander_damage_threshold = commander_damage_threshold;
         self
     }
 
     /// Sets the starting life total
+    /// TODO: Implement starting life total configuration
+    #[allow(dead_code)]
     pub fn starting_life(mut self, starting_life: i32) -> Self {
         self.starting_life = starting_life;
         self

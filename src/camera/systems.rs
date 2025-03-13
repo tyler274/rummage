@@ -13,20 +13,6 @@ use crate::camera::{
 ///
 /// This system spawns a 2D camera entity with the necessary components
 /// for rendering the game world. It's typically run during the startup phase.
-///
-/// # Examples
-///
-/// ```no_run
-/// use bevy::prelude::*;
-/// use rummage::camera::setup_camera;
-///
-/// fn main() {
-///     App::new()
-///         .add_plugins(DefaultPlugins)
-///         .add_systems(Startup, setup_camera)
-///         .run();
-/// }
-/// ```
 pub fn setup_camera(commands: &mut Commands) {
     // Set up the camera with normal defaults
     commands.spawn((
@@ -64,20 +50,6 @@ pub fn set_initial_zoom(
 ///
 /// This system ensures that cards maintain their proper proportions regardless of
 /// window size by scaling the camera's projection based on the window dimensions.
-///
-/// # Examples
-///
-/// ```no_run
-/// use bevy::prelude::*;
-/// use rummage::camera::handle_window_resize;
-///
-/// fn main() {
-///     App::new()
-///         .add_plugins(DefaultPlugins)
-///         .add_systems(Update, handle_window_resize)
-///         .run();
-/// }
-/// ```
 pub fn handle_window_resize(
     mut resize_events: EventReader<WindowResized>,
     mut projection_query: Query<&mut OrthographicProjection, (With<Camera2d>, With<GameCamera>)>,
@@ -131,21 +103,6 @@ pub fn handle_window_resize(
 ///
 /// The camera's position is updated based on the current projection scale
 /// to maintain consistent movement speed regardless of zoom level.
-///
-/// # Examples
-///
-/// ```no_run
-/// use bevy::prelude::*;
-/// use rummage::camera::{camera_movement, CameraConfig};
-///
-/// fn main() {
-///     App::new()
-///         .add_plugins(DefaultPlugins)
-///         .insert_resource(CameraConfig::default())
-///         .add_systems(Update, camera_movement)
-///         .run();
-/// }
-/// ```
 pub fn camera_movement(
     keyboard: Res<ButtonInput<KeyCode>>,
     mouse_button: Res<ButtonInput<MouseButton>>,

@@ -229,7 +229,8 @@ pub fn stack_resolution_system(
         if !stack.validate_targets() {
             // If targets are invalid, counter the spell
             let entity = stack.items.last().unwrap().entity;
-            let controller = stack.items.last().unwrap().controller;
+            // Controller not used here, but might be needed for future implementation
+            // let controller = stack.items.last().unwrap().controller;
 
             // Remove the item from the stack
             stack.remove_item(entity);

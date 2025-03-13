@@ -21,7 +21,7 @@ pub fn handle_zone_changes(
 pub fn handle_enters_battlefield(
     _commands: Commands,
     mut enter_events: EventReader<EntersBattlefieldEvent>,
-    turn_manager: Option<Res<crate::game_engine::turns::TurnManager>>,
+    _turn_manager: Option<Res<crate::game_engine::turns::TurnManager>>,
 ) {
     // Handle "enters the battlefield" effects
     for event in enter_events.read() {
@@ -37,6 +37,13 @@ pub fn handle_enters_battlefield(
 }
 
 /// System for initializing the ZoneManager resource
+///
+/// This function is intended to be used during game setup to initialize
+/// zone management for each player. Currently not actively used but will
+/// be needed for proper game initialization in the future.
+///
+/// TODO: Implement zone management initialization as part of game setup
+#[allow(dead_code)]
 pub fn setup_zone_manager(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
     // Create a new zone manager
     let mut zone_manager = ZoneManager::default();

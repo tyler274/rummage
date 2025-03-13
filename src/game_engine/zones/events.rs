@@ -13,8 +13,12 @@ pub struct ZoneChangeEvent {
     /// The destination zone
     pub destination: Zone,
     /// Whether the card was visible in the source zone
+    /// TODO: Implement visibility tracking for zone changes
+    #[allow(dead_code)]
     pub was_visible: bool,
     /// Whether the card is visible in the destination zone
+    /// TODO: Implement visibility rules for different zones
+    #[allow(dead_code)]
     pub is_visible: bool,
 }
 

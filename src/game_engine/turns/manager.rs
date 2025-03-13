@@ -20,6 +20,8 @@ pub struct TurnManager {
     pub eliminated_players: Vec<Entity>,
 
     /// The current game phase/step
+    /// TODO: Implement phase tracking and transitions
+    #[allow(dead_code)]
     pub current_phase: Phase,
 }
 
@@ -31,6 +33,8 @@ impl Default for TurnManager {
 
 impl TurnManager {
     /// Creates a new TurnManagerBuilder for chainable construction
+    /// TODO: Implement this when turn management is fully implemented
+    #[allow(dead_code)]
     pub fn builder() -> crate::game_engine::turns::builder::TurnManagerBuilder {
         crate::game_engine::turns::builder::TurnManagerBuilder::new()
     }
@@ -73,6 +77,8 @@ impl TurnManager {
     }
 
     /// Mark a player as eliminated
+    /// TODO: Implement player elimination mechanics
+    #[allow(dead_code)]
     pub fn eliminate_player(&mut self, player: Entity) {
         if !self.eliminated_players.contains(&player) {
             self.eliminated_players.push(player);
@@ -80,12 +86,16 @@ impl TurnManager {
     }
 
     /// Check if all players but one are eliminated
+    /// TODO: Implement game end condition checking
+    #[allow(dead_code)]
     pub fn is_game_over(&self) -> bool {
         let active_players = self.player_order.len() - self.eliminated_players.len();
         active_players <= 1
     }
 
     /// Get the index of a player in the turn order
+    /// TODO: Use this when implementing turn-based effects
+    #[allow(dead_code)]
     pub fn get_player_index(&self, player: Entity) -> Option<usize> {
         self.player_order.iter().position(|&p| p == player)
     }

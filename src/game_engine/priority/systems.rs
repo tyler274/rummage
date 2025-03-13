@@ -11,8 +11,8 @@ use super::resources::PrioritySystem;
 pub fn priority_system(
     mut commands: Commands,
     mut priority: ResMut<PrioritySystem>,
-    mut game_state: ResMut<GameState>,
-    stack: Res<GameStack>,
+    _game_state: ResMut<GameState>,
+    _stack: Res<GameStack>,
     phase: Res<crate::game_engine::Phase>,
     turn_manager: Res<TurnManager>,
 ) {
@@ -36,8 +36,8 @@ pub fn priority_system(
     else if priority.priority_round_complete() && !priority.stack_is_empty {
         // The next pending item will be resolved
         // Priority resets to active player after resolving
-        let players: Vec<Entity> = game_state.turn_order.iter().copied().collect();
-        let active_player = game_state.active_player;
+        let players: Vec<Entity> = turn_manager.player_order.clone();
+        let active_player = turn_manager.active_player;
 
         priority.reset_after_stack_action(&players, active_player);
     }
@@ -54,7 +54,7 @@ pub fn priority_system(
 pub fn priority_passing_system(
     _commands: Commands,
     mut priority: ResMut<PrioritySystem>,
-    mut game_stack: ResMut<GameStack>,
+    _game_stack: ResMut<GameStack>,
     mut pass_events: EventReader<PassPriorityEvent>,
     _players: Query<Entity, With<Player>>,
     _time: Res<Time>,
@@ -74,7 +74,7 @@ pub fn priority_passing_system(
         // Pass priority to the next player
         priority.pass_priority();
 
-        // Update stack empty status
-        priority.set_stack_empty(game_stack.items.is_empty());
+        // TODO: Update stack empty status when implementing stack resolution
+        // priority.set_stack_empty(game_stack.items.is_empty());
     }
 }

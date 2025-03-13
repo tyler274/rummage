@@ -1,33 +1,13 @@
 use crate::card::{Card, CardTypes};
 use crate::game_engine::state::GameState;
 use crate::game_engine::{GameStack, Phase, PrioritySystem};
-use crate::mana::Mana;
 use crate::player::Player;
 use bevy::prelude::*;
 
-/// Different types of game actions a player can take
-#[derive(Debug, Clone, Event)]
-pub enum GameAction {
-    /// Play a land
-    PlayLand { player: Entity, land_card: Entity },
-    /// Cast a spell
-    CastSpell {
-        player: Entity,
-        spell_card: Entity,
-        targets: Vec<Entity>,
-        mana_payment: Mana,
-    },
-    /// Activate an ability
-    ActivateAbility {
-        player: Entity,
-        source: Entity,
-        ability_index: usize,
-        targets: Vec<Entity>,
-        mana_payment: Mana,
-    },
-    /// Pass priority
-    PassPriority { player: Entity },
-}
+use super::types::GameAction;
+use super::validation::{
+    can_pay_mana, is_instant_cast, valid_time_for_sorcery, valid_time_to_play_land,
+};
 
 /// System for validating and processing game actions
 pub fn process_game_actions(
@@ -104,57 +84,4 @@ pub fn process_game_actions(
             }
         }
     }
-}
-
-/// Checks if it's a valid time to play a land
-fn valid_time_to_play_land(game_state: &GameState, phase: &Phase, player: Entity) -> bool {
-    // Can only play lands during your own turn
-    if game_state.active_player != player {
-        return false;
-    }
-
-    // Can only play lands during main phases
-    match phase {
-        Phase::Precombat(crate::game_engine::PrecombatStep::Main) => true,
-        Phase::Postcombat(crate::game_engine::PostcombatStep::Main) => true,
-        _ => false,
-    }
-}
-
-/// Checks if it's a valid time to cast a sorcery-speed spell
-fn valid_time_for_sorcery(
-    game_state: &GameState,
-    phase: &Phase,
-    stack: &GameStack,
-    player: Entity,
-) -> bool {
-    // Must be your turn
-    if game_state.active_player != player {
-        return false;
-    }
-
-    // Must be main phase
-    if !phase.allows_sorcery_speed() {
-        return false;
-    }
-
-    // Stack must be empty
-    if !stack.is_empty() {
-        return false;
-    }
-
-    true
-}
-
-/// Checks if a card can be cast at instant speed
-fn is_instant_cast(card: &Card) -> bool {
-    card.types.contains(CardTypes::INSTANT) ||
-    // Flash would be checked here
-    false
-}
-
-/// Checks if a player can pay a mana cost
-fn can_pay_mana(_player: &Player, _cost: &Mana) -> bool {
-    // Placeholder implementation
-    true
 }
