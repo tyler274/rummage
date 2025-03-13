@@ -8,10 +8,6 @@
 
 Rummage is a Magic: The Gathering game engine built with Bevy, focusing on the Commander format.
 
-## Documentation
-
-The full documentation is available at [https://tyler274.github.io/rummage/](https://tyler274.github.io/rummage/)
-
 ## Features
 
 - Core MTG game loop implementation
