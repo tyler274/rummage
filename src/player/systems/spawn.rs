@@ -190,10 +190,10 @@ fn spawn_visual_cards(
         // Position cards at player position
         let x_pos = start_x + i as f32 * spacing + player_position.x;
 
-        // Position cards near the bottom fifth of the screen
-        // At scale 5.0, the screen height is approximately -25 to 25 in world coordinates
-        // So the bottom fifth would be around y = -20.0
-        let y_pos = -20.0; // Fixed position at bottom fifth of the screen instead of relative to player
+        // Position cards at the very bottom fifth of the screen
+        // With camera zoom 5.0, visible height range is roughly -25 to 25
+        // Bottom fifth would be around y = -25 to -15
+        let y_pos = -24.0; // Further down to ensure they're in the bottom fifth
 
         let transform = Transform::from_xyz(x_pos, y_pos, z);
 
