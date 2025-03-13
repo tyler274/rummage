@@ -40,6 +40,7 @@ The Lobby System documentation is further organized into:
 
 - [Departure Handling](gameplay/departure/handling.md) - Handling player disconnections and departures
 - [State Management](gameplay/state/) - Game state synchronization
+- [Rollback System](gameplay/state/rollback.md) - State recovery after network disruptions
 - [Synchronization](gameplay/synchronization/) - Methods for keeping game state in sync
 
 ## Testing

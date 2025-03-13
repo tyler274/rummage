@@ -21,6 +21,7 @@ The [State Management](state/index.md) system handles the representation and rep
 - State replication with bevy_replicon
 - Hidden information management
 - State consistency and verification
+- [Rollback and Recovery](state/rollback.md) for handling network disruptions
 
 ### Synchronization
 
@@ -48,9 +49,10 @@ Our gameplay networking implementation follows these core principles:
 
 1. **Server Authority**: The server is the single source of truth for game state
 2. **Minimal Network Usage**: Only necessary information is transmitted
-3. **Resilience**: The system can handle network disruptions gracefully
+3. **Resilience**: The system can handle network disruptions gracefully through deterministic rollbacks
 4. **Security**: Hidden information remains protected
 5. **Fairness**: All players have equal opportunity regardless of network conditions
+6. **Determinism**: Game actions produce identical results when replayed with the same RNG state
 
 ## Integration with Other Systems
 

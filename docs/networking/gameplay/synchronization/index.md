@@ -15,6 +15,17 @@ MTG Commander presents several unique synchronization challenges:
 3. **Turn-Based Structure**: Actions occur in a specific order with priority passing
 4. **Triggered Abilities**: Game events can trigger abilities at various times
 5. **Network Conditions**: Players may have varying network quality and latency
+6. **Random Operations**: Card shuffling and other random operations must be consistent across clients
+
+## Synchronization Components
+
+The synchronization system consists of several key components:
+
+1. [**Server-Authoritative Model**](#server-authoritative-model): Server as the source of truth
+2. [**Command-Based Synchronization**](#command-based-synchronization): Actions as commands
+3. [**Incremental State Updates**](#incremental-state-updates): Efficient state transmission
+4. [**Tick-Based Synchronization**](#tick-based-synchronization): Ordered action processing
+5. [**RNG and Rollback Integration**](rng_rollback.md): Deterministic random operations with state recovery
 
 ## Synchronization Approach
 

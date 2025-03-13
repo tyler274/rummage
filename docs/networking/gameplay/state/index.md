@@ -2,6 +2,17 @@
 
 This document outlines the approach to managing game state in the MTG Commander game engine's multiplayer implementation.
 
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Game State Components](#game-state-components)
+3. [Implementation Approach](#implementation-approach)
+4. [State Snapshots](#state-snapshots)
+5. [State Synchronization](#state-synchronization)
+6. [Deterministic State Updates](#deterministic-state-updates)
+7. [Hidden Information](#hidden-information)
+8. [Rollbacks and Recovery](#rollbacks-and-recovery)
+
 ## Overview
 
 Proper game state management is critical for a multiplayer card game like Magic: The Gathering. The game state includes all information about the current game, including cards in various zones, player life totals, turn structure, and active effects. In a networked environment, this state must be synchronized across all clients while maintaining security and performance.
@@ -163,7 +174,19 @@ fn process_player_commands(
 }
 ```
 
-## State Consistency
+## State Snapshots
+
+In networked games, maintaining state consistency despite network disruptions is essential. Our MTG Commander implementation employs a comprehensive state rollback system for resilience:
+
+- **Complete documentation:** [State Rollback and Recovery](rollback.md)
+- Deterministic replay of game actions after network disruptions
+- State snapshots at critical game moments
+- RNG state preservation for consistent randomized outcomes
+- Client-side prediction for responsive gameplay
+
+The rollback system integrates tightly with our deterministic RNG implementation to ensure that random events like shuffling and coin flips remain consistent across network boundaries, even during recovery from disruptions.
+
+## Deterministic State Updates
 
 Maintaining state consistency is critical for a fair game experience. Several mechanisms ensure consistency:
 
@@ -194,6 +217,26 @@ fn verify_client_state_consistency(
     }
 }
 ```
+
+## Hidden Information
+
+In networked games, it's important to protect sensitive information from unauthorized access. MTG Commander implements several mechanisms to hide sensitive information:
+
+1. **Encryption**: All network communications are encrypted
+2. **Access Control**: Only authorized clients can access certain game state information
+3. **Data Masking**: Sensitive data is masked or obfuscated
+
+## Rollbacks and Recovery
+
+In networked games, maintaining state consistency despite network disruptions is essential. Our MTG Commander implementation employs a comprehensive state rollback system for resilience:
+
+- **Complete documentation:** [State Rollback and Recovery](rollback.md)
+- Deterministic replay of game actions after network disruptions
+- State snapshots at critical game moments
+- RNG state preservation for consistent randomized outcomes
+- Client-side prediction for responsive gameplay
+
+The rollback system integrates tightly with our deterministic RNG implementation to ensure that random events like shuffling and coin flips remain consistent across network boundaries, even during recovery from disruptions.
 
 ## Testing Game State Management
 
