@@ -33,11 +33,11 @@ impl Plugin for DiagnosticsPlugin {
 }
 
 // Log useful information during startup
-fn log_startup_info(world: &World) {
+fn log_startup_info(schedules: Option<Res<Schedules>>) {
     info!("=== APPLICATION STARTUP ===");
 
     // Log registered schedules
-    if let Some(schedules) = world.get_resource::<Schedules>() {
+    if let Some(schedules) = schedules {
         let schedule_names: Vec<_> = schedules
             .iter()
             .map(|(id, _)| format!("{:?}", id))

@@ -6,7 +6,7 @@ use crate::snapshot::systems::{
     check_snapshot_key_input, handle_snapshot_events, process_pending_snapshots, snapshot_enabled,
 };
 
-/// Custom schedule for exclusive systems to prevent conflicts
+// Note: We keep the ScheduleLabel for testing purposes, but don't use it in production code
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet, ScheduleLabel)]
 pub struct SnapshotExclusiveSet;
 
@@ -26,6 +26,7 @@ impl Plugin for SnapshotPlugin {
 
             // Add the snapshot processing system to PostUpdate to ensure it runs after UI systems
             // but avoid conflicts with other systems that might access the same components
+            // We only use the non-exclusive version for production code
             app.add_systems(
                 PostUpdate,
                 process_pending_snapshots.run_if(snapshot_enabled),

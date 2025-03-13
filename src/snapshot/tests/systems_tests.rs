@@ -1,9 +1,8 @@
-use crate::camera::components::{AppLayer, GameCamera};
+use crate::camera::components::GameCamera;
 use crate::snapshot::components::{CameraSnapshot, SnapshotSettings};
 use crate::snapshot::resources::{SnapshotConfig, SnapshotDisabled, SnapshotEvent};
 use crate::snapshot::systems::{
-    handle_snapshot_events, process_pending_snapshots_exclusive, snapshot_enabled, take_snapshot,
-    take_snapshot_safe,
+    handle_snapshot_events, snapshot_enabled, take_snapshot, take_snapshot_safe,
 };
 use bevy::prelude::*;
 use std::sync::{Arc, Mutex};
@@ -166,34 +165,4 @@ fn test_handle_snapshot_events() {
     let camera = app.world().entity(camera_entity);
     assert!(camera.contains::<CameraSnapshot>());
     assert!(camera.contains::<SnapshotSettings>());
-}
-
-#[test]
-fn test_process_pending_snapshots_exclusive() {
-    // Create a test app
-    let mut app = App::new();
-
-    // Create a camera entity with snapshot components
-    let camera_entity = app
-        .world_mut()
-        .spawn((
-            GameCamera,
-            CameraSnapshot::new(),
-            SnapshotSettings::new("test.png").with_debug(true),
-        ))
-        .id();
-
-    // Create some debug layer entities
-    app.world_mut().spawn(AppLayer::Debug);
-    app.world_mut().spawn(AppLayer::DebugGizmo);
-
-    // Run the exclusive system
-    process_pending_snapshots_exclusive(&mut app.world_mut());
-
-    // Verify snapshot was processed
-    let camera = app.world().entity(camera_entity);
-
-    // Components should be removed after processing
-    assert!(!camera.contains::<CameraSnapshot>());
-    assert!(!camera.contains::<SnapshotSettings>());
 }

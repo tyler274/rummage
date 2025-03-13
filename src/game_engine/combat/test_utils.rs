@@ -47,7 +47,7 @@ pub fn setup_test_combat(
 /// Apply combat damage from a list of events
 #[allow(dead_code)]
 pub fn apply_combat_damage(app: &mut App, damage_events: Vec<CombatDamageEvent>) {
-    let mut world = app.world_mut();
+    let world = app.world_mut();
 
     // Get pending combat damage
     let mut pending_events = world
@@ -132,7 +132,7 @@ pub fn assign_blocker(app: &mut App, attacker: Entity, blocker: Entity) {
 /// Deal damage to all players
 #[allow(dead_code)]
 pub fn deal_damage_to_players(app: &mut App, amount: i32) {
-    let mut world = app.world_mut();
+    let world = app.world_mut();
 
     // Deal damage to all players
     if amount > 0 {

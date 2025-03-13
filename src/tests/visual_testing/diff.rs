@@ -125,7 +125,7 @@ fn capture_screenshot_system(
 }
 
 /// Takes a screenshot of the current frame
-pub fn take_screenshot(_world: &World) -> Option<DynamicImage> {
+pub fn take_screenshot() -> Option<DynamicImage> {
     // This is a simplified implementation to make the tests work
     // In a real implementation, we would capture from the render device
 
@@ -644,7 +644,7 @@ mod tests {
             setup_card_state(&mut app, state);
 
             // 2. Take a screenshot
-            if let Some(screenshot) = take_screenshot(app.world()) {
+            if let Some(screenshot) = take_screenshot() {
                 // 3. Generate reference or compare to reference
                 if app.world().resource::<VisualTestConfig>().update_references {
                     // Generate reference image
@@ -716,7 +716,7 @@ mod tests {
             app.update();
 
             // Take a screenshot and compare
-            if let Some(screenshot) = take_screenshot(app.world()) {
+            if let Some(screenshot) = take_screenshot() {
                 let reference_name = format!("ui_{}.png", state);
 
                 if app.world().resource::<VisualTestConfig>().update_references {
@@ -774,7 +774,7 @@ mod tests {
                 app.update();
 
                 // Test rendering
-                if let Some(screenshot) = take_screenshot(app.world()) {
+                if let Some(screenshot) = take_screenshot() {
                     let reference_name = format!("anim_{}_{}.png", animation, keyframe);
 
                     if app.world().resource::<VisualTestConfig>().update_references {
@@ -920,7 +920,7 @@ pub fn generate_reference_images(app: &mut App, test_states: &[&str]) {
         app.update();
 
         // Take and save screenshot
-        if let Some(screenshot) = take_screenshot(app.world()) {
+        if let Some(screenshot) = take_screenshot() {
             if let Err(e) = save_reference_image(screenshot, &format!("{}_reference.png", state)) {
                 error!("Failed to save reference image for {}: {}", state, e);
             }

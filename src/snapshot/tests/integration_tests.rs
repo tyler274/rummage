@@ -1,8 +1,8 @@
 use crate::camera::components::GameCamera;
 use crate::snapshot::components::{CameraSnapshot, SnapshotSettings};
-use crate::snapshot::plugin::{SnapshotExclusiveSet, SnapshotPlugin};
+use crate::snapshot::plugin::SnapshotPlugin;
 use crate::snapshot::resources::{SnapshotConfig, SnapshotDisabled, SnapshotEvent};
-use crate::snapshot::systems::{handle_snapshot_events, process_pending_snapshots_exclusive};
+use crate::snapshot::systems::{handle_snapshot_events, process_pending_snapshots};
 use bevy::prelude::*;
 
 #[test]
@@ -84,18 +84,39 @@ fn test_comprehensive_snapshot_workflow() {
         .add_event::<SnapshotEvent>()
         .init_resource::<Time>();
 
-    // Create a separate schedule for exclusive systems
-    let mut snapshot_schedule = Schedule::new(SnapshotExclusiveSet);
-    snapshot_schedule.add_systems(process_pending_snapshots_exclusive);
-    app.add_schedule(snapshot_schedule);
+    // Instead of adding an exclusive system run directly, use the non-exclusive version
+    // that takes component-based system parameters
+    app.add_systems(
+        PostUpdate,
+        (handle_snapshot_events, process_pending_snapshots),
+    );
 
-    // Add a system to run the schedule after regular systems
-    app.add_systems(Last, |world: &mut World| {
-        world.run_schedule(SnapshotExclusiveSet);
-    });
+    // Add an event to be processed
+    let camera = app
+        .world_mut()
+        .spawn((
+            GameCamera,
+            CameraSnapshot::new(),
+            SnapshotSettings::new("test.png").with_debug(true),
+        ))
+        .id();
 
-    // Add only the regular snapshot handling system to Update
-    app.add_systems(Update, handle_snapshot_events);
+    // Send a snapshot event
+    let mut events = app.world_mut().resource_mut::<Events<SnapshotEvent>>();
+    events.send(
+        SnapshotEvent::new()
+            .with_camera(camera)
+            .with_filename("test_workflow.png")
+            .with_description("Testing snapshot workflow"),
+    );
+
+    // Run the update to process the event
+    app.update();
+
+    // Verify the snapshot components on camera are updated
+    let snapshot = app.world().entity(camera).get::<CameraSnapshot>();
+    assert!(snapshot.is_some());
+    assert!(snapshot.unwrap().taken);
 
     // Customize the snapshot configuration to test all fields previously marked as dead code
     app.insert_resource(
