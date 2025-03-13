@@ -1,26 +1,30 @@
-// External modules
-pub mod artifacts;
-pub mod black;
-pub mod blue;
-pub mod green;
-pub mod hdr;
-pub mod mtgjson;
-pub mod penacony;
-pub mod red;
-pub mod text;
-pub mod white;
+// Card module - Handles all card-related functionality and data structures
 
-// New module organization
-pub mod sets;
-
-// Internal modules
+// Core card functionality
+mod abilities;
 mod builder;
 mod components;
 mod counters;
 mod details;
 mod keywords;
+mod state;
 mod systems;
 mod types;
+
+// Card submodules by color
+pub mod artifacts; // Colorless artifacts
+pub mod black;
+pub mod blue;
+pub mod green;
+pub mod red;
+pub mod white;
+
+// Card data sources and specialized sets
+pub mod hdr; // Historic Definition Records
+pub mod mtgjson; // MTG JSON import functionality
+pub mod penacony; // Specific set implementation
+pub mod sets; // General set management
+pub mod text; // Card text handling
 
 // Re-export types for external use
 pub use builder::CardBuilder;

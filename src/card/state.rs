@@ -2,62 +2,33 @@ use super::counters::PermanentCounters;
 use bevy::prelude::*;
 
 /// Component for tracking the state of permanents on the battlefield
-/// @deprecated Use CardState from the state module instead
 #[derive(Component, Debug, Clone, Default, Reflect)]
 #[reflect(Component)]
-pub struct PermanentState {
+pub struct CardState {
     /// Whether the permanent is tapped (turned sideways)
     pub is_tapped: bool,
     /// Whether the permanent has summoning sickness (can't attack/use tap abilities)
     pub has_summoning_sickness: bool,
     /// The turn this permanent entered the battlefield
     pub turn_entered_battlefield: u32,
+    /// Whether this card is currently revealed to all players
+    pub is_revealed: bool,
+    /// Whether this card is currently face-down
+    pub is_face_down: bool,
     /// Counters on the permanent
     pub counters: PermanentCounters,
 }
 
-/// Component for permanents that have a "doesn't untap during untap step" effect
-#[derive(Component, Debug, Clone, Reflect)]
-#[reflect(Component)]
-pub struct NoUntapEffect {
-    /// The source of the effect (e.g., the card that applied this effect)
-    pub source: Option<Entity>,
-    /// The condition that must be met for the permanent to not untap
-    /// If None, the permanent never untaps during untap step
-    pub condition: Option<NoUntapCondition>,
-}
-
-/// Conditions under which a permanent doesn't untap
-#[derive(Debug, Clone, Reflect)]
-pub enum NoUntapCondition {
-    /// The permanent doesn't untap during its controller's next untap step only
-    NextUntapStep,
-    /// The permanent doesn't untap as long as a specified permanent exists
-    WhilePermanentExists(Entity),
-    /// The permanent doesn't untap as long as the controller controls another specific permanent
-    WhileControlling(Entity),
-    /// The permanent doesn't untap as long as the controller has less than X life
-    WhileLifeLessThan(i32),
-    /// Custom textual description of the condition (for display purposes)
-    Custom(String),
-}
-
-/// Component for any entity that can be dragged by the player
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-pub struct Draggable {
-    pub dragging: bool,
-    pub drag_offset: Vec2,
-    pub z_index: f32,
-}
-
-impl PermanentState {
+impl CardState {
+    /// Create a new card state on a specific turn
     #[allow(dead_code)]
     pub fn new(turn_number: u32) -> Self {
         Self {
             is_tapped: false,
             has_summoning_sickness: true,
             turn_entered_battlefield: turn_number,
+            is_revealed: false,
+            is_face_down: false,
             counters: PermanentCounters::default(),
         }
     }
@@ -89,9 +60,34 @@ impl PermanentState {
     }
 
     /// Update summoning sickness at the beginning of its controller's turn
+    #[allow(dead_code)]
     pub fn update_summoning_sickness(&mut self, current_turn: u32) {
         if self.has_summoning_sickness && current_turn > self.turn_entered_battlefield {
             self.has_summoning_sickness = false;
         }
+    }
+
+    /// Reveal a card to all players
+    #[allow(dead_code)]
+    pub fn reveal(&mut self) {
+        self.is_revealed = true;
+    }
+
+    /// Hide a previously revealed card
+    #[allow(dead_code)]
+    pub fn hide(&mut self) {
+        self.is_revealed = false;
+    }
+
+    /// Turn a card face-down
+    #[allow(dead_code)]
+    pub fn turn_face_down(&mut self) {
+        self.is_face_down = true;
+    }
+
+    /// Turn a card face-up
+    #[allow(dead_code)]
+    pub fn turn_face_up(&mut self) {
+        self.is_face_down = false;
     }
 }

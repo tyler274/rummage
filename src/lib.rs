@@ -1,3 +1,5 @@
+#![feature(trivial_bounds)]
+
 /// Rummage is a Magic: The Gathering game engine built with Bevy.
 ///
 /// This crate provides functionality for:

@@ -129,12 +129,11 @@ pub fn convert_rules_text_to_symbols(text: &str) -> String {
 }
 
 bitflags! {
-    /// Represents the colors of mana in Magic: The Gathering.
-    ///
-    /// Each color is represented by a bit flag, allowing for combinations
+    /// Color represents the five colors of Magic and colorless as bit flags, allowing combinations
     /// of colors to be represented efficiently.
     ///
-    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
+    #[reflect(Serialize, Deserialize)]
     pub struct Color: u32 {
         const NONE = 0;
         const WHITE = 1 << 0;

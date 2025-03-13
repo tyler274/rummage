@@ -1,3 +1,4 @@
+use bevy::prelude::*;
 use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
 
@@ -5,7 +6,8 @@ use serde::{Deserialize, Serialize};
 use super::details::CardDetails;
 
 bitflags! {
-    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, Hash)]
+    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, Hash, Reflect)]
+    #[reflect(Serialize, Deserialize)]
     pub struct CreatureType: u64 {
         const NONE = 0;
         const HUMAN = 1 << 0;
@@ -279,8 +281,9 @@ impl std::fmt::Display for CreatureType {
 }
 
 bitflags! {
-    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, Hash)]
-    pub struct CardTypes: u32 {
+    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, Hash, Reflect)]
+    #[reflect(Serialize, Deserialize)]
+    pub struct CardTypes: u64 {
         const NONE = 0;
         // Basic types
         const ARTIFACT = 1 << 0;

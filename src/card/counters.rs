@@ -1,8 +1,10 @@
+use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Tracks various counters that can be placed on permanents
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Reflect)]
+#[reflect(Serialize, Deserialize)]
 pub struct PermanentCounters {
     /// +1/+1 counters
     pub plus_one_plus_one: u32,
