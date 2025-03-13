@@ -50,12 +50,14 @@ impl PlayerConfig {
     }
 
     /// Sets the card size
+    #[allow(dead_code)]
     pub fn with_card_size(mut self, size: Vec2) -> Self {
         self.card_size = size;
         self
     }
 
     /// Sets the card spacing multiplier
+    #[allow(dead_code)]
     pub fn with_card_spacing_multiplier(mut self, multiplier: f32) -> Self {
         self.card_spacing_multiplier = multiplier;
         self
