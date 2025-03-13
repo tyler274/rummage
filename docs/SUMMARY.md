@@ -7,12 +7,15 @@
 - [Commander Format](commander/index.md)
   - [Overview](commander/overview/index.md)
   - [Game Mechanics](commander/game_mechanics/index.md)
+    - [Testing Guide](commander/game_mechanics/testing_guide.md)
   - [Player Mechanics](commander/player_mechanics/index.md)
   - [Game Zones](commander/zones/index.md)
   - [Turns and Phases](commander/turns_and_phases/index.md)
   - [Stack and Priority](commander/stack_and_priority/index.md)
   - [Combat](commander/combat/index.md)
   - [Special Rules](commander/special_rules/index.md)
+    - [Multiplayer Politics](commander/special_rules/multiplayer_politics.md)
+    - [Politics Testing](commander/special_rules/politics_testing.md)
 
 # Game UI
 
@@ -38,7 +41,18 @@
     - [Overview](networking/testing/overview.md)
     - [RNG Synchronization Tests](networking/testing/rng_synchronization_tests.md)
     - [Replicon RNG Tests](networking/testing/replicon_rng_tests.md)
+    - [Advanced Testing Techniques](networking/testing/advanced_techniques.md)
   - [Security](networking/security/index.md)
+
+# Testing
+
+- [Testing Overview](testing/index.md)
+  - [Unit Testing](testing/unit_testing.md)
+  - [Integration Testing](testing/integration_testing.md)
+  - [End-to-End Testing](testing/end_to_end_testing.md)
+  - [Visual Differential Testing](testing/visual_differential_testing.md)
+  - [Performance Testing](testing/performance_testing.md)
+  - [CI/CD Pipeline](testing/ci_cd_pipeline.md)
 
 # Reference
 
