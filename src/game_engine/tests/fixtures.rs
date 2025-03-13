@@ -29,7 +29,7 @@ pub fn create_test_players(app: &mut App, count: usize) -> Vec<Entity> {
 /// Creates a test player entity
 pub fn create_test_player(app: &mut App, _name: &str, _position: Vec2) -> Entity {
     let entity = app
-        .world()
+        .world_mut()
         .spawn((
             Player {
                 name: _name.to_string(),
@@ -51,7 +51,7 @@ pub fn create_test_cards(app: &mut App, count: usize) -> Vec<Entity> {
     let mut entities = Vec::new();
 
     for _i in 0..count {
-        let entity = app.world().spawn(()).id();
+        let entity = app.world_mut().spawn(()).id();
         entities.push(entity);
     }
 
