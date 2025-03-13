@@ -94,9 +94,9 @@ pub fn spawn_players(
                 player_index, position_name
             );
 
-            // Adjust the position based on the player's card Y offset
-            let mut card_position = player_transform.translation;
-            card_position.y = config.get_player_card_y_offset(player_index);
+            // Get the base position for the player's cards
+            // We use the player's actual transform instead of overriding with the Y offset
+            let card_position = player_transform.translation;
 
             // Create visual representations of the cards
             spawn_visual_cards(
@@ -149,9 +149,9 @@ fn spawn_visual_cards(
     // Determine card orientation based on player position
     // For 4 players, we need different layouts based on table position:
     // - Player 0 (bottom): horizontal row, facing up
-    // - Player 1 (right): horizontal row, facing up
-    // - Player 2 (top): horizontal row, facing up
-    // - Player 3 (left): horizontal row, facing up
+    // - Player 1 (right): vertical column, cards to the right side
+    // - Player 2 (top): horizontal row, facing down
+    // - Player 3 (left): vertical column, cards to the left side
     let (start_pos, card_direction) = match player_index % 4 {
         0 => (
             Vec3::new(start_x, player_position.y, 0.0),
