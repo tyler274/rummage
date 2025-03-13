@@ -26,8 +26,11 @@ pub fn spawn_players(
 
     // Spawn each player
     for player_index in 0..config.player_count {
+        // Get position name for logging
+        let position_name = config.get_position_name(player_index);
+
         // Create a new player using the builder pattern
-        let player = Player::new(&format!("Player {}", player_index + 1))
+        let player = Player::new(&format!("Player {} ({})", player_index + 1, position_name))
             .with_life(config.starting_life)
             .with_player_index(player_index);
 
@@ -36,8 +39,8 @@ pub fn spawn_players(
             player_index, player.name
         );
 
-        // Get player position based on their index
-        let player_transform = get_player_position(player_index, config.player_count);
+        // Get player position based on their index and config
+        let player_transform = get_player_position(player_index, &config);
 
         // Spawn the player entity
         let player_entity = commands
@@ -86,28 +89,24 @@ pub fn spawn_players(
             );
 
             // Spawn visual cards for all players that have cards
-            info!("Spawning visual cards for player {}", player_index);
+            info!(
+                "Spawning visual cards for player {} ({})",
+                player_index, position_name
+            );
 
-            // Adjust visual card position based on player index
+            // Adjust the position based on the player's card Y offset
             let mut card_position = player_transform.translation;
+            card_position.y = config.get_player_card_y_offset(player_index);
 
-            // Position cards near their player's position
-            if player_index == 0 {
-                // Player 1 cards at bottom
-                card_position.y = config.player1_card_y_offset; // Use config value instead of hard-coded value
-            } else if player_index == 1 {
-                // Player 2 cards at top
-                card_position.y = config.player2_card_y_offset; // Use config value instead of hard-coded value
-            }
-
+            // Create visual representations of the cards
             spawn_visual_cards(
                 &mut commands,
                 display_cards,
                 &game_cameras,
                 &config.card_size,
                 config.card_spacing_multiplier,
-                card_position, // Use our adjusted position
-                player_index,  // Add player_index parameter to determine horizontal offset
+                card_position,
+                player_index,
             );
         } else {
             info!(
@@ -121,34 +120,9 @@ pub fn spawn_players(
 }
 
 /// Calculate the appropriate position for a player based on their index
-fn get_player_position(player_index: usize, total_players: usize) -> Transform {
-    // Default position values
-    let mut position = Vec3::new(0.0, 0.0, 0.0);
-
-    // For now, we'll implement a simple 2-player setup (face to face)
-    // In the future, this could be expanded for more players in different positions
-    match (player_index, total_players) {
-        // Player 1 (index 0) - bottom of the screen
-        (0, _) => {
-            position.y = -45.0; // Increased from -15.0 to -45.0 to match card position
-        }
-        // Player 2 (index 1) - top of the screen (opponent)
-        (1, _) => {
-            position.y = 45.0; // Increased from 15.0 to 45.0 to match card position
-            // No rotation - we want both players to be viewed from the same perspective
-        }
-        // For future expansion - 3+ players
-        (idx, count) if idx < count => {
-            // Calculate positions in a circle for 3+ players
-            let angle = (idx as f32 / count as f32) * 2.0 * std::f32::consts::PI;
-            let radius = 45.0; // Increased from 15.0 to 45.0 to match other players' positions
-            position.x = radius * angle.cos();
-            position.y = radius * angle.sin();
-            // No rotation - all players viewed from same perspective
-        }
-        // Fallback for any other case
-        _ => {}
-    }
+fn get_player_position(player_index: usize, config: &PlayerConfig) -> Transform {
+    // Use the config's method to calculate the position
+    let position = config.calculate_player_position(player_index);
 
     Transform::from_translation(position)
 }
@@ -160,35 +134,54 @@ fn spawn_visual_cards(
     game_cameras: &Query<Entity, With<GameCamera>>,
     card_size: &Vec2,
     spacing_multiplier: f32,
-    player_position: Vec3, // Player position parameter
-    player_index: usize,   // Player index to determine horizontal positioning
+    player_position: Vec3,
+    player_index: usize,
 ) {
     // Increase the spacing between cards
-    let spacing = card_size.x * spacing_multiplier * 1.5; // Increased spacing by 50%
+    let spacing = card_size.x * spacing_multiplier * 1.5;
 
     // Calculate the total width of all cards with spacing
     let total_width = display_cards.len() as f32 * spacing;
 
     // Move the starting position further to the left for better distribution
-    let mut start_x = -(total_width) / 2.0 + spacing / 2.0;
+    let start_x = -(total_width) / 2.0 + spacing / 2.0;
 
-    // Apply horizontal offset based on player index
-    // Player 1 (index 0) on the left fifth, Player 2 (index 1) on the right fifth
-    let horizontal_offset = match player_index {
-        0 => 0.0, // No horizontal offset for Player 1
-        1 => 0.0, // No horizontal offset for Player 2
-        _ => 0.0, // Center for any other players
+    // Determine card orientation based on player position
+    // For 4 players, we need different layouts based on table position:
+    // - Player 0 (bottom): horizontal row, facing up
+    // - Player 1 (right): horizontal row, facing up
+    // - Player 2 (top): horizontal row, facing up
+    // - Player 3 (left): horizontal row, facing up
+    let (start_pos, card_direction) = match player_index % 4 {
+        0 => (
+            Vec3::new(start_x, player_position.y, 0.0),
+            Vec3::new(spacing, 0.0, 0.0),
+        ), // bottom: cards in row
+        1 => (
+            Vec3::new(player_position.x, start_x, 0.0),
+            Vec3::new(0.0, spacing, 0.0),
+        ), // right: cards in column
+        2 => (
+            Vec3::new(start_x, player_position.y, 0.0),
+            Vec3::new(spacing, 0.0, 0.0),
+        ), // top: cards in row
+        3 => (
+            Vec3::new(player_position.x, start_x, 0.0),
+            Vec3::new(0.0, spacing, 0.0),
+        ), // left: cards in column
+        _ => (
+            Vec3::new(start_x, player_position.y, 0.0),
+            Vec3::new(spacing, 0.0, 0.0),
+        ), // default
     };
 
-    start_x += horizontal_offset;
-
     info!(
-        "Spawning {} cards with spacing {:.2}, total width {:.2}, starting at x={:.2} with horizontal offset {:.2}",
+        "Spawning {} cards for player {} at position ({:.2}, {:.2}, {:.2})",
         display_cards.len(),
-        spacing,
-        total_width,
-        start_x,
-        horizontal_offset
+        player_index,
+        start_pos.x,
+        start_pos.y,
+        start_pos.z
     );
 
     // Get game camera entity to set render target
@@ -202,24 +195,24 @@ fn spawn_visual_cards(
         info!("No game camera found, using default camera");
     }
 
-    // Spawn visual cards in a row
+    // Spawn visual cards in appropriate arrangement
     for (i, card) in display_cards.into_iter().enumerate() {
         // Use a base z-index based on player index
-        // This ensures Player 1's cards start at z=0, Player 2's at z=100, etc.
         let base_z = player_index as f32 * 100.0;
         let z = base_z + i as f32;
 
-        // Position cards at player position
-        let x_pos = start_x + i as f32 * spacing + player_position.x;
+        // Calculate position based on direction and starting position
+        let position = Vec3::new(
+            start_pos.x + card_direction.x * i as f32,
+            start_pos.y + card_direction.y * i as f32,
+            z,
+        );
 
-        // Use the provided player position y-coordinate instead of hardcoding it
-        let y_pos = player_position.y;
-
-        let transform = Transform::from_xyz(x_pos, y_pos, z);
+        let transform = Transform::from_translation(position);
 
         info!(
             "Positioning card '{}' at ({:.2}, {:.2}, {:.2})",
-            card.name, x_pos, y_pos, z
+            card.name, position.x, position.y, position.z
         );
 
         let card_entity = commands

@@ -3,13 +3,13 @@ use bevy::prelude::*;
 /// Configuration resource for player spawning and setup
 #[derive(Resource, Debug, Clone)]
 pub struct PlayerConfig {
-    /// Number of players to spawn
+    /// Number of players to spawn (typically 4 for Commander format)
     pub player_count: usize,
 
     /// Whether to spawn cards for all players or just player 1
     pub spawn_all_cards: bool,
 
-    /// Starting life total for each player (default: 20)
+    /// Starting life total for each player (default: 40 for Commander)
     pub starting_life: i32,
 
     /// Card size for rendering
@@ -18,11 +18,11 @@ pub struct PlayerConfig {
     /// Card spacing multiplier
     pub card_spacing_multiplier: f32,
 
-    /// Vertical offset for Player 1's cards (bottom player)
-    pub player1_card_y_offset: f32,
+    /// Distance from center for positioning player cards
+    pub player_card_distance: f32,
 
-    /// Vertical offset for Player 2's cards (top player)
-    pub player2_card_y_offset: f32,
+    /// Vertical offsets for each player's cards based on their position
+    pub player_card_offsets: [f32; 4],
 }
 
 impl PlayerConfig {
@@ -61,29 +61,63 @@ impl PlayerConfig {
         self
     }
 
-    /// Sets the vertical offset for Player 1's cards
-    pub fn with_player1_card_y_offset(mut self, offset: f32) -> Self {
-        self.player1_card_y_offset = offset;
+    /// Sets the distance from center for player cards
+    pub fn with_player_card_distance(mut self, distance: f32) -> Self {
+        self.player_card_distance = distance;
         self
     }
 
-    /// Sets the vertical offset for Player 2's cards
-    pub fn with_player2_card_y_offset(mut self, offset: f32) -> Self {
-        self.player2_card_y_offset = offset;
+    /// Sets a specific player card offset
+    pub fn with_player_card_offset(mut self, player_index: usize, offset: f32) -> Self {
+        if player_index < 4 {
+            self.player_card_offsets[player_index] = offset;
+        }
         self
+    }
+
+    /// Calculate position for a player's cards based on player index (0-based)
+    pub fn calculate_player_position(&self, player_index: usize) -> Vec3 {
+        // Position players around a table
+        match player_index % 4 {
+            0 => Vec3::new(0.0, -self.player_card_distance, 0.0), // bottom (player's perspective)
+            1 => Vec3::new(self.player_card_distance, 0.0, 0.0),  // right
+            2 => Vec3::new(0.0, self.player_card_distance, 0.0),  // top
+            3 => Vec3::new(-self.player_card_distance, 0.0, 0.0), // left
+            _ => Vec3::ZERO,                                      // fallback (shouldn't happen)
+        }
+    }
+
+    /// Get the Y offset for a player's cards
+    pub fn get_player_card_y_offset(&self, player_index: usize) -> f32 {
+        if player_index < 4 {
+            self.player_card_offsets[player_index]
+        } else {
+            0.0 // fallback
+        }
+    }
+
+    /// Get a descriptive position name based on player index
+    pub fn get_position_name(&self, player_index: usize) -> &'static str {
+        match player_index % 4 {
+            0 => "bottom", // Main player
+            1 => "right",
+            2 => "top",
+            3 => "left",
+            _ => "unknown", // fallback (shouldn't happen)
+        }
     }
 }
 
 impl Default for PlayerConfig {
     fn default() -> Self {
         Self {
-            player_count: 1,
+            player_count: 4, // Default to 4 players for Commander format
             spawn_all_cards: false,
-            starting_life: 20,
+            starting_life: 40, // Commander starting life total
             card_size: Vec2::new(672.0, 936.0),
             card_spacing_multiplier: 1.1,
-            player1_card_y_offset: -1200.0,
-            player2_card_y_offset: 1200.0,
+            player_card_distance: 400.0, // Distance from center to player position
+            player_card_offsets: [-1200.0, 0.0, 1200.0, 0.0], // Y offsets for cards relative to player position
         }
     }
 }

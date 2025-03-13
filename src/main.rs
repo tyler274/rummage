@@ -46,11 +46,17 @@ impl Plugin for GamePlugin {
             })
             .insert_resource(CameraConfig::default())
             .insert_resource(CameraPanState::default())
-            .insert_resource(PlayerConfig {
-                player_count: 2,       // Set up for two players
-                spawn_all_cards: true, // Spawn cards for all players
-                ..default()
-            })
+            .insert_resource(
+                PlayerConfig::new()
+                    .with_player_count(4)
+                    .with_spawn_all_cards(true)
+                    .with_starting_life(40)
+                    .with_player_card_distance(400.0)
+                    .with_player_card_offset(0, -1200.0) // Bottom player
+                    .with_player_card_offset(1, 0.0) // Right player
+                    .with_player_card_offset(2, 1200.0) // Top player
+                    .with_player_card_offset(3, 0.0), // Left player
+            )
             .add_systems(
                 OnEnter(GameMenuState::InGame),
                 (
