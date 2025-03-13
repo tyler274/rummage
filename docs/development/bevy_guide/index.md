@@ -55,6 +55,7 @@ For more detailed information on working with Bevy in the Rummage project, explo
 1. [Entity Component System](ecs.md) - Detailed guide on how Rummage uses ECS architecture
 2. [Plugin Architecture](plugins.md) - How plugins are organized and composed in Rummage
 3. [Rendering](rendering.md) - Card rendering, UI, and visual effects implementation
+4. [Camera Management](camera.md) - Camera setup, management, and common issues
 
 ---
 

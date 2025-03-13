@@ -1,115 +1,290 @@
 # Glossary
 
-This glossary provides definitions for Magic: The Gathering terms, game engine concepts, and Bevy-related terminology used throughout the Rummage documentation.
+This glossary provides definitions for both Magic: The Gathering game terms and Rummage-specific technical terms.
 
-## Magic: The Gathering Terms
+## A
 
-### A
+### Ability
+A feature of a card that gives it certain characteristics or allows it to perform certain actions. There are three main types: activated, triggered, and static abilities.
 
-- **Ability**: A characteristic of an object that lets it affect the game. An ability can be a characteristic ability or an activated, triggered, or static ability.
-- **Activated Ability**: An ability that requires a cost to be paid to use it.
-- **Active Player**: The player whose turn it is.
-- **Additional Cost**: A cost a spell may have that its controller may or may not pay.
-- **Affinity**: A keyword ability that reduces how much mana you need to spend to cast a spell.
+### Activated Ability
+An ability that a player can activate by paying its cost (e.g., tapping the card, paying mana).
 
-### B
+### Active Player
+The player whose turn it is currently.
 
-- **Battlefield**: The zone where permanents exist.
-- **Beginning Phase**: The first phase of a turn, consisting of the untap, upkeep, and draw steps.
-- **Block**: To declare a creature as a blocker against an attacking creature.
-- **Blocking Creature**: A creature that has been declared as a blocker against an attacking creature.
+### APNAP Order
+The order in which players make decisions when multiple players need to take actions: Active Player, Non-Active Player.
 
-### C
+### Attachment
+A card or effect that modifies another card (e.g., Auras, Equipment).
 
-- **Cast**: To take a card from the hand, pay its costs, and put it on the stack.
-- **Color Identity**: The combined colors of mana symbols in a card's casting cost and rules text. Used in Commander format.
-- **Combat Damage**: Damage dealt during the combat damage step by attacking creatures and blocking creatures as a result of combat.
-- **Command Zone**: A special game zone where certain special objects exist during a game.
-- **Commander**: A legendary creature card designated to lead a deck in the Commander format.
-- **Commander Damage**: Combat damage dealt to a player by a commander. A player who has been dealt 21 or more combat damage by the same commander loses the game.
+## B
 
-### D
+### Battlefield
+The zone where permanents (lands, creatures, artifacts, enchantments, and planeswalkers) exist while in play.
 
-- **Deck**: The collection of cards a player starts the game with.
-- **Double Strike**: A keyword ability that causes a creature to deal both first-strike and regular combat damage.
-- **Draw**: To put the top card of a player's library into their hand.
+### Bevy
+The game engine used to build Rummage, featuring an entity-component-system (ECS) architecture.
 
-### E
+### Bevy ECS
+The entity-component-system architecture used in Bevy, which separates entities (objects), components (data), and systems (logic).
 
-- **Effect**: What happens when a spell or ability resolves.
-- **Exile**: To put an object into the exile zone from wherever it is.
-- **ETB**: "Enters the battlefield," referring to abilities that trigger when a permanent enters the battlefield.
+### Bundle
+*(Bevy)* A collection of components that are commonly added to an entity together. In Bevy 0.15.x, many bundles are deprecated in favor of individual components.
 
-### H
+## C
 
-- **Hand**: The zone where a player holds cards they have drawn but not played yet.
+### Card Type
+The classification of a Magic card (e.g., creature, instant, sorcery, land).
 
-### I
+### Cast
+To play a spell by putting it on the stack and paying its costs.
 
-- **Instant**: A card type that can be cast at any time a player has priority.
+### Color Identity
+The colors in a card's mana cost, color indicator, and rules text. In Commander, a card can only be included in a deck if its color identity is within the commander's color identity.
 
-### L
+### Combat Phase
+The phase of a turn where creatures can attack and block, consisting of Beginning of Combat, Declare Attackers, Declare Blockers, Combat Damage, and End of Combat steps.
 
-- **Library**: The zone where a player's deck is kept during a game.
-- **Life Total**: The amount of life a player has. Players lose when this reaches 0.
+### Commander
+1. The legendary creature or planeswalker that leads a Commander deck.
+2. A casual multiplayer format of Magic where each player builds a 100-card deck around a legendary creature or planeswalker.
 
-### M
+### Commander Tax
+The additional cost of {2} that must be paid for each time a commander has been cast from the command zone.
 
-- **Mana**: The primary resource in the game, used to cast spells and activate abilities.
-- **Mana Cost**: The cost to cast a spell, indicated by mana symbols in the upper right corner of a card.
-- **Mulligan**: The process of setting aside an initial hand of cards and drawing a new one.
+### Component
+*(Bevy)* A piece of data that can be attached to an entity, representing a specific aspect of that entity.
 
-### P
+### Context
+*(Rummage)* An object containing information about the current game state, used when resolving effects.
 
-- **Permanent**: A card or token that is on the battlefield. Lands, creatures, artifacts, enchantments, and planeswalkers are permanents.
-- **Priority**: The system that determines which player is allowed to perform actions at any given time.
+### Counter (noun)
+A marker placed on a card to track various characteristics (e.g., +1/+1 counters, loyalty counters).
 
-### R
+### Counter (verb)
+To respond to a spell or ability by preventing it from resolving.
 
-- **Resolve**: To carry out the instructions of a spell or ability.
+## D
 
-### S
+### Damage
+A reduction in a creature's toughness or a player's life total. Unlike loss of life, damage can be prevented.
 
-- **Spell**: A card on the stack or a copy of a card on the stack.
-- **Stack**: The zone where spells and abilities wait to resolve.
-- **Static Ability**: An ability that is continuously affecting the game.
+### Deck
+A collection of cards a player brings to the game. In Commander, decks consist of 99 cards plus a commander.
 
-### T
+### Deserialization
+*(Rummage)* The process of converting serialized data back into game objects, used for loading games or processing network data.
 
-- **Tap**: To turn a permanent sideways to show it has been used.
-- **Target**: An object, player, or zone a spell or ability will affect.
-- **Triggered Ability**: An ability that triggers when its trigger event happens.
-- **Turn**: A unit of play, consisting of various phases and steps.
+### Deterministic RNG
+*(Rummage)* A random number generator that produces the same sequence of values when initialized with the same seed, crucial for networked gameplay.
 
-### Z
+### Detrimental
+*(Rummage)* When using Bevy's component lifetimes system, a tag indicating that an entity can exist without the marked component.
 
-- **Zone**: An area where objects can be during a game.
+## E
 
-## Game Engine Concepts
+### Effect
+The result of a spell or ability resolving, which may change the game state.
 
-- **Component**: In ECS, data attached to entities that defines their properties.
-- **Entity**: A unique identifier that represents a game object in the ECS pattern.
-- **ECS**: Entity Component System, the architecture pattern used in Bevy.
-- **Plugin**: A modular collection of systems, resources, and components in Bevy.
-- **Query**: A request for entities that match specific component criteria.
-- **Resource**: Global data accessible by systems in Bevy.
-- **Snapshot**: A saved game state that can be restored later.
-- **System**: Logic that operates on entities with specific components.
+### Entity
+*(Bevy)* A unique identifier that can have components attached to it, representing objects in the game.
 
-## Networking Terms
+### Entity Component System (ECS)
+*(Bevy)* A software architectural pattern that separates identity (entities), data (components), and behavior (systems).
 
-- **Replicon**: The networking library integrated with Bevy used in Rummage.
-- **Rollback**: A technique in networking where game state is reverted and re-simulated when receiving authoritative updates.
-- **Deterministic**: A system whose behavior is entirely predictable given the same inputs.
-- **RNG Seed**: A value used to initialize a random number generator to produce a deterministic sequence.
+### Exile
+A zone where cards removed from the game are placed.
 
-## Testing Terms
+## F
 
-- **Integration Test**: A test that verifies multiple components working together.
-- **Unit Test**: A test that verifies a single component or function in isolation.
-- **Visual Differential Testing**: A testing technique that compares visual outputs against expected results.
-- **E2E Test**: End-to-end testing that validates complete workflows from start to finish.
+### Flash
+A keyword ability that allows a player to cast a spell any time they could cast an instant.
+
+### Floating Mana
+Mana in a player's mana pool that hasn't been spent yet. It disappears at the end of steps and phases.
+
+## G
+
+### Game State
+The complete status of the game at a given moment, including all zones, cards, and player information.
+
+### GlobalTransform
+*(Bevy)* A component that stores the absolute position, rotation, and scale of an entity in world space.
+
+### Graveyard
+The zone where cards go when they're destroyed, sacrificed, discarded, or countered.
+
+## H
+
+### Hand
+The zone where players hold cards they've drawn but haven't yet played.
+
+### Haste
+A keyword ability that allows a creature to attack and use tap abilities the turn it comes under a player's control.
+
+## I
+
+### Indestructible
+A keyword ability that prevents a permanent from being destroyed by damage or effects that say "destroy."
+
+### Instant
+A card type that can be cast at any time, even during an opponent's turn.
+
+### IsServer
+*(Rummage)* A resource indicating whether the current instance is running as a server or client.
+
+## K
+
+### Keyword Ability
+An ability that is represented by a single word or phrase (e.g., Flying, Trample, Deathtouch).
+
+## L
+
+### Library
+The zone where a player's deck is kept during the game.
+
+### Life Total
+The amount of life a player has. In Commander, players typically start with 40 life.
+
+### Legendary
+A supertype that restricts a player to controlling only one copy of a specific legendary permanent at a time.
+
+## M
+
+### Mana
+The resource used to cast spells and activate abilities, represented by the five colors (White, Blue, Black, Red, Green) and colorless.
+
+### Mana Cost
+The amount and type of mana required to cast a spell, shown in the upper right corner of a card.
+
+### Mana Pool
+A holding area where mana exists from the time it's generated until it's spent or lost.
+
+### Marker Component
+*(Bevy)* A component with no data that is used to tag entities for queries or to indicate a state.
+
+### Mulligan
+The act of drawing a new hand at the start of the game, with one fewer card each time.
+
+## N
+
+### NetworkConfig
+*(Rummage)* A resource containing configuration for networking, such as ports and connection settings.
+
+### Non-Active Player
+Any player whose turn it is not.
+
+## P
+
+### Permanent
+A card or token on the battlefield: creatures, artifacts, enchantments, lands, and planeswalkers.
+
+### PendingSnapshots
+*(Rummage)* A resource that tracks snapshots waiting to be processed.
+
+### Phase
+A segment of a turn. Each turn consists of five phases: Beginning, Precombat Main, Combat, Postcombat Main, and Ending.
+
+### Plugin
+*(Bevy)* A module that adds specific functionality to the game, typically containing resources, components, and systems.
+
+### Priority
+The right to take game actions, which passes between players throughout the turn.
+
+## Q
+
+### Query
+*(Bevy)* A way to access entities and their components in systems, optionally filtered by component types.
+
+## R
+
+### Replicate
+*(Rummage/Replicon)* A component that marks an entity for network replication.
+
+### Replicon
+*(Rummage)* The networking library used for multiplayer functionality.
+
+### Resource
+*(Bevy)* Global data not tied to any specific entity, accessed by systems.
+
+### Response
+Playing a spell or ability after another spell or ability has been put on the stack but before it resolves.
+
+## S
+
+### Serialization
+*(Rummage)* The process of converting game objects into a format that can be stored or transmitted.
+
+### Snapshot
+*(Rummage)* A serialized representation of the game state at a specific point in time.
+
+### SnapshotEvent
+*(Rummage)* An event that triggers taking, applying, saving, or loading a game snapshot.
+
+### Snapshotable
+*(Rummage)* A marker component indicating that an entity should be included in snapshots.
+
+### Sorcery
+A card type that can only be cast during a player's main phase when the stack is empty.
+
+### Stack
+The zone where spells and abilities go while waiting to resolve.
+
+### State-Based Action
+Game rules that automatically check and update the game state, such as putting creatures with lethal damage into the graveyard.
+
+### Step
+A subdivision of a phase in a turn.
+
+### System
+*(Bevy)* A function that operates on components, implementing game logic.
+
+### SystemSet
+*(Bevy)* A collection of systems that can be configured together for ordering and dependencies.
+
+## T
+
+### Tap
+To turn a card sideways to indicate it has been used.
+
+### Target
+An object or player chosen to be affected by a spell or ability.
+
+### Transform
+*(Bevy)* A component that stores the relative position, rotation, and scale of an entity.
+
+### Triggered Ability
+An ability that automatically triggers when a specific event occurs.
+
+### Turn
+A full cycle through all phases for a single player.
+
+## U
+
+### UI
+User interface elements that display game information and accept player input.
+
+### Untap
+To return a tapped card to its upright position, typically done at the beginning of a player's turn.
+
+### Update
+*(Bevy)* The main schedule where most game systems run each frame.
+
+## W
+
+### Winning the Game
+In Commander, a player wins by reducing all opponents' life totals to 0, dealing 21 or more combat damage with a single commander to a player, or through alternative win conditions on cards.
+
+### World
+*(Bevy)* The container for all entities, components, and resources in the ECS.
+
+## Z
+
+### Zone
+A place where cards can exist during the game: library, hand, battlefield, graveyard, stack, exile, and command.
 
 ---
 
-This glossary will be updated as new terms are added to the codebase and documentation. 
+*Note: This glossary is continuously updated as new terms are added to the codebase or as Magic: The Gathering terminology evolves.* 
