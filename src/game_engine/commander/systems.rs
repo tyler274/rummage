@@ -4,6 +4,7 @@ use super::events::{CombatDamageEvent, CommanderZoneChoiceEvent, PlayerEliminate
 use super::resources::{CommandZone, CommandZoneManager};
 use super::rules::CommanderRules;
 use crate::card::Card;
+use crate::game_engine::turns::TurnStartEvent;
 use crate::game_engine::zones::{Zone, ZoneChangeEvent, ZoneManager};
 use crate::mana::Mana;
 use crate::menu::GameMenuState;
@@ -228,14 +229,30 @@ pub fn validate_commander_deck(
 pub fn track_commander_damage(
     _commands: Commands,
     _game_state: ResMut<GameMenuState>,
-    _commanders: Query<(Entity, &Commander)>,
+    commanders: Query<(Entity, &Commander)>,
     _players: Query<Entity, With<Player>>,
     _cmd_zone_manager: Res<CommandZoneManager>,
     // We'll need a damage event/component to track actual damage
 ) {
-    // TODO: Track damage from commanders to players
+    // Only log if there's been commander damage dealt this turn
     #[cfg(debug_assertions)]
-    debug!("Commander damage tracking system running");
+    {
+        let commanders_with_damage_this_turn: Vec<(Entity, &Commander)> = commanders
+            .iter()
+            .filter(|(_, commander)| !commander.dealt_combat_damage_this_turn.is_empty())
+            .collect();
+
+        for (entity, commander) in commanders_with_damage_this_turn {
+            for player in &commander.dealt_combat_damage_this_turn {
+                if let Some(damage) = commander.damage_dealt.iter().find(|(p, _)| p == player) {
+                    debug!(
+                        "Commander {:?} dealt {} damage to player {:?}",
+                        entity, damage.1, player
+                    );
+                }
+            }
+        }
+    }
 
     // In Commander format, 21 or more damage from a single commander eliminates a player
     // Implementation will:
@@ -244,6 +261,25 @@ pub fn track_commander_damage(
     // 3. If so, record the damage against the player
     // 4. Check if any player has taken 21+ damage from a single commander
     // 5. Eliminate players who have taken lethal commander damage
+}
+
+/// Resets commander damage tracking at the beginning of each turn
+pub fn reset_commander_damage_tracking(
+    mut commanders: Query<&mut Commander>,
+    mut turn_events: EventReader<TurnStartEvent>,
+) {
+    // Only run when a new turn starts
+    if !turn_events.read().next().is_some() {
+        return;
+    }
+
+    // Clear the damage tracking for the new turn
+    for mut commander in &mut commanders {
+        if !commander.dealt_combat_damage_this_turn.is_empty() {
+            debug!("Resetting commander damage tracking for new turn");
+            commander.dealt_combat_damage_this_turn.clear();
+        }
+    }
 }
 
 /// Register all commander-related systems with the app
@@ -263,6 +299,7 @@ pub fn register_commander_systems(app: &mut App) {
             process_commander_zone_choices,
             check_commander_damage_loss,
             record_commander_damage,
+            reset_commander_damage_tracking,
         )
             .run_if(crate::game_engine::game_state_condition),
     );
