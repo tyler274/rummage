@@ -176,6 +176,8 @@
     - [Entity Component System](development/bevy_guide/ecs.md)
     - [Plugin Architecture](development/bevy_guide/plugins.md)
     - [Rendering](development/bevy_guide/rendering.md)
+    - [Camera Management](development/bevy_guide/camera.md)
+    - [Random Number Generation](development/bevy_guide/rng.md)
     - [Deprecated APIs](development/bevy_guide/deprecated_apis.md)
   - [Snapshot System](development/snapshots.md)
   - [Testing Integration](development/testing_integration.md)
