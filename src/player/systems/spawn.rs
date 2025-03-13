@@ -22,6 +22,8 @@ pub fn spawn_players(
     // Use default config if none exists
     let config = player_config.map(|c| c.clone()).unwrap_or_default();
 
+    info!("Spawning {} players...", config.player_count);
+
     // Spawn each player
     for player_index in 0..config.player_count {
         // Create a new player using the builder pattern
@@ -30,13 +32,28 @@ pub fn spawn_players(
             .player_index(player_index)
             .build();
 
+        info!(
+            "Creating player with index {} and name '{}'",
+            player_index, player.name
+        );
+
+        // Get player position based on their index
+        let player_transform = get_player_position(player_index, config.player_count);
+
         // Spawn the player entity
         let player_entity = commands
             .spawn((
                 player.clone(),
+                player_transform,
+                GlobalTransform::default(),
                 AppLayer::game_layers(), // Add to all game layers
             ))
             .id();
+
+        info!(
+            "Spawned player entity {:?} with index {} and name '{}' at position {:?}",
+            player_entity, player_index, player.name, player_transform.translation
+        );
 
         // Only spawn cards for player 1 or if spawn_all_cards is true
         if player_index == 0 || config.spawn_all_cards {
@@ -47,6 +64,13 @@ pub fn spawn_players(
 
             // Create a deck for the player
             let deck = get_shuffled_deck(player_entity);
+
+            info!(
+                "Added {} cards and a deck with {} cards to player {}",
+                cards.len(),
+                deck.cards.len(),
+                player_index
+            );
 
             // Update the player's cards while preserving other fields
             commands.entity(player_entity).insert(
@@ -60,6 +84,7 @@ pub fn spawn_players(
 
             // Only spawn visual cards for player 1 for now
             if player_index == 0 {
+                info!("Spawning visual cards for player {}", player_index);
                 spawn_visual_cards(
                     &mut commands,
                     display_cards,
@@ -67,9 +92,58 @@ pub fn spawn_players(
                     &config.card_size,
                     config.card_spacing_multiplier,
                 );
+            } else {
+                info!(
+                    "Player {} has cards in their data but visual cards are not spawned yet",
+                    player_index
+                );
             }
+        } else {
+            info!(
+                "Skipping card spawning for player {} (index {})",
+                player.name, player_index
+            );
         }
     }
+
+    info!("Player spawning complete!");
+}
+
+/// Calculate the appropriate position for a player based on their index
+fn get_player_position(player_index: usize, total_players: usize) -> Transform {
+    // Default position values
+    let mut position = Vec3::new(0.0, 0.0, 0.0);
+
+    // For now, we'll implement a simple 2-player setup (face to face)
+    // In the future, this could be expanded for more players in different positions
+    match (player_index, total_players) {
+        // Player 1 (index 0) - bottom of the screen
+        (0, _) => {
+            position.y = -4.0; // Player 1 at bottom
+        }
+        // Player 2 (index 1) - top of the screen (opponent)
+        (1, _) => {
+            position.y = 4.0; // Player 2 at top (opponent)
+            // Rotate 180 degrees (π radians) to face Player 1
+            return Transform::from_xyz(position.x, position.y, position.z)
+                .with_rotation(Quat::from_rotation_z(std::f32::consts::PI));
+        }
+        // For future expansion - 3+ players
+        (idx, count) if idx < count => {
+            // Calculate positions in a circle for 3+ players
+            let angle = (idx as f32 / count as f32) * 2.0 * std::f32::consts::PI;
+            let radius = 4.0; // Distance from center
+            position.x = radius * angle.cos();
+            position.y = radius * angle.sin();
+            // Face the center
+            let rotation = Quat::from_rotation_z(angle + std::f32::consts::PI);
+            return Transform::from_xyz(position.x, position.y, position.z).with_rotation(rotation);
+        }
+        // Fallback for any other case
+        _ => {}
+    }
+
+    Transform::from_translation(position)
 }
 
 /// Helper function to spawn visual card entities
