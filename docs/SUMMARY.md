@@ -45,4 +45,4 @@
 - [API Reference](api/index.md)
 - [MTG Rules Reference](mtg_rules/index.md)
 - [Contribution Guidelines](CONTRIBUTING.md)
-- [Documentation Guide](README.md) 
+- [Documentation Guide](contributing/documentation.md) 

@@ -45,8 +45,9 @@ enable = true
 # cache-timeout = 86400
 # warning-policy = "warn"
 
-# Disable the index preprocessor to avoid README.md conversion warnings
+# Properly disable the index preprocessor to avoid README.md conversion warnings
 [preprocessor.index]
+readme-to-index = false
 renderers = []
 
 [preprocessor.links]

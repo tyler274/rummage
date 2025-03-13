@@ -1,14 +1,14 @@
-# Rummage Documentation
+# Documentation Guidelines
 
-This directory contains the comprehensive documentation for the Rummage MTG Commander game engine built with Bevy 0.15.x.
+This page contains the comprehensive documentation guidelines for the Rummage MTG Commander game engine built with Bevy 0.15.x.
 
 ## Documentation Structure
 
 The documentation is organized into the following major sections:
 
-1. **[Commander Rules](commander/index.md)** - Implementation of MTG Commander format rules and mechanics
-2. **[Game UI](game_gui/index.md)** - User interface systems and components
-3. **[Networking](networking/index.md)** - Multiplayer functionality using bevy_replicon
+1. **[Commander Rules](../commander/index.md)** - Implementation of MTG Commander format rules and mechanics
+2. **[Game UI](../game_gui/index.md)** - User interface systems and components
+3. **[Networking](../networking/index.md)** - Multiplayer functionality using bevy_replicon
 
 ## Contributing to Documentation
 
