@@ -9,7 +9,7 @@ use crate::mana::Mana;
 use crate::menu::GameMenuState;
 use crate::player::Player;
 use bevy::prelude::*;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 /// Initialize Commander-specific resources and components
 ///
@@ -172,7 +172,7 @@ pub fn process_commander_zone_choices(
     }
 }
 
-/// Handle the casting of commander cards from the command zone
+/// System to handle casting commanders from the command zone
 pub fn handle_commander_casting(
     _commands: Commands,
     _zone_manager: ResMut<ZoneManager>,
@@ -182,7 +182,7 @@ pub fn handle_commander_casting(
     // We would need other queries and inputs here
 ) {
     // TODO: Implement commander casting from command zone
-    #[cfg(feature = "debug")]
+    #[cfg(debug_assertions)]
     debug!("Commander casting system running");
 
     // Implementation will:
@@ -197,11 +197,11 @@ pub fn handle_commander_casting(
 /// Validate commander decks according to the Commander format rules
 pub fn validate_commander_deck(
     _card_query: Query<(Entity, &Card)>,
-    cmd_zone_manager: Res<CommandZoneManager>,
+    _cmd_zone_manager: Res<CommandZoneManager>,
     player_query: Query<(Entity, &Player)>,
 ) -> HashMap<Entity, Vec<Entity>> {
     // TODO: Implement commander deck validation
-    #[cfg(feature = "debug")]
+    #[cfg(debug_assertions)]
     debug!("Validating commander decks");
 
     // A mapping of players to any deck validation errors
@@ -232,7 +232,7 @@ pub fn track_commander_damage(
     // We'll need a damage event/component to track actual damage
 ) {
     // TODO: Track damage from commanders to players
-    #[cfg(feature = "debug")]
+    #[cfg(debug_assertions)]
     debug!("Commander damage tracking system running");
 
     // In Commander format, 21 or more damage from a single commander eliminates a player

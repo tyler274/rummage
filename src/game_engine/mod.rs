@@ -30,6 +30,25 @@ pub use turns::{
 };
 pub use zones::{EntersBattlefieldEvent, ZoneChangeEvent, ZoneManager};
 
+// Import the missing types
+use crate::game_engine::actions::process_game_actions;
+use crate::game_engine::combat::{
+    AssignCombatDamageEvent, AttackerDeclaredEvent, BlockerDeclaredEvent, CombatBeginEvent,
+    CombatDamageCompleteEvent, CombatEndEvent, CreatureAttacksEvent, CreatureBlockedEvent,
+    CreatureBlocksEvent, DeclareAttackersStepBeginEvent, DeclareAttackersStepEndEvent,
+    DeclareBlockersStepBeginEvent, DeclareBlockersStepEndEvent, assign_combat_damage_system,
+    declare_attackers_system, declare_blockers_system, end_combat_system,
+    handle_declare_attackers_event, handle_declare_blockers_event, initialize_combat_phase,
+    process_combat_damage_system,
+};
+use crate::game_engine::commander::{CommandZone, CommandZoneManager};
+use crate::game_engine::phase::{BeginningStep, phase_transition_system};
+use crate::game_engine::politics::{
+    ApplyCombatRestrictionEvent, GoadEvent, RemoveCombatRestrictionEvent,
+};
+use crate::game_engine::priority::{priority_passing_system, priority_system};
+use crate::game_engine::turns::handle_untap_step;
+
 use crate::menu::{GameMenuState, state::StateTransitionContext};
 use crate::player::Player;
 use bevy::prelude::*;
@@ -211,10 +230,28 @@ fn setup_game_engine(
 
 /// Register core game engine systems with the app
 pub fn register_game_engine(app: &mut App) {
-    app.add_plugins(turns::TurnPlugin)
-        .add_plugins(zones::ZonePlugin)
-        .add_plugins(combat::CombatPlugin)
-        .add_plugins(commander::CommanderPlugin);
+    // We'll use these functions which already register the systems for each module
+    turns::register_turn_systems(app);
+    zones::register_zone_systems(app);
+
+    // For combat and commander, let's create simple plugins if needed
+    app.add_systems(
+        Update,
+        (
+            initialize_combat_phase,
+            handle_declare_attackers_event.after(initialize_combat_phase),
+            declare_attackers_system.after(handle_declare_attackers_event),
+            handle_declare_blockers_event.after(declare_attackers_system),
+            declare_blockers_system.after(handle_declare_blockers_event),
+            assign_combat_damage_system.after(declare_blockers_system),
+            process_combat_damage_system.after(assign_combat_damage_system),
+            end_combat_system.after(process_combat_damage_system),
+        )
+            .run_if(in_state(GameMenuState::InGame)),
+    );
+
+    // Register commander systems
+    commander::register_commander_systems(app);
 
     // Add the stack system
     app.init_resource::<GameStack>();
@@ -223,5 +260,12 @@ pub fn register_game_engine(app: &mut App) {
     app.init_resource::<PrioritySystem>();
 
     // Register state systems
-    state::register_state_systems(app);
+    app.add_systems(
+        Update,
+        (
+            state::state_based_actions_system,
+            state::trigger_state_based_actions_system,
+        )
+            .run_if(in_state(GameMenuState::InGame)),
+    );
 }

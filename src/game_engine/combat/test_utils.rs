@@ -5,6 +5,8 @@ use crate::player::Player;
 use bevy::prelude::*;
 use std::collections::HashMap;
 
+/// Setup a test combat environment with attackers and blockers
+#[allow(dead_code)]
 pub fn setup_test_combat(
     app: &mut App,
     attackers: Vec<(Entity, Entity)>, // (attacker, defender) pairs
@@ -42,6 +44,8 @@ pub fn setup_test_combat(
     combat_state.in_declare_blockers = true;
 }
 
+/// Apply combat damage from a list of events
+#[allow(dead_code)]
 pub fn apply_combat_damage(app: &mut App, damage_events: Vec<CombatDamageEvent>) {
     let mut world = app.world_mut();
     let mut combat_state = world.resource_mut::<CombatState>();
@@ -89,6 +93,8 @@ pub fn apply_combat_damage(app: &mut App, damage_events: Vec<CombatDamageEvent>)
     }
 }
 
+/// Add an attacker with a specific target
+#[allow(dead_code)]
 pub fn add_attacker_with_target(app: &mut App, attacker: Entity, target: Entity) {
     let world = app.world_mut();
     let mut combat_state = world.resource_mut::<CombatState>();
@@ -96,6 +102,8 @@ pub fn add_attacker_with_target(app: &mut App, attacker: Entity, target: Entity)
     combat_state.in_declare_attackers = true;
 }
 
+/// Assign a blocker to an attacker
+#[allow(dead_code)]
 pub fn assign_blocker(app: &mut App, attacker: Entity, blocker: Entity) {
     let world = app.world_mut();
     let mut combat_state = world.resource_mut::<CombatState>();
@@ -115,6 +123,8 @@ pub fn assign_blocker(app: &mut App, attacker: Entity, blocker: Entity) {
     combat_state.in_declare_blockers = true;
 }
 
+/// Deal damage to all players
+#[allow(dead_code)]
 pub fn deal_damage_to_players(app: &mut App, amount: i32) {
     let world = app.world_mut();
 

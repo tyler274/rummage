@@ -3,12 +3,9 @@ use bevy::text::JustifyText;
 
 use crate::card::Card;
 use crate::text::{
-    components::{CardTextBundle, CardTextType, TextLayoutInfo},
+    components::{CardTextType, TextLayoutInfo},
     mana_symbols::{ManaSymbolOptions, render_mana_symbol},
-    utils::{
-        calculate_text_position, calculate_text_size, get_card_font_size, get_card_layout,
-        get_mana_symbol_color,
-    },
+    utils::get_card_layout,
 };
 
 /// Creates a text entity for mana cost with colored mana symbols
