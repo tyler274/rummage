@@ -130,7 +130,7 @@
                         <a href="print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
-                        <a href="https://github.com/your-org/rummage" title="Git repository" aria-label="Git repository">
+                        <a href="https://github.com/tyler274/rummage" title="Git repository" aria-label="Git repository">
                             <i id="git-repository-button" class="fa fa-github"></i>
                         </a>
 
@@ -6030,14 +6030,14 @@ struct BandwidthStats {
 <div style="break-before: page; page-break-before: always;"></div><h1 id="api-reference"><a class="header" href="#api-reference">API Reference</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="mtg-rules-reference"><a class="header" href="#mtg-rules-reference">MTG Rules Reference</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="contribution-guidelines"><a class="header" href="#contribution-guidelines">Contribution Guidelines</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="rummage-documentation"><a class="header" href="#rummage-documentation">Rummage Documentation</a></h1>
-<p>This directory contains the comprehensive documentation for the Rummage MTG Commander game engine built with Bevy 0.15.x.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="documentation-guidelines"><a class="header" href="#documentation-guidelines">Documentation Guidelines</a></h1>
+<p>This page contains the comprehensive documentation guidelines for the Rummage MTG Commander game engine built with Bevy 0.15.x.</p>
 <h2 id="documentation-structure-1"><a class="header" href="#documentation-structure-1">Documentation Structure</a></h2>
 <p>The documentation is organized into the following major sections:</p>
 <ol>
-<li><strong><a href="commander/index.html">Commander Rules</a></strong> - Implementation of MTG Commander format rules and mechanics</li>
-<li><strong><a href="game_gui/index.html">Game UI</a></strong> - User interface systems and components</li>
-<li><strong><a href="networking/index.html">Networking</a></strong> - Multiplayer functionality using bevy_replicon</li>
+<li><strong><a href="contributing/../commander/index.html">Commander Rules</a></strong> - Implementation of MTG Commander format rules and mechanics</li>
+<li><strong><a href="contributing/../game_gui/index.html">Game UI</a></strong> - User interface systems and components</li>
+<li><strong><a href="contributing/../networking/index.html">Networking</a></strong> - Multiplayer functionality using bevy_replicon</li>
 </ol>
 <h2 id="contributing-to-documentation"><a class="header" href="#contributing-to-documentation">Contributing to Documentation</a></h2>
 <p>When contributing to the documentation, please follow these guidelines:</p>
@@ -6133,22 +6133,6 @@ struct BandwidthStats {
 
         </div>
 
-        <!-- Livereload script (if served using the cli tool) -->
-        <script>
-            const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsAddress = wsProtocol + "//" + location.host + "/" + "__livereload";
-            const socket = new WebSocket(wsAddress);
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
 
 
         <script>

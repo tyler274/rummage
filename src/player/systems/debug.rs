@@ -1,12 +1,24 @@
 use crate::player::components::Player;
 use bevy::prelude::*;
+use std::collections::HashMap;
+
+/// Resource to track the previous positions of players
+#[derive(Resource, Default)]
+pub struct PlayerPositionTracker {
+    /// Maps player entity to their last logged position
+    previous_positions: HashMap<Entity, Vec2>,
+}
 
 /// System to visualize player positions for debugging
 ///
 /// This system draws visual indicators (circles and labels) at player positions
 /// to help debug the spatial layout of the game.
-pub fn debug_draw_player_positions(mut gizmos: Gizmos, player_query: Query<(&Transform, &Player)>) {
-    for (transform, player) in player_query.iter() {
+pub fn debug_draw_player_positions(
+    mut gizmos: Gizmos,
+    player_query: Query<(Entity, &Transform, &Player)>,
+    mut position_tracker: ResMut<PlayerPositionTracker>,
+) {
+    for (entity, transform, player) in player_query.iter() {
         // Draw a circle at the player position
         let position = transform.translation.truncate();
 
@@ -51,7 +63,11 @@ pub fn debug_draw_player_positions(mut gizmos: Gizmos, player_query: Query<(&Tra
             );
         }
 
-        // Log player positions for debugging
-        info!("Player {} position: {:?}", player.name, position);
+        // Only log player positions when they change
+        let previous_position = position_tracker.previous_positions.get(&entity).cloned();
+        if previous_position.is_none() || previous_position.unwrap() != position {
+            info!("Player {} position: {:?}", player.name, position);
+            position_tracker.previous_positions.insert(entity, position);
+        }
     }
 }
