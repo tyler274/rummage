@@ -4,6 +4,16 @@
 
 Commander Damage is a fundamental aspect of the Commander format. Any player who has taken 21 or more combat damage from a single commander loses the game. This unique rule adds an additional win condition and strategic layer to the multiplayer format. The implementation must accurately track, accumulate, and verify commander damage while handling edge cases like commander ownership changes or damage redirection effects.
 
+## Random Effects and Commander Damage
+
+Commander damage can be affected by various random effects, such as:
+
+- Coin flips that double damage or prevent damage
+- Dice rolls that modify combat damage
+- Random damage redirection
+
+For test cases involving commander damage and random mechanics, see the [Random Mechanics](../game_mechanics/random_mechanics.md#commander-damage-with-chaotic-strike) documentation.
+
 ## Core Implementation
 
 ```rust

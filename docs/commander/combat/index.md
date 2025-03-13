@@ -21,6 +21,8 @@ This section covers the implementation of the combat system in the Commander for
 - [Combat Verification](combat_verification.md) - Validation of combat decisions and actions
 - [Combat Abilities](combat_abilities.md) - Implementation of combat-related abilities
 
+## Combat in Commander
+
 The combat section defines how combat works in Commander games:
 
 - Standard combat phases (beginning of combat, declare attackers, declare blockers, combat damage, end of combat)
@@ -29,4 +31,16 @@ The combat section defines how combat works in Commander games:
 - Special handling for commander-specific combat abilities
 - Handling combat triggers in multiplayer scenarios
 
-Combat in Commander is particularly complex due to the multiplayer nature of the format and the special rule regarding commander damage, which adds an additional loss condition to the game. The implementation must be robust, handling all edge cases while maintaining good performance and compatibility with the rest of the game engine. 
+Combat in Commander is particularly complex due to the multiplayer nature of the format and the special rule regarding commander damage, which adds an additional loss condition to the game. The implementation must be robust, handling all edge cases while maintaining good performance and compatibility with the rest of the game engine.
+
+## Related Systems
+
+Combat interacts with several other systems in the Commander implementation:
+
+- [Random Mechanics](../game_mechanics/random_mechanics.md) - For combat-related coin flips and dice rolls
+- [Stack and Priority](../stack_and_priority/index.md) - For combat triggers and responses
+- [State-Based Actions](../game_mechanics/state_based_actions.md) - For checking commander damage thresholds
+
+## Testing
+
+The [tests](tests/) directory contains comprehensive test cases for validating correct combat implementation, including commander damage tracking, multiplayer combat scenarios, and complex ability interactions. 
