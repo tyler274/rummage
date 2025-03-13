@@ -78,6 +78,7 @@ impl PlayerConfig {
     }
 
     /// Calculate position for a player's cards based on player index (0-based)
+    #[allow(dead_code)]
     pub fn calculate_player_position(&self, player_index: usize) -> Vec3 {
         // Position players around a table
         match player_index % 4 {
