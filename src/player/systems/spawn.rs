@@ -91,6 +91,7 @@ pub fn spawn_players(
                     &game_cameras,
                     &config.card_size,
                     config.card_spacing_multiplier,
+                    player_transform.translation, // Pass player position to spawn_visual_cards
                 );
             } else {
                 info!(
@@ -153,6 +154,7 @@ fn spawn_visual_cards(
     game_cameras: &Query<Entity, With<GameCamera>>,
     card_size: &Vec2,
     spacing_multiplier: f32,
+    player_position: Vec3, // Add player position parameter
 ) {
     let spacing = card_size.x * spacing_multiplier;
     let start_x = -(display_cards.len() as f32 * spacing) / 2.0 + spacing / 2.0;
@@ -171,8 +173,12 @@ fn spawn_visual_cards(
     // Spawn visual cards in a row
     for (i, card) in display_cards.into_iter().enumerate() {
         let z = i as f32;
-        // Position cards at player position (y position is relative to player)
-        let transform = Transform::from_xyz(start_x + i as f32 * spacing, 0.0, z);
+        // Position cards at player position
+        let transform = Transform::from_xyz(
+            start_x + i as f32 * spacing + player_position.x,
+            player_position.y + 2.0, // Position cards slightly above the player
+            z,
+        );
 
         let card_entity = commands
             .spawn((
