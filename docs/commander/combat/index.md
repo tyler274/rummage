@@ -1,46 +1,68 @@
-# Combat
+# Commander-Specific Combat Mechanics
 
-This section covers the implementation of the combat system in the Commander format.
+## Overview
+
+This section covers the Commander-specific combat mechanics in the Rummage game engine. For core combat mechanics that apply to all formats, see the [MTG Core Combat](../../mtg_core/combat/index.md) documentation.
+
+## Commander Combat Extensions
+
+Commander extends the basic MTG combat system with these key mechanics:
+
+1. **Commander Damage** - A player who has been dealt 21 or more combat damage by the same commander loses the game
+2. **Multiplayer Combat** - Special considerations for attacking and blocking in a multiplayer environment
+3. **Commander-specific Combat Abilities** - Handling abilities that interact with commander status
 
 ## Contents
 
-- [Combat System](combat_system.md) - Core combat mechanics implementation
-- [Combat Phases](combat_phases.md) - Overview of the combat phase structure
-
-### Combat Steps
-- [Beginning of Combat](beginning_of_combat.md) - Initialization of combat and "beginning of combat" triggers
-- [Declare Attackers](declare_attackers.md) - Attack declaration, restrictions, and requirements 
-- [Declare Blockers](declare_blockers.md) - Block declaration, restrictions, and requirements
-- [First Strike Damage](first_strike_damage.md) - Special damage step for first strike and double strike
-- [Combat Damage](combat_damage.md) - Damage assignment, ordering, and resolution
-- [End of Combat](end_of_combat.md) - Combat cleanup and "end of combat" triggers
-
-### Combat Mechanics
-- [Commander Damage](commander_damage.md) - Tracking and implementation of commander damage
+- [Commander Damage](commander_damage.md) - Implementation of the 21-damage loss condition
 - [Multiplayer Combat](multiplayer_combat.md) - Special rules for combat with multiple players
-- [Combat Verification](combat_verification.md) - Validation of combat decisions and actions
-- [Combat Abilities](combat_abilities.md) - Implementation of combat-related abilities
+- [Combat Verification](combat_verification.md) - Validation of combat decisions in multiplayer scenarios
+- [Combat Abilities](combat_abilities.md) - Implementation of commander-specific combat abilities
 
-## Combat in Commander
+## Key Commander Combat Features
 
-The combat section defines how combat works in Commander games:
+### Commander Damage Tracking
 
-- Standard combat phases (beginning of combat, declare attackers, declare blockers, combat damage, end of combat)
-- Commander damage tracking (21+ combat damage from a single commander causes a loss)
-- Multiplayer attack declaration (attacking different players in the same combat)
-- Special handling for commander-specific combat abilities
-- Handling combat triggers in multiplayer scenarios
+The system tracks commander damage separately from regular damage:
 
-Combat in Commander is particularly complex due to the multiplayer nature of the format and the special rule regarding commander damage, which adds an additional loss condition to the game. The implementation must be robust, handling all edge cases while maintaining good performance and compatibility with the rest of the game engine.
+```rust
+#[derive(Component)]
+pub struct CommanderDamageTracker {
+    // Maps commander entity -> damage dealt to player
+    pub damage_taken: HashMap<Entity, u32>,
+}
+```
+
+When a player takes 21 or more combat damage from the same commander, they lose the game regardless of their life total.
+
+### Multiplayer Combat Dynamics
+
+Commander's multiplayer format introduces unique combat dynamics:
+
+- Players can attack any opponent, not just the player to their left/right
+- Political considerations affect attack and block decisions
+- Players can make deals regarding combat (though these aren't enforced by the game rules)
+
+### Combat in Multiplayer Politics
+
+Combat is central to the political dynamics of Commander:
+
+- Attacks signal aggression and can lead to retaliation
+- Defending other players can forge temporary alliances
+- Commander damage creates an additional threat vector beyond life totals
 
 ## Related Systems
 
-Combat interacts with several other systems in the Commander implementation:
+Commander combat interacts with several other systems:
 
-- [Random Mechanics](../game_mechanics/random_mechanics.md) - For combat-related coin flips and dice rolls
-- [Stack and Priority](../stack_and_priority/index.md) - For combat triggers and responses
-- [State-Based Actions](../game_mechanics/state_based_actions.md) - For checking commander damage thresholds
+- [Player Mechanics](../player_mechanics/index.md) - For life total and commander damage tracking
+- [Game Mechanics](../game_mechanics/index.md) - For state-based actions that check commander damage thresholds
+- [Special Rules](../special_rules/index.md) - For politics and multiplayer considerations
 
 ## Testing
 
-The [tests](tests/) directory contains comprehensive test cases for validating correct combat implementation, including commander damage tracking, multiplayer combat scenarios, and complex ability interactions. 
+The [tests](tests/) directory contains comprehensive test cases for validating commander-specific combat mechanics, with special focus on commander damage tracking and multiplayer scenarios.
+
+---
+
+Next: [Commander Damage](commander_damage.md) 
