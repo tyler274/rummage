@@ -39,9 +39,10 @@ pub fn set_initial_zoom(
     mut query: Query<&mut OrthographicProjection, (With<Camera>, With<GameCamera>)>,
 ) {
     if let Ok(mut projection) = query.get_single_mut() {
-        // Set to 2.0 for a view that's twice as zoomed out
+        // Set to 4.0 for a more zoomed out view
         // In OrthographicProjection, higher scale = more zoomed out
-        projection.scale = 2.0;
+        // This makes Player 1's cards occupy approximately 1/5th of the screen height
+        projection.scale = 4.0;
     }
 }
 
