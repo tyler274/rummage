@@ -15,10 +15,8 @@ pub mod utils;
 pub use capture::{
     capture_entity_rendering, capture_screenshot_system, request_screenshot, take_screenshot,
 };
-pub use comparison::{
-    ComparisonMethod, ComparisonResult, compare_images, save_difference_visualization,
-};
-pub use config::{VisualTestConfig, VisualTestingPlugin};
+pub use comparison::{ComparisonResult, compare_images, save_difference_visualization};
+pub use config::{ComparisonMethod, VisualTestConfig, VisualTestingPlugin};
 pub use fixtures::{
     generate_reference_images, setup_animation_keyframe, setup_animation_test, setup_card_state,
     setup_test_scene, setup_ui_state, setup_ui_test_scene, setup_visual_test_fixtures,

@@ -1,5 +1,4 @@
 use crate::game_engine::visual_testing::config::{ComparisonMethod, VisualTestConfig};
-use bevy::prelude::*;
 use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
 use std::fs;
 use std::path::Path;
@@ -182,9 +181,9 @@ pub fn structural_similarity_compare(
 
     // Simplified SSIM implementation
     // Constants for SSIM calculation
-    let k1 = 0.01;
-    let k2 = 0.03;
-    let l = 255.0; // Dynamic range of pixel values
+    let k1 = 0.01f32;
+    let k2 = 0.03f32;
+    let l = 255.0f32; // Dynamic range of pixel values
     let c1 = (k1 * l).powi(2);
     let c2 = (k2 * l).powi(2);
 

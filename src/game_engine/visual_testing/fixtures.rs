@@ -6,7 +6,7 @@ use bevy::prelude::*;
 /// Sets up a basic test scene with camera
 pub fn setup_test_scene(mut commands: Commands) {
     // Set up camera
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d::default());
 
     // Set up a test card entity
     // Placeholder - would add the actual card entity setup here
@@ -17,7 +17,7 @@ pub fn setup_test_scene(mut commands: Commands) {
 /// Sets up UI test scene
 pub fn setup_ui_test_scene(mut commands: Commands) {
     // Set up camera
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d::default());
 
     // Set up UI elements for testing
     // Placeholder - would set up various UI elements for testing
@@ -28,7 +28,7 @@ pub fn setup_ui_test_scene(mut commands: Commands) {
 /// Sets up animation test
 pub fn setup_animation_test(mut commands: Commands) {
     // Set up camera
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d::default());
 
     // Set up animated entities
     // Placeholder - would set up entities with animations
@@ -118,7 +118,7 @@ pub fn setup_ui_state(app: &mut App, state: &str) {
 }
 
 /// Set up animation at a specific keyframe
-pub fn setup_animation_keyframe(app: &mut App, animation: &str, keyframe: i32) {
+pub fn setup_animation_keyframe(app: &mut App, animation: &str, _keyframe: i32) {
     // Configure animation at the specified keyframe
     // This would manipulate animation entities to show a specific
     // frame of an animation
@@ -151,14 +151,10 @@ pub fn generate_reference_images(app: &mut App, test_states: &[&str]) {
     }
 
     // Enable reference image generation mode
-    if let Some(mut config) = app.world.get_resource_mut::<VisualTestConfig>() {
-        config.update_references = true;
-    } else {
-        app.init_resource::<VisualTestConfig>();
-        app.world
-            .resource_mut::<VisualTestConfig>()
-            .update_references = true;
-    }
+    app.insert_resource(VisualTestConfig {
+        update_references: true,
+        ..Default::default()
+    });
 
     // Generate a reference image for each test state
     for state in test_states {
@@ -168,7 +164,7 @@ pub fn generate_reference_images(app: &mut App, test_states: &[&str]) {
 
         // Queue a screenshot request
         // The reference image will be saved by the screenshot system
-        request_screenshot(&mut app.world, format!("{}.png", state), None);
+        request_screenshot(&mut app.world_mut(), format!("{}.png", state), None);
 
         // Update to process the screenshot request
         app.update();

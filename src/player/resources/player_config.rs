@@ -33,8 +33,8 @@ impl Default for PlayerConfig {
             starting_life: 20,
             card_size: Vec2::new(672.0, 936.0),
             card_spacing_multiplier: 1.1,
-            player1_card_y_offset: -700.0,
-            player2_card_y_offset: 700.0,
+            player1_card_y_offset: -1200.0,
+            player2_card_y_offset: 1200.0,
         }
     }
 }

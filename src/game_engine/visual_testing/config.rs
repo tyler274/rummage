@@ -39,9 +39,11 @@ impl Plugin for VisualTestingPlugin {
             .add_systems(Update, capture_screenshot_system);
 
         // Add render extraction systems
-        if let Ok(render_app) = app.get_sub_app_mut(RenderApp) {
-            // Add render extraction systems here
-            // In a real implementation, we'd add systems to extract render targets
+        if let Some(_render_app) = app.get_sub_app_mut(RenderApp) {
+            // Configure render app for visual testing
+            _render_app
+                .init_resource::<VisualTestConfig>()
+                .add_systems(bevy::render::Render, setup_screenshot_rendering);
         }
     }
 }
@@ -59,7 +61,7 @@ impl Default for VisualTestConfig {
 }
 
 /// Command line arguments for controlling visual testing
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Resource)]
 pub struct VisualTestArgs {
     /// Run visual tests
     pub run_visual_tests: bool,
@@ -105,5 +107,11 @@ pub fn setup_headless_visual_test_environment(app: &mut App) {
     // 2. Configure fixed-size windows
     // 3. Set up deterministic rendering conditions
     app.add_plugins(MinimalPlugins)
-        .add_plugin(VisualTestingPlugin);
+        .add_plugins(VisualTestingPlugin);
+}
+
+// Setup rendering system for screenshots
+fn setup_screenshot_rendering() {
+    // This would setup any render-specific resources needed for screenshots
+    // For example, configuring render targets, shaders, etc.
 }

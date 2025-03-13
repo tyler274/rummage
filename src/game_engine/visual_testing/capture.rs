@@ -1,8 +1,6 @@
 use bevy::prelude::*;
-use bevy::render::RenderApp;
-use bevy::render::RenderDevice;
+use bevy::window::PrimaryWindow;
 use image::{DynamicImage, ImageBuffer, Rgba};
-use std::sync::Arc;
 
 /// Resource to track screenshot requests
 #[derive(Resource, Default)]
@@ -18,15 +16,25 @@ pub struct ScreenshotRequest {
 
 /// System that processes screenshot requests
 pub fn capture_screenshot_system(world: &mut World) {
-    let mut screenshot_requests = world.resource_mut::<ScreenshotRequests>();
-    if screenshot_requests.pending.is_empty() {
+    // Check if there are any pending requests
+    let has_pending_requests = {
+        let screenshot_requests = world.resource::<ScreenshotRequests>();
+        !screenshot_requests.pending.is_empty()
+    };
+
+    // If no pending requests, return early
+    if !has_pending_requests {
         return;
     }
 
-    let app = world.as_app();
-    if let Some(image) = take_screenshot(app) {
+    // Take a screenshot
+    let screenshot = take_screenshot_from_world(world);
+
+    if let Some(image) = screenshot {
         // Process all pending requests with this screenshot
+        let mut screenshot_requests = world.resource_mut::<ScreenshotRequests>();
         let requests = std::mem::take(&mut screenshot_requests.pending);
+
         for request in requests {
             if let Some(callback) = request.callback {
                 callback(image.clone());
@@ -41,35 +49,50 @@ pub fn capture_screenshot_system(world: &mut World) {
     }
 }
 
-/// Takes a screenshot of the current frame
-pub fn take_screenshot(app: &App) -> Option<DynamicImage> {
-    // Get access to render resources
-    if let Ok(render_app) = app.get_sub_app(RenderApp) {
-        let render_device = render_app.world.resource::<RenderDevice>();
+/// Takes a screenshot of the current frame from world
+fn take_screenshot_from_world(world: &mut World) -> Option<DynamicImage> {
+    // Try to get the render app - we'll skip this in the placeholder implementation
+    // as the render app access approach needs to be revised in Bevy 0.15.x
 
-        // Get the current window
-        if let Some(window) = app.world().get_resource::<bevy::window::PrimaryWindow>() {
-            // In a real implementation, we would:
-            // 1. Get the texture view for the window
-            // 2. Create a buffer to copy the texture to
-            // 3. Issue a copy command from the texture to the buffer
-            // 4. Map the buffer and read the pixels
-            // 5. Convert to an image
+    // Get window entity
+    let mut primary_window_query = world.query_filtered::<&Window, With<PrimaryWindow>>();
 
-            // Placeholder for simplicity - in a real implementation, this would
-            // actually extract from the GPU render target
-            let width = window.width() as u32;
-            let height = window.height() as u32;
+    if let Ok(window) = primary_window_query.get_single(world) {
+        // In a real implementation, we would:
+        // 1. Get the texture view for the window
+        // 2. Create a buffer to copy the texture to
+        // 3. Issue a copy command from the texture to the buffer
+        // 4. Map the buffer and read the pixels
+        // 5. Convert to an image
 
-            // Create a blank image for now
-            let buffer = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
-            let image = DynamicImage::ImageRgba8(buffer);
+        // Placeholder for simplicity
+        let width = window.physical_width();
+        let height = window.physical_height();
 
-            return Some(image);
-        }
+        // Create a blank image for now
+        let buffer = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
+        let image = DynamicImage::ImageRgba8(buffer);
+
+        return Some(image);
     }
 
     None
+}
+
+/// Takes a screenshot of the current frame
+pub fn take_screenshot(_app: &App) -> Option<DynamicImage> {
+    // For the placeholder implementation, we'll just create a blank image with fixed size
+    // In a real implementation, we would need to properly access the render app
+    
+    // Create a blank image with a default size
+    let width = 1280;
+    let height = 720;
+    
+    // Create a blank image
+    let buffer = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
+    let image = DynamicImage::ImageRgba8(buffer);
+    
+    Some(image)
 }
 
 /// Request a screenshot to be taken on the next frame
@@ -85,7 +108,7 @@ pub fn request_screenshot(
 }
 
 /// Captures rendering of a specific entity
-pub fn capture_entity_rendering(app: &App, entity: Entity) -> DynamicImage {
+pub fn capture_entity_rendering(app: &App, _entity: Entity) -> DynamicImage {
     // In a real implementation, this would:
     // 1. Set up a temporary camera focused on just this entity
     // 2. Render a single frame
@@ -103,9 +126,9 @@ pub fn capture_entity_rendering(app: &App, entity: Entity) -> DynamicImage {
 
 /// System for capturing screenshots on command
 pub fn capture_on_command_system(
-    mut commands: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut screenshot_counter: Local<u32>,
+    mut screenshot_requests: ResMut<ScreenshotRequests>,
 ) {
     // Capture screenshot when F12 is pressed
     if keyboard_input.just_pressed(KeyCode::F12) {
@@ -113,10 +136,9 @@ pub fn capture_on_command_system(
         *screenshot_counter += 1;
 
         // Queue screenshot capture for next frame
-        request_screenshot(
-            commands.world_mut(),
-            screenshot_name.clone(),
-            Some(Box::new(move |image| {
+        screenshot_requests.pending.push(ScreenshotRequest {
+            name: screenshot_name.clone(),
+            callback: Some(Box::new(move |image| {
                 use crate::game_engine::visual_testing::utils::save_reference_image;
                 if let Err(e) = save_reference_image(image, &screenshot_name) {
                     error!("Failed to save screenshot {}: {}", screenshot_name, e);
@@ -124,7 +146,7 @@ pub fn capture_on_command_system(
                     info!("Screenshot saved as {}", screenshot_name);
                 }
             })),
-        );
+        });
     }
 }
 

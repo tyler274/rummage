@@ -248,56 +248,196 @@ Our visual testing leverages:
 
 ## Best Practices
 
-When developing visual differential tests:
+### 1. Maintain Stable Test Environments
 
-1. **Isolate Visual Components**
-   - Test specific visual elements in isolation
-   - Control all inputs that affect rendering
+Visual tests are sensitive to environmental changes, so maintain stable test environments:
 
-2. **Establish Clear Baselines**
-   - Document when and how reference images were generated
-   - Include visual specifications with tests
+- Use fixed window sizes for tests
+- Standardize font rendering settings
+- Control hardware acceleration options
 
-3. **Handle Animation and Dynamic Content**
-   - Use consistent time steps for animated content
-   - Freeze animations during testing
+### 2. Version Control Reference Images
 
-4. **Plan for Evolution**
-   - Establish process for intentional visual changes
-   - Document expected visual behavior
+Reference images should be version controlled:
 
-## Case Study: Card Rendering Test
+- Check in reference images with corresponding code
+- Document intentional visual changes
+- Label reference image sets by version
+
+### 3. Tolerance Calibration
+
+Set appropriate tolerance levels for different UI components:
+
+- Text elements: High precision (low tolerance)
+- Animations: Lower precision (higher tolerance)
+- Background elements: Medium precision
+
+### 4. Test Organization
+
+Organize visual tests logically:
+
+- Group by UI component
+- Separate critical vs. non-critical visuals
+- Create dedicated suites for performance-sensitive renders
+
+## Implementation in Rummage
+
+In Rummage, we've implemented visual differential testing with these components:
+
+### Screenshot Capture System
 
 ```rust
+// src/game_engine/tests/visual_diff.rs
+
+pub fn take_screenshot(app: &App) -> Option<DynamicImage> {
+    // Access render resources
+    if let Ok(render_app) = app.get_sub_app(RenderApp) {
+        let render_device = render_app.world.resource::<RenderDevice>();
+        
+        // Get the window
+        if let Some(window) = app.world().get_resource::<bevy::window::PrimaryWindow>() {
+            // Extract pixels from GPU
+            // ... implementation details ...
+            
+            return Some(image);
+        }
+    }
+    None
+}
+```
+
+### Comparison Methods
+
+```rust
+// src/game_engine/tests/visual_diff.rs
+
+// Our comparison methods include:
+
+// 1. Pixel-perfect comparison
+fn pixel_perfect_compare(image1: &DynamicImage, image2: &DynamicImage) -> ComparisonResult {
+    // ... implementation details ...
+}
+
+// 2. Perceptual hash comparison
+fn perceptual_hash_compare(image1: &DynamicImage, image2: &DynamicImage) -> ComparisonResult {
+    // ... implementation details ...
+}
+
+// 3. Structural similarity comparison
+fn structural_similarity_compare(image1: &DynamicImage, image2: &DynamicImage) -> ComparisonResult {
+    // ... implementation details ...
+}
+
+// 4. Combined approach
+fn combined_compare(image1: &DynamicImage, image2: &DynamicImage) -> ComparisonResult {
+    // ... implementation details ...
+}
+```
+
+### Test Examples
+
+```rust
+// src/game_engine/tests/visual_diff.rs
+
 #[test]
 fn test_card_rendering_consistency() {
     let mut app = App::new();
-    app.add_plugins(RenderingTestPlugins)
-       .add_systems(Startup, setup_card_render_test);
+    app.add_plugins(MinimalPlugins)
+       .add_plugin(VisualTestingPlugin)
+       .add_systems(Startup, setup_test_scene);
     
-    // Test standard card rendering
-    let card_entity = spawn_test_card(&mut app, "Test Card", "Test Card Description");
-    app.update();
+    // List of card states to test
+    let test_states = [
+        "card_in_hand",
+        "card_on_battlefield",
+        "card_tapped",
+        "card_with_counters",
+    ];
     
-    // Capture card rendering
-    let card_image = capture_entity_rendering(&app, card_entity);
-    
-    // Compare with reference
-    let reference = load_reference_image("standard_card_reference.png");
-    let difference = compare_images(&card_image, &reference);
-    
-    // Assert within acceptable tolerance
-    assert!(
-        difference.similarity_score > 0.995,
-        "Card rendering differs from reference: score {}",
-        difference.similarity_score
-    );
-    
-    // If test fails, save difference visualization
-    if difference.similarity_score <= 0.995 {
-        save_difference_visualization(&card_image, &reference, "card_rendering_diff.png");
+    // Test each card state
+    for state in &test_states {
+        setup_card_state(&mut app, state);
+        app.update();
+        
+        if let Some(screenshot) = take_screenshot(&app) {
+            // Compare with reference or generate if needed
+            // ... implementation details ...
+        }
     }
 }
 ```
 
-This comprehensive approach to visual differential testing ensures that the Rummage game engine maintains consistent and high-quality rendering across all supported platforms and configurations. 
+## Common Challenges and Solutions
+
+### 1. Flaky Tests Due to Animation
+
+**Challenge**: Animation frames can cause inconsistent screenshots.
+
+**Solution**: Implement deterministic animation timing for tests:
+
+```rust
+// Freeze animations at specific frames for testing
+fn setup_deterministic_animation_state(app: &mut App, animation: &str, frame: usize) {
+    app.insert_resource(AnimationTestState {
+        freeze_animations: true,
+        current_frame: frame,
+    });
+    
+    app.update();
+}
+```
+
+### 2. Text Rendering Differences
+
+**Challenge**: Font rendering can vary across platforms.
+
+**Solution**: Custom text comparison that focuses on content rather than exact pixels:
+
+```rust
+fn compare_text_elements(image1: &DynamicImage, image2: &DynamicImage, regions: &[TextRegion]) -> bool {
+    // Extract text using OCR from defined regions
+    // Compare text content rather than exact pixels
+    // ... implementation details ...
+}
+```
+
+### 3. Resolution Differences
+
+**Challenge**: Different screen resolutions affect rendering.
+
+**Solution**: Normalize images before comparison:
+
+```rust
+fn normalize_for_comparison(image: &DynamicImage) -> DynamicImage {
+    // Resize to standard test resolution
+    // Apply consistent post-processing
+    // ... implementation details ...
+}
+```
+
+## Future Improvements
+
+1. **AI-Assisted Comparison**
+   - Use machine learning to identify semantically important differences
+   - Reduce false positives from minor visual changes
+
+2. **Automated Tolerance Adjustment**
+   - Dynamically adjust comparison thresholds based on component type
+   - Learn from historical test results
+
+3. **Visual Component Isolation**
+   - Test individual visual components in isolation
+   - Compose tested components into complete UI
+
+## Conclusion
+
+Visual differential testing is essential for maintaining a consistent and polished user experience in Rummage. By systematically capturing, comparing, and analyzing visual components, we can detect unintended changes early and ensure that the game looks and feels consistent across all platforms and configurations.
+
+When implementing visual tests, remember:
+1. Start with critical UI components
+2. Establish baseline images early
+3. Set appropriate tolerance levels
+4. Document intentional visual changes
+5. Integrate with your CI/CD pipeline
+
+These practices will help maintain visual quality throughout development and ensure players have a consistent, high-quality experience. 

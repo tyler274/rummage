@@ -13,6 +13,7 @@ The Rummage testing strategy follows these core philosophies:
 3. **Edge Case Coverage**: Explicitly test corner cases and unusual card interactions
 4. **Performance Validation**: Ensure the engine performs well under various game conditions
 5. **Reproducibility**: All tests should be deterministic and repeatable
+6. **Visual Consistency**: Ensure consistent rendering across platforms and game states
 
 ## Testing Layers
 
@@ -126,246 +127,578 @@ End-to-end tests simulate complete game scenarios to validate the engine as a wh
 
 ```rust
 #[test]
-fn test_full_turn_cycle() {
+fn test_complete_game_scenario() {
     let mut app = App::new();
-    // Setup complete game environment
-    app.add_plugins(GameEnginePlugins)
-       .add_systems(Startup, setup_full_game);
+    // Setup full game environment
+    app.add_plugins(FullGameTestPlugins)
+       .add_systems(Startup, setup_full_test_game);
     
-    // Get active player
-    let active_player = get_active_player(&app);
+    // Load predefined scenario
+    let scenario = TestScenario::load("scenarios/two_player_creature_combat.json");
+    scenario.apply_to_app(&mut app);
     
-    // Progress through each phase of a turn
-    progress_to_phase(&mut app, Phase::Untap);
-    // Verify untap actions occurred
+    // Run a fixed number of turns
+    run_turns(&mut app, 3);
     
-    progress_to_phase(&mut app, Phase::Upkeep);
-    // Verify upkeep triggers happened
+    // Verify expected game state
+    let game_state = app.world.resource::<GameState>();
+    assert_eq!(game_state.active_player_index, 1);
     
-    progress_to_phase(&mut app, Phase::Draw);
-    // Verify draw occurred
+    // Verify player life totals
+    let players = app.world.query::<&Player>().iter(&app.world).collect::<Vec<_>>();
+    assert_eq!(players[0].life_total, 35);
+    assert_eq!(players[1].life_total, 38);
     
-    progress_to_phase(&mut app, Phase::Main1);
-    // Play a land and cast a spell
-    play_land(&mut app, active_player);
-    cast_test_spell(&mut app, active_player);
-    
-    progress_to_phase(&mut app, Phase::Combat);
-    // Declare attackers and blockers
-    declare_all_attackers(&mut app, active_player);
-    declare_blockers(&mut app, get_defending_player(&app));
-    
-    progress_to_phase(&mut app, Phase::Main2);
-    // Cast another spell
-    
-    progress_to_phase(&mut app, Phase::End);
-    // Verify end step triggers
-    
-    progress_to_phase(&mut app, Phase::Cleanup);
-    // Verify cleanup actions
-    
-    // Verify turn passed to next player
-    app.update();
-    assert_ne!(active_player, get_active_player(&app));
+    // Verify battlefield state
+    let battlefield = app.world.resource::<Battlefield>();
+    assert_eq!(battlefield.creatures_for_player(players[0].entity).count(), 2);
+    assert_eq!(battlefield.creatures_for_player(players[1].entity).count(), 1);
 }
 ```
 
-## Testing Specific Systems
+### 4. Visual Differential Testing
 
-### Stack and Priority System
-
-The stack and priority system requires detailed testing:
-
-1. **Stack Order Tests**
-   - Test LIFO (Last In, First Out) resolution order
-   - Verify split second interactions
-   - Test interrupted resolution (new items added during resolution)
-
-2. **Priority Tests**
-   - Test priority passing in turn order
-   - Verify holding and passing priority
-   - Test shortcuts when all players pass priority
-
-3. **Response Window Tests**
-   - Test response opportunities for each player
-   - Verify timing restrictions (sorcery speed vs. instant speed)
-   - Test response chains with multiple spells
-
-### Combat System
-
-Combat system testing should include:
-
-1. **Attack Phase Tests**
-   - Test declaration constraints
-   - Verify "attacks each turn if able" effects
-   - Test combat-triggered abilities
-
-2. **Blocking Tests**
-   - Test valid blocker determination
-   - Verify "must block if able" effects
-   - Test multiple blockers assignment
-
-3. **Damage Assignment Tests**
-   - Test normal damage assignment
-   - Verify trample damage assignment
-   - Test replacement and prevention effects
-
-### Zones System
-
-Zone transitions require comprehensive testing:
-
-1. **Basic Zone Transfer Tests**
-   - Test all possible zone-to-zone movements
-   - Verify appropriate triggers fire
-   - Test replacement effects on zone transfers
-
-2. **Replacement Effect Tests**
-   - Test "instead of going to graveyard" effects
-   - Verify commanders going to command zone
-   - Test exile replacements
-
-3. **Hidden Zone Tests**
-   - Test library as a hidden zone
-   - Verify hand information visibility rules
-   - Test face-down exile interactions
-
-### Turn Structure Tests
-
-Turn structure testing should cover:
-
-1. **Phase Progression Tests**
-   - Test normal phase progression
-   - Verify phase skipping effects
-   - Test additional phases/steps
-
-2. **Additional Turn Tests**
-   - Test extra turn creation
-   - Verify nested extra turns
-   - Test turn-ending effects
-
-3. **Special Turn Rule Tests**
-   - Test first turn draw rule
-   - Verify time limits per phase
-   - Test simultaneous turn effects (Two-Headed Giant)
-
-## Testing Tools and Utilities
-
-The testing framework provides several utilities to facilitate testing:
-
-### Test Game Setup
+Visual differential testing ensures consistent rendering across platforms and updates:
 
 ```rust
-/// Sets up a test game with specified parameters
-pub fn setup_test_game(
-    app: &mut App,
-    player_count: usize,
-    starting_life: i32,
-    starting_hand_size: usize,
-) {
-    // Setup test game with given parameters
-}
-```
-
-### Game State Assertions
-
-```rust
-/// Asserts the expected game state
-pub fn assert_game_state(
-    app: &App, 
-    expected_active_player: Entity,
-    expected_phase: Phase,
-    expected_stack_size: usize,
-) {
-    // Verify game state matches expectations
-}
-```
-
-### Card Creation Utilities
-
-```rust
-/// Creates a test card with specified characteristics
-pub fn create_test_card(
-    app: &mut App,
-    name: &str,
-    card_type: CardType,
-    mana_cost: &str,
-) -> Entity {
-    // Create and return a test card entity
+#[test]
+fn test_card_rendering_consistency() {
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins)
+       .add_plugin(VisualTestingPlugin)
+       .add_systems(Startup, setup_card_rendering_test);
+    
+    // Configure test environment
+    let card_states = [
+        "in_hand", 
+        "on_battlefield", 
+        "tapped", 
+        "with_counters"
+    ];
+    
+    for state in &card_states {
+        // Configure card state
+        setup_card_state(&mut app, state);
+        app.update();
+        
+        // Capture rendering
+        if let Some(screenshot) = take_screenshot(&app) {
+            // Compare with reference
+            match load_reference_image(&format!("card_{}.png", state)) {
+                Ok(reference) => {
+                    let result = compare_images(&screenshot, &reference);
+                    assert!(
+                        result.similarity_score > 0.99, 
+                        "Card rendering for state '{}' differs from reference", 
+                        state
+                    );
+                },
+                Err(_) => {
+                    // Generate reference if not exists
+                    let _ = save_reference_image(screenshot, &format!("card_{}.png", state));
+                }
+            }
+        }
+    }
 }
 ```
 
 ## Test Data Management
 
-Rummage uses structured test data to drive complex test scenarios:
+### Card Test Database
 
-1. **Test Deck Files**
-   - JSON/TOML files defining test decks
-   - Special test-only cards with predictable behavior
-   - Scenario-specific deck configurations
+A specialized test card database simplifies testing of specific interactions:
 
-2. **Test Scenario Definitions**
-   - Predefined board states for targeted testing
-   - Scripted action sequences
-   - Expected outcome definitions
+```rust
+// Access test cards by specific properties
+let board_wipe = test_cards::get_card("board_wipe");
+let counter_spell = test_cards::get_card("counter_spell");
+let indestructible_creature = test_cards::get_card("indestructible_creature");
 
-3. **Card Interaction Databases**
-   - Known complex card interactions
-   - Rules clarifications implemented as tests
-   - Regression test coverage
+// Test interaction
+test_interaction(board_wipe, indestructible_creature);
+```
+
+### Scenario Files
+
+Predefined test scenarios enable reproducible complex game states:
+
+```json
+{
+  "players": [
+    {
+      "name": "Player 1",
+      "life": 40,
+      "battlefield": ["test_cards/serra_angel", "test_cards/sol_ring"],
+      "hand": ["test_cards/counterspell", "test_cards/lightning_bolt"],
+      "graveyard": ["test_cards/llanowar_elves"]
+    },
+    {
+      "name": "Player 2",
+      "life": 36,
+      "battlefield": ["test_cards/goblin_guide", "test_cards/birds_of_paradise"],
+      "hand": ["test_cards/wrath_of_god"],
+      "graveyard": []
+    }
+  ],
+  "turn": {
+    "active_player": 0,
+    "phase": "main1",
+    "priority_player": 0
+  }
+}
+```
+
+## Testing Particular Systems
+
+### Mana System Testing
+
+The mana system requires specific testing for:
+
+1. **Mana Production**: Test ability to produce mana from various sources
+2. **Mana Payment**: Test payment for spells and abilities
+3. **Mana Restrictions**: Test "spend only on X" restrictions
+4. **Color Identity**: Test commander color identity rules
+
+```rust
+#[test]
+fn test_mana_restrictions() {
+    // Test setup
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins)
+       .add_plugin(ManaPlugin);
+    
+    // Create a player with a mana pool
+    let player = setup_test_player(&mut app);
+    
+    // Add mana with "spend this mana only on creature spells" restriction
+    add_restricted_mana(&mut app, player, ManaColor::Green, 3, ManaRestriction::CreatureSpells);
+    
+    // Test allowed payment
+    let creature_card = spawn_test_card(&mut app, "Grizzly Bears");
+    let result = try_pay_mana_cost(&mut app, player, creature_card);
+    assert!(result.is_success);
+    
+    // Test restricted payment
+    let noncreature_card = spawn_test_card(&mut app, "Giant Growth");
+    let result = try_pay_mana_cost(&mut app, player, noncreature_card);
+    assert!(result.is_failure);
+    assert_eq!(result.failure_reason, ManaPaymentFailure::RestrictionViolation);
+}
+```
+
+### Combat System Testing
+
+Combat testing should validate:
+
+1. **Attack Declaration**: Rules about who can attack
+2. **Blocker Declaration**: Valid blocking assignments
+3. **Combat Damage**: Correct damage assignment and processing
+4. **Combat Effects**: Triggers that happen during combat
+
+```rust
+#[test]
+fn test_combat_damage_assignment() {
+    let mut app = App::new();
+    app.add_plugins(GameEngineTestPlugins);
+    
+    // Setup attacker with 4/4 stats
+    let attacker = spawn_test_creature(&mut app, 4, 4);
+    
+    // Setup two blockers: 2/2 and 1/1
+    let blocker1 = spawn_test_creature(&mut app, 2, 2);
+    let blocker2 = spawn_test_creature(&mut app, 1, 1);
+    
+    // Declare attack
+    declare_attacker(&mut app, attacker);
+    
+    // Declare blockers
+    declare_blockers(&mut app, vec![blocker1, blocker2], attacker);
+    
+    // Assign damage: 2 to first blocker, 2 to second blocker
+    assign_combat_damage(&mut app, attacker, vec![(blocker1, 2), (blocker2, 2)]);
+    
+    // Process damage
+    process_combat_damage(&mut app);
+    
+    // Verify results
+    assert!(is_creature_dead(&app, blocker1));
+    assert!(is_creature_dead(&app, blocker2));
+    assert!(!is_creature_dead(&app, attacker));
+}
+```
+
+### Stack and Priority Testing
+
+Testing stack interactions requires:
+
+1. **Proper Sequencing**: Items resolve in LIFO order
+2. **Priority Passing**: Correct priority assignment during resolution
+3. **Interruption**: Ability to respond to items on the stack
+4. **Special Actions**: Actions that don't use the stack
+
+```rust
+#[test]
+fn test_stack_priority_and_responses() {
+    let mut app = App::new();
+    app.add_plugins(GameEngineTestPlugins);
+    
+    // Setup players
+    let player1 = setup_test_player(&mut app);
+    let player2 = setup_test_player(&mut app);
+    
+    // Setup cards
+    let lightning_bolt = spawn_test_card(&mut app, "Lightning Bolt");
+    let counterspell = spawn_test_card(&mut app, "Counterspell");
+    
+    // Give cards to players
+    give_card_to_player(&mut app, lightning_bolt, player1);
+    give_card_to_player(&mut app, counterspell, player2);
+    
+    // Player 1 casts Lightning Bolt
+    cast_spell(&mut app, player1, lightning_bolt, Some(player2));
+    
+    // Verify Lightning Bolt is on the stack
+    let stack = app.world.resource::<Stack>();
+    assert_eq!(stack.items.len(), 1);
+    
+    // Player 2 responds with Counterspell
+    cast_spell(&mut app, player2, counterspell, Some(lightning_bolt));
+    
+    // Verify both spells are on the stack
+    let stack = app.world.resource::<Stack>();
+    assert_eq!(stack.items.len(), 2);
+    assert_eq!(stack.items[0].card, counterspell);
+    assert_eq!(stack.items[1].card, lightning_bolt);
+    
+    // Resolve stack
+    resolve_stack_completely(&mut app);
+    
+    // Verify both cards went to graveyard and Lightning Bolt didn't deal damage
+    assert!(is_card_in_graveyard(&app, counterspell, player2));
+    assert!(is_card_in_graveyard(&app, lightning_bolt, player1));
+    
+    let player2_resource = app.world.get::<Player>(player2).unwrap();
+    assert_eq!(player2_resource.life_total, 40); // Unchanged
+}
+```
+
+## Testing Best Practices
+
+### Arrange-Act-Assert Pattern
+
+Follow the Arrange-Act-Assert pattern in test implementation:
+
+```rust
+#[test]
+fn test_some_functionality() {
+    // ARRANGE: Set up the test environment
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins)
+       .add_plugin(SystemUnderTest);
+    
+    let test_entity = setup_test_entity(&mut app);
+    
+    // ACT: Perform the action being tested
+    perform_action(&mut app, test_entity);
+    app.update(); // Run systems
+    
+    // ASSERT: Verify expected outcomes
+    let result = get_result(&app, test_entity);
+    assert_eq!(result, expected_value);
+}
+```
+
+### Use Test Fixtures
+
+Create reusable test fixtures to simplify test implementation:
+
+```rust
+// Fixture for tests involving combat
+fn setup_combat_fixture(app: &mut App) -> CombatFixture {
+    app.add_plugins(MinimalPlugins)
+       .add_plugin(CombatPlugin);
+       
+    let player1 = app.world.spawn((Player { life_total: 40, ..Default::default() })).id();
+    let player2 = app.world.spawn((Player { life_total: 40, ..Default::default() })).id();
+    
+    let attacker = app.world.spawn((
+        Creature { power: 3, toughness: 3, ..Default::default() },
+        Permanent { controller: player1, ..Default::default() },
+    )).id();
+    
+    let blocker = app.world.spawn((
+        Creature { power: 2, toughness: 2, ..Default::default() },
+        Permanent { controller: player2, ..Default::default() },
+    )).id();
+    
+    CombatFixture {
+        player1,
+        player2,
+        attacker,
+        blocker,
+    }
+}
+```
+
+### Focused Test Cases
+
+Keep test cases focused on a single behavior or requirement:
+
+```rust
+// GOOD: Focused test
+#[test]
+fn creatures_with_deathtouch_destroy_blockers() {
+    // Test setup
+    let creature_with_deathtouch = setup_deathtouch_creature();
+    let normal_creature = setup_normal_creature();
+    
+    // Combat interaction
+    simulate_combat(creature_with_deathtouch, normal_creature);
+    
+    // Verification
+    assert!(normal_creature.is_destroyed());
+}
+
+// BAD: Unfocused test
+#[test]
+fn test_deathtouch_and_trample_and_first_strike() {
+    // Too many interactions being tested at once
+    // Makes it hard to understand test failures
+}
+```
+
+### Property-Based Testing
+
+Use property-based testing for rules that should hold across many inputs:
+
+```rust
+#[test]
+fn test_mana_payment_properties() {
+    proptest!(|(cost: ManaCost, mana_pool: ManaPool)| {
+        // Property: If payment succeeds, the mana pool should decrease by exactly the cost
+        let initial_total = mana_pool.total_mana();
+        let result = pay_mana_cost(cost, &mut mana_pool.clone());
+        
+        if result.is_success {
+            let new_total = mana_pool.total_mana();
+            let used_mana = initial_total - new_total;
+            
+            // The mana used should equal the cost
+            prop_assert_eq!(used_mana, cost.total_mana());
+        }
+    });
+}
+```
+
+## Test Debugging Tools
+
+### Logging in Tests
+
+Use descriptive logging to help debug test failures:
+
+```rust
+#[test]
+fn test_with_detailed_logging() {
+    // Set up the test
+    info!("Setting up test with player 1 having 3 creatures and player 2 having 2 enchantments");
+    
+    // Configure logging level for test
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins)
+       .add_plugin(LogPlugin {
+            level: Level::DEBUG,
+            filter: "test=debug,game_engine=debug".to_string(),
+       });
+    
+    // Detailed action description
+    debug!("Player 1 casting board wipe spell");
+    
+    // Log outcome for debugging
+    info!("Expected: All creatures destroyed, enchantments remain. Got: {} creatures, {} enchantments",
+          remaining_creatures, remaining_enchantments);
+}
+```
+
+### State Snapshots
+
+Create snapshots of game state for easier debugging:
+
+```rust
+#[test]
+fn test_complex_interaction() {
+    let mut app = App::new();
+    // Setup test
+    
+    // Take snapshot before action
+    let before_snapshot = take_game_state_snapshot(&app);
+    save_snapshot("before_action.json", &before_snapshot);
+    
+    // Perform action
+    perform_complex_action(&mut app);
+    
+    // Take snapshot after action
+    let after_snapshot = take_game_state_snapshot(&app);
+    save_snapshot("after_action.json", &after_snapshot);
+    
+    // Verify expected changes
+    verify_state_changes(&before_snapshot, &after_snapshot);
+}
+```
 
 ## Performance Testing
 
-Game engine performance testing includes:
-
-1. **Benchmark Tests**
-   - Core operation benchmarks (card draws, stack resolution)
-   - Complex board state handling
-   - Memory usage tracking
-
-2. **Scaling Tests**
-   - Large token count handling
-   - Many triggered abilities firing simultaneously
-   - Large deck/graveyard performance
-
-3. **Engine Stress Tests**
-   - Heavy interaction chains
-   - Extreme game states
-   - Recovery from invalid states
-
-## Test Logging and Debugging
-
-Test environments provide enhanced logging:
+Include performance testing as part of your test suite:
 
 ```rust
-// Enable detailed test logging
 #[test]
-fn test_with_detailed_logging() {
-    // Setup test-specific logger
-    let _logger = TestLogger::start();
+fn benchmark_large_board_state() {
+    let mut app = App::new();
+    app.add_plugins(GameEngineTestPlugins);
     
-    // Test steps will now have detailed logging
-    // ...
+    // Create a large board state
+    setup_large_board_state(&mut app, 100); // 100 permanents per player
     
-    // Examine logs for debugging
-    let logs = _logger.get_logs();
-    assert!(logs.contains("Expected debug information"));
+    // Measure time for operations
+    let start = std::time::Instant::now();
+    process_turn_cycle(&mut app);
+    let duration = start.elapsed();
+    
+    // Log performance results
+    info!("Processing turn with large board took: {:?}", duration);
+    
+    // Assert performance requirements
+    assert!(duration < std::time::Duration::from_millis(100),
+            "Turn processing too slow: {:?}", duration);
 }
 ```
 
 ## Continuous Integration
 
-Our CI pipeline runs the following test suites:
+Ensure your tests run in CI:
 
-1. Fast unit tests on every commit
-2. Integration tests before merge
-3. Full end-to-end test suite nightly
-4. Performance benchmarks weekly
+```yaml
+# .github/workflows/tests.yml
+name: Game Engine Tests
 
-## Test Coverage Goals
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
-The Rummage test suite aims for:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      
+      - name: Run unit tests
+        run: cargo test --lib
+        
+      - name: Run integration tests
+        run: cargo test --test integration
+        
+      - name: Run visual tests
+        run: cargo test --test visual
+        
+      - name: Run performance tests
+        run: cargo test --test performance
+```
 
-- 95%+ line coverage for critical game rule systems
-- 90%+ branch coverage for game logic
-- 100% coverage of publicly documented interactions
-- All reported bugs covered by regression tests 
+## Common Testing Patterns
+
+### Singleton Resource Validation
+
+```rust
+#[test]
+fn test_resource_update() {
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins);
+    
+    // Add initial resource
+    app.insert_resource(GameState {
+        turn_count: 0,
+        active_player: 0,
+    });
+    
+    // Add system that increments turn count
+    app.add_systems(Update, increment_turn_system);
+    
+    // Run system
+    app.update();
+    
+    // Verify resource was updated
+    let game_state = app.world.resource::<GameState>();
+    assert_eq!(game_state.turn_count, 1);
+}
+```
+
+### Event Testing
+
+```rust
+#[test]
+fn test_event_handling() {
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins);
+    
+    // Add event and system
+    app.add_event::<CardDrawEvent>();
+    app.add_systems(Update, handle_card_draw);
+    
+    // Send test event
+    app.world.resource_mut::<Events<CardDrawEvent>>().send(CardDrawEvent {
+        player: Entity::from_raw(1),
+        count: 3,
+    });
+    
+    // Run system
+    app.update();
+    
+    // Verify event was handled (check side effects)
+    // ...
+}
+```
+
+### Component Addition/Removal
+
+```rust
+#[test]
+fn test_component_addition() {
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins);
+    
+    // System that adds components
+    app.add_systems(Update, add_damage_component_system);
+    
+    // Create test entity
+    let entity = app.world.spawn(Creature {
+        power: 2,
+        toughness: 2,
+    }).id();
+    
+    // Trigger damage
+    app.world.resource_mut::<Events<DamageEvent>>().send(DamageEvent {
+        target: entity,
+        amount: 1,
+    });
+    
+    // Run system
+    app.update();
+    
+    // Verify component was added
+    assert!(app.world.get::<Damaged>(entity).is_some());
+    assert_eq!(app.world.get::<Damaged>(entity).unwrap().amount, 1);
+}
+```
+
+## Conclusion
+
+A comprehensive testing strategy is essential for the Rummage MTG Commander game engine. By combining unit tests, integration tests, end-to-end tests, and visual tests, we can ensure that the engine correctly implements the MTG rules and provides a consistent player experience.
+
+Remember, an untested game engine is a source of bugs and inconsistencies. Invest time in creating a robust test suite, and it will pay dividends in reduced debugging time and improved game quality. 
