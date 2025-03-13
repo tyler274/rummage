@@ -18,11 +18,13 @@ concurrency:
   group: "pages"
   cancel-in-progress: true
 
+# Single deploy job since we're just deploying
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
       
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v1
@@ -30,7 +32,6 @@ jobs:
           mdbook-version: 'latest'
       
       - name: Setup Pages
-        id: pages
         uses: actions/configure-pages@v4
       
       - name: Build with mdBook
@@ -40,14 +41,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./docs/book/html
-  
-  deploy:
-    environment:
-      name: pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
+      
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4 
