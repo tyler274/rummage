@@ -196,6 +196,7 @@ impl SnapshotDebugState {
     }
 
     /// Reset the activity flag at the end of a frame
+    #[allow(dead_code)]
     pub fn reset_activity(&mut self) -> bool {
         let had_activity = self.had_activity;
         self.had_activity = false;
