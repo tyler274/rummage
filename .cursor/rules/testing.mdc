@@ -1,0 +1,55 @@
+# Module Testing Pattern
+
+## Overview
+
+This codebase follows a specific pattern for organizing tests: tests for a module should be placed inside a subdirectory of that module called `tests`.
+
+## Why This Pattern?
+
+- **Colocation**: Tests are located near the code they test, making them easier to find and maintain
+- **Isolation**: Tests are separated from implementation code while still being part of the module
+- **Organization**: Multiple test files can be organized within the tests directory
+- **Module-specific tests**: Tests that are specific to a module's implementation details stay with that module
+
+## Implementation
+
+For a module `foo`, structure the tests as follows:
+
+```
+src/foo/
+├── mod.rs           # Main module file
+├── component1.rs    # Module component
+├── component2.rs    # Module component
+└── tests/           # Tests directory
+    ├── mod.rs       # Test module declaration
+    ├── component1_tests.rs  # Tests for component1
+    └── component2_tests.rs  # Tests for component2
+```
+
+In the main module's `mod.rs`, include the tests module conditionally:
+
+```rust
+// ... module code ...
+
+// Include tests module when running tests but not in normal builds
+#[cfg(test)]
+pub mod tests;
+
+// ... rest of module code ...
+```
+
+## Example
+
+The `snapshot` module demonstrates this pattern:
+
+- `src/snapshot/mod.rs` includes the tests module conditionally
+- `src/snapshot/tests/` contains test files for components and resources
+- Test files use the same imports and naming conventions as the implementation code
+
+## Usage
+
+When adding new functionality to a module:
+1. Create corresponding test(s) in the module's `tests/` directory
+2. Name test files with a `_tests` suffix (e.g., `component_tests.rs`)
+3. Ensure all public API components are tested
+4. Use descriptive test names that explain what's being tested 
