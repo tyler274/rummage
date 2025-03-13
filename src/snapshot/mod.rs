@@ -37,4 +37,4 @@ pub mod tests;
 // Re-export key types for convenience
 pub use components::{CameraSnapshot, SnapshotSettings};
 pub use plugin::SnapshotPlugin;
-pub use resources::{SnapshotConfig, SnapshotDisabled, SnapshotEvent};
+pub use resources::{SnapshotConfig, SnapshotDebugState, SnapshotDisabled, SnapshotEvent};

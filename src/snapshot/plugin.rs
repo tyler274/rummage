@@ -1,7 +1,9 @@
 use bevy::ecs::schedule::ScheduleLabel;
 use bevy::prelude::*;
 
-use crate::snapshot::resources::{SnapshotConfig, SnapshotDisabled, SnapshotEvent};
+use crate::snapshot::resources::{
+    SnapshotConfig, SnapshotDebugState, SnapshotDisabled, SnapshotEvent,
+};
 use crate::snapshot::systems::{
     check_snapshot_key_input, handle_snapshot_events, process_pending_snapshots, snapshot_enabled,
 };
@@ -17,6 +19,7 @@ impl Plugin for SnapshotPlugin {
     fn build(&self, app: &mut App) {
         info!("Initializing SnapshotPlugin");
         app.init_resource::<SnapshotConfig>()
+            .init_resource::<SnapshotDebugState>()
             .insert_resource(SnapshotDisabled::enabled())
             .add_event::<SnapshotEvent>();
 

@@ -166,3 +166,39 @@ impl Default for SnapshotDisabled {
         Self(false)
     }
 }
+
+/// Resource to track snapshot system debug state to prevent log spam
+#[derive(Resource, Default, Debug)]
+pub struct SnapshotDebugState {
+    /// Last reported event count in handle_snapshot_events
+    pub last_event_count: usize,
+    /// Last reported pending snapshot count in process_pending_snapshots
+    pub last_pending_count: usize,
+    /// Whether the last snapshot system run had any activity
+    pub had_activity: bool,
+}
+
+impl SnapshotDebugState {
+    /// Check if event processing state has changed
+    pub fn has_events_changed(&mut self, current_event_count: usize) -> bool {
+        let changed = self.last_event_count != current_event_count;
+        self.last_event_count = current_event_count;
+        self.had_activity = self.had_activity || changed;
+        changed
+    }
+
+    /// Check if pending snapshot processing state has changed
+    pub fn has_pending_changed(&mut self, current_pending_count: usize) -> bool {
+        let changed = self.last_pending_count != current_pending_count;
+        self.last_pending_count = current_pending_count;
+        self.had_activity = self.had_activity || changed;
+        changed
+    }
+
+    /// Reset the activity flag at the end of a frame
+    pub fn reset_activity(&mut self) -> bool {
+        let had_activity = self.had_activity;
+        self.had_activity = false;
+        had_activity
+    }
+}

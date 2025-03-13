@@ -67,10 +67,17 @@ pub fn handle_snapshot_events(
     _time: Res<Time>,
     game_cameras: Query<Entity, With<GameCamera>>,
     snapshots: Query<&CameraSnapshot>,
+    mut debug_state: ResMut<crate::snapshot::resources::SnapshotDebugState>,
 ) {
-    debug!("Entering handle_snapshot_events system");
     let event_count = events.len();
-    debug!("Processing {} snapshot events", event_count);
+
+    // Only log system entry/exit if event count changed or we have events
+    let should_log = debug_state.has_events_changed(event_count) || event_count > 0;
+
+    if should_log {
+        debug!("Entering handle_snapshot_events system");
+        debug!("Processing {} snapshot events", event_count);
+    }
 
     for event in events.read() {
         debug!("Processing snapshot event: {:?}", event);
@@ -146,7 +153,10 @@ pub fn handle_snapshot_events(
             );
         }
     }
-    debug!("Exiting handle_snapshot_events system");
+
+    if should_log {
+        debug!("Exiting handle_snapshot_events system");
+    }
 }
 
 /// Utility function to trigger a snapshot programmatically
@@ -226,9 +236,8 @@ pub fn process_pending_snapshots(
     transform_query: Query<&GlobalTransform>,
     inherited_visibility_query: Query<&InheritedVisibility>,
     view_visibility_query: Query<&ViewVisibility>,
+    mut debug_state: ResMut<crate::snapshot::resources::SnapshotDebugState>,
 ) {
-    debug!("Entering process_pending_snapshots");
-
     // Get the snapshots that need processing
     let pending_snapshots: Vec<(Entity, SnapshotSettings)> = query_set
         .p0()
@@ -237,7 +246,15 @@ pub fn process_pending_snapshots(
         .map(|(entity, _, settings)| (entity, settings.clone()))
         .collect();
 
-    debug!("Found {} pending snapshots", pending_snapshots.len());
+    let pending_count = pending_snapshots.len();
+
+    // Only log system entry/exit if pending count changed or we have pending snapshots
+    let should_log = debug_state.has_pending_changed(pending_count) || pending_count > 0;
+
+    if should_log {
+        debug!("Entering process_pending_snapshots");
+        debug!("Found {} pending snapshots", pending_count);
+    }
 
     // Process only one snapshot per frame to avoid overwhelming the system
     if let Some((camera_entity, settings)) = pending_snapshots.first() {
@@ -308,5 +325,9 @@ pub fn process_pending_snapshots(
             camera_entity
         );
         info!("Taking snapshot with camera {:?}", camera_entity);
+    }
+
+    if should_log {
+        debug!("Exiting process_pending_snapshots");
     }
 }
