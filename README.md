@@ -6,7 +6,7 @@
 [![Patreon](https://img.shields.io/badge/Patreon-Support-FF424D?logo=patreon)](https://www.patreon.com/c/DabneyEngineeringIncorporated)
 [![Documentation](https://img.shields.io/badge/Docs-GitHub%20Pages-brightgreen)](https://tyler274.github.io/rummage/)
 
-Rummage is a Magic: The Gathering game engine built with Bevy, focusing on the Commander format.
+Rummage is a robust end-to-end tested Magic: The Gathering Commander format game engine built with Bevy 0.15.x.
 
 ## Features
 
@@ -17,6 +17,8 @@ Rummage is a Magic: The Gathering game engine built with Bevy, focusing on the C
 - Zone management (battlefield, graveyard, exile, command zone, etc.)
 - Commander damage tracking
 - Card representation and rendering
+- Multiplayer networking with bevy_replicon
+- Modern UI with Bevy's UI components
 
 ## Commander Format Support
 
@@ -43,6 +45,7 @@ cargo test
 
 ## Project Structure
 
+### Game Engine Core
 - **src/game_engine/** - Core game engine
   - **phase.rs** - Game phase system
   - **priority.rs** - Player priority management
@@ -53,9 +56,48 @@ cargo test
   - **actions.rs** - Game actions
   - **turns.rs** - Turn sequence
 
-- **src/card.rs** - Card data structures and functionality
-- **src/mana.rs** - Mana system
-- **src/player.rs** - Player management
+### Cards and Resources
+- **src/card/** - Card data structures and functionality
+- **src/mana.rs** - Mana system implementation
+- **src/deck/** - Deck management
+
+### Player and UI Components
+- **src/player/** - Player management 
+- **src/camera/** - Camera control systems
+- **src/text/** - Text rendering utilities
+- **src/menu/** - Menu systems and UI
+
+### Networking
+- **src/networking/** - Multiplayer functionality using bevy_replicon
+  - State synchronization
+  - Rollback system
+  - RNG synchronization
+
+## Development Standards
+
+The Rummage codebase adheres to the following standards:
+
+1. **Bevy 0.15.x Compatibility**: Using non-deprecated Bevy APIs
+2. **End-to-End Testing**: Comprehensive test coverage for all features
+3. **Documentation-First Development**: New features are documented before implementation
+4. **Performance Focus**: Optimization for smooth gameplay
+
+## Documentation
+
+For full documentation, including implementation details and architecture decisions, visit our [GitHub Pages documentation](https://tyler274.github.io/rummage/).
+
+The documentation contains:
+- Commander rules implementation details
+- Game UI system documentation
+- Networking architecture information
+- API references
+
+## Reference Materials
+
+The implementation is based on official MTG rules:
+
+- [Magic: The Gathering Comprehensive Rules](https://magic.wizards.com/en/rules)
+- [Commander Format Rules](https://mtgcommander.net/index.php/rules/)
 
 ## License
 
