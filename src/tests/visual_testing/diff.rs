@@ -801,6 +801,7 @@ mod tests {
 }
 
 // Setup functions to support the tests
+#[allow(dead_code)]
 fn setup_test_scene(mut commands: Commands) {
     // Set up camera
     commands.spawn(Camera2d::default());
@@ -810,6 +811,7 @@ fn setup_test_scene(mut commands: Commands) {
 }
 
 // Set up a scene for UI testing
+#[allow(dead_code)]
 fn setup_ui_test_scene(mut commands: Commands) {
     // Set up camera
     commands.spawn(Camera2d::default());
@@ -819,6 +821,7 @@ fn setup_ui_test_scene(mut commands: Commands) {
 }
 
 // Set up an animation test scene
+#[allow(dead_code)]
 fn setup_animation_test(mut commands: Commands) {
     // Set up camera
     commands.spawn(Camera2d::default());
@@ -828,6 +831,7 @@ fn setup_animation_test(mut commands: Commands) {
 }
 
 // Configure card state for testing
+#[allow(dead_code)]
 fn setup_card_state(_app: &mut App, state: &str) {
     // Placeholder - would implement real state setup
     match state {
@@ -851,6 +855,7 @@ fn setup_card_state(_app: &mut App, state: &str) {
 }
 
 // Configure UI state for testing
+#[allow(dead_code)]
 fn setup_ui_state(_app: &mut App, state: &str) {
     // Placeholder - would implement real UI state setup
     match state {
@@ -866,6 +871,7 @@ fn setup_ui_state(_app: &mut App, state: &str) {
 }
 
 // Configure animation keyframe for testing
+#[allow(dead_code)]
 fn setup_animation_keyframe(_app: &mut App, animation: &str, _keyframe: i32) {
     // Placeholder - would implement real animation setup
     match animation {

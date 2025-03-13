@@ -3,11 +3,12 @@ pub mod assertions;
 pub mod common;
 pub mod fixtures;
 
-pub use assertions::*;
-pub use common::*;
-pub use fixtures::*;
+// Remove the unused imports but keep the modules available
+// These modules are meant to be used directly in tests,
+// not re-exported by default
 
 /// Sets up a minimal test environment for game engine testing
+#[allow(dead_code)]
 pub fn setup_test_environment(app: &mut bevy::app::App) {
     use bevy::prelude::*;
 
@@ -16,11 +17,13 @@ pub fn setup_test_environment(app: &mut bevy::app::App) {
 }
 
 /// Sets up a basic test game
+#[allow(dead_code)]
 fn setup_test_game() {
     // Placeholder for test game setup
 }
 
 /// Test states for use in game engine testing
+#[allow(dead_code)]
 pub const TEST_STATES: &[&str] = &[
     "empty_board",
     "basic_creatures",
@@ -30,9 +33,11 @@ pub const TEST_STATES: &[&str] = &[
 ];
 
 /// Standard test deck for use in tests
+#[allow(dead_code)]
 pub const TEST_DECK: &str = "test_decks/standard_test_deck.toml";
 
 /// Runs a complete test turn cycle
+#[allow(dead_code)]
 pub fn run_test_turn(_app: &mut bevy::app::App) {
     use crate::game_engine::phase::{ActivePlayer, MAIN1, MAIN2};
     use crate::game_engine::phase::{BeginningStep, CombatStep, CurrentPhase, EndingStep, Phase};

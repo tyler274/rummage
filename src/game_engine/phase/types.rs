@@ -47,6 +47,29 @@ pub enum EndingStep {
     Cleanup,
 }
 
+/// Resource representing the current phase of the game
+#[derive(Resource, Debug, Clone, Copy)]
+pub struct CurrentPhase(pub Phase);
+
+impl Default for CurrentPhase {
+    fn default() -> Self {
+        Self(Phase::default())
+    }
+}
+
+/// Component marking the active player
+#[derive(Component, Debug, Clone, Copy)]
+#[allow(dead_code)]
+pub struct ActivePlayer;
+
+// Convenience constants for use in tests
+/// First main phase
+#[allow(dead_code)]
+pub const MAIN1: Phase = Phase::Precombat(PrecombatStep::Main);
+/// Second main phase
+#[allow(dead_code)]
+pub const MAIN2: Phase = Phase::Postcombat(PostcombatStep::Main);
+
 impl Phase {
     /// Determine if the phase or step should auto-pass priority if the stack is empty
     #[allow(dead_code)]
