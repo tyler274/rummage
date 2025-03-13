@@ -359,13 +359,13 @@ blockquote {
     --sidebar-bg: #1d2021;
     --sidebar-fg: #ffffff;
     --sidebar-non-existant: #5c6773;
-    --sidebar-active: #e2e8f0;
+    --sidebar-active: #ffffff;
     --sidebar-spacer: #3c3836;
     --scrollbar: #4a5568;
-    --icons: #e2e8f0;
+    --icons: #ffffff;
     --icons-hover: #ffffff;
     --links: #63b3ed;
-    --inline-code-color: #f7fafc;
+    --inline-code-color: #ffffff;
     --theme-popup-bg: #222526;
     --theme-popup-border: #4a5568;
     --theme-hover: #2d3748;
@@ -376,36 +376,21 @@ blockquote {
     --table-alternate-bg: #222526;
     --searchbar-border-color: #4a5568;
     --searchbar-bg: #242728;
-    --searchbar-fg: #f7fafc;
+    --searchbar-fg: #ffffff;
     --searchbar-shadow-color: #0f1112;
-    --searchresults-header-fg: #f7fafc;
+    --searchresults-header-fg: #ffffff;
     --searchresults-border-color: #4a5568;
     --searchresults-li-bg: #242728;
     --search-mark-bg: #fcd34d;
     --search-mark-fg: #141617;
 }
 
-.coal code {
-    color: #f7fafc !important;
+/* General white text for coal theme */
+.coal .content * {
+    color: #ffffff !important;
 }
 
-.coal .content {
-    color: #f7fafc !important;
-}
-
-.coal .content p,
-.coal .content li {
-    color: #f7fafc !important;
-}
-
-.coal .content h1,
-.coal .content h2,
-.coal .content h3,
-.coal .content h4,
-.coal .content h5 {
-    color: #e2e8f0 !important;
-}
-
+/* Reset colors for specific elements */
 .coal .content a {
     color: #63b3ed !important;
 }
@@ -414,7 +399,8 @@ blockquote {
     color: #90cdf4 !important;
 }
 
-.coal .content code {
+.coal code {
+    color: #ffffff !important;
     background-color: #2d3748 !important;
 }
 
@@ -424,7 +410,7 @@ blockquote {
 
 .coal blockquote {
     border-left: 4px solid #4ade80 !important;
-    color: #e2e8f0 !important;
+    color: #ffffff !important;
 }
 
 /* Specific overrides for Navy theme */
@@ -434,13 +420,13 @@ blockquote {
     --sidebar-bg: #1e2029;
     --sidebar-fg: #ffffff;
     --sidebar-non-existant: #5c6773;
-    --sidebar-active: #e2e8f0;
+    --sidebar-active: #ffffff;
     --sidebar-spacer: #2d334f;
     --scrollbar: #4a5568;
-    --icons: #e2e8f0;
+    --icons: #ffffff;
     --icons-hover: #ffffff;
     --links: #63b3ed;
-    --inline-code-color: #f7fafc;
+    --inline-code-color: #ffffff;
     --theme-popup-bg: #212330;
     --theme-popup-border: #4a5568;
     --theme-hover: #2d3748;
@@ -451,36 +437,21 @@ blockquote {
     --table-alternate-bg: #212330;
     --searchbar-border-color: #4a5568;
     --searchbar-bg: #1e2029;
-    --searchbar-fg: #f7fafc;
+    --searchbar-fg: #ffffff;
     --searchbar-shadow-color: #0f1112;
-    --searchresults-header-fg: #f7fafc;
+    --searchresults-header-fg: #ffffff;
     --searchresults-border-color: #4a5568;
     --searchresults-li-bg: #1e2029;
     --search-mark-bg: #fcd34d;
     --search-mark-fg: #141617;
 }
 
-.navy code {
-    color: #f7fafc !important;
+/* General white text for navy theme */
+.navy .content * {
+    color: #ffffff !important;
 }
 
-.navy .content {
-    color: #f7fafc !important;
-}
-
-.navy .content p,
-.navy .content li {
-    color: #f7fafc !important;
-}
-
-.navy .content h1,
-.navy .content h2,
-.navy .content h3,
-.navy .content h4,
-.navy .content h5 {
-    color: #e2e8f0 !important;
-}
-
+/* Reset colors for specific elements */
 .navy .content a {
     color: #63b3ed !important;
 }
@@ -489,7 +460,8 @@ blockquote {
     color: #90cdf4 !important;
 }
 
-.navy .content code {
+.navy code {
+    color: #ffffff !important;
     background-color: #2d3748 !important;
 }
 
@@ -499,7 +471,7 @@ blockquote {
 
 .navy blockquote {
     border-left: 4px solid #4ade80 !important;
-    color: #e2e8f0 !important;
+    color: #ffffff !important;
 }
 
 /* Specific overrides for Ayu theme */
@@ -509,13 +481,13 @@ blockquote {
     --sidebar-bg: #14191f;
     --sidebar-fg: #ffffff;
     --sidebar-non-existant: #5c6773;
-    --sidebar-active: #e2e8f0;
+    --sidebar-active: #ffffff;
     --sidebar-spacer: #2d3741;
     --scrollbar: #4a5568;
-    --icons: #e2e8f0;
+    --icons: #ffffff;
     --icons-hover: #ffffff;
     --links: #63b3ed;
-    --inline-code-color: #f7fafc;
+    --inline-code-color: #ffffff;
     --theme-popup-bg: #14191f;
     --theme-popup-border: #4a5568;
     --theme-hover: #191f26;
@@ -526,36 +498,21 @@ blockquote {
     --table-alternate-bg: #14191f;
     --searchbar-border-color: #4a5568;
     --searchbar-bg: #14191f;
-    --searchbar-fg: #f7fafc;
+    --searchbar-fg: #ffffff;
     --searchbar-shadow-color: #0f1419;
-    --searchresults-header-fg: #f7fafc;
+    --searchresults-header-fg: #ffffff;
     --searchresults-border-color: #4a5568;
     --searchresults-li-bg: #14191f;
     --search-mark-bg: #fcd34d;
     --search-mark-fg: #0f1419;
 }
 
-.ayu code {
-    color: #f7fafc !important;
+/* General white text for ayu theme */
+.ayu .content * {
+    color: #ffffff !important;
 }
 
-.ayu .content {
-    color: #f7fafc !important;
-}
-
-.ayu .content p,
-.ayu .content li {
-    color: #f7fafc !important;
-}
-
-.ayu .content h1,
-.ayu .content h2,
-.ayu .content h3,
-.ayu .content h4,
-.ayu .content h5 {
-    color: #e2e8f0 !important;
-}
-
+/* Reset colors for specific elements */
 .ayu .content a {
     color: #63b3ed !important;
 }
@@ -564,7 +521,8 @@ blockquote {
     color: #90cdf4 !important;
 }
 
-.ayu .content code {
+.ayu code {
+    color: #ffffff !important;
     background-color: #2d3748 !important;
 }
 
@@ -574,17 +532,44 @@ blockquote {
 
 .ayu blockquote {
     border-left: 4px solid #4ade80 !important;
-    color: #e2e8f0 !important;
+    color: #ffffff !important;
 }
 
-/* Improve syntax highlighting for all dark themes */
+/* Force white text for heading elements in all dark themes */
+.coal .content h1,
+.coal .content h2,
+.coal .content h3,
+.coal .content h4,
+.coal .content h5,
+.navy .content h1,
+.navy .content h2,
+.navy .content h3,
+.navy .content h4,
+.navy .content h5,
+.ayu .content h1,
+.ayu .content h2,
+.ayu .content h3,
+.ayu .content h4,
+.ayu .content h5 {
+    color: #ffffff !important;
+}
+
+/* Main title at the top */
+.coal .menu-title,
+.navy .menu-title,
+.ayu .menu-title {
+    color: #ffffff !important;
+}
+
+/* Improve syntax highlighting for all dark themes while keeping high contrast */
 .coal .hljs,
 .navy .hljs,
 .ayu .hljs {
     background-color: #2d3748 !important;
-    color: #e2e8f0 !important;
+    color: #ffffff !important;
 }
 
+/* We still want some color distinction in code, but with high contrast */
 .coal .hljs-keyword,
 .coal .hljs-selector-tag,
 .coal .hljs-built_in,
@@ -645,7 +630,8 @@ blockquote {
 .ayu .hljs-quote,
 .ayu .hljs-meta,
 .ayu .hljs-deletion {
-    color: #a0aec0 !important;
+    color: #cbd5e0 !important;
+    /* Lighter gray for better contrast */
 }
 
 .coal .hljs-number,
