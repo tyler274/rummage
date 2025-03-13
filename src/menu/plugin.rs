@@ -24,16 +24,18 @@ struct MenuVisibilityLogState {
     last_camera_count: usize,
     last_item_count: usize,
     last_visible_items: usize,
+    camera_states: std::collections::HashMap<Entity, Visibility>,
 }
 
 impl Default for MenuVisibilityLogState {
     fn default() -> Self {
         Self {
             last_log_time: 0.0,
-            log_interval: 5.0, // Log every 5 seconds at most
+            log_interval: 30.0, // Log every 30 seconds at most
             last_camera_count: 0,
             last_item_count: 0,
             last_visible_items: 0,
+            camera_states: std::collections::HashMap::new(),
         }
     }
 }
@@ -369,14 +371,27 @@ fn debug_menu_visibility(
         .filter(|(_, visibility)| matches!(visibility, Visibility::Visible))
         .count();
 
-    // Check if we need to log based on time interval or state changes
-    let current_time = time.elapsed_secs();
-    let state_changed = camera_count != log_state.last_camera_count
-        || menu_item_count != log_state.last_item_count
-        || visible_items != log_state.last_visible_items;
+    // Collect current camera states
+    let mut current_camera_states = std::collections::HashMap::new();
+    for (entity, visibility) in menu_cameras.iter() {
+        current_camera_states.insert(entity, *visibility);
+    }
 
-    let should_log =
-        current_time - log_state.last_log_time > log_state.log_interval || state_changed;
+    // Check if camera states have changed
+    let camera_state_changed = camera_count != log_state.last_camera_count || 
+        current_camera_states != log_state.camera_states;
+    
+    // Check if menu items have changed
+    let menu_items_changed = menu_item_count != log_state.last_item_count || 
+        visible_items != log_state.last_visible_items;
+    
+    // Determine if there's been any meaningful change worth logging
+    let state_changed = camera_state_changed || menu_items_changed;
+
+    // Check if we should log based on time interval or state changes
+    let current_time = time.elapsed_secs();
+    let force_log_by_time = current_time - log_state.last_log_time > log_state.log_interval;
+    let should_log = force_log_by_time || state_changed;
 
     // If we need to log, update state and output logs
     if should_log {
@@ -384,6 +399,7 @@ fn debug_menu_visibility(
         log_state.last_camera_count = camera_count;
         log_state.last_item_count = menu_item_count;
         log_state.last_visible_items = visible_items;
+        log_state.camera_states = current_camera_states;
 
         // Log camera visibility (at debug level to reduce spam)
         for (entity, visibility) in menu_cameras.iter() {

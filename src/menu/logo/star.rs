@@ -16,6 +16,8 @@ pub struct StarOfDavidLogState {
     log_interval: f32,
     /// Last recorded number of stars
     last_star_count: usize,
+    /// Last recorded state of stars having children
+    last_children_state: std::collections::HashMap<Entity, bool>,
     /// Whether any changes were made to stars since last log
     changes_made: bool,
 }
@@ -24,8 +26,9 @@ impl Default for StarOfDavidLogState {
     fn default() -> Self {
         Self {
             last_log_time: 0.0,
-            log_interval: 5.0, // Only log once every 5 seconds
+            log_interval: 30.0, // Only log once every 30 seconds at most
             last_star_count: 0,
+            last_children_state: std::collections::HashMap::new(),
             changes_made: false,
         }
     }
@@ -65,44 +68,31 @@ pub fn render_star_of_david(
     // Count stars
     let star_count = query.iter().count();
 
-    // Check if we need to log based on time interval or state changes
-    let current_time = time.elapsed_secs();
-    let should_log = current_time - log_state.last_log_time > log_state.log_interval
-        || star_count != log_state.last_star_count
-        || log_state.changes_made;
+    // Check for changes in entity count
+    let count_changed = star_count != log_state.last_star_count;
 
-    // If we're going to log, reset the state tracking
-    if should_log {
-        log_state.last_log_time = current_time;
-        log_state.last_star_count = star_count;
-        log_state.changes_made = false;
+    // Track changes in children states
+    let mut children_changed = false;
+    let mut current_children_state = std::collections::HashMap::new();
 
-        debug!("StarOfDavid entities found: {}", star_count);
-    }
-
-    // Process stars and create any missing children
     for entity in &query {
         let has_children = children_query
             .get(entity)
             .map(|children| !children.is_empty())
             .unwrap_or(false);
 
-        // Only log detailed entity info when we're already logging
-        if should_log {
-            debug!(
-                "StarOfDavid entity {:?} has children: {}",
-                entity, has_children
-            );
+        // Record current state
+        current_children_state.insert(entity, has_children);
+
+        // Check if this entity's state has changed
+        if log_state.last_children_state.get(&entity) != Some(&has_children) {
+            children_changed = true;
         }
 
         // Only spawn children if it doesn't have children yet
         if !has_children {
             // Track that we made changes for next frame's logging
             log_state.changes_made = true;
-
-            if should_log {
-                debug!("Adding children to StarOfDavid entity {:?}", entity);
-            }
 
             // Create the material once - gold color
             let material = materials.add(Color::srgb(1.0, 0.84, 0.0));
@@ -135,6 +125,32 @@ pub fn render_star_of_david(
                     ViewVisibility::default(),
                 ));
             });
+        }
+    }
+
+    // Determine if we should log based on changes or forced time interval
+    let current_time = time.elapsed_secs();
+    let force_log_by_time = current_time - log_state.last_log_time > log_state.log_interval;
+    let should_log =
+        force_log_by_time || count_changed || children_changed || log_state.changes_made;
+
+    // Only log if we have changes or it's been a long time
+    if should_log {
+        log_state.last_log_time = current_time;
+        log_state.last_star_count = star_count;
+        log_state.last_children_state = current_children_state;
+        log_state.changes_made = false;
+
+        debug!("StarOfDavid entities found: {}", star_count);
+
+        // Only log individual entities if there was a change
+        if count_changed || children_changed {
+            for (entity, has_children) in &log_state.last_children_state {
+                debug!(
+                    "StarOfDavid entity {:?} has children: {}",
+                    entity, has_children
+                );
+            }
         }
     }
 }
