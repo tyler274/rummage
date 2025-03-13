@@ -68,16 +68,27 @@ fn register_default_decks(_deck_registry: ResMut<DeckRegistry>) {
 }
 
 // Get a collection of example cards that can be used to create a deck
-// This moves the functionality from src/card/mod.rs to here
 #[allow(dead_code)]
 pub fn get_example_cards(_owner: Entity) -> Vec<crate::card::Card> {
     let mut cards = Vec::new();
-    cards.extend(crate::card::artifacts::get_artifact_cards());
-    cards.extend(crate::card::black::get_black_cards());
-    cards.extend(crate::card::blue::get_blue_cards());
-    cards.extend(crate::card::green::get_green_cards());
-    cards.extend(crate::card::red::get_red_cards());
-    cards.extend(crate::card::white::get_white_cards());
+
+    // Alpha set cards
+    cards.push(crate::card::sets::alpha::ancestral_recall::get_card());
+    cards.push(crate::card::sets::alpha::counterspell::get_card());
+    cards.push(crate::card::sets::alpha::fireball::get_card());
+    cards.push(crate::card::sets::alpha::lightning_bolt::get_card());
+    cards.push(crate::card::sets::alpha::time_walk::get_card());
+    cards.push(crate::card::sets::alpha::wheel_of_fortune::get_card());
+
+    // Alliances set cards
+    cards.push(crate::card::sets::alliances::force_of_will::get_card());
+
+    // Legends set cards
+    cards.push(crate::card::sets::legends::mana_drain::get_card());
+
+    // Scourge set cards
+    cards.push(crate::card::sets::scourge::dragon_mage::get_card());
+
     cards
 }
 
@@ -88,15 +99,18 @@ pub fn get_player_specific_cards(_owner: Entity, player_index: usize) -> Vec<cra
 
     // Use different card subsets based on player index to ensure variety
     if player_index % 2 == 0 {
-        // Even-indexed players (like Player 1) get artifact, black, and red cards
-        cards.extend(crate::card::artifacts::get_artifact_cards());
-        cards.extend(crate::card::black::get_black_cards());
-        cards.extend(crate::card::red::get_red_cards());
+        // Even-indexed players (like Player 1) get red and black-aligned cards
+        cards.push(crate::card::sets::alpha::fireball::get_card());
+        cards.push(crate::card::sets::alpha::lightning_bolt::get_card());
+        cards.push(crate::card::sets::alpha::wheel_of_fortune::get_card());
+        cards.push(crate::card::sets::scourge::dragon_mage::get_card());
     } else {
-        // Odd-indexed players (like Player 2) get blue, green, and white cards
-        cards.extend(crate::card::blue::get_blue_cards());
-        cards.extend(crate::card::green::get_green_cards());
-        cards.extend(crate::card::white::get_white_cards());
+        // Odd-indexed players (like Player 2) get blue and white-aligned cards
+        cards.push(crate::card::sets::alpha::ancestral_recall::get_card());
+        cards.push(crate::card::sets::alpha::counterspell::get_card());
+        cards.push(crate::card::sets::alpha::time_walk::get_card());
+        cards.push(crate::card::sets::alliances::force_of_will::get_card());
+        cards.push(crate::card::sets::legends::mana_drain::get_card());
     }
 
     cards

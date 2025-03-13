@@ -11,14 +11,6 @@ mod state;
 mod systems;
 mod types;
 
-// Card submodules by color
-pub mod artifacts; // Colorless artifacts
-pub mod black;
-pub mod blue;
-pub mod green;
-pub mod red;
-pub mod white;
-
 // Card data sources and specialized sets
 pub mod hdr; // Historic Definition Records
 pub mod mtgjson; // MTG JSON import functionality

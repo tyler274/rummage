@@ -21,7 +21,7 @@ target/
 #.idea/
 
 # Ignore all cached sets
-sets/
+/sets/
 
 # Ignore generated book files
 docs/book/
