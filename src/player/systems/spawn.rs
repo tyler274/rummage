@@ -96,10 +96,10 @@ pub fn spawn_players(
             // Position cards near their player's position
             if player_index == 0 {
                 // Player 1 cards at bottom
-                card_position.y = -150.0; // Increased from -60.0 to -150.0 for much more spacing
+                card_position.y = -350.0; // Increased from -250.0 to -350.0 for much more spacing
             } else if player_index == 1 {
                 // Player 2 cards at top
-                card_position.y = 150.0; // Increased from 60.0 to 150.0 for much more spacing
+                card_position.y = 350.0; // Increased from 250.0 to 350.0 for much more spacing
             }
 
             spawn_visual_cards(
@@ -206,7 +206,11 @@ fn spawn_visual_cards(
 
     // Spawn visual cards in a row
     for (i, card) in display_cards.into_iter().enumerate() {
-        let z = i as f32;
+        // Use a base z-index based on player index
+        // This ensures Player 1's cards start at z=0, Player 2's at z=100, etc.
+        let base_z = player_index as f32 * 100.0;
+        let z = base_z + i as f32;
+
         // Position cards at player position
         let x_pos = start_x + i as f32 * spacing + player_position.x;
 
