@@ -32,7 +32,7 @@ pub fn debug_draw_player_positions(mut gizmos: Gizmos, player_query: Query<(&Tra
         gizmos.circle_2d(position, 5.0, alpha_color);
 
         // Draw a line from the player to where their cards would spawn
-        let card_y_pos = -24.0; // This should match the y-position in spawn_visual_cards
+        let card_y_pos = -30.0; // This should match the y-position in spawn_visual_cards
         let card_center = Vec2::new(position.x, card_y_pos);
 
         if player.player_index == 0 {

@@ -192,8 +192,8 @@ fn spawn_visual_cards(
 
         // Position cards at the very bottom fifth of the screen
         // With camera zoom 5.0, visible height range is roughly -25 to 25
-        // Bottom fifth would be around y = -25 to -15
-        let y_pos = -24.0; // Further down to ensure they're in the bottom fifth
+        // Place cards at a much lower position to ensure they're at the very bottom
+        let y_pos = -30.0; // Further down to ensure they're clearly in the bottom fifth
 
         let transform = Transform::from_xyz(x_pos, y_pos, z);
 
