@@ -119,11 +119,11 @@ fn get_player_position(player_index: usize, total_players: usize) -> Transform {
     match (player_index, total_players) {
         // Player 1 (index 0) - bottom of the screen
         (0, _) => {
-            position.y = -4.0; // Player 1 at bottom
+            position.y = -15.0; // Position Player 1 much further down so cards appear at very bottom
         }
         // Player 2 (index 1) - top of the screen (opponent)
         (1, _) => {
-            position.y = 4.0; // Player 2 at top (opponent)
+            position.y = 15.0; // Keep Player 2 at top (opponent) mirroring Player 1 position
             // Rotate 180 degrees (π radians) to face Player 1
             return Transform::from_xyz(position.x, position.y, position.z)
                 .with_rotation(Quat::from_rotation_z(std::f32::consts::PI));
@@ -132,7 +132,7 @@ fn get_player_position(player_index: usize, total_players: usize) -> Transform {
         (idx, count) if idx < count => {
             // Calculate positions in a circle for 3+ players
             let angle = (idx as f32 / count as f32) * 2.0 * std::f32::consts::PI;
-            let radius = 4.0; // Distance from center
+            let radius = 15.0; // Increased distance from center to match player 1/2 positions
             position.x = radius * angle.cos();
             position.y = radius * angle.sin();
             // Face the center
@@ -168,9 +168,10 @@ fn spawn_visual_cards(
         info!("No game camera found, using default camera");
     }
 
-    // Spawn visual cards
+    // Spawn visual cards in a row
     for (i, card) in display_cards.into_iter().enumerate() {
         let z = i as f32;
+        // Position cards at player position (y position is relative to player)
         let transform = Transform::from_xyz(start_x + i as f32 * spacing, 0.0, z);
 
         let card_entity = commands

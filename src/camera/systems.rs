@@ -24,7 +24,7 @@ pub fn setup_camera(commands: &mut Commands) {
         Visibility::default(),
         InheritedVisibility::default(),
         ViewVisibility::default(),
-        Transform::default(),
+        Transform::default(), // Use default transform position (0,0,0)
         GlobalTransform::default(),
         GameCamera,
         AppLayer::game_layers(), // Use combined game layers to see all game elements including cards
@@ -39,10 +39,10 @@ pub fn set_initial_zoom(
     mut query: Query<&mut OrthographicProjection, (With<Camera>, With<GameCamera>)>,
 ) {
     if let Ok(mut projection) = query.get_single_mut() {
-        // Set to 4.0 for a more zoomed out view
+        // Set to 5.0 for a much more zoomed out view
         // In OrthographicProjection, higher scale = more zoomed out
-        // This makes Player 1's cards occupy approximately 1/5th of the screen height
-        projection.scale = 4.0;
+        // This provides a better overview of the entire playing field
+        projection.scale = 5.0;
     }
 }
 
