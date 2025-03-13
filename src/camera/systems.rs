@@ -39,10 +39,10 @@ pub fn set_initial_zoom(
     mut query: Query<&mut OrthographicProjection, (With<Camera>, With<GameCamera>)>,
 ) {
     if let Ok(mut projection) = query.get_single_mut() {
-        // Set to 10.0 for a balanced view of the playing field
+        // Set to 5.0 for a more readable view of the playing field
         // In OrthographicProjection, higher scale = more zoomed out
-        // This provides a good overview of the entire playing field while still seeing details
-        projection.scale = 10.0;
+        // This provides a balance between seeing the overall board and card details
+        projection.scale = 5.0;
 
         info!("Set initial camera zoom level to {:.2}", projection.scale);
     } else {
