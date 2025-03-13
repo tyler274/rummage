@@ -9,16 +9,20 @@ pub struct Commander {
     pub owner: Entity,
 
     /// How many times this commander has been cast from the command zone
+    #[allow(dead_code)]
     pub cast_count: u32,
 
     /// Tracks commander damage dealt to each player
     pub damage_dealt: Vec<(Entity, u32)>,
 
     /// Commander's color identity (for deck validation)
+    #[allow(dead_code)]
     pub color_identity: HashSet<Color>,
 
     /// Commander-specific flags
+    #[allow(dead_code)]
     pub is_partner: bool,
+    #[allow(dead_code)]
     pub is_background: bool,
 
     /// Track if commander has dealt combat damage this turn
@@ -57,11 +61,14 @@ pub enum EliminationReason {
     /// Player lost due to having 0 or less life
     LifeLoss,
     /// Player lost due to trying to draw from an empty library
+    #[allow(dead_code)]
     EmptyLibrary,
     /// Player lost due to receiving 21+ commander damage from a single commander
     CommanderDamage(Entity), // The commander that dealt the lethal damage
     /// Player conceded
+    #[allow(dead_code)]
     Concede,
     /// Player lost due to a specific card effect
+    #[allow(dead_code)]
     CardEffect(Entity), // The card that caused the elimination
 }

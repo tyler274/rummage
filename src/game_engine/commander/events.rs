@@ -35,7 +35,9 @@ pub struct CommanderZoneChoiceEvent {
 #[derive(Event)]
 pub struct PlayerEliminatedEvent {
     /// The player that was eliminated
+    #[allow(dead_code)]
     pub player: Entity,
     /// The reason the player was eliminated
+    #[allow(dead_code)]
     pub reason: EliminationReason,
 }

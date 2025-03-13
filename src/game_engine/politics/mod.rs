@@ -30,12 +30,14 @@ pub struct PoliticsSystem {
     pub monarch: Option<Entity>,
 
     /// The player who currently has the initiative
+    #[allow(dead_code)]
     pub initiative_holder: Option<Entity>,
 
     /// Tracks goad effects on creatures
     pub goad_effects: HashMap<Entity, Vec<GoadEffect>>,
 
     /// Tracks vow effects on creatures
+    #[allow(dead_code)]
     pub vow_effects: HashMap<Entity, Vec<VowEffect>>,
 
     /// The currently active vote (if any)
@@ -54,6 +56,7 @@ pub struct PoliticsSystem {
     pub active_deals: Vec<Deal>,
 
     /// Tracks alliances between players (for team play variants)
+    #[allow(dead_code)]
     pub alliances: HashMap<Entity, Vec<Entity>>,
 
     /// Tracks combat restrictions from political effects
@@ -115,12 +118,15 @@ pub struct VoteCastEvent {
 #[derive(Event)]
 pub struct VoteCompletedEvent {
     /// The vote ID
+    #[allow(dead_code)]
     pub vote_id: Uuid,
 
     /// The winning choice
+    #[allow(dead_code)]
     pub winning_choice: VoteChoice,
 
     /// The number of votes for the winning choice
+    #[allow(dead_code)]
     pub vote_count: u32,
 }
 

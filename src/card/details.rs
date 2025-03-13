@@ -59,6 +59,7 @@ pub struct CreatureOnField {
 }
 
 #[derive(Component)]
+#[allow(dead_code)]
 pub struct CardBundle {
     pub sprite: Sprite,
     pub card: super::Card,

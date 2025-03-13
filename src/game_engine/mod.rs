@@ -224,6 +224,7 @@ fn setup_game_engine(
 }
 
 /// Register core game engine systems with the app
+#[allow(dead_code)]
 pub fn register_game_engine(app: &mut App) {
     // We'll use these functions which already register the systems for each module
     turns::register_turn_systems(app);

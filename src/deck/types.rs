@@ -7,16 +7,21 @@ use std::collections::HashMap;
 #[derive(Debug, Clone)]
 pub struct Deck {
     /// Name of the deck
+    #[allow(dead_code)]
     pub name: String,
     /// Type of the deck (Commander, Standard, etc.)
+    #[allow(dead_code)]
     pub deck_type: DeckType,
     /// Cards in the deck
     pub cards: Vec<crate::card::Card>,
     /// Commander card ID if this is a Commander deck
+    #[allow(dead_code)]
     pub commander: Option<Entity>,
     /// Partner commander card ID if applicable
+    #[allow(dead_code)]
     pub partner: Option<Entity>,
     /// Owner of the deck
+    #[allow(dead_code)]
     pub owner: Option<Entity>,
 }
 
@@ -47,6 +52,7 @@ pub enum DeckType {
 
 /// Errors that can occur during deck validation
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum DeckValidationError {
     /// Deck doesn't have enough cards
     TooFewCards { required: usize, actual: usize },
@@ -79,27 +85,32 @@ impl Deck {
         }
     }
 
-    /// Set the owner of the deck
+    /// Set the owner of this deck
+    #[allow(dead_code)]
     pub fn set_owner(&mut self, owner: Entity) {
         self.owner = Some(owner);
     }
 
-    /// Set the commander for a Commander deck
+    /// Set the commander for this deck
+    #[allow(dead_code)]
     pub fn set_commander(&mut self, commander: Entity) {
         self.commander = Some(commander);
     }
 
-    /// Set a partner commander
+    /// Set the partner commander for this deck
+    #[allow(dead_code)]
     pub fn set_partner(&mut self, partner: Entity) {
         self.partner = Some(partner);
     }
 
     /// Get the number of cards in the deck
+    #[allow(dead_code)]
     pub fn card_count(&self) -> usize {
         self.cards.len()
     }
 
-    /// Check if the deck is a legal deck for its format
+    /// Validate the deck against format rules
+    #[allow(dead_code)]
     pub fn validate(&self) -> Result<(), Vec<DeckValidationError>> {
         let mut errors = Vec::new();
 
@@ -165,11 +176,13 @@ impl Deck {
     }
 
     /// Draw a card from the top of the deck
+    #[allow(dead_code)]
     pub fn draw(&mut self) -> Option<crate::card::Card> {
         self.cards.pop()
     }
 
-    /// Draw multiple cards
+    /// Draw multiple cards from the top of the deck
+    #[allow(dead_code)]
     pub fn draw_multiple(&mut self, count: usize) -> Vec<crate::card::Card> {
         let mut drawn = Vec::new();
         for _ in 0..count {
@@ -183,16 +196,19 @@ impl Deck {
     }
 
     /// Add a card to the top of the deck
+    #[allow(dead_code)]
     pub fn add_top(&mut self, card: crate::card::Card) {
         self.cards.push(card);
     }
 
     /// Add a card to the bottom of the deck
+    #[allow(dead_code)]
     pub fn add_bottom(&mut self, card: crate::card::Card) {
         self.cards.insert(0, card);
     }
 
-    /// Search for a card by name
+    /// Search for cards by name
+    #[allow(dead_code)]
     pub fn search(&self, name: &str) -> Vec<&crate::card::Card> {
         self.cards
             .iter()

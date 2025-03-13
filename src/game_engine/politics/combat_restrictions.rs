@@ -1,7 +1,7 @@
-use bevy::prelude::*;
+use super::{CombatRestriction, PoliticsSystem};
 use crate::game_engine::combat::CombatState;
 use crate::game_engine::turns::TurnManager;
-use super::{PoliticsSystem, CombatRestriction};
+use bevy::prelude::*;
 
 /// System to enforce combat restrictions from political effects
 pub fn combat_restrictions_system(
@@ -23,7 +23,7 @@ pub fn combat_restrictions_system(
                     if !combat_state.must_attack.contains_key(creature) {
                         combat_state.must_attack.insert(*creature, Vec::new());
                     }
-                },
+                }
                 CombatRestriction::MustAttackPlayer(player) => {
                     // Add player to the list that this creature must attack
                     if let Some(targets) = combat_state.must_attack.get_mut(creature) {
@@ -33,7 +33,7 @@ pub fn combat_restrictions_system(
                     } else {
                         combat_state.must_attack.insert(*creature, vec![*player]);
                     }
-                },
+                }
                 CombatRestriction::CannotAttackPlayer(player) => {
                     // Add player to the list that this creature cannot attack
                     if let Some(targets) = combat_state.cannot_attack.get_mut(creature) {
@@ -43,30 +43,40 @@ pub fn combat_restrictions_system(
                     } else {
                         combat_state.cannot_attack.insert(*creature, vec![*player]);
                     }
-                },
+                }
                 CombatRestriction::CannotBlock => {
                     // This is checked directly in the declare_blockers system
                     // Implementation would go in that system
-                    info!("Creature {:?} cannot block due to political effects", creature);
-                },
+                    info!(
+                        "Creature {:?} cannot block due to political effects",
+                        creature
+                    );
+                }
                 CombatRestriction::CannotBlockAttacksAgainst(player) => {
                     // This would need to be checked in the declare_blockers system
                     // Implementation would go in that system
-                    info!("Creature {:?} cannot block attacks against player {:?}", creature, player);
-                },
+                    info!(
+                        "Creature {:?} cannot block attacks against player {:?}",
+                        creature, player
+                    );
+                }
             }
         }
     }
 
     // Log combat restrictions for debugging
     if !combat_state.must_attack.is_empty() {
-        info!("Combat restrictions active: {:?} creatures must attack", 
-              combat_state.must_attack.len());
+        info!(
+            "Combat restrictions active: {:?} creatures must attack",
+            combat_state.must_attack.len()
+        );
     }
-    
+
     if !combat_state.cannot_attack.is_empty() {
-        info!("Combat restrictions active: {:?} creatures have attack restrictions", 
-              combat_state.cannot_attack.len());
+        info!(
+            "Combat restrictions active: {:?} creatures have attack restrictions",
+            combat_state.cannot_attack.len()
+        );
     }
 }
 
@@ -75,14 +85,16 @@ pub fn combat_restrictions_system(
 pub struct ApplyCombatRestrictionEvent {
     /// The creature to restrict
     pub target: Entity,
-    
+
     /// The restriction to apply
     pub restriction: CombatRestriction,
-    
+
     /// The source of the restriction (e.g., a spell or ability)
+    #[allow(dead_code)]
     pub source: Option<Entity>,
-    
+
     /// The duration of the restriction in turns (None = until end of turn)
+    #[allow(dead_code)]
     pub duration: Option<u32>,
 }
 
@@ -91,7 +103,7 @@ pub struct ApplyCombatRestrictionEvent {
 pub struct RemoveCombatRestrictionEvent {
     /// The creature to remove restrictions from
     pub target: Entity,
-    
+
     /// The specific restriction to remove (None = all restrictions)
     pub restriction: Option<CombatRestriction>,
 }
@@ -105,25 +117,28 @@ pub fn manage_combat_restrictions(
 ) {
     // Apply new restrictions
     for event in apply_events.read() {
-        info!("Applying combat restriction to creature {:?}: {:?}", 
-              event.target, event.restriction);
-        
-        let restrictions = politics.combat_restrictions
+        info!(
+            "Applying combat restriction to creature {:?}: {:?}",
+            event.target, event.restriction
+        );
+
+        let restrictions = politics
+            .combat_restrictions
             .entry(event.target)
             .or_insert_with(Vec::new);
-            
+
         if !restrictions.contains(&event.restriction) {
             restrictions.push(event.restriction.clone());
         }
     }
-    
+
     // Remove restrictions
     for event in remove_events.read() {
         if let Some(restriction) = &event.restriction {
             // Remove specific restriction
             if let Some(restrictions) = politics.combat_restrictions.get_mut(&event.target) {
                 restrictions.retain(|r| r != restriction);
-                
+
                 // Clean up if empty
                 if restrictions.is_empty() {
                     politics.combat_restrictions.remove(&event.target);

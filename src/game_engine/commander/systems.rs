@@ -173,6 +173,7 @@ pub fn process_commander_zone_choices(
 }
 
 /// System to handle casting commanders from the command zone
+#[allow(dead_code)]
 pub fn handle_commander_casting(
     _commands: Commands,
     _zone_manager: ResMut<ZoneManager>,
@@ -195,6 +196,7 @@ pub fn handle_commander_casting(
 }
 
 /// Validate commander decks according to the Commander format rules
+#[allow(dead_code)]
 pub fn validate_commander_deck(
     _card_query: Query<(Entity, &Card)>,
     _cmd_zone_manager: Res<CommandZoneManager>,
@@ -245,6 +247,7 @@ pub fn track_commander_damage(
 }
 
 /// Register all commander-related systems with the app
+#[allow(dead_code)]
 pub fn register_commander_systems(app: &mut App) {
     // Register events
     app.add_event::<CommanderZoneChoiceEvent>()

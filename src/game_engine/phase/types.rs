@@ -49,6 +49,7 @@ pub enum EndingStep {
 
 impl Phase {
     /// Determine if the phase or step should auto-pass priority if the stack is empty
+    #[allow(dead_code)]
     pub fn auto_pass_if_empty(&self) -> bool {
         match self {
             Phase::Beginning(BeginningStep::Untap) => true,

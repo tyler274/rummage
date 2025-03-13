@@ -20,6 +20,7 @@ pub struct DeclareBlockersEvent {
 
 #[derive(Event)]
 pub struct AssignCombatDamageEvent {
+    #[allow(dead_code)]
     pub is_first_strike: bool,
 }
 
@@ -37,54 +38,67 @@ pub struct BlockerDeclaredEvent {
 
 #[derive(Event)]
 pub struct CombatBeginEvent {
+    #[allow(dead_code)]
     pub player: Entity,
 }
 
 #[derive(Event)]
 pub struct CombatEndEvent {
+    #[allow(dead_code)]
     pub player: Entity,
 }
 
 #[derive(Event)]
 pub struct DeclareAttackersStepBeginEvent {
+    #[allow(dead_code)]
     pub player: Entity,
 }
 
 #[derive(Event)]
 pub struct DeclareAttackersStepEndEvent {
+    #[allow(dead_code)]
     pub player: Entity,
 }
 
 #[derive(Event)]
 pub struct DeclareBlockersStepBeginEvent {
+    #[allow(dead_code)]
     pub player: Entity,
 }
 
 #[derive(Event)]
 pub struct DeclareBlockersStepEndEvent {
+    #[allow(dead_code)]
     pub player: Entity,
 }
 
 #[derive(Event)]
 pub struct CreatureAttacksEvent {
+    #[allow(dead_code)]
     pub attacker: Entity,
+    #[allow(dead_code)]
     pub defender: Entity,
 }
 
 #[derive(Event)]
 pub struct CreatureBlocksEvent {
+    #[allow(dead_code)]
     pub blocker: Entity,
+    #[allow(dead_code)]
     pub attacker: Entity,
 }
 
 #[derive(Event)]
 pub struct CreatureBlockedEvent {
+    #[allow(dead_code)]
     pub attacker: Entity,
+    #[allow(dead_code)]
     pub blocker: Entity,
 }
 
 #[derive(Event)]
 pub struct CombatDamageCompleteEvent {
+    #[allow(dead_code)]
     pub player: Entity,
 }
 
@@ -96,6 +110,7 @@ pub enum BlockedStatus {
 }
 
 #[derive(PartialEq, Eq, Clone)]
+#[allow(dead_code)]
 pub enum BlockRestriction {
     CreatureType(CreatureType),
     Color(Color),
@@ -104,6 +119,7 @@ pub enum BlockRestriction {
 }
 
 #[derive(PartialEq, Eq, Clone)]
+#[allow(dead_code)]
 pub enum Comparison {
     LessThan,
     LessThanOrEqual,
@@ -131,9 +147,11 @@ pub struct CombatState {
     pub pending_combat_damage: Vec<CombatDamageEvent>,
 
     /// Tracks which players have been attacked this turn
+    #[allow(dead_code)]
     pub players_attacked_this_turn: HashSet<Entity>,
 
     /// Maps players to creatures attacking them
+    #[allow(dead_code)]
     pub creatures_attacking_each_player: HashMap<Entity, Vec<Entity>>,
 
     /// Combat restrictions - maps creatures to players they must attack
@@ -143,6 +161,7 @@ pub struct CombatState {
     pub cannot_attack: HashMap<Entity, Vec<Entity>>,
 
     /// Combat restrictions - maps creatures to what cannot block them
+    #[allow(dead_code)]
     pub cannot_be_blocked_by: HashMap<Entity, Vec<BlockRestriction>>,
 
     /// Commander damage tracking for this combat

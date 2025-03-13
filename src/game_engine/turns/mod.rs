@@ -8,7 +8,7 @@ mod systems;
 pub use controller::PermanentController;
 pub use events::{TurnEndEvent, TurnEventTracker, TurnStartEvent};
 pub use manager::TurnManager;
-pub use systems::{handle_turn_end, handle_turn_start, handle_untap_step};
+pub use systems::{handle_turn_end, handle_turn_start};
 
 // Register all turn-related systems with the app
 pub fn register_turn_systems(app: &mut bevy::prelude::App) {

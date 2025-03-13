@@ -3,6 +3,7 @@ use bevy::prelude::*;
 
 /// Different types of game actions a player can take
 #[derive(Debug, Clone, Event)]
+#[allow(dead_code)]
 pub enum GameAction {
     /// Play a land
     PlayLand { player: Entity, land_card: Entity },

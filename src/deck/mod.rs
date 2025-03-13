@@ -26,14 +26,17 @@ pub struct DeckRegistry {
 }
 
 impl DeckRegistry {
+    #[allow(dead_code)]
     pub fn register_deck(&mut self, name: &str, deck: Deck) {
         self.decks.insert(name.to_string(), deck);
     }
 
+    #[allow(dead_code)]
     pub fn get_deck(&self, name: &str) -> Option<&Deck> {
         self.decks.get(name)
     }
 
+    #[allow(dead_code)]
     pub fn get_all_decks(&self) -> Vec<(&String, &Deck)> {
         self.decks.iter().collect()
     }

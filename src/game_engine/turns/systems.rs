@@ -84,6 +84,7 @@ pub fn handle_turn_end(
 
 /// System that handles untapping permanents during the untap step
 /// This system considers special effects that prevent untapping, like NoUntapEffect
+#[allow(dead_code)]
 pub fn handle_untap_step(
     mut card_query: Query<
         (

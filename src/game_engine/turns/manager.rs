@@ -101,6 +101,7 @@ impl TurnManager {
     }
 
     /// Get the currently active player
+    #[allow(dead_code)]
     pub fn get_active_player(&self) -> Entity {
         self.active_player
     }
