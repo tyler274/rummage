@@ -109,6 +109,7 @@ pub fn spawn_players(
                 &config.card_size,
                 config.card_spacing_multiplier,
                 card_position, // Use our adjusted position
+                player_index,  // Add player_index parameter to determine horizontal offset
             );
         } else {
             info!(
@@ -162,6 +163,7 @@ fn spawn_visual_cards(
     card_size: &Vec2,
     spacing_multiplier: f32,
     player_position: Vec3, // Player position parameter
+    player_index: usize,   // Player index to determine horizontal positioning
 ) {
     // Increase the spacing between cards
     let spacing = card_size.x * spacing_multiplier * 1.5; // Increased spacing by 50%
@@ -170,14 +172,25 @@ fn spawn_visual_cards(
     let total_width = display_cards.len() as f32 * spacing;
 
     // Move the starting position further to the left for better distribution
-    let start_x = -(total_width) / 2.0 + spacing / 2.0;
+    let mut start_x = -(total_width) / 2.0 + spacing / 2.0;
+
+    // Apply horizontal offset based on player index
+    // Player 1 (index 0) on the left fifth, Player 2 (index 1) on the right fifth
+    let horizontal_offset = match player_index {
+        0 => 0.0, // No horizontal offset for Player 1
+        1 => 0.0, // No horizontal offset for Player 2
+        _ => 0.0, // Center for any other players
+    };
+
+    start_x += horizontal_offset;
 
     info!(
-        "Spawning {} cards with spacing {:.2}, total width {:.2}, starting at x={:.2}",
+        "Spawning {} cards with spacing {:.2}, total width {:.2}, starting at x={:.2} with horizontal offset {:.2}",
         display_cards.len(),
         spacing,
         total_width,
-        start_x
+        start_x,
+        horizontal_offset
     );
 
     // Get game camera entity to set render target
