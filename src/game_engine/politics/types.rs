@@ -33,6 +33,107 @@ pub struct Vote {
     pub created_at: Instant,
 }
 
+impl Vote {
+    /// Creates a new VoteBuilder for chainable construction
+    pub fn builder(title: &str, controller: Entity, source: Entity) -> VoteBuilder {
+        VoteBuilder::new(title, controller, source)
+    }
+}
+
+/// Builder for Vote with a chainable API
+#[derive(Debug, Clone)]
+pub struct VoteBuilder {
+    id: Uuid,
+    title: String,
+    source: Entity,
+    controller: Entity,
+    choices: Vec<VoteChoice>,
+    eligible_voters: Vec<Entity>,
+    requires_all_players: bool,
+    timer: Option<Duration>,
+    created_at: Instant,
+}
+
+impl VoteBuilder {
+    /// Creates a new VoteBuilder with required values
+    pub fn new(title: &str, controller: Entity, source: Entity) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            title: title.to_string(),
+            source,
+            controller,
+            choices: Vec::new(),
+            eligible_voters: Vec::new(),
+            requires_all_players: false,
+            timer: None,
+            created_at: Instant::now(),
+        }
+    }
+
+    /// Sets a custom UUID (rarely needed)
+    pub fn id(mut self, id: Uuid) -> Self {
+        self.id = id;
+        self
+    }
+
+    /// Adds a choice to the vote
+    pub fn add_choice(mut self, choice: VoteChoice) -> Self {
+        self.choices.push(choice);
+        self
+    }
+
+    /// Sets all the vote choices at once
+    pub fn choices(mut self, choices: Vec<VoteChoice>) -> Self {
+        self.choices = choices;
+        self
+    }
+
+    /// Adds a voter to the eligible voters list
+    pub fn add_voter(mut self, voter: Entity) -> Self {
+        self.eligible_voters.push(voter);
+        self
+    }
+
+    /// Sets all eligible voters at once
+    pub fn eligible_voters(mut self, voters: Vec<Entity>) -> Self {
+        self.eligible_voters = voters;
+        self
+    }
+
+    /// Sets whether all players must vote
+    pub fn requires_all_players(mut self, requires: bool) -> Self {
+        self.requires_all_players = requires;
+        self
+    }
+
+    /// Sets a timer for the vote
+    pub fn timer(mut self, duration: Duration) -> Self {
+        self.timer = Some(duration);
+        self
+    }
+
+    /// Sets a custom creation time (rarely needed)
+    pub fn created_at(mut self, time: Instant) -> Self {
+        self.created_at = time;
+        self
+    }
+
+    /// Builds the Vote instance
+    pub fn build(self) -> Vote {
+        Vote {
+            id: self.id,
+            title: self.title,
+            source: self.source,
+            controller: self.controller,
+            choices: self.choices,
+            eligible_voters: self.eligible_voters,
+            requires_all_players: self.requires_all_players,
+            timer: self.timer,
+            created_at: self.created_at,
+        }
+    }
+}
+
 /// A choice in a vote
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct VoteChoice {
@@ -44,6 +145,56 @@ pub struct VoteChoice {
 
     /// Optional target entity for this choice
     pub target: Option<Entity>,
+}
+
+impl VoteChoice {
+    /// Creates a new VoteChoice with the given text
+    pub fn new(id: usize, text: &str) -> Self {
+        Self {
+            id,
+            text: text.to_string(),
+            target: None,
+        }
+    }
+
+    /// Creates a new VoteChoiceBuilder for chainable construction
+    pub fn builder(id: usize, text: &str) -> VoteChoiceBuilder {
+        VoteChoiceBuilder::new(id, text)
+    }
+}
+
+/// Builder for VoteChoice with a chainable API
+#[derive(Debug, Clone)]
+pub struct VoteChoiceBuilder {
+    id: usize,
+    text: String,
+    target: Option<Entity>,
+}
+
+impl VoteChoiceBuilder {
+    /// Creates a new VoteChoiceBuilder with required values
+    pub fn new(id: usize, text: &str) -> Self {
+        Self {
+            id,
+            text: text.to_string(),
+            target: None,
+        }
+    }
+
+    /// Sets the target entity for this choice
+    pub fn target(mut self, target: Entity) -> Self {
+        self.target = Some(target);
+        self
+    }
+
+    /// Builds the VoteChoice instance
+    pub fn build(self) -> VoteChoice {
+        VoteChoice {
+            id: self.id,
+            text: self.text,
+            target: self.target,
+        }
+    }
 }
 
 /// Structure representing a deal between players
@@ -69,6 +220,89 @@ pub struct Deal {
 
     /// When the deal was created
     pub created_at: Instant,
+}
+
+impl Deal {
+    /// Creates a new DealBuilder for chainable construction
+    pub fn builder(proposer: Entity, target: Entity) -> DealBuilder {
+        DealBuilder::new(proposer, target)
+    }
+}
+
+/// Builder for Deal with a chainable API
+#[derive(Debug, Clone)]
+pub struct DealBuilder {
+    id: Uuid,
+    proposer: Entity,
+    target: Entity,
+    terms: Vec<DealTerm>,
+    duration: DealDuration,
+    status: DealStatus,
+    created_at: Instant,
+}
+
+impl DealBuilder {
+    /// Creates a new DealBuilder with required values
+    pub fn new(proposer: Entity, target: Entity) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            proposer,
+            target,
+            terms: Vec::new(),
+            duration: DealDuration::Turns(1), // Default to 1 turn
+            status: DealStatus::Proposed,
+            created_at: Instant::now(),
+        }
+    }
+
+    /// Sets a custom UUID (rarely needed)
+    pub fn id(mut self, id: Uuid) -> Self {
+        self.id = id;
+        self
+    }
+
+    /// Adds a term to the deal
+    pub fn add_term(mut self, term: DealTerm) -> Self {
+        self.terms.push(term);
+        self
+    }
+
+    /// Sets all deal terms at once
+    pub fn terms(mut self, terms: Vec<DealTerm>) -> Self {
+        self.terms = terms;
+        self
+    }
+
+    /// Sets the duration of the deal
+    pub fn duration(mut self, duration: DealDuration) -> Self {
+        self.duration = duration;
+        self
+    }
+
+    /// Sets the status of the deal
+    pub fn status(mut self, status: DealStatus) -> Self {
+        self.status = status;
+        self
+    }
+
+    /// Sets a custom creation time (rarely needed)
+    pub fn created_at(mut self, time: Instant) -> Self {
+        self.created_at = time;
+        self
+    }
+
+    /// Builds the Deal instance
+    pub fn build(self) -> Deal {
+        Deal {
+            id: self.id,
+            proposer: self.proposer,
+            target: self.target,
+            terms: self.terms,
+            duration: self.duration,
+            status: self.status,
+            created_at: self.created_at,
+        }
+    }
 }
 
 /// Possible terms in a deal between players

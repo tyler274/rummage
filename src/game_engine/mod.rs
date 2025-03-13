@@ -21,8 +21,8 @@ pub use priority::*;
 pub use stack::*;
 pub use state::*;
 pub use turns::{
-    TurnEndEvent, TurnManager, TurnStartEvent, handle_untap_step, register_turn_systems,
-    turn_end_system, turn_start_system,
+    PermanentController, TurnEndEvent, TurnManager, TurnStartEvent, handle_turn_end,
+    handle_turn_start, handle_untap_step, register_turn_systems,
 };
 pub use zones::{EntersBattlefieldEvent, ZoneChangeEvent, ZoneManager, register_zone_systems};
 
@@ -35,6 +35,11 @@ pub struct GameEnginePlugin;
 
 impl Plugin for GameEnginePlugin {
     fn build(&self, app: &mut App) {
+        // First, add the essential resources
+        if !app.world().contains_resource::<Phase>() {
+            app.insert_resource(Phase::default());
+        }
+
         // Register events
         app.add_event::<GameAction>()
             .add_event::<StackItemResolvedEvent>()
@@ -75,6 +80,13 @@ impl Plugin for GameEnginePlugin {
         // Add game resources initialization during OnEnter(GameMenuState::InGame)
         app.add_systems(OnEnter(GameMenuState::InGame), setup_game_engine);
 
+        // Register zone systems
+        zones::register_zone_systems(app);
+        // Register turn systems
+        register_turn_systems(app);
+        // Register commander systems
+        commander::register_commander_systems(app);
+
         // Register each system individually with the condition
         // Core systems
         app.add_systems(
@@ -106,26 +118,19 @@ impl Plugin for GameEnginePlugin {
             process_game_actions.run_if(in_state(GameMenuState::InGame)),
         );
 
-        // Turn systems
+        // Turn systems - Add these AFTER registering turn systems
         app.add_systems(
             Update,
-            turn_start_system.run_if(in_state(GameMenuState::InGame)),
+            handle_turn_start.run_if(in_state(GameMenuState::InGame)),
         );
         app.add_systems(
             Update,
-            turn_end_system.run_if(in_state(GameMenuState::InGame)),
+            handle_turn_end.run_if(in_state(GameMenuState::InGame)),
         );
         app.add_systems(
             Update,
             handle_untap_step.run_if(in_state(GameMenuState::InGame)),
         );
-
-        // Register zone systems
-        zones::register_zone_systems(app);
-        // Register turn systems
-        register_turn_systems(app);
-        // Register commander systems
-        commander::register_commander_systems(app);
 
         // Combat systems
         app.add_systems(
@@ -168,16 +173,17 @@ fn setup_game_engine(
 
     info!("Initializing game engine resources...");
 
+    // Initialize the phase system starting at Beginning::Untap
+    // Do this first to ensure other systems that depend on it work correctly
+    commands.insert_resource(Phase::Beginning(BeginningStep::Untap));
+
     // Get all player entities
     let players: Vec<Entity> = player_query.iter().collect();
 
-    // Initialize turn manager with player list first
+    // Initialize turn manager with player list
     let mut turn_manager = TurnManager::default();
     turn_manager.initialize(players.clone());
     commands.insert_resource(turn_manager);
-
-    // Initialize the phase system starting at Beginning::Untap
-    commands.insert_resource(Phase::Beginning(BeginningStep::Untap));
 
     // Initialize the priority system (no player has priority at start)
     commands.insert_resource(PrioritySystem::default());
