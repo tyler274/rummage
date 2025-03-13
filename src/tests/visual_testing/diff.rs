@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
 use std::fs;
 use std::path::Path;
@@ -73,7 +74,7 @@ impl Default for VisualTestConfig {
 
 /// Resource to track screenshot requests
 #[derive(Resource, Default)]
-struct ScreenshotRequests {
+pub struct ScreenshotRequests {
     pending: Vec<ScreenshotRequest>,
 }
 
@@ -84,27 +85,40 @@ struct ScreenshotRequest {
 }
 
 /// System that processes screenshot requests
-fn capture_screenshot_system(world: &mut World) {
+fn capture_screenshot_system(
+    mut screenshot_requests: ResMut<ScreenshotRequests>,
+    q_window: Query<&Window, With<PrimaryWindow>>,
+) {
     // Get a copy of the pending requests before taking the screenshot
-    let requests = {
-        let mut screenshot_requests = world.resource_mut::<ScreenshotRequests>();
-        if screenshot_requests.pending.is_empty() {
+    if screenshot_requests.pending.is_empty() {
+        return;
+    }
+
+    let requests = std::mem::take(&mut screenshot_requests.pending);
+
+    // Take the screenshot
+    let window = match q_window.get_single() {
+        Ok(window) => window,
+        Err(_) => {
+            error!("Failed to get primary window for screenshot");
             return;
         }
-        std::mem::take(&mut screenshot_requests.pending)
     };
 
-    // Take the screenshot outside of the borrow scope
-    if let Some(image) = take_screenshot(world) {
-        // Process all pending requests with this screenshot
-        for request in requests {
-            if let Some(callback) = request.callback {
-                callback(image.clone());
-            } else {
-                // If no callback, save as reference
-                if let Err(e) = save_reference_image(image.clone(), &request.name) {
-                    error!("Failed to save screenshot {}: {}", request.name, e);
-                }
+    // Create a placeholder screenshot
+    let width = window.physical_width();
+    let height = window.physical_height();
+    let buffer = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
+    let image = DynamicImage::ImageRgba8(buffer);
+
+    // Process all pending requests with this screenshot
+    for request in requests {
+        if let Some(callback) = request.callback {
+            callback(image.clone());
+        } else {
+            // If no callback, save as reference
+            if let Err(e) = save_reference_image(image.clone(), &request.name) {
+                error!("Failed to save screenshot {}: {}", request.name, e);
             }
         }
     }
@@ -915,13 +929,15 @@ pub fn generate_reference_images(app: &mut App, test_states: &[&str]) {
 }
 
 /// Queue a screenshot request to be processed on the next frame
-pub fn request_screenshot(
-    world: &mut World,
+pub fn request_screenshot<'a, T: AsMut<ScreenshotRequests>>(
+    screenshot_requests: &mut T,
     name: String,
     callback: Option<Box<dyn Fn(DynamicImage) + Send + Sync>>,
 ) {
-    let mut requests = world.resource_mut::<ScreenshotRequests>();
-    requests.pending.push(ScreenshotRequest { name, callback });
+    screenshot_requests
+        .as_mut()
+        .pending
+        .push(ScreenshotRequest { name, callback });
 }
 
 /// Helper function to setup visual test fixtures

@@ -1,4 +1,4 @@
-use crate::tests::visual_testing::capture::request_screenshot;
+use crate::tests::visual_testing::capture::{ScreenshotRequests, request_screenshot};
 use crate::tests::visual_testing::config::VisualTestConfig;
 use crate::tests::visual_testing::utils::ensure_test_directories;
 use bevy::prelude::*;
@@ -164,7 +164,10 @@ pub fn generate_reference_images(app: &mut App, test_states: &[&str]) {
 
         // Queue a screenshot request
         // The reference image will be saved by the screenshot system
-        request_screenshot(&mut app.world_mut(), format!("{}.png", state), None);
+        {
+            let mut resource = app.world_mut().resource_mut::<ScreenshotRequests>();
+            request_screenshot(&mut resource, format!("{}.png", state), None);
+        }
 
         // Update to process the screenshot request
         app.update();

@@ -157,23 +157,44 @@ fn process_pending_snapshots(
 
 /// Utility function to trigger a snapshot programmatically
 pub fn take_snapshot(
-    _commands: &mut Commands,
     event_writer: &mut EventWriter<SnapshotEvent>,
     camera_entity: Option<Entity>,
     description: Option<String>,
 ) {
-    event_writer.send(SnapshotEvent {
+    debug!(
+        "take_snapshot called with camera_entity: {:?}, description: {:?}",
+        camera_entity, description
+    );
+
+    let event = SnapshotEvent {
         camera_entity,
         filename: None,
-        description,
+        description: description.clone(),
         include_debug: Some(true),
-    });
+    };
+
+    // Log before sending event
+    if let Some(camera) = camera_entity {
+        debug!("Sending snapshot event for camera {:?}", camera);
+    } else {
+        debug!("Sending snapshot event with no specific camera");
+    }
+
+    match event_writer.send(event) {
+        _ => {
+            info!(
+                "Successfully sent snapshot event for description: {:?}",
+                description
+            );
+        }
+    }
+
+    debug!("take_snapshot completed");
 }
 
-/// System to check for snapshot key presses and take snapshots on demand
+/// System to check for snapshot key input and take snapshots on demand
 pub fn check_snapshot_key_input(
     keyboard: Res<ButtonInput<KeyCode>>,
-    mut commands: Commands,
     mut snapshot_events: EventWriter<SnapshotEvent>,
     game_cameras: Query<Entity, With<GameCamera>>,
 ) {
@@ -182,12 +203,15 @@ pub fn check_snapshot_key_input(
         // Get the first game camera
         if let Some(camera) = game_cameras.iter().next() {
             info!("Taking manual debug snapshot (F5 pressed)");
+            debug!("Using camera: {:?}", camera);
+
             take_snapshot(
-                &mut commands,
                 &mut snapshot_events,
                 Some(camera),
                 Some("manual_debug_snapshot".to_string()),
             );
+
+            debug!("Manual snapshot event sent");
         } else {
             error!("No game camera found for manual snapshot");
         }

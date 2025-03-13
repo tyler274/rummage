@@ -15,68 +15,57 @@ pub struct ScreenshotRequest {
 }
 
 /// System that processes screenshot requests
-pub fn capture_screenshot_system(world: &mut World) {
+pub fn capture_screenshot_system(
+    mut screenshot_requests: ResMut<ScreenshotRequests>,
+    q_window: Query<&Window, With<PrimaryWindow>>,
+) {
     // Check if there are any pending requests
-    let has_pending_requests = {
-        let screenshot_requests = world.resource::<ScreenshotRequests>();
-        !screenshot_requests.pending.is_empty()
-    };
-
-    // If no pending requests, return early
-    if !has_pending_requests {
+    if screenshot_requests.pending.is_empty() {
         return;
     }
 
-    // Take a screenshot
-    let screenshot = take_screenshot_from_world(world);
+    // Get window
+    let window = match q_window.get_single() {
+        Ok(window) => window,
+        Err(_) => {
+            error!("Failed to get primary window for screenshot");
+            return;
+        }
+    };
 
-    if let Some(image) = screenshot {
-        // Process all pending requests with this screenshot
-        let mut screenshot_requests = world.resource_mut::<ScreenshotRequests>();
-        let requests = std::mem::take(&mut screenshot_requests.pending);
+    // Create a placeholder screenshot
+    let width = window.physical_width();
+    let height = window.physical_height();
+    let buffer = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
+    let image = DynamicImage::ImageRgba8(buffer);
 
-        for request in requests {
-            if let Some(callback) = request.callback {
-                callback(image.clone());
-            } else {
-                // If no callback, save as reference
-                use crate::tests::visual_testing::utils::save_reference_image;
-                if let Err(e) = save_reference_image(image.clone(), &request.name) {
-                    error!("Failed to save screenshot {}: {}", request.name, e);
-                }
+    // Process all pending requests with this screenshot
+    let requests = std::mem::take(&mut screenshot_requests.pending);
+
+    for request in requests {
+        if let Some(callback) = request.callback {
+            callback(image.clone());
+        } else {
+            // If no callback, save as reference
+            use crate::tests::visual_testing::utils::save_reference_image;
+            if let Err(e) = save_reference_image(image.clone(), &request.name) {
+                error!("Failed to save screenshot {}: {}", request.name, e);
             }
         }
     }
 }
 
 /// Takes a screenshot of the current frame from world
-fn take_screenshot_from_world(world: &mut World) -> Option<DynamicImage> {
-    // Try to get the render app - we'll skip this in the placeholder implementation
-    // as the render app access approach needs to be revised in Bevy 0.15.x
+fn take_screenshot_from_window(window: &Window) -> Option<DynamicImage> {
+    // Create a blank image with the window size
+    let width = window.physical_width();
+    let height = window.physical_height();
 
-    // Get window entity
-    let mut primary_window_query = world.query_filtered::<&Window, With<PrimaryWindow>>();
+    // Create a blank image
+    let buffer = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
+    let image = DynamicImage::ImageRgba8(buffer);
 
-    if let Ok(window) = primary_window_query.get_single(world) {
-        // In a real implementation, we would:
-        // 1. Get the texture view for the window
-        // 2. Create a buffer to copy the texture to
-        // 3. Issue a copy command from the texture to the buffer
-        // 4. Map the buffer and read the pixels
-        // 5. Convert to an image
-
-        // Placeholder for simplicity
-        let width = window.physical_width();
-        let height = window.physical_height();
-
-        // Create a blank image for now
-        let buffer = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
-        let image = DynamicImage::ImageRgba8(buffer);
-
-        return Some(image);
-    }
-
-    None
+    Some(image)
 }
 
 /// Takes a screenshot of the current frame
@@ -96,13 +85,13 @@ pub fn take_screenshot(_app: &App) -> Option<DynamicImage> {
 }
 
 /// Request a screenshot to be taken on the next frame
-pub fn request_screenshot(
-    world: &mut World,
+pub fn request_screenshot<'a, T: AsMut<ScreenshotRequests>>(
+    screenshot_requests: &mut T,
     name: String,
     callback: Option<Box<dyn Fn(DynamicImage) + Send + Sync>>,
 ) {
-    let mut screenshot_requests = world.resource_mut::<ScreenshotRequests>();
     screenshot_requests
+        .as_mut()
         .pending
         .push(ScreenshotRequest { name, callback });
 }
