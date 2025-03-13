@@ -66,6 +66,19 @@ pub enum GamePhase {
     Searching,
 }
 
+// Add a helper method to get the phase name for display
+impl GamePhase {
+    /// Get a display name for the current phase
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            GamePhase::Main => "Main Phase",
+            GamePhase::Combat => "Combat Phase",
+            GamePhase::Drawing => "Draw Phase",
+            GamePhase::Searching => "Search Phase",
+        }
+    }
+}
+
 /// Plugin for player playmat functionality
 pub struct PlayerPlaymatPlugin;
 
@@ -80,6 +93,12 @@ impl Plugin for PlayerPlaymatPlugin {
                     handle_zone_interactions,
                     adapt_zone_sizes,
                     update_phase_based_layout,
+                    // Add our new systems for improved card handling
+                    hand::arrange_cards_in_hand,
+                    hand::toggle_hand_expansion,
+                    battlefield::organize_battlefield_cards,
+                    battlefield::toggle_battlefield_grouping,
+                    battlefield::adjust_battlefield_zoom,
                 ),
             );
     }
@@ -274,71 +293,77 @@ pub fn adapt_zone_sizes(
     }
 }
 
-/// System to update layouts based on the current game phase
+/// System to update the layout based on the current game phase
 pub fn update_phase_based_layout(
     phase_layout: Res<CurrentPhaseLayout>,
     mut query: Query<(&PlaymatZone, &mut Transform)>,
 ) {
-    // Only process if layout needs updating
+    // Only update if needed
     if !phase_layout.needs_update {
         return;
     }
 
-    // Adjust zone sizes and positions based on the current phase
+    // Apply different layouts based on the current phase
     match phase_layout.phase {
         GamePhase::Main => {
-            // During main phase, emphasize battlefield and hand
+            // Standard layout for main phase
             for (zone, mut transform) in query.iter_mut() {
                 match zone.zone_type {
                     Zone::Battlefield => {
-                        transform.scale = Vec3::new(1.1, 1.1, 1.0);
-                    }
-                    Zone::Hand => {
-                        transform.scale = Vec3::new(1.1, 1.1, 1.0);
+                        // Battlefield is prominent in main phase
+                        transform.scale = Vec3::ONE;
                     }
                     _ => {
-                        transform.scale = Vec3::new(0.9, 0.9, 1.0);
+                        // Other zones at normal size
+                        transform.scale = Vec3::ONE;
                     }
                 }
             }
         }
         GamePhase::Combat => {
-            // During combat, emphasize battlefield
+            // Combat-focused layout
             for (zone, mut transform) in query.iter_mut() {
                 match zone.zone_type {
                     Zone::Battlefield => {
+                        // Battlefield is enlarged during combat
                         transform.scale = Vec3::new(1.2, 1.2, 1.0);
                     }
                     _ => {
+                        // Other zones smaller during combat
                         transform.scale = Vec3::new(0.8, 0.8, 1.0);
                     }
                 }
             }
         }
         GamePhase::Drawing => {
-            // During drawing, emphasize library and hand
+            // Drawing-focused layout
             for (zone, mut transform) in query.iter_mut() {
                 match zone.zone_type {
                     Zone::Library => {
-                        transform.scale = Vec3::new(1.1, 1.1, 1.0);
+                        // Library is highlighted during drawing
+                        transform.scale = Vec3::new(1.2, 1.2, 1.0);
                     }
                     Zone::Hand => {
+                        // Hand is also highlighted during drawing
                         transform.scale = Vec3::new(1.1, 1.1, 1.0);
                     }
                     _ => {
-                        transform.scale = Vec3::new(0.9, 0.9, 1.0);
+                        // Other zones at normal size
+                        transform.scale = Vec3::ONE;
                     }
                 }
             }
         }
         GamePhase::Searching => {
-            // During library searching, emphasize library
+            // Searching-focused layout
             for (zone, mut transform) in query.iter_mut() {
                 match zone.zone_type {
                     Zone::Library => {
+                        // Library is very prominent during searching
                         transform.scale = Vec3::new(1.3, 1.3, 1.0);
                     }
                     _ => {
+                        // Other zones smaller during searching
                         transform.scale = Vec3::new(0.7, 0.7, 1.0);
                     }
                 }
