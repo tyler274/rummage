@@ -23,8 +23,7 @@ pub fn debug_draw_player_positions(mut gizmos: Gizmos, player_query: Query<(&Tra
         // Draw an outline circle for better visibility
         gizmos.circle_2d(position, 1.7, Color::WHITE);
 
-        // Draw the player's area of influence (for example, where their cards will be placed)
-        // Use a semi-transparent version of the color
+        // Use a semi-transparent version of the color for larger elements
         let alpha_color = match player.player_index {
             0 => Color::srgba(0.0, 0.5, 1.0, 0.2), // Blue with alpha
             1 => Color::srgba(1.0, 0.2, 0.2, 0.2), // Red with alpha
@@ -53,6 +52,6 @@ pub fn debug_draw_player_positions(mut gizmos: Gizmos, player_query: Query<(&Tra
         }
 
         // Log player positions for debugging
-        debug!("Player {} position: {:?}", player.name, position);
+        info!("Player {} position: {:?}", player.name, position);
     }
 }

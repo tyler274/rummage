@@ -98,7 +98,14 @@ fn handle_snapshot_events(
 fn process_pending_snapshots(
     mut commands: Commands,
     mut snapshots: Query<(Entity, &mut CameraSnapshot, &SnapshotSettings)>,
-    debug_layers: Query<Entity, (With<AppLayer>, Without<GameCamera>)>,
+    debug_layers: Query<
+        (
+            Entity,
+            Option<&GlobalTransform>,
+            Option<&InheritedVisibility>,
+        ),
+        With<AppLayer>,
+    >,
 ) {
     // Process only one snapshot per frame to avoid issues
     if let Some((entity, mut snapshot, settings)) = snapshots
@@ -109,11 +116,26 @@ fn process_pending_snapshots(
         snapshot.taken = true;
 
         // If debug info should be included, ensure debug layers are visible
+        // Also ensure all debug entities have required components for proper hierarchy
         if settings.include_debug {
             info!("Including debug visuals in snapshot");
-            for debug_entity in debug_layers.iter() {
-                if let Some(mut visibility) = commands.get_entity(debug_entity) {
-                    visibility.insert(Visibility::Visible);
+            for (debug_entity, global_transform, inherited_visibility) in debug_layers.iter() {
+                if let Some(mut entity_commands) = commands.get_entity(debug_entity) {
+                    // Add Visibility if needed
+                    entity_commands.insert(Visibility::Visible);
+
+                    // Add GlobalTransform if missing
+                    if global_transform.is_none() {
+                        entity_commands.insert(GlobalTransform::default());
+                    }
+
+                    // Add InheritedVisibility if missing
+                    if inherited_visibility.is_none() {
+                        entity_commands.insert(InheritedVisibility::default());
+                    }
+
+                    // Always add ViewVisibility since it's needed for rendering
+                    entity_commands.insert(ViewVisibility::default());
                 }
             }
         }

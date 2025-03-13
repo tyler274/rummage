@@ -13,7 +13,20 @@ pub fn spawn_debug_visualization(
     _asset_server: &AssetServer,
 ) -> Entity {
     let layout = CardTextLayout::default();
-    let parent_entity = commands.spawn(CardTextType::Debug).id();
+
+    // Make sure parent entity has required components for proper hierarchy
+    let parent_entity = commands
+        .spawn((
+            CardTextType::Debug,
+            // Add required transform components for correct hierarchy
+            Transform::default(),
+            GlobalTransform::default(),
+            // Add required visibility components for inheritance
+            Visibility::default(),
+            InheritedVisibility::default(),
+            ViewVisibility::default(),
+        ))
+        .id();
 
     // Visualize name text area
     let name_offset = Vec2::new(
