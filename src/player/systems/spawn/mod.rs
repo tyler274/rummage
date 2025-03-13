@@ -8,6 +8,7 @@ mod table;
 use crate::camera::components::{AppLayer, GameCamera};
 use crate::deck::{get_player_shuffled_deck, get_player_specific_cards};
 use crate::player::components::Player;
+use crate::player::playmat::spawn_player_playmat; // Import the new playmat function
 use crate::player::resources::PlayerConfig;
 use bevy::prelude::*;
 
@@ -17,9 +18,10 @@ use bevy::prelude::*;
 /// 1. Reads the PlayerConfig to determine how many players to spawn
 /// 2. Creates player entities with appropriate positioning
 /// 3. Only spawns cards for player 1 by default (or all if configured)
+/// 4. Creates a playmat for each player using the game engine Zone structure
 pub fn spawn_players(
     mut commands: Commands,
-    _asset_server: Res<AssetServer>,
+    asset_server: Res<AssetServer>,
     game_cameras: Query<Entity, With<GameCamera>>,
     player_config: Option<Res<PlayerConfig>>,
 ) {
@@ -62,6 +64,16 @@ pub fn spawn_players(
         info!(
             "Spawned player entity {:?} with index {} and name '{}' at position {:?}",
             player_entity, player_index, player.name, player_transform.translation
+        );
+
+        // Spawn the player's playmat
+        spawn_player_playmat(
+            &mut commands,
+            &asset_server,
+            player_entity,
+            &player,
+            &config,
+            player_transform.translation,
         );
 
         // Only spawn cards for player 1 or if spawn_all_cards is true
