@@ -7,10 +7,13 @@ This section documents the card systems of the Rummage MTG Commander game engine
 1. [Overview](#overview)
 2. [Key Components](#key-components)
 3. [Implementation Status](#implementation-status)
+4. [Integration with Game UI](#integration-with-game-ui)
 
 ## Overview
 
 The Card Systems module is the heart of Rummage's MTG implementation, responsible for representing cards, their attributes, and behaviors. This module handles everything from card data storage to effect resolution and visual representation.
+
+In Rummage's ECS architecture, cards are entities with various components that define their properties, current state, and behaviors. These components include card type, mana cost, power/toughness for creatures, and other attributes defined in the MTG Comprehensive Rules. Systems then process these components to implement game mechanics such as casting spells, resolving abilities, and applying state-based actions.
 
 ## Key Components
 
@@ -20,21 +23,25 @@ The Card Systems consist of the following major components:
    - Storage and retrieval of card data
    - Card attributes and properties
    - Oracle text processing
+   - Card metadata and identification
 
 2. [Card Effects](effects/index.md)
    - Effect resolution system
    - Targeting mechanism
    - Complex card interactions
+   - Ability parsing and implementation
 
 3. [Card Rendering](rendering/index.md)
    - Visual representation of cards
    - Card layout and templating
    - Art asset management
+   - Dynamic card state visualization
 
 4. [Testing Cards](testing/index.md)
    - Effect verification methodology
    - Interaction testing
    - Edge case coverage
+   - Rules compliance verification
 
 ## Implementation Status
 
@@ -56,6 +63,37 @@ Legend:
 - 🔄 In progress
 - ⚠️ Planned but not yet implemented
 
+## Integration with Game UI
+
+The Card Systems module works closely with the [Game UI](../game_gui/index.md) module to create a seamless player experience. This integration occurs through several key interfaces:
+
+### Visual Representation
+
+The Card Rendering system provides the necessary data for the Game UI to visualize cards on screen:
+
+- The rendering pipeline transforms card data into visual assets
+- Dynamic updates reflect card state changes (tapped, counters, attachments)
+- Special visual effects for activated abilities and spells being cast
+
+### User Interaction
+
+The Card Systems module exposes interaction points that the Game UI uses to enable player actions:
+
+- Dragging cards between zones
+- Targeting for spells and abilities
+- Selecting options for modal abilities
+- Viewing card details and related information
+
+### State Feedback
+
+As card states change due to game actions, this information is communicated to the UI:
+
+- Legal play highlighting (e.g., showing which cards can be cast)
+- Targeting validity feedback
+- Stack visualization as spells and abilities resolve
+
+For a complete understanding of how cards are visualized and interacted with in the game, continue to the [Game UI System](../game_gui/index.md) documentation, which builds upon the foundational card systems described here.
+
 ---
 
-For more detailed information, please refer to the specific subsections. 
+For more detailed information about card systems, please refer to the specific subsections. 

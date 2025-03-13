@@ -10,6 +10,7 @@
   - [Stack](mtg_core/stack/index.md)
   - [State-Based Actions](mtg_core/state_actions/index.md)
   - [Combat](mtg_core/combat/index.md)
+  - [ECS Implementation](mtg_core/ecs_implementation.md)
 
 # Game Formats
 
@@ -47,6 +48,25 @@
     - [Partner Commanders](formats/commander/special_rules/partner_commanders.md)
     - [Commander Ninjutsu](formats/commander/special_rules/commander_ninjutsu.md)
     - [Commander Death Triggers](formats/commander/special_rules/commander_death.md)
+  - [Integration with Core Rules](formats/commander/core_integration.md)
+
+# Card Systems
+
+- [Card Systems](card_systems/index.md)
+  - [Card Database](card_systems/database/index.md)
+    - [Data Structure](card_systems/database/data_structure.md)
+    - [Card Attributes](card_systems/database/card_attributes.md)
+  - [Card Effects](card_systems/effects/index.md)
+    - [Effect Resolution](card_systems/effects/effect_resolution.md)
+    - [Targeting](card_systems/effects/targeting.md)
+    - [Complex Interactions](card_systems/effects/complex_interactions.md)
+  - [Card Rendering](card_systems/rendering/index.md)
+    - [Art Assets](card_systems/rendering/art_assets.md)
+    - [Card Layout](card_systems/rendering/card_layout.md)
+  - [Testing Cards](card_systems/testing/index.md)
+    - [Effect Verification](card_systems/testing/effect_verification.md)
+    - [Interaction Testing](card_systems/testing/interaction_testing.md)
+  - [UI Integration](card_systems/ui_integration.md)
 
 # Game UI
 
@@ -83,6 +103,8 @@
   - [Testing](game_gui/testing/index.md)
     - [UI Component Testing](game_gui/testing/component_testing.md)
     - [Visual Regression](game_gui/testing/visual_regression.md)
+  - [Card Systems Integration](game_gui/card_integration.md)
+  - [Network Integration](game_gui/network_integration.md)
 
 # Networking
 
@@ -111,23 +133,8 @@
     - [Anti-Cheat Measures](networking/security/anti_cheat.md)
     - [Data Validation](networking/security/data_validation.md)
     - [Encryption](networking/security/encryption.md)
-
-# Card Systems
-
-- [Card Systems](card_systems/index.md)
-  - [Card Database](card_systems/database/index.md)
-    - [Data Structure](card_systems/database/data_structure.md)
-    - [Card Attributes](card_systems/database/card_attributes.md)
-  - [Card Effects](card_systems/effects/index.md)
-    - [Effect Resolution](card_systems/effects/effect_resolution.md)
-    - [Targeting](card_systems/effects/targeting.md)
-    - [Complex Interactions](card_systems/effects/complex_interactions.md)
-  - [Card Rendering](card_systems/rendering/index.md)
-    - [Art Assets](card_systems/rendering/art_assets.md)
-    - [Card Layout](card_systems/rendering/card_layout.md)
-  - [Testing Cards](card_systems/testing/index.md)
-    - [Effect Verification](card_systems/testing/effect_verification.md)
-    - [Interaction Testing](card_systems/testing/interaction_testing.md)
+  - [UI Integration](networking/ui_integration.md)
+  - [Snapshot System Integration](networking/snapshot_integration.md)
 
 # Technical Implementation
 
@@ -157,6 +164,7 @@
   - [CI/CD Pipeline](testing/ci_cd_pipeline.md)
     - [Automated Testing](testing/ci_cd_pipeline/automated_testing.md)
     - [Continuous Deployment](testing/ci_cd_pipeline/continuous_deployment.md)
+  - [Development Integration](testing/development_integration.md)
 
 # Development
 
@@ -170,6 +178,7 @@
     - [Rendering](development/bevy_guide/rendering.md)
     - [Deprecated APIs](development/bevy_guide/deprecated_apis.md)
   - [Snapshot System](development/snapshots.md)
+  - [Testing Integration](development/testing_integration.md)
 
 # Reference
 
