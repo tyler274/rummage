@@ -6,7 +6,7 @@ use crate::game_engine::commander::{Commander, EliminationReason, PlayerEliminat
 use crate::game_engine::zones::{Zone, ZoneChangeEvent, ZoneManager};
 use crate::player::Player;
 use bevy::prelude::*;
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 
 /// The global game state for an MTG game
 #[derive(Resource)]
@@ -48,26 +48,12 @@ pub struct GameState {
     pub starting_life: i32,
 }
 
-impl Default for GameState {
-    fn default() -> Self {
-        Self {
-            turn_number: 1,
-            active_player: Entity::PLACEHOLDER,
-            priority_holder: Entity::PLACEHOLDER,
-            turn_order: VecDeque::new(),
-            lands_played: Vec::new(),
-            main_phase_action_taken: false,
-            drawn_this_turn: Vec::new(),
-            state_based_actions_performed: false,
-            eliminated_players: Vec::new(),
-            use_commander_damage: true,
-            commander_damage_threshold: 21,
-            starting_life: 40,
-        }
-    }
-}
-
 impl GameState {
+    /// Creates a new GameStateBuilder to use a chainable API for constructing a GameState
+    pub fn builder() -> GameStateBuilder {
+        GameStateBuilder::new()
+    }
+
     /// Set the turn order for the game
     pub fn set_turn_order(&mut self, players: Vec<Entity>) {
         self.turn_order = VecDeque::from(players);
@@ -161,6 +147,11 @@ impl GameState {
         self.turn_order.len() - self.eliminated_players.len() <= 1
     }
 
+    /// Get the player index in the turn order
+    pub fn get_player_index(&self, player: Entity) -> Option<usize> {
+        self.turn_order.iter().position(|p| *p == player)
+    }
+
     /// Get the winner of the game
     pub fn get_winner(&self) -> Option<Entity> {
         if self.is_game_over() {
@@ -178,6 +169,139 @@ impl GameState {
     pub fn record_draw(&mut self, player: Entity) {
         if !self.drawn_this_turn.contains(&player) {
             self.drawn_this_turn.push(player);
+        }
+    }
+}
+
+impl Default for GameState {
+    fn default() -> Self {
+        GameStateBuilder::new().build()
+    }
+}
+
+/// Builder for GameState with a chainable API
+#[derive(Clone, Debug)]
+pub struct GameStateBuilder {
+    turn_number: u32,
+    active_player: Entity,
+    priority_holder: Entity,
+    turn_order: VecDeque<Entity>,
+    lands_played: Vec<(Entity, u32)>,
+    main_phase_action_taken: bool,
+    drawn_this_turn: Vec<Entity>,
+    state_based_actions_performed: bool,
+    eliminated_players: Vec<Entity>,
+    use_commander_damage: bool,
+    commander_damage_threshold: u32,
+    starting_life: i32,
+}
+
+impl GameStateBuilder {
+    /// Creates a new GameStateBuilder with default values
+    pub fn new() -> Self {
+        Self {
+            turn_number: 1,
+            active_player: Entity::PLACEHOLDER,
+            priority_holder: Entity::PLACEHOLDER,
+            turn_order: VecDeque::new(),
+            lands_played: Vec::new(),
+            main_phase_action_taken: false,
+            drawn_this_turn: Vec::new(),
+            state_based_actions_performed: false,
+            eliminated_players: Vec::new(),
+            use_commander_damage: true,
+            commander_damage_threshold: 21,
+            starting_life: 40,
+        }
+    }
+
+    /// Sets the current turn number
+    pub fn turn_number(mut self, turn_number: u32) -> Self {
+        self.turn_number = turn_number;
+        self
+    }
+
+    /// Sets the active player
+    pub fn active_player(mut self, active_player: Entity) -> Self {
+        self.active_player = active_player;
+        self
+    }
+
+    /// Sets the priority holder
+    pub fn priority_holder(mut self, priority_holder: Entity) -> Self {
+        self.priority_holder = priority_holder;
+        self
+    }
+
+    /// Sets the turn order
+    pub fn turn_order(mut self, turn_order: VecDeque<Entity>) -> Self {
+        self.turn_order = turn_order;
+        self
+    }
+
+    /// Sets the lands played
+    pub fn lands_played(mut self, lands_played: Vec<(Entity, u32)>) -> Self {
+        self.lands_played = lands_played;
+        self
+    }
+
+    /// Sets whether a main phase action has been taken
+    pub fn main_phase_action_taken(mut self, main_phase_action_taken: bool) -> Self {
+        self.main_phase_action_taken = main_phase_action_taken;
+        self
+    }
+
+    /// Sets the players who have drawn this turn
+    pub fn drawn_this_turn(mut self, drawn_this_turn: Vec<Entity>) -> Self {
+        self.drawn_this_turn = drawn_this_turn;
+        self
+    }
+
+    /// Sets whether state-based actions were performed
+    pub fn state_based_actions_performed(mut self, state_based_actions_performed: bool) -> Self {
+        self.state_based_actions_performed = state_based_actions_performed;
+        self
+    }
+
+    /// Sets the eliminated players
+    pub fn eliminated_players(mut self, eliminated_players: Vec<Entity>) -> Self {
+        self.eliminated_players = eliminated_players;
+        self
+    }
+
+    /// Sets whether commander damage is tracked
+    pub fn use_commander_damage(mut self, use_commander_damage: bool) -> Self {
+        self.use_commander_damage = use_commander_damage;
+        self
+    }
+
+    /// Sets the commander damage threshold
+    pub fn commander_damage_threshold(mut self, commander_damage_threshold: u32) -> Self {
+        self.commander_damage_threshold = commander_damage_threshold;
+        self
+    }
+
+    /// Sets the starting life total
+    pub fn starting_life(mut self, starting_life: i32) -> Self {
+        self.starting_life = starting_life;
+        self
+    }
+
+    /// Builds the GameState instance
+    pub fn build(self) -> GameState {
+        GameState {
+            turn_number: self.turn_number,
+            active_player: self.active_player,
+            priority_holder: self.priority_holder,
+            turn_order: self.turn_order,
+            lands_played: self.lands_played,
+            main_phase_action_taken: self.main_phase_action_taken,
+            drawn_this_turn: self.drawn_this_turn,
+            state_based_actions_performed: self.state_based_actions_performed,
+            eliminated_players: self.eliminated_players,
+            use_commander_damage: self.use_commander_damage,
+            commander_damage_threshold: self.commander_damage_threshold,
+            starting_life: self.starting_life,
         }
     }
 }
@@ -262,73 +386,78 @@ pub fn state_based_actions_system(
         }
     }
 
-    // 4. Check for commander damage
+    // 4. Check for commander damage threshold
     if game_state.use_commander_damage {
-        for (player_entity, player) in player_query.iter() {
-            // Skip eliminated players
-            if game_state.eliminated_players.contains(&player_entity) {
-                continue;
-            }
+        for (commander_entity, commander) in commander_query.iter() {
+            for (player_entity, _) in player_query.iter() {
+                // Skip if the player is the controller of this commander
+                if player_entity == commander.owner {
+                    continue;
+                }
 
-            // Check if any single commander has dealt enough damage using the commander_query
-            for (commander_entity, commander) in commander_query.iter() {
-                // Look for damage dealt to this player by this commander
-                if let Some((_, damage)) = commander
+                // Get total commander damage from this commander
+                let commander_damage = commander
                     .damage_dealt
                     .iter()
-                    .find(|(p, _)| *p == player_entity)
+                    .find_map(|(target, damage)| {
+                        if *target == player_entity {
+                            Some(*damage)
+                        } else {
+                            None
+                        }
+                    })
+                    .unwrap_or(0);
+
+                // Check if it exceeds the threshold
+                if commander_damage >= game_state.commander_damage_threshold
+                    && !game_state.eliminated_players.contains(&player_entity)
                 {
-                    if *damage >= game_state.commander_damage_threshold {
-                        info!(
-                            "Player {:?} eliminated due to commander damage from {:?}",
-                            player_entity, commander_entity
-                        );
+                    info!(
+                        "Player {:?} eliminated due to commander damage from {:?}",
+                        player_entity, commander_entity
+                    );
+                    game_state.eliminate_player(
+                        player_entity,
+                        EliminationReason::CommanderDamage(commander_entity),
+                    );
+                    game_state.state_based_actions_performed = true;
 
-                        game_state.eliminate_player(
-                            player_entity,
-                            EliminationReason::CommanderDamage(commander_entity),
-                        );
-                        game_state.state_based_actions_performed = true;
-
-                        commands.send_event(PlayerEliminatedEvent {
-                            player: player_entity,
-                            reason: EliminationReason::CommanderDamage(commander_entity),
-                        });
-
-                        break;
-                    }
+                    commands.send_event(PlayerEliminatedEvent {
+                        player: player_entity,
+                        reason: EliminationReason::CommanderDamage(commander_entity),
+                    });
                 }
             }
         }
     }
 
-    // 5. Check if game is over
+    // 5. Check if the game is over
     if game_state.is_game_over() {
         if let Some(winner) = game_state.get_winner() {
             info!("Game over! Player {:?} wins!", winner);
-            // Here you would transition to a game-over state
-        } else {
-            info!("Game over! It's a draw!");
-            // Handle draw situation
+            // Additional handling for game over could go here
         }
     }
 }
 
-/// Event to trigger a state-based actions check
+/// Event to trigger state-based action checks
 #[derive(Event)]
 pub struct CheckStateBasedActionsEvent;
 
-/// System that triggers state-based actions after certain events
+/// System that triggers state-based action checks when needed
 pub fn trigger_state_based_actions_system(
     mut commands: Commands,
     stack_events: EventReader<crate::game_engine::stack::StackItemResolvedEvent>,
     zone_change_events: EventReader<ZoneChangeEvent>,
 ) {
-    // Trigger state-based actions after:
-    // 1. A stack item resolves
-    // 2. A zone change occurs
+    // Trigger after stack items resolve
+    let stack_resolved = !stack_events.is_empty();
 
-    if !stack_events.is_empty() || !zone_change_events.is_empty() {
+    // Trigger after zone changes (cards changing zones)
+    let zone_changed = !zone_change_events.is_empty();
+
+    // Trigger SBA if any of these events occurred
+    if stack_resolved || zone_changed {
         commands.send_event(CheckStateBasedActionsEvent);
     }
 }

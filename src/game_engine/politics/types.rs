@@ -154,6 +154,56 @@ pub struct GoadEffect {
     pub created_at: u32,
 }
 
+impl GoadEffect {
+    /// Creates a new GoadEffect builder
+    pub fn builder(target: Entity, source: Entity) -> GoadEffectBuilder {
+        GoadEffectBuilder::new(target, source)
+    }
+}
+
+/// Builder for GoadEffect with a chainable API
+#[derive(Debug, Clone)]
+pub struct GoadEffectBuilder {
+    target: Entity,
+    source: Entity,
+    duration: u32,
+    created_at: u32,
+}
+
+impl GoadEffectBuilder {
+    /// Creates a new GoadEffectBuilder with required fields
+    pub fn new(target: Entity, source: Entity) -> Self {
+        Self {
+            target,
+            source,
+            duration: 1,   // Default duration is 1 turn
+            created_at: 0, // Default turn number
+        }
+    }
+
+    /// Sets the duration of the goad effect
+    pub fn duration(mut self, duration: u32) -> Self {
+        self.duration = duration;
+        self
+    }
+
+    /// Sets the turn number when the effect was created
+    pub fn created_at(mut self, turn_number: u32) -> Self {
+        self.created_at = turn_number;
+        self
+    }
+
+    /// Builds the GoadEffect instance
+    pub fn build(self) -> GoadEffect {
+        GoadEffect {
+            target: self.target,
+            source: self.source,
+            duration: self.duration,
+            created_at: self.created_at,
+        }
+    }
+}
+
 /// Structure representing a vow effect
 #[derive(Debug, Clone)]
 pub struct VowEffect {
@@ -168,6 +218,56 @@ pub struct VowEffect {
 
     /// Turn number when created
     pub created_at: u32,
+}
+
+impl VowEffect {
+    /// Creates a new VowEffect builder
+    pub fn builder(target: Entity, protected_player: Entity) -> VowEffectBuilder {
+        VowEffectBuilder::new(target, protected_player)
+    }
+}
+
+/// Builder for VowEffect with a chainable API
+#[derive(Debug, Clone)]
+pub struct VowEffectBuilder {
+    target: Entity,
+    protected_player: Entity,
+    duration: Option<u32>,
+    created_at: u32,
+}
+
+impl VowEffectBuilder {
+    /// Creates a new VowEffectBuilder with required fields
+    pub fn new(target: Entity, protected_player: Entity) -> Self {
+        Self {
+            target,
+            protected_player,
+            duration: None, // Default to permanent
+            created_at: 0,  // Default turn number
+        }
+    }
+
+    /// Sets the duration of the vow effect
+    pub fn duration(mut self, duration: Option<u32>) -> Self {
+        self.duration = duration;
+        self
+    }
+
+    /// Sets the turn number when the effect was created
+    pub fn created_at(mut self, turn_number: u32) -> Self {
+        self.created_at = turn_number;
+        self
+    }
+
+    /// Builds the VowEffect instance
+    pub fn build(self) -> VowEffect {
+        VowEffect {
+            target: self.target,
+            protected_player: self.protected_player,
+            duration: self.duration,
+            created_at: self.created_at,
+        }
+    }
 }
 
 /// Combat restriction created by political effects

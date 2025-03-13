@@ -45,6 +45,71 @@ pub struct Player {
     pub deck: Option<Deck>,
 }
 
+impl Player {
+    /// Creates a new Player builder to use a chainable API for constructing a Player
+    pub fn builder(name: &str) -> PlayerBuilder {
+        PlayerBuilder::new(name)
+    }
+}
+
+/// Builder for Player instances with a chainable API
+#[derive(Debug, Clone)]
+pub struct PlayerBuilder {
+    name: String,
+    life: i32,
+    mana_pool: ManaPool,
+    cards: Vec<Card>,
+    deck: Option<Deck>,
+}
+
+impl PlayerBuilder {
+    /// Creates a new PlayerBuilder with the given name and default values
+    pub fn new(name: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            life: 20, // Default starting life
+            mana_pool: ManaPool::default(),
+            cards: Vec::new(),
+            deck: None,
+        }
+    }
+
+    /// Sets the player's starting life total
+    pub fn life(mut self, life: i32) -> Self {
+        self.life = life;
+        self
+    }
+
+    /// Sets the player's mana pool
+    pub fn mana_pool(mut self, mana_pool: ManaPool) -> Self {
+        self.mana_pool = mana_pool;
+        self
+    }
+
+    /// Sets the player's cards
+    pub fn cards(mut self, cards: Vec<Card>) -> Self {
+        self.cards = cards;
+        self
+    }
+
+    /// Sets the player's deck
+    pub fn deck(mut self, deck: Deck) -> Self {
+        self.deck = Some(deck);
+        self
+    }
+
+    /// Builds the Player instance
+    pub fn build(self) -> Player {
+        Player {
+            name: self.name,
+            life: self.life,
+            mana_pool: self.mana_pool,
+            cards: self.cards,
+            deck: self.deck,
+        }
+    }
+}
+
 /// Spawns the initial hand of cards for a player
 ///
 /// This function:
@@ -61,14 +126,11 @@ pub fn spawn_hand(
     _asset_server: Res<AssetServer>,
     game_cameras: Query<Entity, With<GameCamera>>,
 ) {
-    // Create a new player
-    let player = Player {
-        name: "Player 1".to_string(),
-        life: 20,
-        mana_pool: ManaPool::default(),
-        cards: Vec::new(),
-        deck: None,
-    };
+    // Create a new player using the builder pattern
+    let player = Player::builder("Player 1")
+        .life(20)
+        .mana_pool(ManaPool::default())
+        .build();
 
     // Spawn the player entity
     let player_entity = commands
@@ -87,11 +149,14 @@ pub fn spawn_hand(
     let deck = get_shuffled_deck(player_entity);
 
     // Update the player's cards while preserving other fields
-    commands.entity(player_entity).insert(Player {
-        cards,
-        deck: Some(deck),
-        ..player
-    });
+    commands.entity(player_entity).insert(
+        Player::builder(&player.name)
+            .life(player.life)
+            .mana_pool(player.mana_pool)
+            .cards(cards)
+            .deck(deck)
+            .build(),
+    );
 
     let card_size = Vec2::new(672.0, 936.0);
     let spacing = card_size.x * 1.1; // Reduced spacing multiplier for tighter layout

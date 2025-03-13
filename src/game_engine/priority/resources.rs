@@ -49,46 +49,31 @@ pub struct PrioritySystem {
     pub decision_timeouts: HashMap<Entity, std::time::Duration>,
 }
 
-impl Default for PrioritySystem {
-    fn default() -> Self {
-        Self {
-            active_player: Entity::PLACEHOLDER,
-            priority_player: Entity::PLACEHOLDER,
-            has_priority_passed: HashMap::new(),
-            all_players_passed: false,
-            player_order: Vec::new(),
-            priority_index: 0,
-            stack_is_empty: true,
-            current_phase: Phase::default(),
-            waiting_for_response: false,
-            response_timeout: None,
-            simultaneous_decision_players: Vec::new(),
-            last_processed_phase: None,
-            last_processed_turn: 0,
-            decision_timeouts: HashMap::new(),
-        }
-    }
-}
-
 impl PrioritySystem {
+    /// Creates a new PrioritySystemBuilder for chainable construction
+    pub fn builder() -> PrioritySystemBuilder {
+        PrioritySystemBuilder::new()
+    }
+
     /// Initialize the priority system with the list of players and the active player
     pub fn initialize(&mut self, players: &[Entity], active_player: Entity) {
-        self.active_player = active_player;
-        self.priority_player = active_player; // Active player gets priority first
         self.player_order = players.to_vec();
+        self.active_player = active_player;
+        self.priority_player = active_player;
+        self.priority_index = self
+            .player_order
+            .iter()
+            .position(|&p| p == active_player)
+            .unwrap_or(0);
 
-        // Set starting index to the active player
-        if let Some(index) = self.player_order.iter().position(|&p| p == active_player) {
-            self.priority_index = index;
-        }
-
-        // Reset passing status for all players
+        // Initialize the passing status for all players
         self.has_priority_passed.clear();
         for &player in players {
             self.has_priority_passed.insert(player, false);
         }
 
         self.all_players_passed = false;
+        self.simultaneous_decision_players.clear();
     }
 
     /// Pass priority to the next player in turn order
@@ -97,37 +82,40 @@ impl PrioritySystem {
             return;
         }
 
-        // Move to the next player in turn order
+        // Mark the current player as having passed
+        self.has_priority_passed.insert(self.priority_player, true);
+
+        // Move to the next player
         self.priority_index = (self.priority_index + 1) % self.player_order.len();
         self.priority_player = self.player_order[self.priority_index];
 
-        // Check if we've gone full circle
+        // Check if we're back to the active player or first player
         if self.priority_player == self.active_player {
-            // If we've gone all the way around and all players have passed, mark complete
-            let all_passed = self.has_priority_passed.values().all(|&passed| passed);
-            if all_passed {
-                self.all_players_passed = true;
-            }
+            // We've completed a round of priority passing
+            self.all_players_passed = self.has_priority_passed.values().all(|&passed| passed);
         }
     }
 
     /// Reset after a stack action has resolved
     pub fn reset_after_stack_action(&mut self, players: &[Entity], active_player: Entity) {
+        self.player_order = players.to_vec();
         self.active_player = active_player;
-        self.priority_player = active_player;
 
-        // Reset pass status
+        // Priority goes to the active player after a stack item resolves
+        self.priority_player = active_player;
+        self.priority_index = self
+            .player_order
+            .iter()
+            .position(|&p| p == active_player)
+            .unwrap_or(0);
+
+        // Reset the passing status for all players
         self.has_priority_passed.clear();
         for &player in players {
             self.has_priority_passed.insert(player, false);
         }
 
         self.all_players_passed = false;
-
-        // Reset index to active player
-        if let Some(index) = self.player_order.iter().position(|&p| p == active_player) {
-            self.priority_index = index;
-        }
     }
 
     /// Set whether the stack is empty
@@ -153,9 +141,10 @@ impl PrioritySystem {
 
     /// Reset the passing status for all players
     pub fn reset_passing_status(&mut self) {
-        for (_, passed) in self.has_priority_passed.iter_mut() {
+        for (_player, passed) in self.has_priority_passed.iter_mut() {
             *passed = false;
         }
+
         self.all_players_passed = false;
     }
 
@@ -186,6 +175,157 @@ impl PrioritySystem {
 
     /// Remove a player from the simultaneous decision list
     pub fn remove_simultaneous_decision_player(&mut self, player: Entity) {
-        self.simultaneous_decision_players.retain(|&p| p != player);
+        self.simultaneous_decision_players.retain(|p| *p != player);
+    }
+}
+
+impl Default for PrioritySystem {
+    fn default() -> Self {
+        PrioritySystemBuilder::new().build()
+    }
+}
+
+/// Builder for PrioritySystem with a chainable API
+#[derive(Clone, Debug)]
+pub struct PrioritySystemBuilder {
+    active_player: Entity,
+    priority_player: Entity,
+    has_priority_passed: HashMap<Entity, bool>,
+    all_players_passed: bool,
+    player_order: Vec<Entity>,
+    priority_index: usize,
+    stack_is_empty: bool,
+    current_phase: Phase,
+    waiting_for_response: bool,
+    response_timeout: Option<Instant>,
+    simultaneous_decision_players: Vec<Entity>,
+    last_processed_phase: Option<Phase>,
+    last_processed_turn: u32,
+    decision_timeouts: HashMap<Entity, std::time::Duration>,
+}
+
+impl PrioritySystemBuilder {
+    /// Creates a new PrioritySystemBuilder with default values
+    pub fn new() -> Self {
+        Self {
+            active_player: Entity::PLACEHOLDER,
+            priority_player: Entity::PLACEHOLDER,
+            has_priority_passed: HashMap::new(),
+            all_players_passed: false,
+            player_order: Vec::new(),
+            priority_index: 0,
+            stack_is_empty: true,
+            current_phase: Phase::default(),
+            waiting_for_response: false,
+            response_timeout: None,
+            simultaneous_decision_players: Vec::new(),
+            last_processed_phase: None,
+            last_processed_turn: 0,
+            decision_timeouts: HashMap::new(),
+        }
+    }
+
+    /// Sets the active player
+    pub fn active_player(mut self, active_player: Entity) -> Self {
+        self.active_player = active_player;
+        self
+    }
+
+    /// Sets the priority player
+    pub fn priority_player(mut self, priority_player: Entity) -> Self {
+        self.priority_player = priority_player;
+        self
+    }
+
+    /// Sets the priority passed status for all players
+    pub fn has_priority_passed(mut self, has_priority_passed: HashMap<Entity, bool>) -> Self {
+        self.has_priority_passed = has_priority_passed;
+        self
+    }
+
+    /// Sets whether all players have passed priority
+    pub fn all_players_passed(mut self, all_players_passed: bool) -> Self {
+        self.all_players_passed = all_players_passed;
+        self
+    }
+
+    /// Sets the player order for priority passing
+    pub fn player_order(mut self, player_order: Vec<Entity>) -> Self {
+        self.player_order = player_order;
+        self
+    }
+
+    /// Sets the current index in the player order
+    pub fn priority_index(mut self, priority_index: usize) -> Self {
+        self.priority_index = priority_index;
+        self
+    }
+
+    /// Sets whether the stack is empty
+    pub fn stack_is_empty(mut self, stack_is_empty: bool) -> Self {
+        self.stack_is_empty = stack_is_empty;
+        self
+    }
+
+    /// Sets the current phase
+    pub fn current_phase(mut self, current_phase: Phase) -> Self {
+        self.current_phase = current_phase;
+        self
+    }
+
+    /// Sets whether the system is waiting for a response
+    pub fn waiting_for_response(mut self, waiting_for_response: bool) -> Self {
+        self.waiting_for_response = waiting_for_response;
+        self
+    }
+
+    /// Sets the response timeout
+    pub fn response_timeout(mut self, response_timeout: Option<Instant>) -> Self {
+        self.response_timeout = response_timeout;
+        self
+    }
+
+    /// Sets the players who need to make simultaneous decisions
+    pub fn simultaneous_decision_players(mut self, players: Vec<Entity>) -> Self {
+        self.simultaneous_decision_players = players;
+        self
+    }
+
+    /// Sets the last processed phase
+    pub fn last_processed_phase(mut self, phase: Option<Phase>) -> Self {
+        self.last_processed_phase = phase;
+        self
+    }
+
+    /// Sets the last processed turn number
+    pub fn last_processed_turn(mut self, turn_number: u32) -> Self {
+        self.last_processed_turn = turn_number;
+        self
+    }
+
+    /// Sets the decision timeouts
+    pub fn decision_timeouts(mut self, timeouts: HashMap<Entity, std::time::Duration>) -> Self {
+        self.decision_timeouts = timeouts;
+        self
+    }
+
+    /// Builds the PrioritySystem instance
+    pub fn build(self) -> PrioritySystem {
+        PrioritySystem {
+            active_player: self.active_player,
+            priority_player: self.priority_player,
+            has_priority_passed: self.has_priority_passed,
+            all_players_passed: self.all_players_passed,
+            player_order: self.player_order,
+            priority_index: self.priority_index,
+            stack_is_empty: self.stack_is_empty,
+            current_phase: self.current_phase,
+            waiting_for_response: self.waiting_for_response,
+            response_timeout: self.response_timeout,
+            simultaneous_decision_players: self.simultaneous_decision_players,
+            last_processed_phase: self.last_processed_phase,
+            last_processed_turn: self.last_processed_turn,
+            decision_timeouts: self.decision_timeouts,
+        }
     }
 }
