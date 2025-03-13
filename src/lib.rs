@@ -18,5 +18,8 @@ pub mod game_engine;
 pub mod mana;
 pub mod menu;
 pub mod player;
+pub mod snapshot;
 pub mod tests;
 pub mod text;
+pub mod tracing;
+pub mod utils;

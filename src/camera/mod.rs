@@ -5,29 +5,30 @@
 /// Instead, spawn camera entities with individual components:
 pub mod components;
 pub mod config;
-pub mod snapshot;
 pub mod state;
 pub mod systems;
 // mod tests; // Will be added when tests are implemented
 
 use bevy::prelude::*;
 
-use crate::camera::{
-    config::CameraConfig,
-    snapshot::systems::CameraSnapshotPlugin,
-    systems::{
-        camera_movement, debug_draw_card_positions, handle_window_resize, set_initial_zoom,
-        setup_camera,
-    },
+use crate::camera::config::CameraConfig;
+use crate::camera::systems::{
+    camera_movement, debug_draw_card_positions, handle_window_resize, set_initial_zoom,
+    setup_camera,
 };
+#[cfg(feature = "snapshot")]
+use crate::snapshot::SnapshotPlugin;
 
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<CameraConfig>()
-            .add_plugins(CameraSnapshotPlugin)
-            .add_systems(Startup, setup_camera)
+        app.init_resource::<CameraConfig>();
+
+        #[cfg(feature = "snapshot")]
+        app.add_plugins(SnapshotPlugin);
+
+        app.add_systems(Startup, setup_camera)
             .add_systems(PostStartup, set_initial_zoom)
             .add_systems(
                 Update,

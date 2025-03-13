@@ -6,6 +6,8 @@ use crate::camera::{
 };
 use crate::menu::GameMenuState;
 use crate::player::{PlayerPlugin, resources::PlayerConfig, spawn_players};
+#[cfg(feature = "snapshot")]
+use crate::snapshot::systems::take_snapshot_after_setup;
 use crate::text::DebugConfig;
 use bevy::prelude::*;
 
@@ -42,6 +44,13 @@ impl Plugin for GamePlugin {
                     setup_game,
                     // Only set initial zoom when not coming from pause menu
                     set_initial_zoom
+                        .run_if(|context: Res<crate::menu::state::StateTransitionContext>| {
+                            !context.from_pause_menu
+                        })
+                        .after(setup_game),
+                    // Snapshot system is controlled by feature flag
+                    #[cfg(feature = "snapshot")]
+                    take_snapshot_after_setup
                         .run_if(|context: Res<crate::menu::state::StateTransitionContext>| {
                             !context.from_pause_menu
                         })
