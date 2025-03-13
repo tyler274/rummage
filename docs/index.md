@@ -50,7 +50,7 @@ The implementation is based on official MTG rules:
 - [Magic: The Gathering Comprehensive Rules](https://magic.wizards.com/en/rules)
 - [Commander Format Rules](https://mtgcommander.net/index.php/rules/)
 
-A local copy of the comprehensive rules is available in this repository: [MagicCompRules 20250207.txt](MagicCompRules%2020250207.txt).
+A local copy of the comprehensive rules is available in this repository: [MagicCompRules 20250207.txt](mtg_rules/MagicCompRules%2020250207.txt).
 
 ---
 
