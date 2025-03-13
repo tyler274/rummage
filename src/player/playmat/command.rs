@@ -11,11 +11,11 @@ use super::PlaymatZone;
 /// Spawn the command zone for a player
 pub fn spawn_command_zone(
     commands: &mut Commands,
-    asset_server: &Res<AssetServer>,
+    _asset_server: &Res<AssetServer>,
     playmat_entity: Entity,
     player_entity: Entity,
     player: &Player,
-    config: &PlayerConfig,
+    _config: &PlayerConfig,
 ) -> Entity {
     info!("Spawning command zone for player {}", player.name);
 
@@ -31,10 +31,11 @@ pub fn spawn_command_zone(
     // Create the command zone entity
     let command_entity = commands
         .spawn((
-            SpatialBundle {
-                transform: Transform::from_translation(position),
-                ..default()
-            },
+            Transform::from_translation(position),
+            GlobalTransform::default(),
+            Visibility::default(),
+            InheritedVisibility::default(),
+            ViewVisibility::default(),
             PlaymatZone {
                 player_id: player_entity,
                 zone_type: Zone::CommandZone,

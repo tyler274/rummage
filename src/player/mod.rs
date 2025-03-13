@@ -9,7 +9,6 @@ use bevy::prelude::*;
 
 // Re-export the core components and systems
 pub use components::Player;
-pub use playmat::{PlayerPlaymat, PlaymatZone, spawn_player_playmat}; // Export playmat items
 pub use resources::PlayerConfig;
 pub use systems::{PlayerPositionTracker, debug_draw_player_positions, spawn_players};
 

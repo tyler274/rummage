@@ -15,8 +15,8 @@ use crate::player::components::Player;
 use crate::player::resources::PlayerConfig;
 use bevy::prelude::*;
 
-// Re-export the main function for convenience
-pub use zones::spawn_player_zones;
+// Re-export the main function for convenience is not needed as it's not used
+// pub use zones::spawn_player_zones;
 
 /// Playmat component to identify and query the player's playmat
 #[derive(Component, Debug)]
@@ -56,10 +56,11 @@ pub fn spawn_player_playmat(
     // Create the main playmat entity
     let playmat_entity = commands
         .spawn((
-            SpatialBundle {
-                transform: Transform::from_translation(player_position),
-                ..default()
-            },
+            Transform::from_translation(player_position),
+            GlobalTransform::default(),
+            Visibility::default(),
+            InheritedVisibility::default(),
+            ViewVisibility::default(),
             PlayerPlaymat {
                 player_id: player_entity,
                 player_index: player.player_index,
