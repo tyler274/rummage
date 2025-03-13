@@ -173,6 +173,7 @@ fn main() {
                     ..default()
                 }),
         )
+        .add_event::<SnapshotEvent>()
         .add_plugins(MenuPlugin)
         .add_plugins(GamePlugin)
         .add_systems(Update, handle_exit)
