@@ -96,10 +96,10 @@ pub fn spawn_players(
             // Position cards near their player's position
             if player_index == 0 {
                 // Player 1 cards at bottom
-                card_position.y = -30.0;
+                card_position.y = -60.0; // Increased from -30.0 to -60.0 for more spacing
             } else if player_index == 1 {
                 // Player 2 cards at top
-                card_position.y = 30.0;
+                card_position.y = 60.0; // Increased from 30.0 to 60.0 for more spacing
             }
 
             spawn_visual_cards(
@@ -131,18 +131,18 @@ fn get_player_position(player_index: usize, total_players: usize) -> Transform {
     match (player_index, total_players) {
         // Player 1 (index 0) - bottom of the screen
         (0, _) => {
-            position.y = -15.0; // Position Player 1 much further down so cards appear at very bottom
+            position.y = -45.0; // Increased from -15.0 to -45.0 to match card position
         }
         // Player 2 (index 1) - top of the screen (opponent)
         (1, _) => {
-            position.y = 15.0; // Keep Player 2 at top (opponent) mirroring Player 1 position
+            position.y = 45.0; // Increased from 15.0 to 45.0 to match card position
             // No rotation - we want both players to be viewed from the same perspective
         }
         // For future expansion - 3+ players
         (idx, count) if idx < count => {
             // Calculate positions in a circle for 3+ players
             let angle = (idx as f32 / count as f32) * 2.0 * std::f32::consts::PI;
-            let radius = 15.0; // Increased distance from center to match player 1/2 positions
+            let radius = 45.0; // Increased from 15.0 to 45.0 to match other players' positions
             position.x = radius * angle.cos();
             position.y = radius * angle.sin();
             // No rotation - all players viewed from same perspective

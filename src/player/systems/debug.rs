@@ -44,24 +44,38 @@ pub fn debug_draw_player_positions(
         gizmos.circle_2d(position, 5.0, alpha_color);
 
         // Draw a line from the player to where their cards would spawn
-        let card_y_pos = -30.0; // This should match the y-position in spawn_visual_cards
+        let card_y_pos = if player.player_index == 0 {
+            -60.0 // Updated to match new Player 1 card position
+        } else {
+            60.0 // Updated to match new Player 2 card position
+        };
+
         let card_center = Vec2::new(position.x, card_y_pos);
 
-        if player.player_index == 0 {
-            gizmos.line_2d(position, card_center, Color::srgba(0.0, 0.5, 1.0, 0.5));
+        // Draw connection line for both players
+        let line_color = match player.player_index {
+            0 => Color::srgba(0.0, 0.5, 1.0, 0.5), // Blue with alpha
+            1 => Color::srgba(1.0, 0.2, 0.2, 0.5), // Red with alpha
+            _ => Color::srgba(0.5, 0.5, 0.5, 0.5), // Gray with alpha
+        };
+        gizmos.line_2d(position, card_center, line_color);
 
-            // Draw a rectangle representing the card area
-            let card_width = 10.0; // Estimated total width of card area
-            let card_height = 3.0;
+        // Draw a rectangle representing the card area for both players
+        let card_width = 10.0; // Estimated total width of card area
+        let card_height = 3.0;
 
-            // Draw rectangle representing card area
-            // rect_2d requires position, half_size, and color
-            gizmos.rect_2d(
-                Vec2::new(position.x, card_y_pos),              // Center position
-                Vec2::new(card_width / 2.0, card_height / 2.0), // Half-size
-                Color::srgba(0.0, 0.5, 1.0, 0.2),               // Color
-            );
-        }
+        // Draw rectangle representing card area
+        // rect_2d requires position, half_size, and color
+        let rect_color = match player.player_index {
+            0 => Color::srgba(0.0, 0.5, 1.0, 0.2), // Blue with alpha
+            1 => Color::srgba(1.0, 0.2, 0.2, 0.2), // Red with alpha
+            _ => Color::srgba(0.5, 0.5, 0.5, 0.2), // Gray with alpha
+        };
+        gizmos.rect_2d(
+            Vec2::new(position.x, card_y_pos),              // Center position
+            Vec2::new(card_width / 2.0, card_height / 2.0), // Half-size
+            rect_color,                                     // Color with transparency
+        );
 
         // Only log player positions when they change
         let previous_position = position_tracker.previous_positions.get(&entity).cloned();
