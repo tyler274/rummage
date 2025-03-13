@@ -47,8 +47,8 @@ impl Plugin for GamePlugin {
             .insert_resource(CameraConfig::default())
             .insert_resource(CameraPanState::default())
             .insert_resource(PlayerConfig {
-                player_count: 2,        // Set up for two players
-                spawn_all_cards: false, // Only spawn cards for player 1
+                player_count: 2,       // Set up for two players
+                spawn_all_cards: true, // Spawn cards for all players
                 ..default()
             })
             .add_systems(
@@ -163,7 +163,7 @@ fn main() {
             std::process::exit(0);
         }
     }
-    
+
     App::new()
         .add_plugins(
             DefaultPlugins

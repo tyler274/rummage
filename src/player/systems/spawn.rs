@@ -82,23 +82,27 @@ pub fn spawn_players(
                     .build(),
             );
 
-            // Only spawn visual cards for player 1 for now
-            if player_index == 0 {
-                info!("Spawning visual cards for player {}", player_index);
-                spawn_visual_cards(
-                    &mut commands,
-                    display_cards,
-                    &game_cameras,
-                    &config.card_size,
-                    config.card_spacing_multiplier,
-                    player_transform.translation, // Pass player position to spawn_visual_cards
-                );
-            } else {
-                info!(
-                    "Player {} has cards in their data but visual cards are not spawned yet",
-                    player_index
-                );
+            // Spawn visual cards for all players that have cards
+            info!("Spawning visual cards for player {}", player_index);
+
+            // Adjust visual card position based on player index
+            let mut card_position = player_transform.translation;
+
+            // For player 2 (index 1), position cards at the top of the screen
+            // but maintain the same orientation as player 1
+            if player_index == 1 {
+                // Position at top of screen but without rotation
+                card_position.y = 30.0; // Mirror of player 1's -30.0
             }
+
+            spawn_visual_cards(
+                &mut commands,
+                display_cards,
+                &game_cameras,
+                &config.card_size,
+                config.card_spacing_multiplier,
+                card_position, // Use our adjusted position
+            );
         } else {
             info!(
                 "Skipping card spawning for player {} (index {})",
@@ -125,9 +129,7 @@ fn get_player_position(player_index: usize, total_players: usize) -> Transform {
         // Player 2 (index 1) - top of the screen (opponent)
         (1, _) => {
             position.y = 15.0; // Keep Player 2 at top (opponent) mirroring Player 1 position
-            // Rotate 180 degrees (π radians) to face Player 1
-            return Transform::from_xyz(position.x, position.y, position.z)
-                .with_rotation(Quat::from_rotation_z(std::f32::consts::PI));
+            // No rotation - we want both players to be viewed from the same perspective
         }
         // For future expansion - 3+ players
         (idx, count) if idx < count => {
@@ -136,9 +138,7 @@ fn get_player_position(player_index: usize, total_players: usize) -> Transform {
             let radius = 15.0; // Increased distance from center to match player 1/2 positions
             position.x = radius * angle.cos();
             position.y = radius * angle.sin();
-            // Face the center
-            let rotation = Quat::from_rotation_z(angle + std::f32::consts::PI);
-            return Transform::from_xyz(position.x, position.y, position.z).with_rotation(rotation);
+            // No rotation - all players viewed from same perspective
         }
         // Fallback for any other case
         _ => {}
