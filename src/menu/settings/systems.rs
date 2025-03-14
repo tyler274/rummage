@@ -14,8 +14,17 @@ use super::state::SettingsMenuState;
 const TEXT_COLOR: Color = Color::WHITE;
 
 /// Sets up the main settings menu
-pub fn setup_main_settings(mut commands: Commands) {
-    info!("Setting up main settings menu - START");
+pub fn setup_main_settings(mut commands: Commands, context: Res<StateTransitionContext>) {
+    info!(
+        "Setting up main settings menu - START (from origin: {:?})",
+        context.settings_origin
+    );
+
+    // Log the transition context to see if it's set correctly
+    info!(
+        "Settings transition context: from_pause_menu={}, settings_origin={:?}",
+        context.from_pause_menu, context.settings_origin
+    );
 
     let root_entity = commands
         .spawn((
