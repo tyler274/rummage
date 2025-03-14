@@ -1,3 +1,4 @@
+use crate::cards::Card;
 use bevy::prelude::*;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
@@ -13,7 +14,7 @@ pub struct Deck {
     #[allow(dead_code)]
     pub deck_type: DeckType,
     /// Cards in the deck
-    pub cards: Vec<crate::card::Card>,
+    pub cards: Vec<Card>,
     /// Commander card ID if this is a Commander deck
     #[allow(dead_code)]
     pub commander: Option<Entity>,
@@ -41,13 +42,13 @@ impl PlayerDeck {
 
     /// Draw a card from the top of the deck
     #[allow(dead_code)]
-    pub fn draw(&mut self) -> Option<crate::card::Card> {
+    pub fn draw(&mut self) -> Option<Card> {
         self.deck.draw()
     }
 
     /// Draw multiple cards from the top of the deck
     #[allow(dead_code)]
-    pub fn draw_multiple(&mut self, count: usize) -> Vec<crate::card::Card> {
+    pub fn draw_multiple(&mut self, count: usize) -> Vec<Card> {
         self.deck.draw_multiple(count)
     }
 }
@@ -101,7 +102,7 @@ pub enum DeckValidationError {
 
 impl Deck {
     /// Create a new deck
-    pub fn new(name: String, deck_type: DeckType, cards: Vec<crate::card::Card>) -> Self {
+    pub fn new(name: String, deck_type: DeckType, cards: Vec<Card>) -> Self {
         Self {
             name,
             deck_type,
@@ -213,13 +214,13 @@ impl Deck {
 
     /// Draw a card from the top of the deck
     #[allow(dead_code)]
-    pub fn draw(&mut self) -> Option<crate::card::Card> {
+    pub fn draw(&mut self) -> Option<Card> {
         self.cards.pop()
     }
 
     /// Draw multiple cards from the top of the deck
     #[allow(dead_code)]
-    pub fn draw_multiple(&mut self, count: usize) -> Vec<crate::card::Card> {
+    pub fn draw_multiple(&mut self, count: usize) -> Vec<Card> {
         let mut drawn = Vec::new();
         for _ in 0..count {
             if let Some(card) = self.draw() {
@@ -233,19 +234,19 @@ impl Deck {
 
     /// Add a card to the top of the deck
     #[allow(dead_code)]
-    pub fn add_top(&mut self, card: crate::card::Card) {
+    pub fn add_top(&mut self, card: Card) {
         self.cards.push(card);
     }
 
     /// Add a card to the bottom of the deck
     #[allow(dead_code)]
-    pub fn add_bottom(&mut self, card: crate::card::Card) {
+    pub fn add_bottom(&mut self, card: Card) {
         self.cards.insert(0, card);
     }
 
     /// Search for cards by name
     #[allow(dead_code)]
-    pub fn search(&self, name: &str) -> Vec<&crate::card::Card> {
+    pub fn search(&self, name: &str) -> Vec<&Card> {
         self.cards
             .iter()
             .filter(|card| card.name.contains(name))

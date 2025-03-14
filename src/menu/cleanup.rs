@@ -1,6 +1,6 @@
 use crate::{
     camera::components::GameCamera,
-    card::Card,
+    cards::Card,
     menu::{
         components::{MenuCamera, MenuItem},
         logo::StarOfDavid,

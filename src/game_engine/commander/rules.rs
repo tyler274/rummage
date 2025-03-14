@@ -1,5 +1,5 @@
 use super::components::Commander;
-use crate::card::{CardCost, CardRulesText, CardTypeInfo, CardTypes};
+use crate::cards::{CardCost, CardRulesText, CardTypeInfo, CardTypes};
 use crate::mana::Color;
 use bevy::prelude::Entity;
 use std::collections::HashSet;

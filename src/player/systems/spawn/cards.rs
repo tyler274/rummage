@@ -1,14 +1,14 @@
 use super::table::TableLayout;
 use crate::camera::components::{AppLayer, GameCamera};
-use crate::card::Draggable;
-use crate::card::text::card_text::spawn_card_text_components;
+use crate::cards::Draggable;
+use crate::cards::text::card_text::spawn_card_text_components;
 
 use bevy::prelude::*;
 
 /// Helper function to spawn visual card entities
 pub fn spawn_visual_cards(
     commands: &mut Commands,
-    display_cards: Vec<crate::card::Card>,
+    display_cards: Vec<crate::cards::Card>,
     game_cameras: &Query<Entity, With<GameCamera>>,
     card_size: &Vec2,
     spacing_multiplier: f32,

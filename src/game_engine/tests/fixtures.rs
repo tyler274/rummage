@@ -1,4 +1,4 @@
-use crate::card::Card;
+use crate::cards::Card;
 use crate::game_engine::phase::{ActivePlayer, CurrentPhase, MAIN1};
 use crate::game_engine::zones::{Zone, ZoneMarker};
 use crate::mana::ManaPool;

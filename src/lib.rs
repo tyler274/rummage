@@ -10,7 +10,7 @@
 /// - Rules enforcement
 /// - Full Commander game rules implementation
 pub mod camera;
-pub mod card;
+pub mod cards;
 pub mod deck;
 pub mod docs;
 pub mod drag;

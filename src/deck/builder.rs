@@ -1,5 +1,5 @@
 use super::types::{Deck, DeckType};
-use crate::card::Card;
+use crate::cards::Card;
 use bevy::prelude::*;
 
 /// Builder for creating decks

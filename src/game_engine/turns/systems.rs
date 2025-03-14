@@ -1,4 +1,4 @@
-use crate::card::{Card, NoUntapCondition, NoUntapEffect, PermanentState};
+use crate::cards::{Card, NoUntapCondition, NoUntapEffect, PermanentState};
 use crate::game_engine::phase::types::{BeginningStep, EndingStep, Phase};
 use crate::game_engine::turns::{
     PermanentController, TurnEndEvent, TurnEventTracker, TurnManager, TurnStartEvent,

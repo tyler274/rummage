@@ -6,6 +6,7 @@ pub use types::{Deck, DeckType, PlayerDeck};
 // Re-export any other types or functions that should be public
 
 // Plugin for deck-related functionality
+use crate::cards::{Card, sets};
 use bevy::prelude::*;
 
 pub struct DeckPlugin;
@@ -69,27 +70,27 @@ fn register_default_decks(_deck_registry: ResMut<DeckRegistry>) {
 
 // Get a collection of example cards that can be used to create a deck
 #[allow(dead_code)]
-pub fn get_example_cards(_owner: Entity) -> Vec<crate::card::Card> {
+pub fn get_example_cards(_owner: Entity) -> Vec<Card> {
     let mut cards = Vec::new();
 
-    // Alpha set cards
-    let (card, _, _, _, _, _, _) = crate::card::sets::alpha::ancestral_recall::get_card();
+    // Add some cards from Alpha
+    let (card, _, _, _, _, _, _) = sets::alpha::ancestral_recall::get_card();
     cards.push(card);
 
-    cards.push(crate::card::sets::alpha::counterspell::get_card());
-    cards.push(crate::card::sets::alpha::fireball::get_card());
-    cards.push(crate::card::sets::alpha::lightning_bolt::get_card());
-    cards.push(crate::card::sets::alpha::time_walk::get_card());
-    cards.push(crate::card::sets::alpha::wheel_of_fortune::get_card());
+    cards.push(sets::alpha::counterspell::get_card());
+    cards.push(sets::alpha::fireball::get_card());
+    cards.push(sets::alpha::lightning_bolt::get_card());
+    cards.push(sets::alpha::time_walk::get_card());
+    cards.push(sets::alpha::wheel_of_fortune::get_card());
 
-    // Alliances set cards
-    cards.push(crate::card::sets::alliances::force_of_will::get_card());
+    // Add some cards from Alliances
+    cards.push(sets::alliances::force_of_will::get_card());
 
-    // Legends set cards
-    cards.push(crate::card::sets::legends::mana_drain::get_card());
+    // Add some cards from Legends
+    cards.push(sets::legends::mana_drain::get_card());
 
-    // Scourge set cards
-    cards.push(crate::card::sets::scourge::dragon_mage::get_card());
+    // Add some cards from Scourge
+    cards.push(sets::scourge::dragon_mage::get_card());
 
     cards
 }
@@ -97,36 +98,36 @@ pub fn get_example_cards(_owner: Entity) -> Vec<crate::card::Card> {
 // Create a deck containing all implemented cards for a player
 // This gives all players access to the full collection of cards
 #[allow(dead_code)]
-pub fn get_player_specific_cards() -> Vec<crate::card::Card> {
+pub fn get_player_specific_cards() -> Vec<Card> {
     let mut cards = Vec::new();
 
-    // Alpha set cards
-    let (card, _, _, _, _, _, _) = crate::card::sets::alpha::ancestral_recall::get_card();
+    // Add some cards from Alpha
+    let (card, _, _, _, _, _, _) = sets::alpha::ancestral_recall::get_card();
     cards.push(card);
 
-    cards.push(crate::card::sets::alpha::counterspell::get_card());
-    cards.push(crate::card::sets::alpha::fireball::get_card());
-    cards.push(crate::card::sets::alpha::lightning_bolt::get_card());
-    cards.push(crate::card::sets::alpha::shivan_dragon::get_card());
-    cards.push(crate::card::sets::alpha::time_walk::get_card());
-    cards.push(crate::card::sets::alpha::wheel_of_fortune::get_card());
+    cards.push(sets::alpha::counterspell::get_card());
+    cards.push(sets::alpha::fireball::get_card());
+    cards.push(sets::alpha::lightning_bolt::get_card());
+    cards.push(sets::alpha::shivan_dragon::get_card());
+    cards.push(sets::alpha::time_walk::get_card());
+    cards.push(sets::alpha::wheel_of_fortune::get_card());
 
-    // Alliances set cards
-    cards.push(crate::card::sets::alliances::force_of_will::get_card());
+    // Add some cards from Alliances
+    cards.push(sets::alliances::force_of_will::get_card());
 
-    // Legends set cards
-    cards.push(crate::card::sets::legends::mana_drain::get_card());
+    // Add some cards from Legends
+    cards.push(sets::legends::mana_drain::get_card());
 
-    // Scourge set cards
-    cards.push(crate::card::sets::scourge::dragon_mage::get_card());
+    // Add some cards from Scourge
+    cards.push(sets::scourge::dragon_mage::get_card());
 
-    // Innistrad Midnight Hunt
-    cards.push(crate::card::sets::innistrad_midnight_hunt::briarbridge_tracker::get_card());
-    cards.push(crate::card::sets::innistrad_midnight_hunt::brutal_cathar::get_card());
-    cards.push(crate::card::sets::innistrad_midnight_hunt::cathars_call::get_card());
-    cards.push(crate::card::sets::innistrad_midnight_hunt::champion_of_the_perished::get_card());
-    cards.push(crate::card::sets::innistrad_midnight_hunt::delver_of_secrets::get_card());
-    cards.push(crate::card::sets::innistrad_midnight_hunt::moonveil_regent::get_card());
+    // Add some cards from Innistrad: Midnight Hunt
+    cards.push(sets::innistrad_midnight_hunt::briarbridge_tracker::get_card());
+    cards.push(sets::innistrad_midnight_hunt::brutal_cathar::get_card());
+    cards.push(sets::innistrad_midnight_hunt::cathars_call::get_card());
+    cards.push(sets::innistrad_midnight_hunt::champion_of_the_perished::get_card());
+    cards.push(sets::innistrad_midnight_hunt::delver_of_secrets::get_card());
+    cards.push(sets::innistrad_midnight_hunt::moonveil_regent::get_card());
 
     cards
 }

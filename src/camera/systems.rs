@@ -199,7 +199,7 @@ pub fn camera_movement(
 /// Draws debug visualization for card positions
 pub fn debug_draw_card_positions(
     mut gizmos: Gizmos,
-    card_query: Query<(&Transform, &Name), With<crate::card::Card>>,
+    card_query: Query<(&Transform, &Name), With<crate::cards::Card>>,
 ) {
     for (transform, name) in card_query.iter() {
         // Draw a circle at each card position

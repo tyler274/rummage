@@ -3,7 +3,7 @@ use super::components::{CommanderZoneLocation, EliminationReason};
 use super::events::{CombatDamageEvent, CommanderZoneChoiceEvent, PlayerEliminatedEvent};
 use super::resources::{CommandZone, CommandZoneManager};
 use super::rules::CommanderRules;
-use crate::card::Card;
+use crate::cards::Card;
 use crate::game_engine::turns::TurnStartEvent;
 use crate::game_engine::zones::{Zone, ZoneChangeEvent, ZoneManager};
 use crate::mana::Mana;

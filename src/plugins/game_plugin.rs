@@ -17,7 +17,7 @@ pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(crate::drag::DragPlugin)
-            .add_plugins(crate::card::CardPlugin)
+            .add_plugins(crate::cards::CardPlugin)
             .add_plugins(crate::deck::DeckPlugin)
             .add_plugins(crate::game_engine::GameEnginePlugin)
             .add_plugins(crate::text::TextPlugin::default())

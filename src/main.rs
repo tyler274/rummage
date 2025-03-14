@@ -1,7 +1,7 @@
 #![feature(trivial_bounds)]
 
 mod camera;
-mod card;
+mod cards;
 mod deck;
 mod docs;
 mod drag;

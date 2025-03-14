@@ -1,4 +1,4 @@
-use crate::card::CreatureType;
+use crate::cards::CreatureType;
 use crate::game_engine::commander::CombatDamageEvent;
 use crate::game_engine::state::GameState;
 use crate::game_engine::turns::TurnManager;

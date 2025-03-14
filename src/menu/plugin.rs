@@ -2,7 +2,7 @@ use bevy::{ecs::system::ParamSet, prelude::*};
 
 use crate::{
     camera::components::{AppLayer, GameCamera, MenuCamera},
-    card::Card,
+    cards::Card,
     menu::{
         cleanup::{
             cleanup_game, cleanup_main_menu, cleanup_menu_camera, cleanup_pause_menu,

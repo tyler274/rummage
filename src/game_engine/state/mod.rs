@@ -1,7 +1,7 @@
 // Remove the self-reference import
 // pub use crate::game_engine::state::*;
 
-use crate::card::{Card, CreatureOnField};
+use crate::cards::{Card, CreatureOnField};
 use crate::game_engine::commander::{Commander, EliminationReason, PlayerEliminatedEvent};
 use crate::game_engine::zones::{Zone, ZoneChangeEvent, ZoneManager};
 use crate::player::Player;

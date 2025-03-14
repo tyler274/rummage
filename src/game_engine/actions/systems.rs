@@ -1,4 +1,4 @@
-use crate::card::{Card, CardCost, CardTypeInfo, CardTypes};
+use crate::cards::{Card, CardCost, CardTypeInfo, CardTypes};
 use crate::game_engine::state::GameState;
 use crate::game_engine::{GameStack, Phase, PrioritySystem};
 use crate::player::Player;

@@ -1,4 +1,4 @@
-use crate::card::{CardTypeInfo, CardTypes};
+use crate::cards::{CardTypeInfo, CardTypes};
 use crate::game_engine::phase::{PostcombatStep, PrecombatStep};
 use crate::game_engine::state::GameState;
 use crate::game_engine::{GameStack, Phase};

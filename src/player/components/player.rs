@@ -1,4 +1,4 @@
-use crate::card::Card;
+use crate::cards::Card;
 use crate::mana::ManaPool;
 use bevy::prelude::*;
 
