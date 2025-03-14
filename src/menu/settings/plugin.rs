@@ -18,20 +18,35 @@ impl Plugin for SettingsPlugin {
             .init_resource::<GameplaySettings>()
             .insert_resource(GraphicsQuality::default())
             // Settings state - Main screen
-            .add_systems(OnEnter(SettingsMenuState::Main), setup_main_settings)
+            .add_systems(
+                OnEnter(SettingsMenuState::Main), 
+                (
+                    setup_main_settings,
+                    |state: Res<State<SettingsMenuState>>, game_state: Res<State<GameMenuState>>| {
+                        info!("ENTERED SettingsMenuState::Main - Current Settings State: {:?}, Game State: {:?}", 
+                              state.get(), game_state.get());
+                    }
+                ).run_if(in_state(GameMenuState::Settings))
+            )
             // Settings state - Video settings
-            .add_systems(OnEnter(SettingsMenuState::Video), setup_video_settings)
+            .add_systems(
+                OnEnter(SettingsMenuState::Video), 
+                setup_video_settings.run_if(in_state(GameMenuState::Settings))
+            )
             // Settings state - Audio settings
-            .add_systems(OnEnter(SettingsMenuState::Audio), setup_audio_settings)
+            .add_systems(
+                OnEnter(SettingsMenuState::Audio), 
+                setup_audio_settings.run_if(in_state(GameMenuState::Settings))
+            )
             // Settings state - Gameplay settings
             .add_systems(
                 OnEnter(SettingsMenuState::Gameplay),
-                setup_gameplay_settings,
+                setup_gameplay_settings.run_if(in_state(GameMenuState::Settings)),
             )
             // Settings state - Controls settings
             .add_systems(
                 OnEnter(SettingsMenuState::Controls),
-                setup_controls_settings,
+                setup_controls_settings.run_if(in_state(GameMenuState::Settings)),
             )
             // Settings interaction system
             .add_systems(

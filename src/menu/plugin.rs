@@ -177,10 +177,23 @@ fn setup_settings_transition(
                 info!("Entering settings from pause menu via state");
                 context.settings_origin = Some(GameMenuState::PausedGame);
             }
-            _ => {
-                // Default to main menu if coming from an unexpected state
-                info!("Entering settings from unexpected state, defaulting to main menu");
+            GameMenuState::Settings if context.settings_origin.is_none() => {
+                // If we're already in Settings state but have no origin,
+                // default to main menu
+                info!("Already in Settings state with no origin, defaulting to main menu");
                 context.settings_origin = Some(GameMenuState::MainMenu);
+            }
+            _ => {
+                if context.settings_origin.is_none() {
+                    // Default to main menu if coming from an unexpected state
+                    info!("Entering settings from unexpected state, defaulting to main menu");
+                    context.settings_origin = Some(GameMenuState::MainMenu);
+                } else {
+                    info!(
+                        "Using existing settings origin: {:?}",
+                        context.settings_origin
+                    );
+                }
             }
         }
     }

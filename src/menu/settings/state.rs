@@ -1,19 +1,33 @@
 use bevy::prelude::*;
 
 /// Settings menu states for navigating between different settings screens
-#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
+#[derive(States, Resource, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 pub enum SettingsMenuState {
-    /// Main settings screen with categories
+    /// Main settings menu
     Main,
-    /// Video settings screen
+    /// Video settings submenu
     Video,
-    /// Audio settings screen
+    /// Audio settings submenu
     Audio,
-    /// Gameplay settings screen
+    /// Gameplay settings submenu
     Gameplay,
-    /// Controls settings screen
+    /// Controls settings submenu
     Controls,
     /// Disabled state - no UI is shown
     #[default]
     Disabled,
+}
+
+impl SettingsMenuState {
+    /// Get a user-friendly name for the settings state
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Main => "Main Settings",
+            Self::Video => "Video Settings",
+            Self::Audio => "Audio Settings",
+            Self::Gameplay => "Gameplay Settings",
+            Self::Controls => "Controls Settings",
+            Self::Disabled => "Settings Disabled",
+        }
+    }
 }
