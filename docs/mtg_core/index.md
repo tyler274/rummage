@@ -125,7 +125,7 @@ The core rules are implemented in a format-agnostic way to enable:
 2. **Extension Points**: Format-specific plugins can override or extend core behavior
 3. **Configuration**: Format-specific parameters (starting life, deck requirements, etc.)
 
-For Commander-specific implementations that build upon these core rules, see the [Commander Format](../commander/index.md) section.
+For Commander-specific implementations that build upon these core rules, see the [Commander Format](../formats/commander/index.md) section.
 
 ## Technical Components
 

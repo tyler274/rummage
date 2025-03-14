@@ -13,7 +13,7 @@ Our goal is to create a comprehensive digital implementation that faithfully rep
 The documentation is organized into interconnected sections that guide you from understanding MTG rules to technical implementation details:
 
 1. **[MTG Core Rules](mtg_core/index.md)** - Implementation of fundamental Magic: The Gathering rules that form the foundation of all gameplay
-2. **[Game Formats](commander/index.md)** - Format-specific rules implementation, currently focusing on the Commander format
+2. **[Game Formats](formats/commander/index.md)** - Format-specific rules implementation, currently focusing on the Commander format
 3. **[Game UI](game_gui/index.md)** - User interface systems for visualizing and interacting with the game state
 4. **[Networking](networking/index.md)** - Multiplayer functionality using bevy_replicon for synchronized gameplay
 5. **[Card Systems](card_systems/index.md)** - Card representation, effects, and interactions that drive gameplay
@@ -28,7 +28,7 @@ These sections build upon each other, with core MTG rules providing the foundati
 If you're new to the project, we recommend exploring the documentation in this order:
 
 1. **[MTG Core Rules Overview](mtg_core/index.md)** - Understand how Rummage implements the fundamental MTG rules
-2. **[Commander Format Overview](commander/overview/index.md)** - Learn about the Commander-specific rules and mechanics
+2. **[Commander Format Overview](formats/commander/overview/index.md)** - Learn about the Commander-specific rules and mechanics
 3. **[Development Guide](development/getting_started.md)** - Set up your development environment
 4. **[Bevy ECS Guide](development/bevy_guide/ecs.md)** - Learn how we use Bevy's Entity Component System
 5. **[Testing Overview](testing/index.md)** - Understand our testing approach and methodology
