@@ -1,146 +1,451 @@
 # System Reference
 
-This document provides a reference for all systems in the Rummage game engine. Systems are functions that operate on components and resources to implement game logic.
+This document provides a detailed reference of the various systems in Rummage that implement game logic, handle events, and manage game state.
 
-## Core Game Systems
+## Overview
 
-### State Management
+Systems in Bevy ECS are the workhorses that process game logic. In Rummage, systems are organized into several major categories that map to Magic: The Gathering game concepts.
 
-| System | Description |
-|--------|-------------|
-| `game_state_condition` | Determines if the game is in an active state |
-| `setup_game_engine` | Initializes the game state and components |
-| `check_state_based_actions` | Implements MTG's state-based actions |
-| `check_win_conditions` | Checks if any player has won or lost |
-| `process_game_actions` | Processes game actions from players and effects |
+## State Management Systems
 
-### Turn Systems
+State management systems handle the tracking and updating of game state.
 
-| System | Description |
-|--------|-------------|
-| `handle_turn_start` | Handles logic at the beginning of a player's turn |
-| `handle_turn_end` | Handles logic at the end of a player's turn |
-| `phase_transition_system` | Manages transitions between game phases |
-| `register_turn_systems` | Registers all turn-related systems with the app |
-| `beginning_phase_system` | Handles logic for the beginning phase |
-| `main_phase_system` | Handles logic for the main phases |
-| `ending_phase_system` | Handles logic for the ending phase |
+### Game State Systems
 
-### Stack Systems
+```rust
+// Initialize the primary game state
+fn init_game_state(mut commands: Commands) {
+    commands.insert_resource(GameState {
+        turn: 1,
+        phase: Phase::Beginning,
+        step: Step::Untap,
+        active_player: 0,
+        priority_player: 0,
+        // ...
+    });
+}
 
-| System | Description |
-|--------|-------------|
-| `priority_system` | Manages priority passing between players |
-| `priority_passing_system` | Handles the logic of passing priority |
-| `stack_push_system` | Handles adding items to the stack |
-| `stack_resolve_system` | Resolves the top item of the stack |
-| `handle_stack_item_resolved` | Handles the aftermath of a resolved stack item |
+// Update the game state based on input events
+fn update_game_state(
+    mut game_state: ResMut<GameState>,
+    mut phase_events: EventReader<PhaseChangeEvent>,
+    // ...
+) {
+    // Implementation...
+}
+```
 
-### Zone Systems
+### Player State Systems
 
-| System | Description |
-|--------|-------------|
-| `zone_change_system` | Handles moving cards between zones |
-| `handle_zone_change_events` | Processes zone change events |
-| `handle_enters_battlefield` | Handles "enters the battlefield" triggers |
-| `handle_leaves_battlefield` | Handles "leaves the battlefield" triggers |
-| `library_system` | Manages player libraries |
-| `graveyard_system` | Manages player graveyards |
-| `exile_system` | Manages the exile zone |
-| `command_zone_system` | Manages the command zone |
+```rust
+// Initialize player state
+fn init_player_state(mut commands: Commands, game_config: Res<GameConfig>) {
+    for player_idx in 0..game_config.player_count {
+        commands.spawn((
+            Player {
+                id: player_idx,
+                life_total: 40, // Commander starting life
+                // ...
+            },
+            // Other components...
+        ));
+    }
+}
 
-### Combat Systems
+// Update player state based on game events
+fn update_player_state(
+    mut player_query: Query<(&mut Player, &CommanderDamage)>,
+    mut damage_events: EventReader<PlayerDamageEvent>,
+    // ...
+) {
+    // Implementation...
+}
+```
 
-| System | Description |
-|--------|-------------|
-| `initialize_combat_phase` | Sets up the combat phase |
-| `declare_attackers_system` | Handles declaring attackers |
-| `declare_blockers_system` | Handles declaring blockers |
-| `assign_combat_damage_system` | Assigns combat damage based on attackers and blockers |
-| `process_combat_damage_system` | Processes the assigned combat damage |
-| `end_combat_system` | Cleans up after combat |
-| `handle_declare_attackers_event` | Processes events related to declaring attackers |
-| `handle_declare_blockers_event` | Processes events related to declaring blockers |
+### Card State Systems
 
-### Card Systems
+```rust
+// Track state of cards on the battlefield
+fn update_battlefield_cards(
+    mut commands: Commands,
+    mut card_query: Query<(Entity, &mut Card, &Zone)>,
+    mut zone_change_events: EventReader<ZoneChangeEvent>,
+    // ...
+) {
+    // Implementation...
+}
+```
 
-| System | Description |
-|--------|-------------|
-| `cast_spell_system` | Handles casting spells |
-| `resolve_spell_system` | Handles resolving spells |
-| `activated_ability_system` | Handles activated abilities |
-| `triggered_ability_system` | Handles triggered abilities |
-| `static_ability_system` | Applies static abilities |
-| `continuous_effect_system` | Manages continuous effects |
-| `mana_ability_system` | Handles mana abilities |
+## Stack Systems
 
-## Commander Format Systems
+Systems that implement the MTG stack and priority mechanisms.
 
-| System | Description |
-|--------|-------------|
-| `commander_damage_system` | Tracks and applies commander damage |
-| `commander_cast_system` | Handles casting commanders from the command zone |
-| `commander_tax_system` | Applies commander tax |
-| `commander_death_system` | Handles commander death triggers |
-| `color_identity_system` | Enforces color identity restrictions |
-| `partner_commander_system` | Handles partner commanders |
+### Stack Management
 
-## UI Systems
+```rust
+// Add objects to the stack
+fn add_to_stack(
+    mut commands: Commands,
+    mut stack: ResMut<Stack>,
+    mut stack_events: EventReader<AddToStackEvent>,
+    // ...
+) {
+    // Implementation...
+}
 
-| System | Description |
-|--------|-------------|
-| `card_rendering_system` | Renders cards on the UI |
-| `battlefield_layout_system` | Manages the layout of cards on the battlefield |
-| `hand_layout_system` | Manages the layout of cards in hand |
-| `stack_visualization_system` | Visualizes the stack |
-| `drag_drop_system` | Handles drag and drop interactions |
-| `card_selection_system` | Handles selecting cards |
-| `targeting_system` | Handles targeting UI |
-| `animation_system` | Manages card animations |
+// Resolve objects from the stack
+fn resolve_stack(
+    mut commands: Commands,
+    mut stack: ResMut<Stack>,
+    mut game_state: ResMut<GameState>,
+    // ...
+) {
+    // Implementation...
+}
+```
 
-## Networking Systems
+### Priority Systems
 
-| System | Description |
-|--------|-------------|
-| `network_sync_system` | Synchronizes game state across the network |
-| `replicon_sync_system` | Synchronizes using bevy_replicon |
-| `action_broadcast_system` | Broadcasts actions to other players |
-| `network_state_rollback` | Handles state rollback for network consistency |
-| `deterministic_rng_system` | Ensures random number generation is consistent across the network |
+```rust
+// Handle passing of priority between players
+fn handle_priority(
+    mut game_state: ResMut<GameState>,
+    mut priority_events: EventReader<PriorityPassedEvent>,
+    // ...
+) {
+    // Implementation...
+}
+```
 
-## Testing Systems
+## Combat Systems
 
-| System | Description |
-|--------|-------------|
-| `snapshot_system` | Creates game state snapshots for testing |
-| `test_action_system` | Generates actions for testing |
-| `validation_system` | Validates game state integrity |
-| `verification_system` | Verifies expected outcomes in tests |
+Systems that implement the combat phase and damage resolution.
 
-## Event Handler Systems
+### Combat Flow
 
-| System | Description |
-|--------|-------------|
-| `handle_game_events` | General event handling system |
-| `handle_snapshot_events` | Processes snapshot creation events |
-| `process_pending_snapshots` | Processes pending snapshot operations |
-| `event_logging_system` | Logs game events for debugging |
+```rust
+// Start the combat phase
+fn start_combat(
+    mut commands: Commands,
+    mut game_state: ResMut<GameState>,
+    mut phase_events: EventWriter<PhaseChangeEvent>,
+    // ...
+) {
+    // Implementation...
+}
 
-## System Scheduling
+// Handle the declare attackers step
+fn declare_attackers(
+    mut commands: Commands,
+    mut game_state: ResMut<GameState>,
+    mut attacker_query: Query<(Entity, &Card), With<Attacker>>,
+    // ...
+) {
+    // Implementation...
+}
 
-The Rummage game engine carefully schedules systems to ensure they run in the correct order. Key system sets include:
+// Handle the declare blockers step
+fn declare_blockers(
+    mut commands: Commands,
+    mut game_state: ResMut<GameState>,
+    mut blocker_query: Query<(Entity, &Card), With<Blocker>>,
+    // ...
+) {
+    // Implementation...
+}
 
-1. **Startup Systems** - Run once during initialization
-2. **Pre-Update Systems** - Run before the main update
-3. **Update Systems** - Main game logic systems
-4. **Post-Update Systems** - Run after the main update
-5. **Last Systems** - Run at the end of each frame
+// Combat damage calculation and assignment
+fn combat_damage(
+    mut commands: Commands,
+    mut attacker_query: Query<(Entity, &Attacker, &Card)>,
+    mut blocker_query: Query<(Entity, &Blocker, &Card)>,
+    mut damage_events: EventWriter<DamageEvent>,
+    // ...
+) {
+    // Implementation...
+}
+```
 
-Systems are organized into the following schedules:
+### Combat Damage
 
-- `GameStartupSchedule` - Initialization
-- `GamePreUpdateSchedule` - Pre-update logic
-- `GameUpdateSchedule` - Main game logic
-- `GamePostUpdateSchedule` - Post-update logic
+```rust
+// Apply combat damage to creatures and players
+fn apply_combat_damage(
+    mut commands: Commands,
+    mut creature_query: Query<(Entity, &mut Card)>,
+    mut player_query: Query<(Entity, &mut Player)>,
+    mut damage_events: EventReader<DamageEvent>,
+    // ...
+) {
+    // Implementation...
+}
+```
 
-Within each schedule, systems are further organized by execution order to ensure dependencies are satisfied. 
+## Turn Systems
+
+Systems that handle turn structure and phase progression.
+
+### Turn Progression
+
+```rust
+// Start a new turn
+fn start_turn(
+    mut commands: Commands,
+    mut game_state: ResMut<GameState>,
+    mut turn_events: EventWriter<TurnStartEvent>,
+    // ...
+) {
+    // Implementation...
+}
+
+// Transition between phases
+fn change_phase(
+    mut game_state: ResMut<GameState>,
+    mut phase_events: EventReader<PhaseChangeEvent>,
+    // ...
+) {
+    // Implementation...
+}
+
+// End the current turn
+fn end_turn(
+    mut commands: Commands,
+    mut game_state: ResMut<GameState>,
+    mut turn_events: EventWriter<TurnEndEvent>,
+    // ...
+) {
+    // Implementation...
+}
+```
+
+## Commander Systems
+
+Systems specific to the Commander format.
+
+### Commander Tax
+
+```rust
+// Track and apply commander tax
+fn apply_commander_tax(
+    mut commands: Commands,
+    mut commander_query: Query<(Entity, &mut CommanderCard)>,
+    mut cast_events: EventReader<CommanderCastEvent>,
+    // ...
+) {
+    // Implementation...
+}
+```
+
+### Commander Damage
+
+```rust
+// Track commander damage between players
+fn track_commander_damage(
+    mut commands: Commands,
+    mut player_query: Query<(Entity, &mut CommanderDamage)>,
+    mut damage_events: EventReader<CommanderDamageEvent>,
+    // ...
+) {
+    // Implementation...
+}
+```
+
+## Event Systems
+
+Systems that process various game events.
+
+### Event Dispatch
+
+```rust
+// Main event dispatcher system
+fn dispatch_events(
+    mut commands: Commands,
+    mut card_played_events: EventReader<CardPlayedEvent>,
+    mut zone_change_events: EventReader<ZoneChangeEvent>,
+    // Other event readers...
+    mut card_query: Query<(Entity, &mut Card)>,
+    // ...
+) {
+    // Implementation...
+}
+```
+
+### Event Processing
+
+```rust
+// Process various types of events
+fn process_card_played(
+    mut commands: Commands,
+    mut card_played_events: EventReader<CardPlayedEvent>,
+    // ...
+) {
+    // Implementation...
+}
+
+fn process_zone_changes(
+    mut commands: Commands,
+    mut zone_change_events: EventReader<ZoneChangeEvent>,
+    // ...
+) {
+    // Implementation...
+}
+```
+
+## Snapshot Systems
+
+Systems for capturing and restoring game state.
+
+### Snapshot Creation
+
+```rust
+// Create a game state snapshot
+fn create_snapshot(
+    world: &World, 
+    game_state: Res<GameState>,
+    mut snapshot_events: EventWriter<SnapshotEvent>,
+    // ...
+) {
+    // Implementation...
+}
+```
+
+### Snapshot Restoration
+
+```rust
+// Restore from a snapshot
+fn apply_snapshot(
+    mut commands: Commands,
+    snapshot: Res<GameSnapshot>,
+    // ...
+) {
+    // Implementation...
+}
+```
+
+## UI Integration Systems
+
+Systems that connect game logic to the user interface.
+
+### UI Update Systems
+
+```rust
+// Update UI elements based on game state
+fn update_battlefield_ui(
+    mut commands: Commands,
+    card_query: Query<(Entity, &Card, &Zone)>,
+    mut ui_query: Query<(Entity, &mut UiTransform, &CardUi)>,
+    // ...
+) {
+    // Implementation...
+}
+
+// Handle user input events
+fn handle_card_interaction(
+    mut commands: Commands,
+    mut interaction_events: EventReader<CardInteractionEvent>,
+    card_query: Query<(Entity, &Card)>,
+    // ...
+) {
+    // Implementation...
+}
+```
+
+## Network Integration Systems
+
+Systems that handle network synchronization.
+
+### State Synchronization
+
+```rust
+// Synchronize game state across the network
+fn sync_game_state(
+    mut commands: Commands,
+    game_state: Res<GameState>,
+    mut replicon: ResMut<Replicon>,
+    // ...
+) {
+    // Implementation...
+}
+```
+
+### Action Broadcasting
+
+```rust
+// Broadcast player actions to all clients
+fn broadcast_actions(
+    mut commands: Commands,
+    mut action_events: EventReader<PlayerActionEvent>,
+    mut replicon: ResMut<Replicon>,
+    // ...
+) {
+    // Implementation...
+}
+```
+
+## System Registration
+
+Systems are registered with the Bevy App in the following manner:
+
+```rust
+// Register all game systems
+fn build_game_systems(app: &mut App) {
+    app
+        // Core game state systems
+        .add_systems(Startup, init_game_state)
+        .add_systems(Update, update_game_state)
+        
+        // Turn and phase systems
+        .add_systems(Update, (
+            start_turn,
+            change_phase,
+            end_turn,
+        ).chain())
+        
+        // Combat systems
+        .add_systems(Update, (
+            start_combat,
+            declare_attackers,
+            declare_blockers,
+            combat_damage,
+            apply_combat_damage,
+        ).chain().run_if(in_combat_phase))
+        
+        // Stack systems
+        .add_systems(Update, (
+            add_to_stack,
+            resolve_stack,
+            handle_priority,
+        ).chain())
+        
+        // Event systems
+        .add_systems(Update, dispatch_events)
+        .add_systems(Update, (
+            process_card_played,
+            process_zone_changes,
+        ))
+        
+        // Commander-specific systems
+        .add_systems(Update, (
+            apply_commander_tax,
+            track_commander_damage,
+        ))
+        
+        // Snapshot systems
+        .add_systems(Update, (
+            create_snapshot.run_if(resource_exists::<SnapshotConfig>()),
+            apply_snapshot.run_if(resource_exists::<PendingSnapshots>()),
+        ))
+        
+        // UI integration systems
+        .add_systems(Update, (
+            update_battlefield_ui,
+            handle_card_interaction,
+        ))
+        
+        // Network integration systems
+        .add_systems(Update, (
+            sync_game_state,
+            broadcast_actions,
+        ).run_if(resource_exists::<Replicon>()));
+}
+``` 

@@ -1,158 +1,405 @@
 # Component Reference
 
-This document provides a reference for all the components used in the Rummage game engine. Components are the building blocks of entities in Bevy's ECS architecture.
+This document provides a comprehensive reference of the various components used in Rummage to represent game entities and their properties.
+
+## Overview
+
+Components in Bevy ECS are small, reusable pieces of data that are attached to entities. Rummage uses components to represent various aspects of Magic: The Gathering cards, players, and game elements.
 
 ## Card Components
 
-Components that represent cards and their attributes.
+Components that represent aspects of Magic: The Gathering cards.
 
 ### Core Card Components
 
-| Component | Description |
-|-----------|-------------|
-| `CardBase` | Core card information including name, types, and text |
-| `ManaCost` | The mana cost associated with a card |
-| `CardOwner` | Tracks which player owns the card |
-| `CardController` | Tracks which player currently controls the card |
-| `CardLocation` | Current zone location of the card |
-| `CardState` | Current state of the card (tapped, face-down, etc.) |
+```rust
+/// The name of a card
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct CardName {
+    pub name: String,
+}
 
-### Card Type Components
+/// The mana cost of a card
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct CardCost {
+    pub cost: Mana,
+}
 
-| Component | Description |
-|-----------|-------------|
-| `Creature` | Marks an entity as a creature with power and toughness |
-| `Land` | Marks an entity as a land card |
-| `Artifact` | Marks an entity as an artifact |
-| `Enchantment` | Marks an entity as an enchantment |
-| `Planeswalker` | Marks an entity as a planeswalker with loyalty counters |
-| `Instant` | Marks an entity as an instant |
-| `Sorcery` | Marks an entity as a sorcery |
+/// The type information of a card (creature, instant, etc.)
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct CardTypeInfo {
+    pub types: CardTypes,
+}
 
-### Card Characteristic Components
+/// The card's rules text
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct CardRulesText {
+    pub rules_text: String,
+}
 
-| Component | Description |
-|-----------|-------------|
-| `CreatureStats` | Stores creature power, toughness, and damage |
-| `PlaneswalkerLoyalty` | Tracks planeswalker loyalty counters |
-| `CardSuperTypes` | Lists any super types (Legendary, Basic, etc.) |
-| `CardSubTypes` | Lists any subtypes (Human, Wizard, Equipment, etc.) |
-| `CardColors` | Colors associated with the card |
-| `ColorIdentity` | Color identity of the card (for Commander format) |
+/// The specific details of a card (power/toughness for creatures, etc.)
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct CardDetailsComponent {
+    pub details: CardDetails,
+}
 
-## Zone Components
+/// The keyword abilities of a card
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct CardKeywords {
+    pub keywords: KeywordAbilities,
+}
+```
 
-Components related to game zones.
+### Card State Components
 
-| Component | Description |
-|-----------|-------------|
-| `InHand` | Marks a card as being in a player's hand |
-| `InLibrary` | Marks a card as being in a player's library with position |
-| `OnBattlefield` | Marks a card as being on the battlefield |
-| `InGraveyard` | Marks a card as being in a graveyard |
-| `InExile` | Marks a card as being in exile |
-| `InStack` | Marks a card as being on the stack |
-| `InCommandZone` | Marks a card as being in the command zone |
+```rust
+/// Indicates a tapped card
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct Tapped;
+
+/// Indicates a card with summoning sickness
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct SummoningSickness;
+
+/// Indicates a card that is attacking
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct Attacker {
+    pub attacking_player: Entity,
+}
+
+/// Indicates a card that is blocking
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct Blocker {
+    pub blocking: Entity,
+}
+
+/// Damage marked on a card
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct DamageMarked {
+    pub amount: u32,
+}
+
+/// Counters on a card
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct Counters {
+    pub counter_map: HashMap<CounterType, u32>,
+}
+
+/// Indicates a card is a token
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct Token;
+```
+
+### Zone Components
+
+```rust
+/// Indicates which game zone a card is in
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct Zone {
+    pub zone_type: ZoneType,
+    pub owner: Entity,
+    pub position: Option<usize>,
+}
+
+/// Represents a game zone (library, graveyard, etc.)
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct ZoneContainer {
+    pub zone_type: ZoneType,
+    pub owner: Entity,
+    pub contents: Vec<Entity>,
+}
+```
 
 ## Player Components
 
-Components that represent player state.
+Components that represent aspects of players.
 
-| Component | Description |
-|-----------|-------------|
-| `Player` | Core player information |
-| `PlayerLife` | Tracks player's life total |
-| `ManaPool` | Tracks player's available mana |
-| `CommanderDamage` | Tracks commander damage received |
-| `PlayerHand` | Tracks the player's hand |
-| `PlayerLibrary` | Tracks the player's library |
-| `PlayerGraveyard` | Tracks the player's graveyard |
-| `CommanderIdentity` | Tracks the player's commander and its details |
+### Core Player Components
 
-## Turn Components
+```rust
+/// Core player component
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct Player {
+    pub id: usize,
+    pub life_total: i32,
+    pub is_active: bool,
+}
 
-Components related to turn structure and phases.
+/// Player's mana pool
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct ManaPool {
+    pub mana: Mana,
+}
 
-| Component | Description |
-|-----------|-------------|
-| `ActivePlayer` | Marks the player whose turn it is |
-| `PriorityHolder` | Marks the player who currently has priority |
-| `TurnNumber` | Keeps track of the current turn number |
-| `PhaseTracker` | Tracks the current phase/step of the turn |
-| `ExtraTurn` | Indicates a player will take an extra turn |
+/// Player's hand size
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct HandSize {
+    pub current: usize,
+    pub maximum: usize,
+}
+```
 
-## Combat Components
+### Commander-Specific Player Components
 
-Components related to combat.
+```rust
+/// Commander damage received by a player
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct CommanderDamage {
+    pub damage_map: HashMap<Entity, u32>,
+}
 
-| Component | Description |
-|-----------|-------------|
-| `Attacking` | Marks a creature as attacking |
-| `Blocking` | Marks a creature as blocking |
-| `AttackTarget` | Tracks what player or planeswalker is being attacked |
-| `BlockTarget` | Tracks what creature is being blocked |
-| `CombatDamageAssigned` | Tracks combat damage assignment |
-| `FirstStrike` | Indicates a creature has first strike |
-| `DoubleStrike` | Indicates a creature has double strike |
-| `DamagePrevention` | Tracks damage prevention effects |
+/// Commander color identity restrictions
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct ColorIdentity {
+    pub colors: HashSet<Color>,
+}
+```
 
-## Ability Components
+## Game State Components
 
-Components related to card abilities.
+Components that represent aspects of the game state.
 
-| Component | Description |
-|-----------|-------------|
-| `ActivatedAbility` | Defines an activated ability on a card |
-| `TriggeredAbility` | Defines a triggered ability on a card |
-| `StaticAbility` | Defines a static ability on a card |
-| `ReplacementEffect` | Defines a replacement effect |
-| `AbilityCost` | The cost associated with an ability |
-| `AbilityTarget` | Target requirements for an ability |
+### Turn and Phase Components
 
-## Commander Format Components
+```rust
+/// Current game turn
+#[derive(Resource, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Resource)]
+pub struct GameTurn {
+    pub number: u32,
+    pub active_player: Entity,
+}
 
-Components specific to the Commander format.
+/// Current game phase
+#[derive(Resource, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Resource)]
+pub struct GamePhase {
+    pub phase: Phase,
+    pub step: Option<Step>,
+}
 
-| Component | Description |
-|-----------|-------------|
-| `Commander` | Marks a card as a commander |
-| `CommanderTax` | Tracks the additional cost to cast a commander |
-| `PartnerCommander` | Indicates a commander has the partner ability |
-| `CommanderDamageSource` | Tracks damage dealt by a commander |
-| `CommanderDamageReceived` | Tracks commander damage received by a player |
+/// Priority holder
+#[derive(Resource, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Resource)]
+pub struct Priority {
+    pub player: Entity,
+    pub passed_players: HashSet<Entity>,
+}
+```
 
-## Effect Components
+### Stack Components
 
-Components related to ongoing effects.
+```rust
+/// The game stack (for spells and abilities)
+#[derive(Resource, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Resource)]
+pub struct Stack {
+    pub items: Vec<StackItem>,
+}
 
-| Component | Description |
-|-----------|-------------|
-| `ContinuousEffect` | Represents a continuous effect |
-| `EffectDuration` | Duration of an effect (until end of turn, etc.) |
-| `CounterModification` | Modifies counters on entities |
-| `StatModification` | Modifies power/toughness or other stats |
-| `AbilityGranted` | Indicates an ability granted by an effect |
+/// An item on the stack
+#[derive(Debug, Clone, Reflect, Serialize, Deserialize)]
+pub struct StackItem {
+    pub id: Uuid,
+    pub source: Entity,
+    pub controller: Entity,
+    pub item_type: StackItemType,
+    pub targets: Vec<Entity>,
+    pub effects: Vec<Effect>,
+}
+```
 
 ## UI Components
 
-Components related to visual presentation.
+Components used for the user interface representation.
 
-| Component | Description |
-|-----------|-------------|
-| `CardVisual` | Visual representation of a card |
-| `Draggable` | Makes an entity draggable in the UI |
-| `Droppable` | Makes an entity a valid drop target |
-| `Hoverable` | Enables hover effects on an entity |
-| `Selectable` | Makes an entity selectable |
-| `VisualState` | Tracks the visual state of an entity |
+### Card Visualization
+
+```rust
+/// Visual representation of a card
+#[derive(Component, Debug, Clone)]
+pub struct CardVisual {
+    pub entity: Entity,
+    pub card_face: Handle<Image>,
+    pub is_facedown: bool,
+    pub visual_state: CardVisualState,
+}
+
+/// UI states for cards
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum CardVisualState {
+    Normal,
+    Selected,
+    Targeted,
+    Highlighted,
+    Disabled,
+}
+
+/// Interactive card component
+#[derive(Component, Debug, Clone)]
+pub struct Interactable {
+    pub enabled: bool,
+    pub interaction_type: InteractionType,
+}
+```
+
+### Layout Components
+
+```rust
+/// Battlefield position
+#[derive(Component, Debug, Clone)]
+pub struct BattlefieldPosition {
+    pub row: usize,
+    pub column: usize,
+    pub rotation: f32,
+}
+
+/// Hand position
+#[derive(Component, Debug, Clone)]
+pub struct HandPosition {
+    pub index: usize,
+    pub total: usize,
+}
+```
 
 ## Network Components
 
-Components related to multiplayer functionality.
+Components used for network synchronization.
 
-| Component | Description |
-|-----------|-------------|
-| `NetworkIdentifier` | Unique identifier for networked entities |
-| `NetworkOwner` | Tracks which player owns this entity in the network |
-| `NetworkSynchronized` | Marks components that should sync over network |
-| `NetworkReplication` | Controls how an entity is replicated | 
+```rust
+/// Component for entities that should be synchronized over the network
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct NetworkSynchronized {
+    pub id: Uuid,
+    pub version: u32,
+    pub owner: Option<u64>, // Network ID of the owning client
+}
+
+/// Action performed by a player that needs network broadcasting
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct PlayerAction {
+    pub player: Entity,
+    pub action_type: ActionType,
+    pub targets: Vec<Entity>,
+    pub timestamp: f64,
+}
+```
+
+## System Components
+
+Internal components used by the game engine.
+
+```rust
+/// Marker for entities that should be included in snapshots
+#[derive(Component, Debug, Clone)]
+pub struct Snapshotable;
+
+/// Temporary component for marking entities that need processing
+#[derive(Component, Debug, Clone)]
+pub struct NeedsProcessing;
+
+/// Component for tracking when an entity was created
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct Created {
+    pub timestamp: f64,
+    pub turn: u32,
+}
+```
+
+## Component Integration
+
+Components are used together to represent complex game objects:
+
+```rust
+// Example of a full creature card entity with its components
+commands.spawn((
+    // Core card information
+    Card::new(
+        "Grizzly Bears",
+        Mana::new(1, 0, 0, 0, 1, 0), // 1G
+        CardTypes::new_creature(vec!["Bear".to_string()]),
+        CardDetails::new_creature(2, 2),
+        "", // No rules text
+    ),
+    // State information
+    Zone {
+        zone_type: ZoneType::Battlefield,
+        owner: player_entity,
+        position: None,
+    },
+    // Visual representation
+    CardVisual {
+        entity: Entity::PLACEHOLDER,
+        card_face: card_image_handle,
+        is_facedown: false,
+        visual_state: CardVisualState::Normal,
+    },
+    // Battlefield positioning
+    BattlefieldPosition {
+        row: 0,
+        column: 0,
+        rotation: 0.0,
+    },
+    // System markers
+    Snapshotable,
+    NetworkSynchronized {
+        id: Uuid::new_v4(),
+        version: 0,
+        owner: Some(player_network_id),
+    },
+));
+```
+
+## Component Registration
+
+Components must be registered with the Bevy type registry to be used with reflection, serialization, and UI:
+
+```rust
+fn register_components(app: &mut App) {
+    app.register_type::<CardName>()
+       .register_type::<CardCost>()
+       .register_type::<CardTypeInfo>()
+       .register_type::<CardRulesText>()
+       .register_type::<CardDetailsComponent>()
+       .register_type::<CardKeywords>()
+       .register_type::<Tapped>()
+       .register_type::<SummoningSickness>()
+       .register_type::<Attacker>()
+       .register_type::<Blocker>()
+       .register_type::<DamageMarked>()
+       .register_type::<Counters>()
+       .register_type::<Token>()
+       .register_type::<Zone>()
+       .register_type::<ZoneContainer>()
+       .register_type::<Player>()
+       .register_type::<ManaPool>()
+       .register_type::<HandSize>()
+       .register_type::<CommanderDamage>()
+       .register_type::<ColorIdentity>()
+       .register_type::<NetworkSynchronized>()
+       .register_type::<PlayerAction>()
+       .register_type::<Created>();
+} 

@@ -23,7 +23,7 @@ fn test_card_accessors() {
     // Test get_cost
     let cost = Card::get_cost(&card);
     assert_eq!(cost.converted_mana_cost(), 1);
-    assert_eq!(cost.colored_mana_cost(Color::Colorless), 1);
+    assert_eq!(cost.colored_mana_cost(Color::Generic), 1);
 
     // Test get_types
     let types = Card::get_types(&card);
@@ -36,12 +36,9 @@ fn test_card_accessors() {
 
     // Test get_details
     let details = Card::get_details(&card);
-    if let CardDetails::Creature {
-        power, toughness, ..
-    } = details
-    {
-        assert_eq!(*power, 2);
-        assert_eq!(*toughness, 2);
+    if let CardDetails::Creature(creature_card) = details {
+        assert_eq!(creature_card.power, 2);
+        assert_eq!(creature_card.toughness, 2);
     } else {
         panic!("Expected creature details");
     }
