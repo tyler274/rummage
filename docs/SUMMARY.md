@@ -10,6 +10,9 @@
   - [Stack](mtg_core/stack/index.md)
   - [State-Based Actions](mtg_core/state_actions/index.md)
   - [Combat](mtg_core/combat/index.md)
+    - [Combat Phases](mtg_core/combat/combat_phases.md)
+    - [First Strike and Double Strike](mtg_core/combat/first_strike.md)
+    - [Combat Damage Calculation](mtg_core/combat/damage_calculation.md)
   - [ECS Implementation](mtg_core/ecs_implementation.md)
 
 # Game Formats

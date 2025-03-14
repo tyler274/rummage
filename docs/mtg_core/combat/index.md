@@ -66,4 +66,8 @@ For format-specific extensions like Commander's combat rules, see the respective
 
 ---
 
-Next: [Combat Phases](combat_phases.md) 
+## Combat Documentation
+
+- [Combat Phases](combat_phases.md) - Detailed explanation of each combat step
+- [First Strike and Double Strike](first_strike.md) - How these abilities modify combat
+- [Combat Damage Calculation](damage_calculation.md) - Rules for damage assignment and resolution 
