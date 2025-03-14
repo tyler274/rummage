@@ -1,183 +1,210 @@
 # Priority System
 
-This document describes the implementation of Magic: The Gathering's priority system in Rummage.
+This document details the implementation of the priority system in Rummage, which determines which player can take actions at any given time during a game of Magic: The Gathering.
 
 ## Overview
 
-The priority system determines when players can take actions during a game of Magic: The Gathering. It's a fundamental component that controls the game's flow and ensures players have appropriate opportunities to act.
+The priority system is a fundamental part of Magic: The Gathering's turn structure. It determines when players can cast spells, activate abilities, and take other game actions. Understanding and correctly implementing the priority system is essential for proper game flow.
 
 ## Core Priority Rules
 
-In Magic: The Gathering, priority follows these key rules:
+The basic rules of priority in MTG are:
 
-1. The active player receives priority first in each step and phase.
-2. When a player has priority, they may cast spells, activate abilities, or pass.
-3. When a player passes priority, the next player in turn order receives priority.
-4. When all players pass priority in succession with an empty stack, the current step or phase ends.
-5. When all players pass priority in succession with objects on the stack, the top object on the stack resolves, then the active player receives priority.
+1. The active player receives priority first in each step and phase
+2. When a player has priority, they may:
+   - Cast a spell
+   - Activate an ability
+   - Take a special action
+   - Pass priority
+3. When a player passes priority, the next player in turn order receives priority
+4. When all players pass priority in succession:
+   - If the stack is empty, the current step or phase ends
+   - If the stack has objects, the top object on the stack resolves, then the active player gets priority again
 
-## Implementation Details
+## Implementation
 
-The priority system in Rummage is implemented through a combination of resources and systems:
+In Rummage, the priority system is implemented as follows:
 
 ```rust
-#[derive(Resource, Debug, Clone)]
-pub struct PriorityManager {
+#[derive(Resource)]
+pub struct PrioritySystem {
+    // The player who currently has priority
     pub current_player: Entity,
-    pub all_passed: bool,
-    pub stack_empty_when_passed: bool,
-    pub last_to_act: Option<Entity>,
-    pub player_order: Vec<Entity>,
+    
+    // Set of players who have passed priority in succession
+    pub passed_players: HashSet<Entity>,
+    
+    // Whether the priority system is currently active
+    pub active: bool,
 }
 
-impl PriorityManager {
-    pub fn new(starting_player: Entity, player_order: Vec<Entity>) -> Self {
-        PriorityManager {
-            current_player: starting_player,
-            all_passed: false,
-            stack_empty_when_passed: true,
-            last_to_act: None,
-            player_order,
-        }
-    }
-    
-    pub fn pass_priority(&mut self, stack: &Stack) -> PriorityResult {
-        let current_index = self.player_order
-            .iter()
-            .position(|&p| p == self.current_player)
-            .expect("Current player not found in player order");
-        
-        let next_index = (current_index + 1) % self.player_order.len();
-        let next_player = self.player_order[next_index];
-        
-        // Record if this is the last player to act
-        if let Some(last_player) = self.last_to_act {
-            if last_player == self.current_player {
-                // All players have passed priority
-                self.all_passed = true;
-                self.stack_empty_when_passed = stack.is_empty();
-                
-                if stack.is_empty() {
-                    return PriorityResult::EndPhase;
-                } else {
-                    return PriorityResult::ResolveStack;
-                }
-            }
-        } else {
-            // First player to pass
-            self.last_to_act = Some(self.current_player);
-        }
-        
-        // Pass to next player
-        self.current_player = next_player;
-        PriorityResult::Continue
-    }
-    
-    pub fn reset_for_new_phase(&mut self, active_player: Entity) {
-        self.current_player = active_player;
-        self.all_passed = false;
-        self.stack_empty_when_passed = true;
-        self.last_to_act = None;
-    }
-    
-    pub fn reset_after_stack_resolution(&mut self, active_player: Entity) {
-        self.current_player = active_player;
-        self.all_passed = false;
-        self.last_to_act = None;
-    }
+#[derive(Event)]
+pub struct PriorityEvent {
+    pub player: Entity,
+    pub action: PriorityAction,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PriorityResult {
-    Continue,      // Continue with priority passing
-    EndPhase,      // End the current phase
-    ResolveStack,  // Resolve the top of the stack
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PriorityAction {
+    Receive,  // Player receives priority
+    Pass,     // Player passes priority
+    TakeAction, // Player takes an action (cast spell, activate ability, etc.)
 }
 ```
 
-## Priority Systems
+## Priority Flow
 
-The following systems manage priority in the game:
+The flow of priority follows this pattern:
 
-1. **Initialize Priority System**: Sets up priority at the beginning of a phase
-2. **Handle Priority Actions System**: Processes actions from the player with priority
-3. **Pass Priority System**: Handles the passing of priority between players
-4. **Stack Resolution System**: Resolves stack objects when all players pass
+1. **Phase/Step Start**: At the beginning of each phase or step, the active player receives priority
+2. **Action Taken**: If a player takes an action, all players who have passed are reset, and priority returns to the active player
+3. **Passing**: When a player passes, the next player in turn order receives priority
+4. **Resolution**: When all players pass in succession, either the top of the stack resolves or the phase/step ends
+
+### Priority System Implementation
 
 ```rust
-pub fn handle_priority_actions(
+pub fn handle_priority_system(
     mut commands: Commands,
-    priority: Res<PriorityManager>,
-    mut action_events: EventReader<PlayerAction>,
-    mut pass_events: EventWriter<PassPriorityEvent>,
-    mut stack: ResMut<Stack>,
+    mut priority: ResMut<PrioritySystem>,
+    mut priority_events: EventReader<PriorityEvent>,
     game_state: Res<GameState>,
+    stack: Res<Stack>,
 ) {
-    for action in action_events.read() {
-        if action.player != priority.current_player {
-            // Only the player with priority can act
-            continue;
-        }
-        
-        match &action.action_type {
-            ActionType::CastSpell { card, targets } => {
-                // Handle casting a spell
-                // ...
+    for event in priority_events.iter() {
+        match event.action {
+            PriorityAction::Pass => {
+                // Record that this player passed
+                priority.passed_players.insert(event.player);
+                
+                // Check if all players have passed
+                if priority.passed_players.len() == game_state.players.len() {
+                    // All players have passed
+                    if !stack.items.is_empty() {
+                        // Resolve top of stack
+                        commands.add(resolve_stack_command());
+                        
+                        // Reset passed players
+                        priority.passed_players.clear();
+                        
+                        // Active player gets priority again
+                        priority.current_player = game_state.active_player;
+                    } else {
+                        // Stack is empty, end current phase/step
+                        commands.add(advance_phase_command());
+                        
+                        // Priority will be set by the phase transition system
+                        priority.active = false;
+                    }
+                } else {
+                    // Not all players have passed, give priority to next player
+                    let next_player = get_next_player(event.player, &game_state);
+                    priority.current_player = next_player;
+                }
             },
-            ActionType::ActivateAbility { source, ability_id, targets } => {
-                // Handle activating an ability
-                // ...
+            PriorityAction::TakeAction => {
+                // Player took an action, reset passed players
+                priority.passed_players.clear();
+                
+                // Active player gets priority again
+                priority.current_player = game_state.active_player;
             },
-            ActionType::PlayLand { card } => {
-                // Handle playing a land
-                // ...
-            },
-            ActionType::Pass => {
-                // Player passes priority
-                pass_events.send(PassPriorityEvent { 
-                    player: action.player,
-                    phase: game_state.current_phase.clone(),
-                });
-            },
-            // Other action types...
+            PriorityAction::Receive => {
+                // Player receives priority (usually at beginning of phase/step)
+                priority.current_player = event.player;
+                priority.active = true;
+            }
         }
     }
 }
 ```
 
-## Special Phase Rules
+## Special Priority Rules
 
-Priority is handled differently in certain phases and steps:
+### No Priority Phases
 
-1. **Untap Step**: No player receives priority
-2. **Cleanup Step**: No player receives priority unless a triggered ability triggers
-3. **Combat Damage Step**: Players receive priority after combat damage is dealt
+Some steps do not normally grant players priority:
+
+- **Untap Step**: No player receives priority during this step
+- **Cleanup Step**: No player receives priority unless a triggered ability triggers
 
 ```rust
-pub fn should_receive_priority(phase: &Phase) -> bool {
-    match phase {
-        Phase::Beginning(BeginningStep::Untap) => false,
-        Phase::Ending(EndingStep::Cleanup) => false,
+pub fn should_grant_priority(phase: Phase, step: Step) -> bool {
+    match (phase, step) {
+        (Phase::Beginning, Step::Untap) => false,
+        (Phase::Ending, Step::Cleanup) => false,
         _ => true,
     }
 }
 ```
 
+### Triggered Abilities During No-Priority Steps
+
+If a triggered ability triggers during a step where players don't normally receive priority, players will receive priority:
+
+```rust
+pub fn handle_cleanup_triggers(
+    mut commands: Commands,
+    mut priority: ResMut<PrioritySystem>,
+    game_state: Res<GameState>,
+    triggers: Res<TriggeredAbilities>,
+) {
+    // If we're in cleanup step and there are triggers
+    if game_state.current_phase == Phase::Ending && 
+       game_state.current_step == Step::Cleanup &&
+       !triggers.pending.is_empty() {
+        
+        // Grant priority to active player
+        priority.active = true;
+        priority.current_player = game_state.active_player;
+        priority.passed_players.clear();
+    }
+}
+```
+
+## APNAP Order
+
+When multiple players would receive priority simultaneously (such as for triggered abilities), they are processed in APNAP (Active Player, Non-Active Player) order:
+
+```rust
+pub fn get_players_in_apnap_order(game_state: &GameState) -> Vec<Entity> {
+    let mut players = Vec::new();
+    
+    // Start with active player
+    let mut current = game_state.active_player;
+    players.push(current);
+    
+    // Add remaining players in turn order
+    for _ in 1..game_state.players.len() {
+        current = get_next_player(current, game_state);
+        players.push(current);
+    }
+    
+    players
+}
+```
+
 ## Integration with Other Systems
 
-The priority system integrates closely with several other game systems:
+The priority system integrates with:
 
-- **Turn Structure**: Controls when phases begin and end based on priority passing
-- **Stack**: Determines when objects on the stack resolve
-- **Triggered Abilities**: Manages when triggered abilities are put on the stack
-- **State-Based Actions**: Checks whenever a player would receive priority
+1. **Turn Structure**: Phase and step transitions affect priority
+2. **Stack System**: Stack resolution and priority are tightly coupled
+3. **Action System**: Player actions affect priority flow
+4. **UI System**: The UI must indicate which player has priority
 
-## Format-Specific Extensions
+## Implementation Status
 
-For Commander-specific priority implementation details, see [Commander Priority System](../../formats/commander/turns_and_phases/priority_system.md).
+The priority system implementation currently:
 
-## Related Documentation
+- ✅ Handles basic priority passing
+- ✅ Integrates with stack resolution
+- ✅ Implements APNAP order
+- ✅ Handles special steps without priority
+- ✅ Supports triggered abilities during cleanup
+- 🔄 Implementing special actions that don't use the stack
+- 🔄 Handling priority with split second spells
 
-- [Turn Structure](index.md): How turns are structured
-- [Stack](../stack/index.md): How the stack handles spell and ability resolution
-- [Commander Priority System](../../formats/commander/turns_and_phases/priority_system.md): Commander-specific priority rules 
+---
+
+Next: [Turn Phases](phases.md) 
