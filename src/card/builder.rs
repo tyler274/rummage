@@ -49,21 +49,8 @@ impl CardBuilder {
         self
     }
 
-    /// Build the final Card components
-    pub fn build(
-        self,
-    ) -> Result<
-        (
-            Card,
-            CardName,
-            CardCost,
-            CardTypeInfo,
-            CardDetailsComponent,
-            CardRulesText,
-            CardKeywords,
-        ),
-        String,
-    > {
+    /// Build the final Card bundle
+    pub fn build(self) -> Result<Card, String> {
         let cost = self
             .cost
             .ok_or_else(|| "Card must have a mana cost".to_string())?;
@@ -78,32 +65,21 @@ impl CardBuilder {
         // Initialize keywords from rules text
         let keywords = KeywordAbilities::from_rules_text(&rules_text);
 
-        Ok((
-            Card {},
-            CardName { name: self.name },
-            CardCost { cost },
-            CardTypeInfo { types },
-            CardDetailsComponent {
+        Ok(Card {
+            name: CardName { name: self.name },
+            cost: CardCost { cost },
+            type_info: CardTypeInfo { types },
+            details: CardDetailsComponent {
                 details: card_details,
             },
-            CardRulesText { rules_text },
-            CardKeywords { keywords },
-        ))
+            rules_text: CardRulesText { rules_text },
+            keywords: CardKeywords { keywords },
+        })
     }
 
-    /// Build the card components or panic if any required fields are missing.
+    /// Build the card bundle or panic if any required fields are missing.
     /// This is useful for tests or when you're sure all fields are set.
-    pub fn build_or_panic(
-        self,
-    ) -> (
-        Card,
-        CardName,
-        CardCost,
-        CardTypeInfo,
-        CardDetailsComponent,
-        CardRulesText,
-        CardKeywords,
-    ) {
+    pub fn build_or_panic(self) -> Card {
         self.build()
             .expect("Failed to build card: missing required fields")
     }

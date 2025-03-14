@@ -137,6 +137,7 @@ pub fn spawn_players(
                 card_position,
                 player_index,
                 &table,
+                Some(&asset_server),
             );
         } else {
             info!(

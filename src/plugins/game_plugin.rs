@@ -20,7 +20,7 @@ impl Plugin for GamePlugin {
             .add_plugins(crate::card::CardPlugin)
             .add_plugins(crate::deck::DeckPlugin)
             .add_plugins(crate::game_engine::GameEnginePlugin)
-            .add_plugins(crate::text::TextPlugin)
+            .add_plugins(crate::text::TextPlugin::default())
             .add_plugins(PlayerPlugin)
             .insert_resource(DebugConfig {
                 show_text_positions: true,

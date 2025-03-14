@@ -1,5 +1,5 @@
 use super::components::Commander;
-use crate::card::{Card, CardTypes};
+use crate::card::{CardCost, CardRulesText, CardTypeInfo, CardTypes};
 use crate::mana::Color;
 use bevy::prelude::Entity;
 use std::collections::HashSet;
@@ -46,15 +46,21 @@ impl CommanderRules {
     /// In standard Commander, a card can be a commander if it's a legendary creature
     /// or specifically states that it "can be your commander".
     #[allow(dead_code)]
-    pub fn can_be_commander(card: &Card) -> bool {
+    pub fn can_be_commander(
+        card_type_info: &CardTypeInfo,
+        card_rules_text: &CardRulesText,
+    ) -> bool {
         // Legendary creatures can be commanders
-        if card.types.contains(CardTypes::LEGENDARY) && card.types.contains(CardTypes::CREATURE) {
+        if card_type_info.types.contains(CardTypes::LEGENDARY)
+            && card_type_info.types.contains(CardTypes::CREATURE)
+        {
             return true;
         }
 
         // Cards with "can be your commander" text can also be commanders
         // For simplicity, we're just checking if the text contains the phrase
-        card.rules_text
+        card_rules_text
+            .rules_text
             .to_lowercase()
             .contains("can be your commander")
     }
@@ -64,23 +70,23 @@ impl CommanderRules {
     /// A card's color identity consists of all colors in its mana cost,
     /// color indicator, and rules text.
     #[allow(dead_code)]
-    pub fn extract_color_identity(card: &Card) -> HashSet<Color> {
+    pub fn extract_color_identity(card_cost: &CardCost) -> HashSet<Color> {
         let mut colors = HashSet::new();
 
         // Add colors from mana cost
-        if card.cost.white > 0 {
+        if card_cost.cost.white > 0 {
             colors.insert(Color::WHITE);
         }
-        if card.cost.blue > 0 {
+        if card_cost.cost.blue > 0 {
             colors.insert(Color::BLUE);
         }
-        if card.cost.black > 0 {
+        if card_cost.cost.black > 0 {
             colors.insert(Color::BLACK);
         }
-        if card.cost.red > 0 {
+        if card_cost.cost.red > 0 {
             colors.insert(Color::RED);
         }
-        if card.cost.green > 0 {
+        if card_cost.cost.green > 0 {
             colors.insert(Color::GREEN);
         }
 

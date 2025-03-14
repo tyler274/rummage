@@ -13,5 +13,3 @@ pub mod name_text;
 pub mod power_toughness_text;
 pub mod rules_text;
 pub mod type_line_text;
-
-pub use card_text::spawn_card_text;

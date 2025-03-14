@@ -123,12 +123,12 @@ pub fn mana_cost_text_system(
 ) {
     for (entity, transform, card) in query.iter() {
         // Skip cards with no mana cost
-        if card.cost.is_empty() {
+        if card.cost.cost.is_empty() {
             continue;
         }
 
         // Convert Mana struct to display string
-        let mana_cost_string = card.cost.to_string();
+        let mana_cost_string = card.cost.cost.to_string();
 
         // Get card position and size
         let card_pos = Vec2::new(transform.translation.x, transform.translation.y);

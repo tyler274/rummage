@@ -1,6 +1,10 @@
 use crate::{
+    camera::components::GameCamera,
     card::Card,
-    menu::{components::*, logo::StarOfDavid},
+    menu::{
+        components::{MenuCamera, MenuItem},
+        logo::StarOfDavid,
+    },
 };
 use bevy::prelude::*;
 
@@ -117,4 +121,10 @@ pub fn cleanup_game(
             remaining_cameras
         );
     }
+}
+
+/// System to clean up temporary elements when leaving the card selection screen
+#[allow(dead_code)]
+pub fn cleanup_card_selection(_commands: Commands, _cards: Query<Entity, With<Card>>) {
+    // ... existing code ...
 }

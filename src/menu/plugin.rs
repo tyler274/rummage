@@ -211,7 +211,7 @@ fn ensure_single_menu_camera(
 }
 
 /// Starts the game loading process
-fn start_game_loading(
+pub fn start_game_loading(
     mut commands: Commands,
     mut next_state: ResMut<NextState<GameMenuState>>,
     mut context: ResMut<StateTransitionContext>,
@@ -378,13 +378,13 @@ fn debug_menu_visibility(
     }
 
     // Check if camera states have changed
-    let camera_state_changed = camera_count != log_state.last_camera_count || 
-        current_camera_states != log_state.camera_states;
-    
+    let camera_state_changed = camera_count != log_state.last_camera_count
+        || current_camera_states != log_state.camera_states;
+
     // Check if menu items have changed
-    let menu_items_changed = menu_item_count != log_state.last_item_count || 
-        visible_items != log_state.last_visible_items;
-    
+    let menu_items_changed = menu_item_count != log_state.last_item_count
+        || visible_items != log_state.last_visible_items;
+
     // Determine if there's been any meaningful change worth logging
     let state_changed = camera_state_changed || menu_items_changed;
 
@@ -409,4 +409,10 @@ fn debug_menu_visibility(
         debug!("Total menu items: {}", menu_item_count);
         debug!("Visible menu items: {}/{}", visible_items, menu_item_count);
     }
+}
+
+/// Handle cleanup when returning to main menu
+#[allow(dead_code)]
+fn handle_game_cleanup(_commands: Commands, _cards: Query<Entity, With<Card>>) {
+    // ... existing code ...
 }

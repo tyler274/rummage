@@ -73,7 +73,9 @@ pub fn get_example_cards(_owner: Entity) -> Vec<crate::card::Card> {
     let mut cards = Vec::new();
 
     // Alpha set cards
-    cards.push(crate::card::sets::alpha::ancestral_recall::get_card());
+    let (card, _, _, _, _, _, _) = crate::card::sets::alpha::ancestral_recall::get_card();
+    cards.push(card);
+
     cards.push(crate::card::sets::alpha::counterspell::get_card());
     cards.push(crate::card::sets::alpha::fireball::get_card());
     cards.push(crate::card::sets::alpha::lightning_bolt::get_card());
@@ -94,12 +96,14 @@ pub fn get_example_cards(_owner: Entity) -> Vec<crate::card::Card> {
 
 // Create a deck containing all implemented cards for a player
 // This gives all players access to the full collection of cards
+#[allow(dead_code)]
 pub fn get_player_specific_cards() -> Vec<crate::card::Card> {
     let mut cards = Vec::new();
 
-    // Include all implemented cards regardless of player index
-    // Alpha set
-    cards.push(crate::card::sets::alpha::ancestral_recall::get_card());
+    // Alpha set cards
+    let (card, _, _, _, _, _, _) = crate::card::sets::alpha::ancestral_recall::get_card();
+    cards.push(card);
+
     cards.push(crate::card::sets::alpha::counterspell::get_card());
     cards.push(crate::card::sets::alpha::fireball::get_card());
     cards.push(crate::card::sets::alpha::lightning_bolt::get_card());
@@ -107,16 +111,16 @@ pub fn get_player_specific_cards() -> Vec<crate::card::Card> {
     cards.push(crate::card::sets::alpha::time_walk::get_card());
     cards.push(crate::card::sets::alpha::wheel_of_fortune::get_card());
 
-    // Alliances set
+    // Alliances set cards
     cards.push(crate::card::sets::alliances::force_of_will::get_card());
 
-    // Legends set
+    // Legends set cards
     cards.push(crate::card::sets::legends::mana_drain::get_card());
 
-    // Scourge set
+    // Scourge set cards
     cards.push(crate::card::sets::scourge::dragon_mage::get_card());
 
-    // Innistrad Midnight Hunt set
+    // Innistrad Midnight Hunt
     cards.push(crate::card::sets::innistrad_midnight_hunt::briarbridge_tracker::get_card());
     cards.push(crate::card::sets::innistrad_midnight_hunt::brutal_cathar::get_card());
     cards.push(crate::card::sets::innistrad_midnight_hunt::cathars_call::get_card());

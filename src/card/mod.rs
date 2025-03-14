@@ -34,7 +34,6 @@ pub use types::{CardTypes, CreatureType, format_type_line};
 
 // Import external crates
 use crate::mana::Mana;
-use crate::menu::GameMenuState;
 use bevy::prelude::*;
 
 /// Card rarity in Magic: The Gathering

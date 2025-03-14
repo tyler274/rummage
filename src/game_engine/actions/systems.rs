@@ -1,4 +1,4 @@
-use crate::card::{Card, CardTypes};
+use crate::card::{Card, CardCost, CardTypeInfo, CardTypes};
 use crate::game_engine::state::GameState;
 use crate::game_engine::{GameStack, Phase, PrioritySystem};
 use crate::player::Player;
@@ -18,7 +18,7 @@ pub fn process_game_actions(
     phase: Res<Phase>,
     mut game_action_events: EventReader<GameAction>,
     _player_query: Query<&Player>,
-    card_query: Query<&Card>,
+    card_query: Query<(&Card, &CardTypeInfo, &CardCost)>,
 ) {
     // Process game actions from the event queue
     for action in game_action_events.read() {
@@ -29,8 +29,8 @@ pub fn process_game_actions(
                     // Check if the player has already played a land this turn
                     if game_state.can_play_land(*player) {
                         // Check if the card is actually a land
-                        if let Ok(card) = card_query.get(*land_card) {
-                            if card.types.contains(CardTypes::LAND) {
+                        if let Ok((_, card_type_info, _)) = card_query.get(*land_card) {
+                            if card_type_info.types.contains(CardTypes::LAND) {
                                 // Mark that the player has played a land this turn
                                 game_state.record_land_played(*player);
                                 // In a full implementation, you would move the land from hand to battlefield
@@ -50,12 +50,12 @@ pub fn process_game_actions(
                 mana_payment: _,
             } => {
                 // Check if it's a valid time to cast this spell
-                if let Ok(card) = card_query.get(*spell_card) {
-                    let is_instant = is_instant_cast(card);
+                if let Ok((_, card_type_info, card_cost)) = card_query.get(*spell_card) {
+                    let is_instant = is_instant_cast(card_type_info);
                     if is_instant || valid_time_for_sorcery(&game_state, &phase, &_stack, *player) {
                         // In a full implementation, check if the player can pay the cost
                         if let Ok(player_entity) = _player_query.get(*player) {
-                            if can_pay_mana(player_entity, &card.cost) {
+                            if can_pay_mana(player_entity, &card_cost.cost) {
                                 // In a full implementation, you would move the spell to the stack
                                 info!("Spell cast successfully");
                             }

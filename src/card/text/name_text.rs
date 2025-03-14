@@ -78,7 +78,8 @@ pub fn name_text_system(
         let card_size = Vec2::new(layout.card_width, layout.card_height);
 
         // Create formatted card name - truncate if too long
-        let name_text = format_card_name(&card.name, font_size, layout.name_width * card_size.x);
+        let name_text =
+            format_card_name(&card.name.name, font_size, layout.name_width * card_size.x);
 
         // Calculate position relative to card
         let name_position = Vec2::new(

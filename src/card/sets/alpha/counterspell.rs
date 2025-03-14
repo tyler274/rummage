@@ -27,7 +27,7 @@ pub fn spawn(commands: &mut Commands) -> Option<Entity> {
     Some(entity)
 }
 
-/// Get the card definition
+/// Get the card bundle
 #[allow(dead_code)]
 pub fn get_card() -> Card {
     Card::builder("Counterspell")
@@ -36,4 +36,4 @@ pub fn get_card() -> Card {
         .details(CardDetails::Other)
         .rules_text("Counter target spell.")
         .build_or_panic()
-} 
+}

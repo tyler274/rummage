@@ -1,4 +1,4 @@
-use crate::card::{Card, CardTypes};
+use crate::card::{CardTypeInfo, CardTypes};
 use crate::game_engine::phase::{PostcombatStep, PrecombatStep};
 use crate::game_engine::state::GameState;
 use crate::game_engine::{GameStack, Phase};
@@ -47,8 +47,8 @@ pub fn valid_time_for_sorcery(
 }
 
 /// Checks if a card can be cast at instant speed
-pub fn is_instant_cast(card: &Card) -> bool {
-    card.types.contains(CardTypes::INSTANT) ||
+pub fn is_instant_cast(card_type_info: &CardTypeInfo) -> bool {
+    card_type_info.types.contains(CardTypes::INSTANT) ||
     // Flash would be checked here
     false
 }

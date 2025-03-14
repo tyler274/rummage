@@ -63,13 +63,16 @@ impl CardRegistry {
             );
         }
 
-        // Add the card to the set registry
+        // Always add to all cards list
+        self.all_cards.push(entity);
+
+        // Add to set-specific registries
         if let Some(set_registry) = self.sets.get_mut(&set.code) {
             // Add to general cards list
             set_registry.cards.push(entity);
 
             // Add to color-specific list based on the card's color identity
-            let color = card.cost.color;
+            let color = card.cost.cost.color;
             set_registry
                 .by_color
                 .entry(color)
@@ -84,7 +87,7 @@ impl CardRegistry {
                 .push(entity);
 
             // Add to type-specific lists
-            for type_name in card.type_line().split_whitespace() {
+            for type_name in Card::type_line(card).split_whitespace() {
                 if !["—", "-"].contains(&type_name) {
                     set_registry
                         .by_type
@@ -94,9 +97,6 @@ impl CardRegistry {
                 }
             }
         }
-
-        // Add to the global cards list
-        self.all_cards.push(entity);
     }
 
     /// Get all cards in a specific set
@@ -189,7 +189,7 @@ pub mod systems {
         commands.insert_resource(CardRegistry::default());
     }
 
-    /// System that adds a card to the registry when it's created
+    /// Register new cards as they are added to the world
     pub fn register_card(
         mut registry: ResMut<CardRegistry>,
         query: Query<(Entity, &Card, &CardSet, &Rarity), Added<Card>>,
@@ -198,4 +198,22 @@ pub mod systems {
             registry.register_card(entity, card, set, *rarity);
         }
     }
+}
+
+/// Helper function to spawn a card and add set info + rarity
+pub fn spawn_card_with_set_info(
+    commands: &mut Commands,
+    card: crate::card::Card,
+    set_info: CardSet,
+    rarity: Rarity,
+) -> Entity {
+    // Store the name before moving card
+    let card_name = card.name.name.clone();
+
+    commands
+        .spawn(card)
+        .insert(set_info)
+        .insert(rarity)
+        .insert(Name::new(card_name))
+        .id()
 }

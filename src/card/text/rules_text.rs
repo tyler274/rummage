@@ -105,6 +105,7 @@ fn add_mana_symbols_as_children(
 ) {
     // This approach caused the TextSpan warning and has been removed
     // We now use a simpler approach with just a plain Text2d component
+    unimplemented!()
 }
 
 /// Extract segments of text, separating mana symbols from regular text

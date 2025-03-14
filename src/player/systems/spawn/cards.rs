@@ -1,22 +1,21 @@
 use super::table::TableLayout;
 use crate::camera::components::{AppLayer, GameCamera};
-use crate::card::{Card, CardDetails, Draggable};
-use crate::mana::convert_rules_text_to_symbols;
-use crate::text::components::{
-    CardManaCostText, CardNameText, CardPowerToughness, CardRulesText, CardTypeLine,
-};
+use crate::card::Draggable;
+use crate::card::text::card_text::spawn_card_text_components;
+
 use bevy::prelude::*;
 
 /// Helper function to spawn visual card entities
 pub fn spawn_visual_cards(
     commands: &mut Commands,
-    display_cards: Vec<Card>,
+    display_cards: Vec<crate::card::Card>,
     game_cameras: &Query<Entity, With<GameCamera>>,
     card_size: &Vec2,
     spacing_multiplier: f32,
     player_position: Vec3,
     player_index: usize,
     table: &TableLayout,
+    asset_server_option: Option<&AssetServer>,
 ) {
     // Increase the spacing between cards
     let spacing = card_size.x * spacing_multiplier * 1.5;
@@ -48,33 +47,13 @@ pub fn spawn_visual_cards(
         )
     };
 
-    info!(
-        "Spawning {} cards for player {} at position ({:.2}, {:.2}, {:.2})",
-        display_cards.len(),
-        player_index,
-        start_pos.x,
-        start_pos.y,
-        start_pos.z
-    );
-
-    // Get game camera entity to set render target
-    let game_camera_entities: Vec<Entity> = game_cameras.iter().collect();
-    if !game_camera_entities.is_empty() {
-        info!(
-            "Found game camera for card rendering: {:?}",
-            game_camera_entities[0]
-        );
-    } else {
-        info!("No game camera found, using default camera");
-    }
-
-    // Spawn visual cards in appropriate arrangement
+    // Spawn each card with proper positioning
     for (i, card) in display_cards.into_iter().enumerate() {
-        // Use a base z-index based on player index
-        let base_z = player_index as f32 * 100.0;
-        let z = base_z + i as f32;
+        let card_clone = card.clone(); // Clone card to use later
+        // Calculate z-index based on position to ensure proper layering
+        let z = 0.1 + (i as f32 * 0.001);
 
-        // Calculate position based on direction and starting position
+        // Calculate the position for this card
         let position = Vec3::new(
             start_pos.x + card_direction.x * i as f32,
             start_pos.y + card_direction.y * i as f32,
@@ -85,100 +64,63 @@ pub fn spawn_visual_cards(
 
         info!(
             "Positioning card '{}' at ({:.2}, {:.2}, {:.2})",
-            card.name, position.x, position.y, position.z
+            card.name.name, position.x, position.y, position.z
         );
 
         let card_entity = commands
-            .spawn((
-                card.clone(),
-                Sprite {
+            .spawn(card)
+            .insert(Sprite {
+                color: Color::srgb(0.85, 0.85, 0.85),
+                custom_size: Some(*card_size),
+                ..default()
+            })
+            .insert(transform)
+            .insert(GlobalTransform::default())
+            .insert(Visibility::default())
+            .insert(InheritedVisibility::default())
+            .insert(ViewVisibility::default())
+            .insert(Draggable {
+                dragging: false,
+                drag_offset: Vec2::ZERO,
+                z_index: z,
+            })
+            .insert(AppLayer::Cards.layer()) // Use the specific Cards layer
+            .id();
+
+        // Spawn text components directly instead of just adding marker components
+        if let Some(game_asset_server) = asset_server_option {
+            // Instead of using world_mut(), use the card directly
+            // Convert card::components::CardRulesText to text::components::CardRulesText
+            let rules_text = crate::text::components::CardRulesText {
+                rules_text: card_clone.rules_text.rules_text.clone(),
+            };
+
+            // With our new Card bundle, we can get all the components directly from the card
+            spawn_card_text_components(
+                commands,
+                card_entity,
+                (
+                    &card_clone, // Use the cloned Card bundle
+                    &card_clone.name,
+                    &card_clone.cost,
+                    &card_clone.type_info,
+                    &card_clone.details,
+                    &rules_text, // Use the converted rules text
+                ),
+                &transform,
+                &Sprite {
                     color: Color::srgb(0.85, 0.85, 0.85),
                     custom_size: Some(*card_size),
                     ..default()
                 },
-                transform,
-                GlobalTransform::default(),
-                Visibility::default(),
-                InheritedVisibility::default(),
-                ViewVisibility::default(),
-                Draggable {
-                    dragging: false,
-                    drag_offset: Vec2::ZERO,
-                    z_index: z,
-                },
-                AppLayer::Cards.layer(), // Use the specific Cards layer
-            ))
-            .id();
-
-        // Spawn card text content using specialized components
-        let _name_text_entity = commands
-            .spawn((
-                CardNameText {
-                    name: card.name.clone(),
-                },
-                Transform::default(),
-                AppLayer::Cards.layer(), // Use the specific Cards layer
-            ))
-            .set_parent(card_entity)
-            .id();
-
-        let _mana_cost_text_entity = commands
-            .spawn((
-                CardManaCostText {
-                    mana_cost: card.cost.to_string(),
-                },
-                Transform::default(),
-                AppLayer::Cards.layer(), // Use the specific Cards layer
-            ))
-            .set_parent(card_entity)
-            .id();
-
-        let _type_line_text_entity = commands
-            .spawn((
-                CardTypeLine {
-                    type_line: card.type_line(),
-                },
-                Transform::default(),
-                AppLayer::Cards.layer(), // Use the specific Cards layer
-            ))
-            .set_parent(card_entity)
-            .id();
-
-        let _rules_text_entity = commands
-            .spawn((
-                CardRulesText {
-                    rules_text: convert_rules_text_to_symbols(&card.rules_text),
-                },
-                Transform::default(),
-                AppLayer::Cards.layer(), // Use the specific Cards layer
-            ))
-            .set_parent(card_entity)
-            .id();
-
-        // Spawn power/toughness text if applicable
-        if let CardDetails::Creature(creature) = &card.card_details {
-            let pt_text_entity = commands
-                .spawn((
-                    CardPowerToughness {
-                        power_toughness: format!("{}/{}", creature.power, creature.toughness),
-                    },
-                    Transform::default(),
-                    AppLayer::Cards.layer(), // Use the specific Cards layer
-                ))
-                .set_parent(card_entity)
-                .id();
-
-            info!(
-                "Spawned power/toughness text entity {:?} as child of card entity {:?}",
-                pt_text_entity, card_entity
+                game_asset_server,
+                None,
             );
         }
 
-        info!("Spawned text entities for card {:?}", card_entity);
+        // Make the card a child of the game camera to ensure it's rendered in the game view
+        for camera in game_cameras.iter() {
+            commands.entity(camera).add_child(card_entity);
+        }
     }
-
-    info!(
-        "Finished spawning cards, total width={:.2}, using spacing={:.2}",
-        total_width, spacing
-    );
 }

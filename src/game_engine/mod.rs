@@ -77,25 +77,26 @@ impl Plugin for GameEnginePlugin {
             (
                 // Core game systems
                 phase_transition_system,
-                priority_system.after(phase_transition_system),
-                priority_passing_system.after(priority_system),
-                stack::stack_resolution_system.after(priority_passing_system),
-                state::state_based_actions_system.after(stack::stack_resolution_system),
-                state::trigger_state_based_actions_system.after(state::state_based_actions_system),
-                process_game_actions.after(state::trigger_state_based_actions_system),
+                priority_system,
+                priority_passing_system,
+                stack::stack_resolution_system,
+                state::state_based_actions_system,
+                state::trigger_state_based_actions_system,
+                process_game_actions,
                 // Turn systems
-                handle_turn_start.after(process_game_actions),
-                handle_turn_end.after(handle_turn_start),
+                handle_turn_start,
+                handle_turn_end,
                 // Combat systems in sequence
-                initialize_combat_phase.after(handle_turn_end),
-                handle_declare_attackers_event.after(initialize_combat_phase),
-                declare_attackers_system.after(handle_declare_attackers_event),
-                handle_declare_blockers_event.after(declare_attackers_system),
-                declare_blockers_system.after(handle_declare_blockers_event),
-                assign_combat_damage_system.after(declare_blockers_system),
-                process_combat_damage_system.after(assign_combat_damage_system),
-                end_combat_system.after(process_combat_damage_system),
+                initialize_combat_phase,
+                handle_declare_attackers_event,
+                declare_attackers_system,
+                handle_declare_blockers_event,
+                declare_blockers_system,
+                assign_combat_damage_system,
+                process_combat_damage_system,
+                end_combat_system,
             )
+                .chain()
                 .run_if(in_state(GameMenuState::InGame)),
         );
 
@@ -217,21 +218,23 @@ pub fn register_game_engine(app: &mut App) {
         (
             // Core game systems
             phase_transition_system,
-            priority_system.after(phase_transition_system),
-            priority_passing_system.after(priority_system),
-            stack::stack_resolution_system.after(priority_passing_system),
-            state::state_based_actions_system.after(stack::stack_resolution_system),
-            state::trigger_state_based_actions_system.after(state::state_based_actions_system),
+            priority_system,
+            priority_passing_system,
+            stack::stack_resolution_system,
+            state::state_based_actions_system,
+            state::trigger_state_based_actions_system,
+            process_game_actions,
             // Combat systems
-            initialize_combat_phase.after(state::trigger_state_based_actions_system),
-            handle_declare_attackers_event.after(initialize_combat_phase),
-            declare_attackers_system.after(handle_declare_attackers_event),
-            handle_declare_blockers_event.after(declare_attackers_system),
-            declare_blockers_system.after(handle_declare_blockers_event),
-            assign_combat_damage_system.after(declare_blockers_system),
-            process_combat_damage_system.after(assign_combat_damage_system),
-            end_combat_system.after(process_combat_damage_system),
+            initialize_combat_phase,
+            handle_declare_attackers_event,
+            declare_attackers_system,
+            handle_declare_blockers_event,
+            declare_blockers_system,
+            assign_combat_damage_system,
+            process_combat_damage_system,
+            end_combat_system,
         )
+            .chain()
             .run_if(in_state(GameMenuState::InGame)),
     );
 

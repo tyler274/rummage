@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use bevy::{prelude::*, render::mesh::Mesh};
 
-use crate::card::Card;
+use crate::card::{Card, CardCost};
 use crate::menu::state::GameMenuState;
 
 /// Component to mark an entity as an HDR emissive card for visual effects
@@ -17,8 +17,8 @@ pub struct EmissiveCard {
 #[derive(Component)]
 pub struct EmissiveCardMaterial(pub Handle<StandardMaterial>);
 
-// Type that will store our card glow color rules
-type CardColorRule = Box<dyn Fn(&Card) -> bool + Send + Sync>;
+/// Type alias for a function that determines if a card matches a color rule
+type CardColorRule = Box<dyn Fn(&CardCost) -> bool + Send + Sync>;
 
 // Struct to make the trait object approach cleaner
 pub struct CardEmissiveProperties {
@@ -37,48 +37,48 @@ pub fn spawn_emissive_cards(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    cards: Query<(Entity, &Card, &Transform)>,
+    cards: Query<(Entity, &Card, &CardCost, &Transform)>,
 ) {
     // Define card color rules - using boxed trait objects to allow different closures
     let color_rules = vec![
         // White cards - bright white/gold glow
         CardEmissiveProperties {
-            matcher: Box::new(|card: &Card| card.cost.white > 0),
+            matcher: Box::new(|cost: &CardCost| cost.cost.white > 0),
             color: Color::srgb(1.0, 0.95, 0.8),
             intensity: 5.0,
         },
         // Blue cards - cool blue glow
         CardEmissiveProperties {
-            matcher: Box::new(|card: &Card| card.cost.blue > 0),
+            matcher: Box::new(|cost: &CardCost| cost.cost.blue > 0),
             color: Color::srgb(0.2, 0.5, 1.0),
             intensity: 4.0,
         },
         // Black cards - dark purple/black glow
         CardEmissiveProperties {
-            matcher: Box::new(|card: &Card| card.cost.black > 0),
+            matcher: Box::new(|cost: &CardCost| cost.cost.black > 0),
             color: Color::srgb(0.5, 0.1, 0.8),
             intensity: 3.0,
         },
         // Red cards - fiery red/orange glow
         CardEmissiveProperties {
-            matcher: Box::new(|card: &Card| card.cost.red > 0),
+            matcher: Box::new(|cost: &CardCost| cost.cost.red > 0),
             color: Color::srgb(1.0, 0.3, 0.1),
             intensity: 4.5,
         },
         // Green cards - nature green glow
         CardEmissiveProperties {
-            matcher: Box::new(|card: &Card| card.cost.green > 0),
+            matcher: Box::new(|cost: &CardCost| cost.cost.green > 0),
             color: Color::srgb(0.2, 1.0, 0.3),
             intensity: 3.5,
         },
         // Artifact/colorless - silver/chrome glow
         CardEmissiveProperties {
-            matcher: Box::new(|card: &Card| {
-                card.cost.white == 0
-                    && card.cost.blue == 0
-                    && card.cost.black == 0
-                    && card.cost.red == 0
-                    && card.cost.green == 0
+            matcher: Box::new(|cost: &CardCost| {
+                cost.cost.white == 0
+                    && cost.cost.blue == 0
+                    && cost.cost.black == 0
+                    && cost.cost.red == 0
+                    && cost.cost.green == 0
             }),
             color: Color::srgb(0.8, 0.8, 0.9),
             intensity: 3.0,
@@ -86,13 +86,13 @@ pub fn spawn_emissive_cards(
     ];
 
     // Create 3D card mesh for each card
-    for (entity, card, transform) in cards.iter() {
+    for (entity, _card, card_cost, transform) in cards.iter() {
         // Find the matching color rule
         let mut matched_color = Color::srgb(0.8, 0.8, 0.8);
         let mut matched_intensity = 3.0;
 
         for rule in &color_rules {
-            if (rule.matcher)(card) {
+            if (rule.matcher)(card_cost) {
                 matched_color = rule.color;
                 matched_intensity = rule.intensity;
                 break;
