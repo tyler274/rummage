@@ -135,6 +135,13 @@ impl Plugin for MenuPlugin {
                     setup_settings_transition,
                 ),
             )
+            .add_systems(
+                OnExit(GameMenuState::Settings),
+                |mut settings_state: ResMut<NextState<SettingsMenuState>>| {
+                    info!("Exiting settings, resetting SettingsMenuState to Disabled");
+                    settings_state.set(SettingsMenuState::Disabled);
+                },
+            )
             // InGame state systems
             .add_systems(
                 OnEnter(GameMenuState::InGame),
