@@ -70,6 +70,7 @@
     - [Deck Builder](card_systems/deck_database/deck_builder.md)
     - [Deck Registry](card_systems/deck_database/deck_registry.md)
     - [Format Validation](card_systems/deck_database/format_validation.md)
+    - [Persistent Storage](card_systems/deck_database/persistent_storage.md)
   - [Card Effects](card_systems/effects/index.md)
     - [Effect Resolution](card_systems/effects/effect_resolution.md)
     - [Targeting](card_systems/effects/targeting.md)
@@ -159,6 +160,7 @@
   - [Overview](core_systems/snapshot/overview.md)
   - [Implementation](core_systems/snapshot/implementation.md)
   - [Integration with Networking](core_systems/snapshot/networking_integration.md)
+  - [Persistent Storage](core_systems/snapshot/bevy_persistent_integration.md)
   - [Testing](core_systems/snapshot/testing.md)
   - [API Reference](core_systems/snapshot/api_reference.md)
 
@@ -187,6 +189,7 @@
     - [Camera Management](development/bevy_guide/camera.md)
     - [Random Number Generation](development/bevy_guide/rng.md)
     - [Deprecated APIs](development/bevy_guide/deprecated_apis.md)
+    - [Persistent Storage](development/bevy_guide/persistent_storage.md)
   - [Testing Integration](development/testing_integration.md)
 
 # Reference
