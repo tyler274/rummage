@@ -4,5 +4,3 @@ Text2dBundle, SpriteBundle, NodeBundle, etc are deprecated for Text2d, Sprite, a
 Always check for and fix any compiler warnings and errors.
 After a code change check if there are no compiler warnings and errors.
 Stage all the changed files determined using "git status" with a descriptive commit message. 
-If a command such as "cargo check" or "cargo test" hangs without output for 10 seconds or more just rerun it,
-there's a bug. 
