@@ -90,7 +90,7 @@ pub struct Card {
 }
 
 impl Card {
-    /// Create a new Card with all required components
+    /// Create a new Card from its component parts
     pub fn new(
         name: &str,
         cost: Mana,
@@ -115,23 +115,9 @@ impl Card {
         }
     }
 
-    /// Create a card builder for fluent configuration
+    /// Create a new Card builder
     pub fn builder(name: &str) -> CardBuilder {
         CardBuilder::new(name)
-    }
-
-    /// Helper method to spawn a card directly without using the builder
-    pub fn spawn(
-        commands: &mut Commands,
-        name: &str,
-        cost: Mana,
-        types: CardTypes,
-        details: CardDetails,
-        rules_text: &str,
-    ) -> Entity {
-        commands
-            .spawn(Self::new(name, cost, types, details, rules_text))
-            .id()
     }
 
     /// Extract all individual components from a Card to match the old API
@@ -163,6 +149,24 @@ impl Card {
     /// Get the card's type line for display
     pub fn type_line_from_components(types: &CardTypes) -> String {
         format_type_line(types, &CardDetails::Other) // Default to Other when no details are provided
+    }
+}
+
+// Test-only Card methods to avoid dead code warnings
+#[cfg(test)]
+impl Card {
+    /// Helper method to spawn a card directly without using the builder
+    pub fn spawn(
+        commands: &mut Commands,
+        name: &str,
+        cost: Mana,
+        types: CardTypes,
+        details: CardDetails,
+        rules_text: &str,
+    ) -> Entity {
+        commands
+            .spawn(Self::new(name, cost, types, details, rules_text))
+            .id()
     }
 
     /// Helper method to get a card's types from a query

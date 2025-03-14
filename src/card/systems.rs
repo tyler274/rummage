@@ -142,15 +142,15 @@ pub fn debug_render_text_positions(
     }
 }
 
-// Component query filter for draggable card entities
-pub fn draggable_card_filter(card: Query<(), (With<Card>, With<Draggable>)>) -> bool {
-    !card.is_empty()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use bevy::prelude::*;
+
+    // Define the draggable_card_filter function for testing
+    fn draggable_card_filter(card: Query<(), (With<Card>, With<Draggable>)>) -> bool {
+        !card.is_empty()
+    }
 
     /// Test for the draggable_card_filter function
     #[test]

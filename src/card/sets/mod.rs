@@ -48,6 +48,7 @@ impl Default for CardRegistry {
 
 impl CardRegistry {
     /// Register a new card with the registry
+    #[allow(dead_code)]
     pub fn register_card(&mut self, entity: Entity, card: &Card, set: &CardSet, rarity: Rarity) {
         // Create the set registry if it doesn't exist
         if !self.sets.contains_key(&set.code) {
@@ -87,7 +88,9 @@ impl CardRegistry {
                 .push(entity);
 
             // Add to type-specific lists
-            for type_name in Card::type_line(card).split_whitespace() {
+            let type_line =
+                crate::card::format_type_line(&card.type_info.types, &card.details.details);
+            for type_name in type_line.split_whitespace() {
                 if !["—", "-"].contains(&type_name) {
                     set_registry
                         .by_type
@@ -185,11 +188,13 @@ pub mod systems {
     use crate::card::{Card, CardSet, Rarity, sets::CardRegistry};
 
     /// System that initializes the card registry
+    #[allow(dead_code)]
     pub fn init_card_registry(mut commands: Commands) {
         commands.insert_resource(CardRegistry::default());
     }
 
     /// Register new cards as they are added to the world
+    #[allow(dead_code)]
     pub fn register_card(
         mut registry: ResMut<CardRegistry>,
         query: Query<(Entity, &Card, &CardSet, &Rarity), Added<Card>>,
@@ -201,6 +206,7 @@ pub mod systems {
 }
 
 /// Helper function to spawn a card and add set info + rarity
+#[allow(dead_code)]
 pub fn spawn_card_with_set_info(
     commands: &mut Commands,
     card: crate::card::Card,

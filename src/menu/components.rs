@@ -8,7 +8,8 @@ pub struct MenuItem;
 #[derive(Component)]
 pub struct MenuCamera;
 
-/// Marker component for game camera
+/// Marker component for the game camera
+#[allow(dead_code)]
 #[derive(Component)]
 pub struct GameCamera;
 

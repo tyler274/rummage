@@ -12,6 +12,7 @@ use crate::text::components::{
 };
 
 /// System to spawn text for cards
+#[allow(dead_code)]
 pub fn spawn_card_text(
     mut commands: Commands,
     name_query: Query<(Entity, &CardNameText, &Parent), (Without<SpawnedText>, With<CardNameText>)>,
@@ -221,6 +222,7 @@ pub fn spawn_card_text(
 }
 
 /// Process specialized name text components
+#[allow(dead_code)]
 fn process_name_text_components(
     commands: &mut Commands,
     query: &Query<(Entity, &CardNameText, &Parent), (Without<SpawnedText>, With<CardNameText>)>,
@@ -261,6 +263,7 @@ fn process_name_text_components(
 }
 
 /// Process specialized mana cost text components
+#[allow(dead_code)]
 fn process_mana_cost_text_components(
     commands: &mut Commands,
     query: &Query<
@@ -304,6 +307,7 @@ fn process_mana_cost_text_components(
 }
 
 /// Process specialized type line text components
+#[allow(dead_code)]
 fn process_type_line_text_components(
     commands: &mut Commands,
     query: &Query<(Entity, &CardTypeLine, &Parent), (Without<SpawnedText>, With<CardTypeLine>)>,
@@ -344,6 +348,7 @@ fn process_type_line_text_components(
 }
 
 /// Process specialized rules text components
+#[allow(dead_code)]
 fn process_rules_text_components(
     commands: &mut Commands,
     query: &Query<(Entity, &CardRulesText, &Parent), (Without<SpawnedText>, With<CardRulesText>)>,

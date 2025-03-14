@@ -18,17 +18,11 @@ pub use components::*;
 use bevy::prelude::*;
 
 /// Plugin for text rendering and management
-pub struct TextPlugin {
-    /// Whether to use the legacy text spawning system
-    /// Set to false if all cards are instantiated with text components
-    pub use_legacy_text_system: bool,
-}
+pub struct TextPlugin {}
 
 impl Default for TextPlugin {
     fn default() -> Self {
-        Self {
-            use_legacy_text_system: true,
-        }
+        Self {}
     }
 }
 

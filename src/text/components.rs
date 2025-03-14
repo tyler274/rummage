@@ -109,24 +109,27 @@ pub struct CardTextStyleBundle {
     pub text_layout: TextLayout,
 }
 
-/// Marker component for card name text entities
-/// Using this marker instead of directly storing the string
-/// improves performance by reducing string duplication
+/// Marker component for card name text
+#[allow(dead_code)]
 #[derive(Component, Debug, Clone)]
 pub struct CardNameTextMarker;
 
-/// Marker component for card mana cost text entities
+/// Marker component for card mana cost text
+#[allow(dead_code)]
 #[derive(Component, Debug, Clone)]
 pub struct CardManaCostTextMarker;
 
-/// Marker component for card type line text entities
+/// Marker component for card type line text
+#[allow(dead_code)]
 #[derive(Component, Debug, Clone)]
 pub struct CardTypeLineMarker;
 
-/// Marker component for card rules text entities
+/// Marker component for card rules text
+#[allow(dead_code)]
 #[derive(Component, Debug, Clone)]
 pub struct CardRulesTextMarker;
 
-/// Marker component for card power/toughness text entities
+/// Marker component for card power/toughness text
+#[allow(dead_code)]
 #[derive(Component, Debug, Clone)]
 pub struct CardPowerToughnessMarker;

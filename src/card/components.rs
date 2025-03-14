@@ -15,6 +15,7 @@ pub struct CardName {
 
 impl CardName {
     /// Create a new CardName from a string
+    #[allow(dead_code)]
     pub fn new(name: &str) -> Self {
         Self {
             name: name.to_string(),
@@ -22,6 +23,7 @@ impl CardName {
     }
 
     /// Get the card name as a string reference
+    #[allow(dead_code)]
     pub fn as_str(&self) -> &str {
         &self.name
     }
@@ -120,6 +122,16 @@ pub struct Draggable {
     pub dragging: bool,
     pub drag_offset: Vec2,
     pub z_index: f32,
+}
+
+impl Default for Draggable {
+    fn default() -> Self {
+        Self {
+            dragging: false,
+            drag_offset: Vec2::ZERO,
+            z_index: 0.0,
+        }
+    }
 }
 
 impl PermanentState {

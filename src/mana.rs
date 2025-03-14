@@ -112,22 +112,6 @@ pub fn mana_symbol_to_char(symbol: &str) -> String {
     symbol.to_string()
 }
 
-/// Converts rules text containing mana symbols to font character representation.
-///
-/// This function preserves mana symbols in braces within the text, as the Mana font
-/// expects braced symbols to render them correctly.
-///
-/// # Arguments
-/// * `text` - The rules text containing mana symbols (e.g., "Add {W} to your mana pool")
-///
-/// # Returns
-/// The text unchanged, as the Mana font handles the symbol conversion internally.
-///
-pub fn convert_rules_text_to_symbols(text: &str) -> String {
-    // Keep the braces around the symbols for proper font rendering
-    text.to_string()
-}
-
 bitflags! {
     /// Color represents the five colors of Magic and colorless as bit flags, allowing combinations
     /// of colors to be represented efficiently.

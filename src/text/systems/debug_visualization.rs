@@ -6,6 +6,7 @@ use crate::text::{
 };
 
 /// Spawn debug visualization for text boundaries
+#[allow(dead_code)]
 pub fn spawn_debug_visualization(
     commands: &mut Commands,
     _card_pos: Vec2,
@@ -99,6 +100,7 @@ pub fn spawn_debug_visualization(
 }
 
 /// Helper function to spawn a debug box
+#[allow(dead_code)]
 fn spawn_debug_box(
     commands: &mut Commands,
     local_offset: Vec2,
