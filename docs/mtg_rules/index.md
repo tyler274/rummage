@@ -1,15 +1,30 @@
-# MTG Rules Reference
+# Magic: The Gathering Rules
 
-This directory contains the most recent version of the Magic: The Gathering Comprehensive Rules used by the Rummage game engine.
+This section documents the implementation of Magic: The Gathering rules in Rummage.
 
-## Current Version
+## Rules Implementation
 
-The current version of the Comprehensive Rules is dated February 7, 2025:
-- [MagicCompRules 20250207.txt](MagicCompRules%2020250207.txt)
+The MTG rules are implemented according to the official Magic: The Gathering Comprehensive Rules. We strive to accurately represent all game mechanics while providing a clear and maintainable codebase.
 
-## Official Resources
+## Core Mechanics
 
-- [Magic: The Gathering Official Rules](https://magic.wizards.com/en/rules)
-- [Commander Format Rules](https://mtgcommander.net/index.php/rules/)
+- [Turn Structure](turn_structure.md): Phases and steps of a turn
+- [Stack](stack.md): How spells and abilities are processed
+- [Targeting](targeting.md): Rules for selecting targets
+- [Card States](card_states.md): Different states cards can have
+- [Mana and Costs](mana_costs.md): How mana works and costs are paid
+- [Combat](combat.md): Attack, blocking, and damage rules
 
-For the most up-to-date rules, always refer to the official Wizards of the Coast website.
+## Special Mechanics
+
+- [Triggered Abilities](triggered_abilities.md): Events that cause abilities to trigger
+- [Replacement Effects](replacement_effects.md): Effects that modify how events occur
+- [State-Based Actions](state_based_actions.md): Automatic game actions
+
+## Edge Cases
+
+Magic: The Gathering has many complex interactions and edge cases. We document these scenarios and how they are handled in the engine.
+
+## Rules References
+
+For the official rules reference, see the [Magic: The Gathering Comprehensive Rules](https://magic.wizards.com/en/rules).
