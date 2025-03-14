@@ -127,7 +127,8 @@ pub fn pause_menu_action(
                         next_state.set(GameMenuState::MainMenu);
                     }
                     MenuButtonAction::Settings => {
-                        // TODO: Implement settings functionality
+                        // Context flag will be set in setup_settings_transition
+                        next_state.set(GameMenuState::Settings);
                     }
                     MenuButtonAction::Quit => {
                         exit.send(bevy::app::AppExit::default());

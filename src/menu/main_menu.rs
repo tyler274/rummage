@@ -169,7 +169,7 @@ pub fn menu_action(
                         // TODO: Implement multiplayer functionality
                     }
                     MenuButtonAction::Settings => {
-                        // TODO: Implement settings functionality
+                        next_state.set(GameMenuState::Settings);
                     }
                     MenuButtonAction::Quit => {
                         exit.send(bevy::app::AppExit::default());

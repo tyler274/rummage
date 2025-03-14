@@ -12,6 +12,7 @@ use crate::{
         logo::{StarOfDavidPlugin, render_star_of_david},
         main_menu::{menu_action, set_menu_camera_zoom, setup_main_menu},
         pause_menu::{handle_pause_input, pause_menu_action, setup_pause_menu},
+        settings::SettingsPlugin,
         state::{GameMenuState, StateTransitionContext},
     },
 };
@@ -49,7 +50,7 @@ impl Plugin for MenuPlugin {
             .insert_resource(GameMenuState::MainMenu)
             .insert_resource(StateTransitionContext::default())
             .init_resource::<MenuVisibilityLogState>()
-            .add_plugins(StarOfDavidPlugin)
+            .add_plugins((StarOfDavidPlugin, SettingsPlugin))
             // Main Menu state
             .add_systems(
                 OnEnter(GameMenuState::MainMenu),
@@ -115,6 +116,15 @@ impl Plugin for MenuPlugin {
                 (pause_menu_action, render_star_of_david)
                     .run_if(in_state(GameMenuState::PausedGame)),
             )
+            // Settings menu systems
+            .add_systems(
+                OnEnter(GameMenuState::Settings),
+                (
+                    setup_menu_camera,
+                    ensure_single_menu_camera,
+                    setup_settings_transition,
+                ),
+            )
             // InGame state systems
             .add_systems(
                 OnEnter(GameMenuState::InGame),
@@ -126,6 +136,28 @@ impl Plugin for MenuPlugin {
                     .chain(),
             )
             .add_systems(Update, handle_pause_input);
+    }
+}
+
+/// Set up the transition context for settings menu
+fn setup_settings_transition(
+    mut context: ResMut<StateTransitionContext>,
+    current_state: Res<State<GameMenuState>>,
+) {
+    // Store the previous state to know where to return when exiting settings
+    match current_state.get() {
+        GameMenuState::MainMenu => {
+            info!("Entering settings from main menu");
+            context.settings_origin = Some(GameMenuState::MainMenu);
+        }
+        GameMenuState::PausedGame => {
+            info!("Entering settings from pause menu");
+            context.settings_origin = Some(GameMenuState::PausedGame);
+        }
+        _ => {
+            // Default to main menu if coming from an unexpected state
+            context.settings_origin = Some(GameMenuState::MainMenu);
+        }
     }
 }
 
