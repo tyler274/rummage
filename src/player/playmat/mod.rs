@@ -209,18 +209,15 @@ pub fn highlight_active_zones(
     }
 }
 
-/// System to handle interactions between zones (card movement, etc.)
+/// Handle interactions with playmat zones
 pub fn handle_zone_interactions(
-    _commands: Commands,
-    mut zone_focus: ResMut<ZoneFocusState>,
     mouse_button_input: Res<ButtonInput<MouseButton>>,
     key_input: Res<ButtonInput<KeyCode>>,
-    _player_query: Query<(Entity, &Player)>,
-    zone_query: Query<(Entity, &PlaymatZone, &GlobalTransform)>,
-    camera_query: Query<(&Camera, &GlobalTransform), With<GameCamera>>,
     windows: Query<&Window>,
+    camera_query: Query<(&Camera, &GlobalTransform), With<GameCamera>>,
+    zone_query: Query<(Entity, &PlaymatZone, &GlobalTransform)>,
+    mut commands: Commands,
 ) {
-    // Check for mouse and keyboard interactions
     let mouse_clicked = mouse_button_input.just_pressed(MouseButton::Left);
     let right_clicked = mouse_button_input.just_pressed(MouseButton::Right);
     let shift_key = key_input.pressed(KeyCode::ShiftLeft) || key_input.pressed(KeyCode::ShiftRight);
@@ -233,8 +230,14 @@ pub fn handle_zone_interactions(
     let window = windows.single();
     let cursor_position = window.cursor_position();
     if let Some(cursor_position) = cursor_position {
-        // Get the camera transform
-        let (camera, camera_transform) = camera_query.single();
+        // Get the camera transform, skip if no game camera exists (e.g., in menu states)
+        let (camera, camera_transform) = match camera_query.get_single() {
+            Ok(camera) => camera,
+            Err(_) => {
+                // Game camera doesn't exist (likely in a menu state), skip processing
+                return;
+            }
+        };
 
         // Project cursor position into world space
         if let Ok(cursor_world_position) = camera

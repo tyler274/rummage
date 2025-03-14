@@ -182,11 +182,11 @@ fn calculate_hand_layout(
     (spacing, scale, arc_radius)
 }
 
-/// Toggle hand expansion when clicking on the hand zone
+/// Toggle the expansion state of a hand zone when clicked
 pub fn toggle_hand_expansion(
     mouse_button_input: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window>,
-    camera_query: Query<(&Camera, &GlobalTransform), With<crate::camera::components::GameCamera>>,
+    camera_query: Query<(&Camera, &GlobalTransform), With<GameCamera>>,
     mut hand_query: Query<(&mut HandZone, &GlobalTransform)>,
 ) {
     // Only process on mouse click
@@ -197,8 +197,14 @@ pub fn toggle_hand_expansion(
     // Get cursor position
     let window = windows.single();
     if let Some(cursor_position) = window.cursor_position() {
-        // Get camera
-        let (camera, camera_transform) = camera_query.single();
+        // Get camera, skip if no game camera exists (e.g., in menu states)
+        let (camera, camera_transform) = match camera_query.get_single() {
+            Ok(camera) => camera,
+            Err(_) => {
+                // Game camera doesn't exist (likely in a menu state), skip processing
+                return;
+            }
+        };
 
         // Convert cursor to world position
         if let Ok(cursor_world_position) = camera

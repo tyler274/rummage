@@ -160,21 +160,28 @@ pub fn menu_action(
                 *color = BackgroundColor(PRESSED_BUTTON);
                 match action {
                     MenuButtonAction::NewGame => {
+                        info!("New Game button pressed - transitioning to Loading state");
                         next_state.set(GameMenuState::Loading);
                     }
                     MenuButtonAction::LoadGame => {
+                        info!("Load Game button pressed");
                         // TODO: Implement load game functionality
                     }
                     MenuButtonAction::Multiplayer => {
+                        info!("Multiplayer button pressed");
                         // TODO: Implement multiplayer functionality
                     }
                     MenuButtonAction::Settings => {
+                        info!("Settings button pressed - transitioning to Settings state");
                         next_state.set(GameMenuState::Settings);
                     }
                     MenuButtonAction::Quit => {
+                        info!("Quit button pressed - exiting app");
                         exit.send(bevy::app::AppExit::default());
                     }
-                    _ => {}
+                    _ => {
+                        info!("Unhandled button action: {:?}", action);
+                    }
                 }
             }
             Interaction::Hovered => {

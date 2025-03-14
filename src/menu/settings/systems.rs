@@ -15,9 +15,9 @@ const TEXT_COLOR: Color = Color::WHITE;
 
 /// Sets up the main settings menu
 pub fn setup_main_settings(mut commands: Commands) {
-    info!("Setting up main settings menu");
+    info!("Setting up main settings menu - START");
 
-    commands
+    let root_entity = commands
         .spawn((
             Node {
                 width: Val::Percent(100.0),
@@ -32,22 +32,28 @@ pub fn setup_main_settings(mut commands: Commands) {
             SettingsMenuItem,
             MainSettingsScreen,
             AppLayer::Menu.layer(),
+            Name::new("Settings Root Node"),
         ))
         .with_children(|parent| {
             // Title
-            parent.spawn((
-                Text::new("SETTINGS"),
-                TextFont {
-                    font_size: 40.0,
-                    ..default()
-                },
-                TextLayout::new_with_justify(JustifyText::Center),
-                TextColor(TEXT_COLOR),
-                AppLayer::Menu.layer(),
-            ));
+            let title_entity = parent
+                .spawn((
+                    Text::new("SETTINGS"),
+                    TextFont {
+                        font_size: 40.0,
+                        ..default()
+                    },
+                    TextLayout::new_with_justify(JustifyText::Center),
+                    TextColor(TEXT_COLOR),
+                    AppLayer::Menu.layer(),
+                    Name::new("Settings Title"),
+                ))
+                .id();
+
+            info!("Spawned settings title entity: {:?}", title_entity);
 
             // Settings container
-            parent
+            let container_entity = parent
                 .spawn((
                     Node {
                         width: Val::Px(400.0),
@@ -60,6 +66,7 @@ pub fn setup_main_settings(mut commands: Commands) {
                     },
                     BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
                     AppLayer::Menu.layer(),
+                    Name::new("Settings Container"),
                 ))
                 .with_children(|parent| {
                     spawn_settings_button(parent, "Video", SettingsButtonAction::VideoSettings);
@@ -75,8 +82,17 @@ pub fn setup_main_settings(mut commands: Commands) {
                         SettingsButtonAction::ControlsSettings,
                     );
                     spawn_settings_button(parent, "Back", SettingsButtonAction::Back);
-                });
-        });
+                })
+                .id();
+
+            info!("Spawned settings container entity: {:?}", container_entity);
+        })
+        .id();
+
+    info!(
+        "Setting up main settings menu - COMPLETE. Root entity: {:?}",
+        root_entity
+    );
 }
 
 /// Sets up the video settings screen
@@ -595,12 +611,25 @@ pub fn settings_button_action(
 /// Cleans up settings menu entities
 pub fn cleanup_settings_menu(
     mut commands: Commands,
-    menu_query: Query<Entity, With<SettingsMenuItem>>,
+    menu_query: Query<(Entity, Option<&Name>), With<SettingsMenuItem>>,
 ) {
     let count = menu_query.iter().count();
     info!("Cleaning up {} settings menu items", count);
 
-    for entity in menu_query.iter() {
+    for (entity, name) in menu_query.iter() {
+        if let Some(name) = name {
+            info!(
+                "Despawning settings menu entity: {:?} with name: {}",
+                entity,
+                name.as_str()
+            );
+        } else {
+            info!("Despawning settings menu entity without name: {:?}", entity);
+        }
         commands.entity(entity).despawn_recursive();
+    }
+
+    if count == 0 {
+        warn!("No settings menu entities found to clean up");
     }
 }

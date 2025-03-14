@@ -12,7 +12,7 @@ use crate::{
         logo::{StarOfDavidPlugin, render_star_of_david},
         main_menu::{menu_action, set_menu_camera_zoom, setup_main_menu},
         pause_menu::{handle_pause_input, pause_menu_action, setup_pause_menu},
-        settings::SettingsPlugin,
+        settings::{SettingsMenuState, SettingsPlugin, setup_main_settings},
         state::{GameMenuState, StateTransitionContext},
     },
 };
@@ -143,7 +143,13 @@ impl Plugin for MenuPlugin {
 fn setup_settings_transition(
     mut context: ResMut<StateTransitionContext>,
     current_state: Res<State<GameMenuState>>,
+    mut settings_state: ResMut<NextState<SettingsMenuState>>,
 ) {
+    info!(
+        "Setting up settings transition from state: {:?}",
+        current_state.get()
+    );
+
     // Store the previous state to know where to return when exiting settings
     match current_state.get() {
         GameMenuState::MainMenu => {
@@ -156,9 +162,14 @@ fn setup_settings_transition(
         }
         _ => {
             // Default to main menu if coming from an unexpected state
+            info!("Entering settings from unexpected state, defaulting to main menu");
             context.settings_origin = Some(GameMenuState::MainMenu);
         }
     }
+
+    // Ensure we're showing the main settings screen when entering settings
+    info!("Setting SettingsMenuState to Main");
+    settings_state.set(SettingsMenuState::Main);
 }
 
 /// Creates a menu camera with the proper configuration

@@ -14,7 +14,7 @@ pub struct MenuCamera;
 pub struct GameCamera;
 
 /// Button actions for different menu states
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub enum MenuButtonAction {
     /// Start a new game session
     NewGame,

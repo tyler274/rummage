@@ -4,7 +4,6 @@ use bevy::prelude::*;
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 pub enum SettingsMenuState {
     /// Main settings screen with categories
-    #[default]
     Main,
     /// Video settings screen
     Video,
@@ -14,4 +13,7 @@ pub enum SettingsMenuState {
     Gameplay,
     /// Controls settings screen
     Controls,
+    /// Disabled state - no UI is shown
+    #[default]
+    Disabled,
 }
