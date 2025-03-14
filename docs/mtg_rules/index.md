@@ -79,11 +79,12 @@ The MTG rules are broken down into the following main categories:
 
 ## Format-Specific Rules
 
-Rules specific to particular formats are documented in their respective sections:
+This reference provides high-level explanations of format-specific rules. For detailed implementation details, refer to the format-specific documentation:
 
-- [Commander Format Rules](../formats/commander/index.md)
-- [Two-Headed Giant Rules](../formats/two_headed_giant/index.md)
-- [Planechase Rules](../formats/planechase/index.md)
+- [Commander-Specific Rules](commander_specific.md) - Reference for Commander format rules
+  - [Commander Format Implementation](../formats/commander/index.md) - Detailed implementation
+
+**Note:** Currently, only the Commander format is fully documented. Additional formats like Two-Headed Giant and Planechase may be added in the future.
 
 ## Implementation Examples
 

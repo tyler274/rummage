@@ -2,6 +2,8 @@
 
 This section documents the implementation of the Commander (EDH) format in Rummage, a multiplayer format that emphasizes social gameplay, unique deck construction constraints, and strategic depth.
 
+> **Note:** For a high-level overview of the Commander format rules without implementation details, see the [Commander-Specific Rules Reference](../../mtg_rules/commander_specific.md).
+
 ## Format Overview
 
 Commander (formerly known as Elder Dragon Highlander or EDH) is a sanctioned Magic: The Gathering format with these defining characteristics:

@@ -12,16 +12,20 @@ Our goal is to create a comprehensive digital implementation that faithfully rep
 
 The documentation is organized into interconnected sections that guide you from understanding MTG rules to technical implementation details:
 
-1. **[MTG Core Rules](mtg_core/index.md)** - Implementation of fundamental Magic: The Gathering rules that form the foundation of all gameplay
-2. **[Game Formats](formats/commander/index.md)** - Format-specific rules implementation, currently focusing on the Commander format
-3. **[Game UI](game_gui/index.md)** - User interface systems for visualizing and interacting with the game state
-4. **[Networking](networking/index.md)** - Multiplayer functionality using bevy_replicon for synchronized gameplay
-5. **[Card Systems](card_systems/index.md)** - Card representation, effects, and interactions that drive gameplay
-6. **[Testing](testing/index.md)** - Comprehensive testing framework to ensure rule correctness and system reliability
-7. **[Development](development/index.md)** - Guidelines and tools for contributors to the Rummage project
-8. **[API Reference](api/index.md)** - Technical documentation of Rummage's code structure and interfaces
+1. **[MTG Rules Reference](mtg_rules/index.md)** - High-level explanations of Magic: The Gathering rules, serving as a bridge between official rules and our implementation
+2. **[MTG Core Rules](mtg_core/index.md)** - Implementation of fundamental Magic: The Gathering rules that form the foundation of all gameplay
+3. **[Game Formats](formats/commander/index.md)** - Format-specific rules implementation, currently focusing on the Commander format
+4. **[Game UI](game_gui/index.md)** - User interface systems for visualizing and interacting with the game state
+5. **[Networking](networking/index.md)** - Multiplayer functionality using bevy_replicon for synchronized gameplay
+6. **[Card Systems](card_systems/index.md)** - Card representation, effects, and interactions that drive gameplay
+7. **[Testing](testing/index.md)** - Comprehensive testing framework to ensure rule correctness and system reliability
+8. **[Development](development/index.md)** - Guidelines and tools for contributors to the Rummage project
+9. **[API Reference](api/index.md)** - Technical documentation of Rummage's code structure and interfaces
 
-These sections build upon each other, with core MTG rules providing the foundation for format-specific implementations, which in turn inform the design of card systems, user interfaces, and networking components. Our testing framework ensures that all these elements work together correctly.
+These sections follow a logical progression:
+- The **MTG Rules Reference** explains what the rules are
+- The **MTG Core Rules** and **Game Formats** explain how we implement these rules
+- The remaining sections cover the technical systems that support this implementation
 
 ## Getting Started
 

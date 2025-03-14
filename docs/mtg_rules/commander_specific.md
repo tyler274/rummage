@@ -1,6 +1,6 @@
 # Commander-Specific Rules
 
-This page details the specific rules of the Commander format and their implementation in the Rummage game engine.
+This page provides a high-level reference for the official Commander format rules. For detailed implementation specifics, see the [Commander Format](../formats/commander/index.md) documentation.
 
 ## What Is Commander?
 
@@ -10,99 +10,32 @@ Commander (formerly known as Elder Dragon Highlander or EDH) is a multiplayer fo
 
 The Commander format is governed by a specific set of rules maintained by the Commander Rules Committee:
 
-1. **Deck Construction**
-   - Players choose a legendary creature as their "commander"
-   - A deck contains exactly 100 cards, including the commander
-   - Except for basic lands, no two cards in the deck may have the same English name
-   - A card's color identity must be within the color identity of the commander
-   - A deck may not contain cards with color identities outside those of its commander
-   - Color identity includes colored mana symbols in costs and rules text
+### Deck Construction Rules
 
-2. **Game Play**
-   - Players begin with 40 life
-   - Commanders begin the game in the "command zone"
-   - While a commander is in the command zone, it may be cast, subject to normal timing restrictions
-   - Each time a player casts their commander from the command zone, it costs an additional {2} for each previous time they've cast it
-   - If a commander would be exiled or put into a hand, graveyard, or library, its owner may choose to move it to the command zone instead
-   - A player that has been dealt 21 or more combat damage by the same commander loses the game
+- Players choose a legendary creature as their "commander"
+- A deck contains exactly 100 cards, including the commander
+- Except for basic lands, no two cards in the deck may have the same English name
+- A card's color identity must be within the color identity of the commander
+- Color identity includes colored mana symbols in costs and rules text
 
-## Implementation Details
+### Game Play Rules
 
-### Color Identity
+- Players begin with 40 life
+- Commanders begin the game in the "command zone"
+- While a commander is in the command zone, it may be cast, subject to normal timing restrictions
+- Each time a player casts their commander from the command zone, it costs an additional {2} for each previous time they've cast it
+- If a commander would be exiled or put into a hand, graveyard, or library, its owner may choose to move it to the command zone instead
+- A player that has been dealt 21 or more combat damage by the same commander loses the game
 
-The Color Identity system is implemented as follows:
+## Rule Implementation References
 
-```rust
-// Simplified color identity implementation
-pub struct ColorIdentity {
-    white: bool,
-    blue: bool,
-    black: bool,
-    red: bool,
-    green: bool,
-}
+For detailed implementation of these rules in Rummage, refer to these sections:
 
-impl ColorIdentity {
-    // Create from card data
-    pub fn from_card(card: &Card) -> Self {
-        // Extract color identity from card's cost and text
-        // ...
-    }
-    
-    // Check if a card fits within commander's color identity
-    pub fn contains(&self, other: &ColorIdentity) -> bool {
-        // ...
-    }
-}
-```
-
-### Command Zone
-
-The Command Zone is implemented as a special game zone:
-
-```rust
-// Simplified command zone implementation
-pub struct CommandZone {
-    commanders: Vec<Entity>,
-    cast_count: HashMap<Entity, u32>,
-}
-
-impl CommandZone {
-    // Return additional cost to cast a commander
-    pub fn get_commander_tax(&self, commander: Entity) -> u32 {
-        self.cast_count.get(&commander).copied().unwrap_or(0) * 2
-    }
-    
-    // Track commander being cast
-    pub fn commander_cast(&mut self, commander: Entity) {
-        *self.cast_count.entry(commander).or_insert(0) += 1;
-    }
-}
-```
-
-### Commander Damage
-
-Commander damage is tracked per-player, per-commander:
-
-```rust
-// Simplified commander damage tracking
-pub struct CommanderDamageTracker {
-    // Maps (damaged_player, commander) to amount of damage
-    damage: HashMap<(Entity, Entity), u32>,
-}
-
-impl CommanderDamageTracker {
-    pub fn add_damage(&mut self, player: Entity, commander: Entity, amount: u32) {
-        let entry = self.damage.entry((player, commander)).or_insert(0);
-        *entry += amount;
-        
-        // Check for game loss due to commander damage
-        if *entry >= 21 {
-            // Trigger player loss event
-        }
-    }
-}
-```
+- [Color Identity](../formats/commander/player_mechanics/color_identity.md) - Implementation of color identity rules
+- [Command Zone](../formats/commander/zones/command_zone.md) - How the command zone functions
+- [Commander Tax](../formats/commander/player_mechanics/commander_tax.md) - Implementation of additional commander casting costs
+- [Commander Damage](../formats/commander/combat/commander_damage.md) - Tracking and applying commander combat damage
+- [Zone Transitions](../formats/commander/zones/zone_transitions.md) - Commander movement between zones
 
 ## Commander Variants
 
@@ -110,64 +43,23 @@ Rummage supports these common Commander variants:
 
 ### Partner Commanders
 
-Some legendary creatures have the "Partner" ability, allowing a deck to have two commanders:
-
-```rust
-// Simplified partner implementation
-pub fn validate_partner_commanders(commander1: &Card, commander2: &Card) -> bool {
-    if !commander1.has_ability("Partner") || !commander2.has_ability("Partner") {
-        return false;
-    }
-    
-    // Additional checks for Partner With ability...
-    
-    true
-}
-```
+Some legendary creatures have the "Partner" ability, allowing a deck to have two commanders. See [Partner Commanders](../formats/commander/special_rules/partner_commanders.md) for implementation details.
 
 ### Commander Ninjutsu
 
-A special ability that allows commanders to be put onto the battlefield from the command zone:
-
-```rust
-pub fn can_use_commander_ninjutsu(card: &Card, game_state: &GameState) -> bool {
-    // Check if card has Commander Ninjutsu ability
-    if !card.has_ability_with_keyword("Commander Ninjutsu") {
-        return false;
-    }
-    
-    // Check if controller has an unblocked attacking creature
-    // ...
-    
-    true
-}
-```
+A special ability that allows commanders to be put onto the battlefield from the command zone. See [Commander Ninjutsu](../formats/commander/special_rules/commander_ninjutsu.md) for implementation details.
 
 ### Brawl
 
-A variant with 60-card decks, only using Standard-legal cards and starting at 25 life:
+A variant with 60-card decks, only using Standard-legal cards and starting at 25 life.
 
-```rust
-pub fn initialize_brawl_game(players: &[Entity], world: &mut World) {
-    for player in players {
-        // Set life total to 25 for Brawl
-        let mut life = world.get_mut::<Life>(*player).unwrap();
-        life.current = 25;
-        
-        // Additional Brawl setup...
-    }
-}
-```
+### Commander Death Triggers
 
-## Testing Commander Rules
+Special rules for how commander death and zone changes work. See [Commander Death Triggers](../formats/commander/special_rules/commander_death.md) for implementation details.
 
-Commander-specific rules are thoroughly tested:
+## Commander-Specific Cards
 
-1. **Deck Validation Tests**: Ensure decks conform to Commander deck building rules
-2. **Commander Casting Tests**: Verify correct tax application and timing restrictions
-3. **Commander Damage Tests**: Ensure correct tracking and application of commander damage
-4. **Color Identity Tests**: Validate color identity calculations and restrictions
-5. **Zone Transfer Tests**: Test commander zone transfer choices
+Many cards have been designed specifically for the Commander format. See [Commander-Specific Cards](../formats/commander/special_rules/special_cards.md) for details on how these cards are implemented.
 
 ## References
 
