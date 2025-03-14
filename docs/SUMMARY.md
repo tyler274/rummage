@@ -75,6 +75,7 @@
     - [Effect Resolution](card_systems/effects/effect_resolution.md)
     - [Targeting](card_systems/effects/targeting.md)
     - [Complex Interactions](card_systems/effects/complex_interactions.md)
+    - [Special Card Implementations](card_systems/effects/special_cards.md)
   - [Card Rendering](card_systems/rendering/index.md)
     - [Art Assets](card_systems/rendering/art_assets.md)
     - [Card Layout](card_systems/rendering/card_layout.md)
@@ -152,6 +153,7 @@
 
 - [Game Engine](game_engine/index.md)
   - [State Management](game_engine/state/index.md)
+    - [Subgames and Game Restarting](game_engine/state/subgames.md)
   - [Event System](game_engine/events/index.md)
 
 # Core Systems
@@ -211,6 +213,7 @@
   - [Mana Costs](mtg_rules/mana_costs.md)
   - [Triggered Abilities](mtg_rules/triggered_abilities.md)
   - [Replacement Effects](mtg_rules/replacement_effects.md)
+  - [Subgames and Game Restarting](mtg_rules/subgames.md)
 - [Contribution Guidelines](CONTRIBUTING.md)
 - [Documentation Guide](contributing/documentation.md)
 - [Git Workflow Guidelines](contributing/git_workflow.md)

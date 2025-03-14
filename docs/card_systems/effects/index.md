@@ -29,6 +29,7 @@ Effects are implemented using a combination of:
 - [Effect Resolution](effect_resolution.md): How effects are processed and applied
 - [Targeting](targeting.md): How targets are selected and validated
 - [Complex Interactions](complex_interactions.md): Handling interactions between multiple effects
+- [Special Card Implementations](special_cards.md): Cards with unique game-altering effects like subgames and game restarting
 
 ## Integration
 
@@ -37,6 +38,7 @@ The effects system integrates with:
 - [State Management](../../game_engine/state/index.md): Effects modify game state
 - [Event System](../../game_engine/events/index.md): Effects are triggered by and generate events
 - [MTG Rules](../../mtg_rules/index.md): Effects follow the comprehensive rules
+- [Subgames and Game Restarting](../../mtg_rules/subgames.md): Special rules for cards like Shahrazad and Karn Liberated
 
 ## Testing
 
