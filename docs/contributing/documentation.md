@@ -6,7 +6,7 @@ This page contains the comprehensive documentation guidelines for the Rummage MT
 
 The documentation is organized into the following major sections:
 
-1. **[Commander Rules](../commander/index.md)** - Implementation of MTG Commander format rules and mechanics
+1. **[Commander Rules](../formats/commander/index.md)** - Implementation of MTG Commander format rules and mechanics
 2. **[Game UI](../game_gui/index.md)** - User interface systems and components
 3. **[Networking](../networking/index.md)** - Multiplayer functionality using bevy_replicon
 
