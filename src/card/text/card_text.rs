@@ -481,3 +481,146 @@ pub fn spawn_card_text_components(
     // Mark this card as having its text spawned
     commands.entity(card_entity).insert(SpawnedText);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::card::{Card, CardDetails, CardTypes};
+    use crate::mana::Mana;
+    use crate::text::components::{
+        CardManaCostText, CardNameText, CardPowerToughness, CardRulesText, CardTypeLine,
+    };
+    use bevy::prelude::*;
+
+    /// Example function that demonstrates how the text components are used together
+    #[allow(dead_code)]
+    fn example_card_text_usage() {
+        // This function demonstrates how to use various text processing functions
+        // It's for documentation purposes and serves as an example
+
+        // Create a test app
+        let mut app = App::new();
+        app.add_plugins(MinimalPlugins);
+
+        // Add the system that spawns card text
+        app.add_systems(Update, spawn_card_text);
+
+        // Example of creating a card with associated text components
+        app.world
+            .spawn((
+                Card::builder("Lightning Bolt")
+                    .cost(Mana::default())
+                    .types(CardTypes::INSTANT)
+                    .rules_text("Lightning Bolt deals 3 damage to any target.")
+                    .build_or_panic(),
+                SpriteBundle {
+                    sprite: Sprite {
+                        custom_size: Some(Vec2::new(100.0, 140.0)),
+                        ..default()
+                    },
+                    ..default()
+                },
+            ))
+            .with_children(|parent| {
+                // Name text component
+                parent.spawn(CardNameText {
+                    name: "Lightning Bolt".to_string(),
+                });
+
+                // Mana cost text component
+                parent.spawn(CardManaCostText {
+                    mana_cost: "{R}".to_string(),
+                });
+
+                // Type line text component
+                parent.spawn(CardTypeLine {
+                    type_line: "Instant".to_string(),
+                });
+
+                // Rules text component
+                parent.spawn(CardRulesText {
+                    rules_text: "Lightning Bolt deals 3 damage to any target.".to_string(),
+                });
+            });
+
+        // Update to process the card text components
+        app.update();
+    }
+
+    /// Test that demonstrates how to use the process_name_text_components function
+    #[test]
+    fn test_name_text_components() {
+        // Setup test app
+        let mut app = App::new();
+        app.add_plugins(MinimalPlugins);
+
+        // Add asset server mock
+        app.world.insert_resource(AssetServer::default());
+
+        // Create a card with name component
+        let card_entity = app
+            .world
+            .spawn((
+                Card::builder("Test Card")
+                    .cost(Mana::default())
+                    .types(CardTypes::INSTANT)
+                    .build_or_panic(),
+                SpriteBundle {
+                    sprite: Sprite {
+                        custom_size: Some(Vec2::new(100.0, 140.0)),
+                        ..default()
+                    },
+                    ..default()
+                },
+            ))
+            .id();
+
+        // Add name text component as child
+        let text_entity = app
+            .world
+            .spawn(CardNameText {
+                name: "Test Card".to_string(),
+            })
+            .id();
+
+        app.world.entity_mut(card_entity).add_child(text_entity);
+
+        // Set up parent relationship
+        app.world.entity_mut(text_entity).insert(Parent {
+            get: || card_entity,
+        });
+
+        // Run a system that processes name text
+        fn test_system(
+            mut commands: Commands,
+            name_query: Query<(Entity, &CardNameText, &Parent), Without<SpawnedText>>,
+            card_query: Query<(
+                Entity,
+                &Transform,
+                &Sprite,
+                &Card,
+                &CardName,
+                &CardCost,
+                &CardTypeInfo,
+                &CardRulesText,
+                &CardDetailsComponent,
+            )>,
+            asset_server: Res<AssetServer>,
+        ) {
+            process_name_text_components(
+                &mut commands,
+                &name_query,
+                &card_query,
+                &asset_server,
+                None,
+            );
+        }
+
+        // Run the system
+        app.add_systems(Update, test_system);
+        app.update();
+
+        // Verify text entity now has SpawnedText marker
+        assert!(app.world.entity(text_entity).contains::<SpawnedText>());
+    }
+}

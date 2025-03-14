@@ -146,3 +146,51 @@ pub fn debug_render_text_positions(
 pub fn draggable_card_filter(card: Query<(), (With<Card>, With<Draggable>)>) -> bool {
     !card.is_empty()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bevy::prelude::*;
+
+    /// Test for the draggable_card_filter function
+    #[test]
+    fn test_draggable_card_filter() {
+        // Create a new app for testing
+        let mut app = App::new();
+        app.add_plugins(MinimalPlugins);
+
+        // Create a card entity with the Card and Draggable components
+        app.world.spawn((
+            Card::builder("Draggable Card").build(),
+            Draggable::default(),
+        ));
+
+        // Create a non-draggable card
+        app.world.spawn(Card::builder("Non-Draggable Card").build());
+
+        // Run the system that uses the filter
+        fn test_system(card_query: Query<(), (With<Card>, With<Draggable>)>) {
+            let has_draggable_cards = draggable_card_filter(card_query);
+            assert!(has_draggable_cards);
+        }
+
+        app.add_systems(Update, test_system);
+        app.update();
+
+        // Test with a world that has no draggable cards
+        let mut app2 = App::new();
+        app2.add_plugins(MinimalPlugins);
+
+        // Only add non-draggable cards
+        app2.world
+            .spawn(Card::builder("Non-Draggable Card").build());
+
+        fn test_system_no_draggable(card_query: Query<(), (With<Card>, With<Draggable>)>) {
+            let has_draggable_cards = draggable_card_filter(card_query);
+            assert!(!has_draggable_cards);
+        }
+
+        app2.add_systems(Update, test_system_no_draggable);
+        app2.update();
+    }
+}
