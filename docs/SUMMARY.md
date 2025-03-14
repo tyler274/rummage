@@ -160,7 +160,7 @@
   - [Unit Testing](testing/unit_testing.md)
   - [Integration Testing](testing/integration_testing.md)
   - [End-to-End Testing](testing/end_to_end_testing.md)
-  - [Visual Testing](testing/visual_differential_testing.md)
+  - [Visual Testing](testing/visual_testing.md)
   - [Performance Testing](testing/performance_testing.md)
   - [Snapshot Testing](core_systems/snapshot/testing.md)
   - [CI/CD Pipeline](testing/ci_cd_pipeline.md)

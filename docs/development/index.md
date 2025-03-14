@@ -42,7 +42,7 @@ The development documentation is organized into these key areas:
 
 5. [Core Systems](../core_systems/snapshot/index.md)
    - [Snapshot System](../core_systems/snapshot/index.md) - Game state serialization and replay functionality
-   - [Testing Integration](../testing/index.md#snapshot-testing) - How core systems integrate with testing
+   - [Testing](../core_systems/snapshot/testing.md) - How core systems integrate with testing
 
 ## Development Environment
 
@@ -118,7 +118,7 @@ Our development process is tightly integrated with testing:
 When implementing MTG rules, refer to both:
 
 - The [MTG Rules Reference](../mtg_rules/index.md) for authoritative rules text
-- The [Testing Guidelines](../testing/unit_testing/rule_testing.md) for advice on verifying rule implementation
+- The [Testing Guidelines](../testing/unit_testing.md) for advice on verifying rule implementation
 
 By integrating testing throughout the development process, we ensure that Rummage maintains a high level of quality and accurately implements the complex MTG rule system.
 

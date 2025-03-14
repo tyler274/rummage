@@ -139,7 +139,7 @@ Key E2E test categories:
 - **Multiplayer Tests**: Validate multiplayer dynamics
 - **Tournament Rules**: Test format-specific rules
 
-### [Visual Testing](visual_differential_testing.md)
+### [Visual Testing](visual_testing.md)
 
 Visual tests ensure consistent UI representation across platforms:
 
@@ -206,42 +206,15 @@ Key performance test areas:
 
 ### Snapshot Testing
 
-Snapshot testing allows us to capture and verify game state at specific points:
+Snapshot testing allows us to capture and verify game state at specific points in time, providing a powerful tool for validating complex interactions and game state transitions.
 
-```rust
-#[test]
-fn test_game_state_evolution() {
-    // Setup test environment
-    let mut app = App::new();
-    app.add_plugins(TestingPlugins);
-    
-    // Initialize game with known state
-    setup_game_state(&mut app, "test_states/initial_board.json");
-    
-    // Create snapshot of initial state
-    let initial_snapshot = take_game_snapshot(&mut app);
-    
-    // Apply a sequence of actions
-    play_card(&mut app, "Lightning Bolt", 0);
-    
-    // Take another snapshot
-    let post_action_snapshot = take_game_snapshot(&mut app);
-    
-    // Verify snapshots match expected states
-    assert_snapshot_matches("initial_state", initial_snapshot);
-    assert_snapshot_matches("post_bolt", post_action_snapshot);
-}
-```
+Rather than duplicating the extensive snapshot testing documentation here, please refer to the comprehensive [Snapshot System Testing Documentation](../core_systems/snapshot/testing.md).
 
 Key snapshot testing uses:
 - **State Verification**: Validate game state correctness
 - **Regression Testing**: Detect unintended changes to game behavior
 - **Cross-System Testing**: Verify components work together correctly
 - **Replay Validation**: Ensure replay system correctly reproduces game states
-
-For more details, see the [Snapshot System Documentation](../core_systems/snapshot/testing.md).
-
-## Specialized Testing Systems
 
 ### Network Testing
 
@@ -329,6 +302,6 @@ To dive deeper into our testing approach:
 - [Unit Testing](unit_testing.md): Component-level testing guides
 - [Integration Testing](integration_testing.md): System interaction testing
 - [End-to-End Testing](end_to_end_testing.md): Complete gameplay testing
-- [Visual Testing](visual_differential_testing.md): UI consistency testing
+- [Visual Testing](visual_testing.md): UI consistency testing
 - [Performance Testing](performance_testing.md): System performance validation
 - [CI/CD Pipeline](ci_cd_pipeline.md): Automated testing infrastructure 
