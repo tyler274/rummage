@@ -7,6 +7,7 @@ use crate::player::resources::PlayerConfig;
 use bevy::prelude::*;
 
 use super::PlaymatZone;
+use crate::camera::components::GameCamera;
 
 /// Component for the hand zone specifically
 #[derive(Component, Debug)]
@@ -211,7 +212,7 @@ pub fn toggle_hand_expansion(
             .viewport_to_world(camera_transform, cursor_position)
             .map(|ray| ray.origin.truncate())
         {
-            // Check for click on any hand zone
+            // Check if cursor is over any hand zones
             for (mut hand, transform) in hand_query.iter_mut() {
                 let hand_position = transform.translation().truncate();
                 let distance = (hand_position - cursor_world_position).length();

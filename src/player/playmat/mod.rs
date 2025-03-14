@@ -216,7 +216,8 @@ pub fn handle_zone_interactions(
     windows: Query<&Window>,
     camera_query: Query<(&Camera, &GlobalTransform), With<GameCamera>>,
     zone_query: Query<(Entity, &PlaymatZone, &GlobalTransform)>,
-    mut commands: Commands,
+    mut zone_focus: ResMut<ZoneFocusState>,
+    _commands: Commands,
 ) {
     let mouse_clicked = mouse_button_input.just_pressed(MouseButton::Left);
     let right_clicked = mouse_button_input.just_pressed(MouseButton::Right);
