@@ -28,6 +28,7 @@
   - [Game Mechanics](formats/commander/game_mechanics/index.md)
     - [Testing Guide](formats/commander/game_mechanics/testing_guide.md)
     - [State-Based Actions](formats/commander/game_mechanics/state_based_actions.md)
+    - [Triggered Abilities](formats/commander/game_mechanics/triggered_abilities.md)
     - [Random Elements](formats/commander/game_mechanics/random_elements.md)
   - [Player Mechanics](formats/commander/player_mechanics/index.md)
     - [Life Total Management](formats/commander/player_mechanics/life_total.md)
@@ -55,6 +56,7 @@
     - [Partner Commanders](formats/commander/special_rules/partner_commanders.md)
     - [Commander Ninjutsu](formats/commander/special_rules/commander_ninjutsu.md)
     - [Commander Death Triggers](formats/commander/special_rules/commander_death.md)
+    - [Commander-Specific Cards](formats/commander/special_rules/special_cards.md)
   - [Integration with Core Rules](formats/commander/core_integration.md)
 
 # Card Systems

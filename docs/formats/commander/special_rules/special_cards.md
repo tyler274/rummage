@@ -235,7 +235,7 @@ pub fn create_minds_aglow() -> impl Bundle {
 
 #### Monarch
 
-Cards that introduce the Monarch mechanic:
+The Monarch mechanic introduces a special designation that players can claim, providing card advantage:
 
 ```rust
 /// Component marking a player as the Monarch
@@ -248,45 +248,51 @@ pub struct MonarchState {
     /// The current monarch, if any
     pub current_monarch: Option<Entity>,
     /// When the monarchy was last changed
-    pub last_changed: Instant,
-    /// How many cards the current monarch has drawn from being monarch
-    pub cards_drawn: u32,
+    pub last_changed: Option<f32>,
 }
 
-/// Implementation of Queen Marchesa
-pub fn create_queen_marchesa() -> impl Bundle {
-    (
-        CardName("Queen Marchesa".to_string()),
-        CardType::Creature,
-        CreatureType(vec!["Human".to_string(), "Assassin".to_string()]),
-        Power(3),
-        Toughness(3),
-        EntersBattlefieldTriggeredAbility {
-            id: AbilityId::new(),
-            effect: Box::new(BecomeMonarchEffect),
-        },
-    )
-}
-
-/// System that handles monarch card draw
-pub fn monarch_upkeep_draw(
-    mut commands: Commands,
+/// System that handles the Monarch end-of-turn trigger
+pub fn monarch_end_step_trigger(
+    time: Res<Time>,
     monarch_state: Res<MonarchState>,
-    mut draw_events: EventWriter<DrawCardEvent>,
-    mut phase_events: EventReader<PhaseChangeEvent>,
+    mut turn_events: EventReader<EndStepEvent>,
+    mut card_draw_events: EventWriter<DrawCardEvent>,
 ) {
-    for event in phase_events.read() {
-        // Check for end step
-        if matches!(event.new_phase, Phase::Ending(EndingStep::End)) {
-            if let Some(monarch) = monarch_state.current_monarch {
-                // Monarch draws a card
-                draw_events.send(DrawCardEvent {
+    for event in turn_events.read() {
+        if let Some(monarch) = monarch_state.current_monarch {
+            if event.player == monarch {
+                // Monarch draws a card at end of their turn
+                card_draw_events.send(DrawCardEvent {
                     player: monarch,
                     amount: 1,
-                    reason: DrawReason::Ability {
-                        name: "Monarch".to_string(),
-                    },
+                    source: None,
+                    reason: DrawReason::Ability("Monarch".to_string()),
                 });
+            }
+        }
+    }
+}
+
+/// System that transfers the Monarch when combat damage is dealt to them
+pub fn monarch_combat_damage_transfer(
+    mut commands: Commands,
+    mut monarch_state: ResMut<MonarchState>,
+    mut combat_damage_events: EventReader<CombatDamageEvent>,
+    players: Query<Entity, With<Player>>,
+) {
+    for event in combat_damage_events.read() {
+        if let Some(current_monarch) = monarch_state.current_monarch {
+            if event.defending_player == current_monarch {
+                // Transfer monarchy to attacking player
+                if let Some(monarch_component) = commands.get_entity(current_monarch) {
+                    monarch_component.remove::<Monarch>();
+                }
+                
+                if let Some(new_monarch) = commands.get_entity(event.attacking_player_controller) {
+                    new_monarch.insert(Monarch);
+                    monarch_state.current_monarch = Some(event.attacking_player_controller);
+                    monarch_state.last_changed = Some(time.elapsed_seconds());
+                }
             }
         }
     }
@@ -295,42 +301,160 @@ pub fn monarch_upkeep_draw(
 
 #### Myriad
 
-Cards with the Myriad mechanic:
+Myriad creates token copies attacking each opponent:
 
 ```rust
-/// Component for creatures with Myriad
+/// Component for the Myriad ability
 #[derive(Component)]
 pub struct Myriad;
 
-/// System that handles Myriad attacks
+/// System that handles Myriad triggers
 pub fn handle_myriad_attacks(
     mut commands: Commands,
-    myriad_creatures: Query<(Entity, &Myriad, &AttackingStatus, &Owner)>,
+    mut declare_attacker_events: EventReader<DeclareAttackerEvent>,
+    myriad_creatures: Query<Entity, With<Myriad>>,
     players: Query<Entity, With<Player>>,
-    mut token_events: EventWriter<CreateTokenEvent>,
-    mut phase_events: EventReader<PhaseChangeEvent>,
+    controllers: Query<&Controller>,
 ) {
-    for event in phase_events.read() {
-        // Check for declare attackers step
-        if matches!(event.new_phase, Phase::Combat(CombatStep::DeclareAttackers)) {
-            for (entity, _, attacking_status, owner) in myriad_creatures.iter() {
-                if !attacking_status.attacking {
+    for event in declare_attacker_events.read() {
+        if myriad_creatures.contains(event.attacker) {
+            let attacker_controller = controllers.get(event.attacker).map(|c| c.0).unwrap_or_default();
+            
+            // Create token copies attacking each other opponent
+            for potential_defender in players.iter() {
+                // Skip the attacking player and the already-targeted defender
+                if potential_defender == attacker_controller || potential_defender == event.defender {
                     continue;
                 }
                 
-                // Get the player being attacked
-                let defending_player = attacking_status.defending_player.unwrap();
+                // Create a token copy attacking this opponent
+                let token = commands.spawn((
+                    // Copy relevant components from original
+                    // Add attacking status to new opponent
+                    AttackingStatus {
+                        defending_player: potential_defender,
+                    },
+                    TokenCopy {
+                        original: event.attacker,
+                        // Myriad tokens are exiled at end of combat
+                        exile_at_end_of_combat: true,
+                    },
+                )).id();
                 
-                // Create token copies attacking each other opponent
-                for potential_defender in players.iter() {
-                    if potential_defender != owner.0 && potential_defender != defending_player {
-                        token_events.send(CreateTokenEvent {
-                            token_source: entity,
-                            owner: owner.0,
-                            attacking: Some(potential_defender),
-                            modifications: vec![TokenModification::ExileAtEndOfCombat],
-                        });
+                // More token setup...
+            }
+        }
+    }
+}
+```
+
+#### Melee
+
+Melee gives a bonus based on how many opponents were attacked:
+
+```rust
+/// Component for the Melee ability
+#[derive(Component)]
+pub struct Melee {
+    /// Bonus per opponent attacked
+    pub bonus: i32,
+}
+
+/// System that calculates Melee bonuses
+pub fn calculate_melee_bonuses(
+    mut commands: Commands,
+    mut declare_attackers_step_events: EventReader<DeclareAttackersStepEvent>,
+    melee_creatures: Query<(Entity, &Melee, &Controller)>,
+    mut attacking_status: Query<&AttackingStatus>,
+    players: Query<Entity, With<Player>>,
+) {
+    for event in declare_attackers_step_events.read() {
+        // For each creature with Melee...
+        for (melee_entity, melee, controller) in melee_creatures.iter() {
+            // Count distinct opponents attacked
+            let opponents_attacked = attacking_status
+                .iter()
+                .filter(|status| {
+                    // Only count attacks from controller's creatures
+                    if let Ok(attacker_controller) = controllers.get(status.attacker) {
+                        attacker_controller.0 == controller.0 && status.defending_player != controller.0
+                    } else {
+                        false
                     }
+                })
+                .map(|status| status.defending_player)
+                .collect::<HashSet<Entity>>()
+                .len();
+                
+            // Apply Melee bonus based on opponents attacked
+            commands.entity(melee_entity).insert(MeleeBoost {
+                power_bonus: melee.bonus * opponents_attacked as i32,
+                toughness_bonus: melee.bonus * opponents_attacked as i32,
+                expires_at: ExpiryTiming::EndOfTurn,
+            });
+        }
+    }
+}
+```
+
+#### Goad
+
+Goad forces creatures to attack players other than you:
+
+```rust
+/// Component marking a creature as Goaded
+#[derive(Component)]
+pub struct Goaded {
+    /// The player who applied the goad effect
+    pub goaded_by: Entity,
+    /// When the goad effect expires
+    pub expires_at: ExpiryTiming,
+}
+
+/// System that enforces Goad restrictions during attacks
+pub fn enforce_goad_restrictions(
+    goaded_creatures: Query<(Entity, &Goaded)>,
+    mut attack_validation_events: EventReader<ValidateAttackEvent>,
+    mut attack_response_events: EventWriter<AttackValidationResponse>,
+) {
+    for event in attack_validation_events.read() {
+        if let Ok((_, goaded)) = goaded_creatures.get(event.attacker) {
+            // If attacking the player who goaded this creature, attack is invalid
+            if event.defender == goaded.goaded_by {
+                attack_response_events.send(AttackValidationResponse {
+                    attacker: event.attacker,
+                    defender: event.defender,
+                    is_valid: false,
+                    reason: "This creature is goaded and must attack a different player if able".to_string(),
+                });
+            }
+        }
+    }
+}
+
+/// System that enforces Goad requirements to attack if able
+pub fn enforce_goad_attack_requirement(
+    goaded_creatures: Query<(Entity, &Goaded, &CanAttack, &Controller)>,
+    mut attack_requirement_events: EventReader<AttackRequirementCheckEvent>,
+    mut attack_required_events: EventWriter<AttackRequiredEvent>,
+    players: Query<Entity, With<Player>>,
+) {
+    for event in attack_requirement_events.read() {
+        for (goaded_entity, goaded, can_attack, controller) in goaded_creatures.iter() {
+            // If creature can attack and is controlled by current player
+            if can_attack.0 && controller.0 == event.attacking_player {
+                // Find valid attack targets (not the player who goaded)
+                let valid_targets: Vec<Entity> = players
+                    .iter()
+                    .filter(|player| *player != goaded.goaded_by && *player != controller.0)
+                    .collect();
+                
+                // If there are valid targets, this creature must attack
+                if !valid_targets.is_empty() {
+                    attack_required_events.send(AttackRequiredEvent {
+                        creature: goaded_entity,
+                        valid_targets,
+                    });
                 }
             }
         }
@@ -338,184 +462,185 @@ pub fn handle_myriad_attacks(
 }
 ```
 
-### Commander Format-Specific Cards
+### Commander-Specific Cycles and Card Groups
 
-Cards that reference specific Commander rules:
+#### Medallion Cycle
 
-#### Command Tax Interaction
+The Medallion cycle (Ruby Medallion, Sapphire Medallion, etc.) reduces costs for spells of specific colors:
 
 ```rust
-/// Component for effects that interact with command tax
-#[derive(Component)]
-pub struct CommandTaxInteraction {
-    /// How the effect interacts with command tax
-    pub interaction_type: CommandTaxEffect,
-}
-
-/// Types of command tax effects
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CommandTaxEffect {
-    /// Reduce command tax (e.g., Derevi)
-    Ignore,
-    /// Set command tax to a specific value
-    Set(u32),
-    /// Modify command tax by an amount
-    Modify(i32),
-}
-
-/// Implementation of Derevi, Empyrial Tactician
-pub fn create_derevi() -> impl Bundle {
+pub fn create_ruby_medallion() -> impl Bundle {
     (
-        CardName("Derevi, Empyrial Tactician".to_string()),
-        CardType::Creature,
-        CreatureType(vec!["Bird".to_string(), "Wizard".to_string()]),
-        Power(2),
-        Toughness(3),
-        Commander,
+        CardName("Ruby Medallion".to_string()),
+        CardType::Artifact,
         StaticAbility {
             id: AbilityId::new(),
-            effect: Box::new(IgnoreCommanderTaxEffect),
+            effect: Box::new(ColorCostReductionEffect(Color::Red)),
             condition: StaticCondition::Always,
         },
-        ActivatedAbility {
-            id: AbilityId::new(),
-            cost: AbilityCost::Mana(ManaCost::parse("{1}{G}{W}{U}")),
-            effect: Box::new(PutOntoBattlefieldEffect),
-            timing_restriction: TimingRestriction::Instant,
-            zone_restriction: ZoneRestriction::InCommandZone,
-        },
     )
 }
 ```
 
-#### Partner Interaction
+#### Commander's Plate
+
+A special equipment that gives protection from colors outside your commander's color identity:
 
 ```rust
-/// Implementation of Thrasios, Triton Hero
-pub fn create_thrasios() -> impl Bundle {
+pub fn create_commanders_plate() -> impl Bundle {
     (
-        CardName("Thrasios, Triton Hero".to_string()),
-        CardType::Creature,
-        CreatureType(vec!["Merfolk".to_string(), "Wizard".to_string()]),
-        Power(1),
-        Toughness(3),
-        Commander,
-        PartnerType::Universal,
-        ActivatedAbility {
+        CardName("Commander's Plate".to_string()),
+        CardType::Artifact,
+        ArtifactType(vec!["Equipment".to_string()]),
+        EquipCost(ManaCost::parse("{3}")),
+        StaticAbility {
             id: AbilityId::new(),
-            cost: AbilityCost::Mana(ManaCost::parse("{4}")),
-            effect: Box::new(ThrasiosScryRevealEffect),
-            timing_restriction: TimingRestriction::Instant,
-            zone_restriction: ZoneRestriction::OnBattlefield,
+            effect: Box::new(CommandersPlateEffect),
+            condition: StaticCondition::IsEquipped,
         },
     )
 }
-```
 
-## Implementation Considerations
+#[derive(Debug, Clone)]
+pub struct CommandersPlateEffect;
 
-### Card Database Integration
-
-Commander-specific cards need special handling in the card database:
-
-```rust
-/// Function to load Commander-specific cards
-pub fn load_commander_cards(card_db: &mut CardDatabase) {
-    // Add Commander-specific cards
-    card_db.add_card(create_command_beacon);
-    card_db.add_card(create_councils_judgment);
-    card_db.add_card(create_thunderfoot_baloth);
-    card_db.add_card(create_queen_marchesa);
-    card_db.add_card(create_derevi);
-    card_db.add_card(create_thrasios);
-    // And many more...
+impl StaticEffect for CommandersPlateEffect {
+    fn apply(&self, world: &mut World, source: Entity, target: Entity) {
+        // Get equipped creature's controller
+        let controller = world.get::<Controller>(target).unwrap().0;
+        
+        // Get controller's commanders' color identity
+        let commander_identity = get_commander_color_identity(world, controller);
+        
+        // Grant protection from colors outside that identity
+        let protection_colors = ALL_COLORS.iter()
+            .filter(|color| !commander_identity.contains(**color))
+            .copied()
+            .collect();
+        
+        world.entity_mut(target).insert(Protection {
+            protection_from: ProtectionType::Colors(protection_colors),
+            source,
+        });
+        
+        // Also grant stat boosts
+        world.entity_mut(target).insert(StatBoost {
+            power: 3,
+            toughness: 3,
+            source,
+        });
+    }
 }
 ```
 
-### Legality Checking
+## Testing Commander-Specific Cards
 
-Some cards are specifically banned in Commander:
-
-```rust
-/// Function to check if a card is legal in Commander
-pub fn is_legal_in_commander(card_name: &str) -> bool {
-    // List of cards banned in Commander
-    const BANNED_CARDS: &[&str] = &[
-        "Ancestral Recall",
-        "Balance",
-        "Biorhythm",
-        "Black Lotus",
-        // Many more...
-    ];
-    
-    !BANNED_CARDS.contains(&card_name)
-}
-```
-
-### Testing Commander-Specific Cards
+Testing commander-specific cards requires special test fixtures and scenarios:
 
 ```rust
 #[test]
 fn test_command_beacon() {
     let mut app = App::new();
-    app.add_systems(Startup, setup_test);
-    app.add_systems(Update, handle_command_beacon_ability);
+    setup_test_game(&mut app);
     
-    // Create test entities
-    let player = app.world.spawn_empty().id();
+    let player = app.world.spawn(Player).id();
     
-    // Create a commander in the command zone
+    // Create a commander with tax
     let commander = app.world.spawn((
         CardName("Test Commander".to_string()),
         Commander,
-        Owner(player),
+        InCommandZone(player),
+        CommanderCastCount(2),  // Commander has been cast twice before
     )).id();
-    
-    // Add to command zone
-    app.world.resource_mut::<Zones>().command.insert(commander);
     
     // Create Command Beacon
-    let beacon = app.world.spawn((
-        CardName("Command Beacon".to_string()),
-        ActivatedAbility {
-            id: AbilityId::new(),
-            cost: AbilityCost::Sacrifice(SacrificeCost::Self_),
-            effect: Box::new(CommandBeaconEffect),
-            timing_restriction: TimingRestriction::Sorcery,
-            zone_restriction: ZoneRestriction::OnBattlefield,
-        },
-        Controller(player),
-    )).id();
+    let beacon = app.world.spawn(create_command_beacon()).id();
     
-    // Activate Command Beacon
-    app.world.send_event(ActivateAbilityEvent {
-        source: beacon,
-        ability_id: app.world.get::<ActivatedAbility>(beacon).unwrap().id,
-        controller: player,
-        targets: vec![],
-    });
-    
-    app.update();
+    // Use Command Beacon's ability
+    use_ability(beacon, player, &mut app.world);
     
     // Verify commander moved to hand
-    let zones = app.world.resource::<Zones>();
-    assert!(!zones.command.contains(&commander));
-    assert!(zones.hand.contains(&commander));
+    assert!(has_component::<InHand>(&app.world, commander));
+    assert!(!has_component::<InCommandZone>(&app.world, commander));
+    
+    // Verify commander can be cast without tax
+    let cast_cost = calculate_commander_cast_cost(&app.world, commander, player);
+    assert_eq!(cast_cost, commander_base_cost(&app.world, commander));
 }
 ```
 
-## User Interface Considerations
+## UI Considerations
 
-Commander-specific cards often require special UI handling:
+Commander-specific cards require special UI treatment:
 
-1. Command zone access needs proper visibility
-2. Voting mechanics need UI for choices
-3. Monarch state should be clearly indicated
-4. Partner commander interactions need clear UI representation
+1. Command zone interactions need visual clarity
+2. Political mechanics need multiplayer-aware UI elements
+3. Special effects like Monarch need distinctive visual indicators
 
-## Related Documentation
+```rust
+/// UI component for displaying monarchy status
+#[derive(Component)]
+pub struct MonarchyIndicator {
+    pub entity: Entity,
+}
 
-- [Partner Commanders](partner_commanders.md): Detailed implementation of partner mechanics
-- [Commander Ninjutsu](commander_ninjutsu.md): Implementation of the Commander Ninjutsu mechanic
-- [Commander Death Triggers](commander_death.md): How commander death interactions are handled
-- [Command Zone](../zones/command_zone.md): Implementation of the command zone 
+/// System to update monarchy UI
+pub fn update_monarchy_ui(
+    monarch_state: Res<MonarchState>,
+    mut indicators: Query<(&mut Visibility, &MonarchyIndicator)>,
+) {
+    for (mut visibility, indicator) in indicators.iter_mut() {
+        visibility.is_visible = monarch_state.current_monarch == Some(indicator.entity);
+    }
+}
+```
+
+## Commander Preconstructed Deck Integration
+
+Our system includes support for preconstructed Commander decks:
+
+```rust
+/// Resource containing preconstructed Commander deck definitions
+#[derive(Resource)]
+pub struct PreconstructedDecks {
+    pub decks: HashMap<String, PreconstructedDeckData>,
+}
+
+/// Data for a preconstructed Commander deck
+#[derive(Clone, Debug)]
+pub struct PreconstructedDeckData {
+    /// Deck name
+    pub name: String,
+    /// The set/product the deck is from
+    pub product: String,
+    /// Year released
+    pub year: u32,
+    /// Primary commander
+    pub commander: String,
+    /// Secondary commander/partner (if any)
+    pub partner: Option<String>,
+    /// List of all cards in the deck
+    pub card_list: Vec<String>,
+    /// Deck color identity
+    pub color_identity: ColorIdentity,
+    /// Deck theme or strategy
+    pub theme: String,
+}
+
+/// Function to load all preconstructed Commander decks
+pub fn load_preconstructed_decks() -> PreconstructedDecks {
+    // Load deck definitions from files
+    // ...
+}
+```
+
+## Conclusion
+
+Commander-specific cards are a vital part of the format's identity. By implementing these cards correctly, we ensure that our game engine provides an authentic Commander experience. The implementation must balance rules accuracy with performance considerations, especially for complex political mechanics in multiplayer games.
+
+## Related Resources
+
+- [Commander Format Rules](../overview/format_rules.md)
+- [Command Zone Implementation](../zones/command_zone.md)
+- [Multiplayer Politics](multiplayer_politics.md)
+- [Commander Tax](../player_mechanics/commander_tax.md) 

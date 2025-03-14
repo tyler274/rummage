@@ -55,4 +55,4 @@ renderers = []
 [preprocessor.links]
 
 [rust]
-edition = "2021"
+edition = "2024"
