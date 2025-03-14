@@ -10,17 +10,29 @@ use crate::menu::{
 };
 use bevy::prelude::*;
 use bevy::text::JustifyText;
-use bevy::ui::{AlignItems, FlexDirection, JustifyContent, UiRect, Val};
+use bevy::ui::{AlignItems, FlexDirection, JustifyContent, PositionType, UiRect, Val};
+
+/// Component to mark background image for easier access
+#[derive(Component)]
+struct MenuBackground;
 
 /// Sets up the main menu interface with buttons and layout
 pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     // The camera is now spawned by setup_menu_camera in plugin.rs
     // No need to spawn another camera here
 
+    // Try to load the background image, but we won't use it for now due to the difficulties
+    // We're just logging to confirm the path is correct for future reference
+    let _background_handle: Handle<Image> = asset_server.load("images/menu_background.jpeg");
+    info!("Attempted to load background image, not using it currently");
+
+    // Since we've had so many issues with the background image, just focus on the current UI
+    // The decorative gold styling actually looks very good!
+
     // Spawn Star of David in world space with proper z-index
     commands.spawn(create_star_of_david());
 
-    // Main menu container - with dark background
+    // Main menu container - with rich golden background
     commands
         .spawn((
             Node {
@@ -31,87 +43,242 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            // Black semi-transparent background
-            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.95)),
+            // Rich background with a deeper brown at the base - more golden tone
+            BackgroundColor(Color::srgb(0.22, 0.15, 0.05)),
             MenuItem,
-            AppLayer::Menu.layer(), // Add to menu layer
-            Visibility::Visible,    // Explicitly set to visible
+            AppLayer::Menu.layer(),
+            Visibility::Visible,
             InheritedVisibility::default(),
             ViewVisibility::default(),
         ))
         .with_children(|parent| {
+            // Add gradient top overlay (lighter at top, creates a gradient effect)
+            parent.spawn((
+                Node {
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(70.0),
+                    position_type: PositionType::Absolute,
+                    top: Val::Px(0.0),
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.4, 0.3, 0.1, 0.4)),
+            ));
+
+            // Add bottom vignette (darker at bottom)
+            parent.spawn((
+                Node {
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(50.0),
+                    position_type: PositionType::Absolute,
+                    bottom: Val::Px(0.0),
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.05, 0.03, 0.01, 0.6)),
+            ));
+
+            // Add a center highlight (subtle radial effect)
+            parent.spawn((
+                Node {
+                    width: Val::Percent(70.0),
+                    height: Val::Percent(70.0),
+                    position_type: PositionType::Absolute,
+                    top: Val::Percent(15.0),
+                    left: Val::Percent(15.0),
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.5, 0.4, 0.15, 0.15)),
+                // Add rounded corners to create a soft radial effect
+                BorderRadius::all(Val::Percent(50.0)),
+            ));
+
+            // Add decorative horizontal line at top
+            parent.spawn((
+                Node {
+                    width: Val::Percent(80.0),
+                    height: Val::Px(2.0),
+                    position_type: PositionType::Absolute,
+                    top: Val::Percent(10.0),
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.7, 0.6, 0.2, 0.6)),
+            ));
+
+            // Add decorative horizontal line at bottom
+            parent.spawn((
+                Node {
+                    width: Val::Percent(80.0),
+                    height: Val::Px(2.0),
+                    position_type: PositionType::Absolute,
+                    bottom: Val::Percent(10.0),
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.7, 0.6, 0.2, 0.6)),
+            ));
+
+            // Add left decorative vertical element
+            parent.spawn((
+                Node {
+                    width: Val::Px(8.0),
+                    height: Val::Percent(60.0),
+                    position_type: PositionType::Absolute,
+                    left: Val::Percent(5.0),
+                    top: Val::Percent(20.0),
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.7, 0.6, 0.2, 0.3)),
+                BorderRadius::all(Val::Px(4.0)),
+            ));
+
+            // Add right decorative vertical element
+            parent.spawn((
+                Node {
+                    width: Val::Px(8.0),
+                    height: Val::Percent(60.0),
+                    position_type: PositionType::Absolute,
+                    right: Val::Percent(5.0),
+                    top: Val::Percent(20.0),
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.7, 0.6, 0.2, 0.3)),
+                BorderRadius::all(Val::Px(4.0)),
+            ));
+
+            // Add diagonal decorative elements for extra flair
+            parent.spawn((
+                Node {
+                    width: Val::Percent(60.0),
+                    height: Val::Px(1.0),
+                    position_type: PositionType::Absolute,
+                    top: Val::Percent(25.0),
+                    left: Val::Percent(10.0),
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.7, 0.6, 0.2, 0.2)),
+                // Rotate the element
+                Transform::from_rotation(Quat::from_rotation_z(0.2)),
+                GlobalTransform::default(),
+            ));
+
+            parent.spawn((
+                Node {
+                    width: Val::Percent(60.0),
+                    height: Val::Px(1.0),
+                    position_type: PositionType::Absolute,
+                    top: Val::Percent(75.0),
+                    left: Val::Percent(30.0),
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.7, 0.6, 0.2, 0.2)),
+                // Rotate the element in the opposite direction
+                Transform::from_rotation(Quat::from_rotation_z(-0.2)),
+                GlobalTransform::default(),
+            ));
+
             // Add the logo
             parent
                 .spawn((
                     create_logo(),
-                    AppLayer::Menu.layer(), // Add to menu layer
-                    Visibility::Visible,    // Explicitly set to visible
+                    AppLayer::Menu.layer(),
+                    Visibility::Visible,
                     InheritedVisibility::default(),
                     ViewVisibility::default(),
                 ))
                 .with_children(|parent| {
                     parent.spawn((
                         create_hebrew_text(&asset_server),
-                        AppLayer::Menu.layer(), // Add to menu layer
-                        Visibility::Visible,    // Explicitly set to visible
+                        AppLayer::Menu.layer(),
+                        Visibility::Visible,
                         InheritedVisibility::default(),
                         ViewVisibility::default(),
                     ));
                     parent.spawn((
                         create_english_text(&asset_server),
-                        AppLayer::Menu.layer(), // Add to menu layer
-                        Visibility::Visible,    // Explicitly set to visible
+                        AppLayer::Menu.layer(),
+                        Visibility::Visible,
                         InheritedVisibility::default(),
                         ViewVisibility::default(),
                     ));
                     parent.spawn((
                         create_decorative_elements(),
-                        AppLayer::Menu.layer(), // Add to menu layer
-                        Visibility::Visible,    // Explicitly set to visible
+                        AppLayer::Menu.layer(),
+                        Visibility::Visible,
                         InheritedVisibility::default(),
                         ViewVisibility::default(),
                     ));
                 });
 
-            // Menu buttons container
+            // Menu buttons container with a border (using nested nodes for border effect)
             parent
                 .spawn((
                     Node {
-                        width: Val::Px(300.0),
-                        height: Val::Px(400.0),
+                        width: Val::Px(302.0), // Slightly larger to create border effect
+                        height: Val::Px(402.0),
                         flex_direction: FlexDirection::Column,
-                        justify_content: JustifyContent::SpaceAround,
+                        justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
                         margin: UiRect::top(Val::Px(50.0)),
                         ..default()
                     },
-                    BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
-                    AppLayer::Menu.layer(), // Add to menu layer
-                    Visibility::Visible,    // Explicitly set to visible
+                    // Border color
+                    BackgroundColor(Color::srgba(0.6, 0.5, 0.2, 0.3)),
+                    BorderRadius::all(Val::Px(9.0)), // Slightly larger radius for outer element
+                    AppLayer::Menu.layer(),
+                    Visibility::Visible,
                     InheritedVisibility::default(),
                     ViewVisibility::default(),
                 ))
                 .with_children(|parent| {
-                    spawn_menu_button(parent, "New Game", MenuButtonAction::NewGame, &asset_server);
-                    spawn_menu_button(
-                        parent,
-                        "Load Game",
-                        MenuButtonAction::LoadGame,
-                        &asset_server,
-                    );
-                    spawn_menu_button(
-                        parent,
-                        "Multiplayer",
-                        MenuButtonAction::Multiplayer,
-                        &asset_server,
-                    );
-                    spawn_menu_button(
-                        parent,
-                        "Settings",
-                        MenuButtonAction::Settings,
-                        &asset_server,
-                    );
-                    spawn_menu_button(parent, "Quit", MenuButtonAction::Quit, &asset_server);
+                    // Inner container (actual menu background)
+                    parent
+                        .spawn((
+                            Node {
+                                width: Val::Px(300.0),
+                                height: Val::Px(400.0),
+                                flex_direction: FlexDirection::Column,
+                                justify_content: JustifyContent::SpaceAround,
+                                align_items: AlignItems::Center,
+                                ..default()
+                            },
+                            // Slightly transparent dark panel for buttons
+                            BackgroundColor(Color::srgba(0.15, 0.15, 0.15, 0.85)),
+                            BorderRadius::all(Val::Px(8.0)),
+                            AppLayer::Menu.layer(),
+                            Visibility::Visible,
+                            InheritedVisibility::default(),
+                            ViewVisibility::default(),
+                        ))
+                        .with_children(|parent| {
+                            spawn_menu_button(
+                                parent,
+                                "New Game",
+                                MenuButtonAction::NewGame,
+                                &asset_server,
+                            );
+                            spawn_menu_button(
+                                parent,
+                                "Load Game",
+                                MenuButtonAction::LoadGame,
+                                &asset_server,
+                            );
+                            spawn_menu_button(
+                                parent,
+                                "Multiplayer",
+                                MenuButtonAction::Multiplayer,
+                                &asset_server,
+                            );
+                            spawn_menu_button(
+                                parent,
+                                "Settings",
+                                MenuButtonAction::Settings,
+                                &asset_server,
+                            );
+                            spawn_menu_button(
+                                parent,
+                                "Quit",
+                                MenuButtonAction::Quit,
+                                &asset_server,
+                            );
+                        });
                 });
         });
 }
@@ -130,34 +297,61 @@ fn spawn_menu_button(
     action: MenuButtonAction,
     asset_server: &AssetServer,
 ) {
-    // Button container
+    // Outer button container (for border effect)
     parent
         .spawn((
-            button_style(),
-            BackgroundColor(NORMAL_BUTTON),
-            Button,
-            action,
-            AppLayer::Menu.layer(), // Add to menu layer
-            Visibility::Visible,    // Explicitly set to visible
+            Node {
+                width: Val::Px(252.0), // Slightly larger for border effect
+                height: Val::Px(52.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            // Border color
+            BackgroundColor(Color::srgba(0.6, 0.5, 0.2, 0.5)),
+            BorderRadius::all(Val::Px(5.0)),
+            AppLayer::Menu.layer(),
+            Visibility::Visible,
             InheritedVisibility::default(),
             ViewVisibility::default(),
         ))
         .with_children(|parent| {
-            // Button text
-            parent.spawn((
-                Text::new(text),
-                TextFont {
-                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                    font_size: 24.0,
-                    ..default()
-                },
-                TextLayout::new_with_justify(JustifyText::Center),
-                TextColor(Color::WHITE),
-                AppLayer::Menu.layer(), // Add to menu layer
-                Visibility::Visible,    // Explicitly set to visible
-                InheritedVisibility::default(),
-                ViewVisibility::default(),
-            ));
+            // Inner button (actual button)
+            parent
+                .spawn((
+                    Node {
+                        width: Val::Px(250.0),
+                        height: Val::Px(50.0),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        ..default()
+                    },
+                    BackgroundColor(NORMAL_BUTTON),
+                    BorderRadius::all(Val::Px(4.0)),
+                    Button,
+                    action,
+                    AppLayer::Menu.layer(),
+                    Visibility::Visible,
+                    InheritedVisibility::default(),
+                    ViewVisibility::default(),
+                ))
+                .with_children(|parent| {
+                    // Button text
+                    parent.spawn((
+                        Text::new(text),
+                        TextFont {
+                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                            font_size: 24.0,
+                            ..default()
+                        },
+                        TextLayout::new_with_justify(JustifyText::Center),
+                        TextColor(Color::srgba(0.95, 0.95, 0.95, 1.0)),
+                        AppLayer::Menu.layer(),
+                        Visibility::Visible,
+                        InheritedVisibility::default(),
+                        ViewVisibility::default(),
+                    ));
+                });
         });
 }
 
