@@ -20,6 +20,41 @@ pub struct CardTextContent {
     pub power_toughness: Option<String>,
 }
 
+/// Specialized component for card name text
+#[derive(Component, Debug, Clone)]
+pub struct CardNameText {
+    /// The name of the card
+    pub name: String,
+}
+
+/// Specialized component for card mana cost text
+#[derive(Component, Debug, Clone)]
+pub struct CardManaCostText {
+    /// The mana cost of the card
+    pub mana_cost: String,
+}
+
+/// Specialized component for card type line text
+#[derive(Component, Debug, Clone)]
+pub struct CardTypeLine {
+    /// The type line of the card
+    pub type_line: String,
+}
+
+/// Specialized component for card rules text
+#[derive(Component, Debug, Clone)]
+pub struct CardRulesText {
+    /// The rules text of the card
+    pub rules_text: String,
+}
+
+/// Specialized component for card power/toughness text
+#[derive(Component, Debug, Clone)]
+pub struct CardPowerToughness {
+    /// The power/toughness of the card
+    pub power_toughness: String,
+}
+
 /// Configuration for debug visualization
 #[derive(Resource, Default)]
 pub struct DebugConfig {

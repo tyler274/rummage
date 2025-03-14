@@ -2,7 +2,10 @@ use super::table::TableLayout;
 use crate::camera::components::{AppLayer, GameCamera};
 use crate::card::{Card, CardDetails, Draggable};
 use crate::mana::convert_rules_text_to_symbols;
-use crate::text::CardTextContent;
+use crate::text::components::{
+    CardManaCostText, CardNameText, CardPowerToughness, CardRulesText, CardTextContent,
+    CardTypeLine,
+};
 use bevy::prelude::*;
 
 /// Helper function to spawn visual card entities
@@ -108,7 +111,73 @@ pub fn spawn_visual_cards(
             ))
             .id();
 
-        // Spawn card text content
+        // Spawn card text content using specialized components
+        let _name_text_entity = commands
+            .spawn((
+                CardNameText {
+                    name: card.name.clone(),
+                },
+                Transform::default(),
+                AppLayer::Cards.layer(), // Use the specific Cards layer
+            ))
+            .set_parent(card_entity)
+            .id();
+
+        let _mana_cost_text_entity = commands
+            .spawn((
+                CardManaCostText {
+                    mana_cost: card.cost.to_string(),
+                },
+                Transform::default(),
+                AppLayer::Cards.layer(), // Use the specific Cards layer
+            ))
+            .set_parent(card_entity)
+            .id();
+
+        let _type_line_text_entity = commands
+            .spawn((
+                CardTypeLine {
+                    type_line: card.type_line(),
+                },
+                Transform::default(),
+                AppLayer::Cards.layer(), // Use the specific Cards layer
+            ))
+            .set_parent(card_entity)
+            .id();
+
+        let _rules_text_entity = commands
+            .spawn((
+                CardRulesText {
+                    rules_text: convert_rules_text_to_symbols(&card.rules_text),
+                },
+                Transform::default(),
+                AppLayer::Cards.layer(), // Use the specific Cards layer
+            ))
+            .set_parent(card_entity)
+            .id();
+
+        // Spawn power/toughness text if applicable
+        if let CardDetails::Creature(creature) = &card.card_details {
+            let pt_text_entity = commands
+                .spawn((
+                    CardPowerToughness {
+                        power_toughness: format!("{}/{}", creature.power, creature.toughness),
+                    },
+                    Transform::default(),
+                    AppLayer::Cards.layer(), // Use the specific Cards layer
+                ))
+                .set_parent(card_entity)
+                .id();
+
+            info!(
+                "Spawned power/toughness text entity {:?} as child of card entity {:?}",
+                pt_text_entity, card_entity
+            );
+        }
+
+        info!("Spawned text entities for card {:?}", card_entity);
+
+        // For backward compatibility - create a consolidated CardTextContent
         let text_entity = commands
             .spawn((
                 CardTextContent {
