@@ -132,6 +132,7 @@ impl Plugin for MenuPlugin {
                     setup_menu_camera,
                     ensure_single_menu_camera,
                     setup_settings_transition,
+                    cleanup_pause_menu,
                 ),
             )
             // InGame state systems

@@ -127,7 +127,9 @@ pub fn pause_menu_action(
                         next_state.set(GameMenuState::MainMenu);
                     }
                     MenuButtonAction::Settings => {
-                        // Context flag will be set in setup_settings_transition
+                        // Set the context flag to indicate we're coming from the pause menu
+                        info!("Setting context flag: from_pause_menu = true");
+                        context.from_pause_menu = true;
                         next_state.set(GameMenuState::Settings);
                     }
                     MenuButtonAction::Quit => {

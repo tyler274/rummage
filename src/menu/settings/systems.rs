@@ -587,9 +587,11 @@ pub fn settings_button_action(
                     SettingsButtonAction::Back => {
                         // Return to the previous menu (main menu or pause menu)
                         if let Some(origin) = context.settings_origin {
+                            info!("Returning to origin state: {:?}", origin);
                             game_state.set(origin);
                         } else {
                             // Default to main menu if origin is not set
+                            info!("No origin state found, defaulting to MainMenu");
                             game_state.set(GameMenuState::MainMenu);
                         }
                     }
