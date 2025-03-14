@@ -144,7 +144,7 @@
 - [Game Engine](game_engine/index.md)
   - [State Management](game_engine/state/index.md)
   - [Event System](game_engine/events/index.md)
-  - [Snapshot System](development/snapshots.md)
+  - [Snapshot System](game_engine/snapshot.md)
 
 # Testing
 
@@ -152,8 +152,7 @@
   - [Unit Testing](testing/unit_testing.md)
   - [Integration Testing](testing/integration_testing.md)
   - [End-to-End Testing](testing/end_to_end_testing.md)
-  - [Visual Differential Testing](testing/visual_differential_testing.md)
-  - [Visual Testing Guide](testing/visual_differential.md)
+  - [Visual Testing](testing/visual_differential_testing.md)
   - [Performance Testing](testing/performance_testing.md)
   - [CI/CD Pipeline](testing/ci_cd_pipeline.md)
   - [Development Integration](testing/development_integration.md)
