@@ -1,14 +1,14 @@
 use bevy::prelude::*;
 
 use crate::text::{
-    components::{CardTextContent, CardTextStyleBundle, CardTextType, TextLayoutInfo},
+    components::{CardTextStyleBundle, CardTextType, CardTypeLine, TextLayoutInfo},
     utils::{calculate_text_size, get_card_font_size, get_card_layout},
 };
 
 /// Spawn type line text for a card
 pub fn spawn_type_line_text(
     commands: &mut Commands,
-    content: &CardTextContent,
+    type_line_component: &CardTypeLine,
     _card_pos: Vec2,
     card_size: Vec2,
     asset_server: &AssetServer,
@@ -33,7 +33,7 @@ pub fn spawn_type_line_text(
     let font_size = get_card_font_size(card_size, 16.0);
 
     // Format type line consistently (match MTG style with em-dash between types)
-    let formatted_type_line = format_type_line(&content.type_line);
+    let formatted_type_line = format_type_line(&type_line_component.type_line);
 
     // Create text style bundle
     let text_style = CardTextStyleBundle {

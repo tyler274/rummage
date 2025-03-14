@@ -5,21 +5,6 @@ use bevy::text::JustifyText;
 #[derive(Component)]
 pub struct SpawnedText;
 
-/// Component for storing card text content
-#[derive(Component, Debug, Clone)]
-pub struct CardTextContent {
-    /// The name of the card
-    pub name: String,
-    /// The mana cost of the card
-    pub mana_cost: String,
-    /// The type line of the card
-    pub type_line: String,
-    /// The rules text of the card
-    pub rules_text: String,
-    /// The power/toughness of the card (if applicable)
-    pub power_toughness: Option<String>,
-}
-
 /// Specialized component for card name text
 #[derive(Component, Debug, Clone)]
 pub struct CardNameText {

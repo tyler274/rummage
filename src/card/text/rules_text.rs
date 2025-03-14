@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::text::JustifyText;
 
 use crate::text::{
-    components::{CardTextContent, CardTextType, TextLayoutInfo},
+    components::{CardRulesText, CardTextType, TextLayoutInfo},
     mana_symbols::is_valid_mana_symbol,
     utils::{calculate_text_size, get_card_font_size, get_card_layout},
 };
@@ -27,7 +27,7 @@ pub fn replace_mana_symbols_with_unicode(text: &str) -> String {
 /// Spawn rules text for a card
 pub fn spawn_rules_text(
     commands: &mut Commands,
-    content: &CardTextContent,
+    rules_text_component: &CardRulesText,
     _card_pos: Vec2,
     card_size: Vec2,
     asset_server: &AssetServer,
@@ -53,7 +53,7 @@ pub fn spawn_rules_text(
 
     // Adjust font size based on card size and text length
     let base_font_size = 16.0; // Slightly smaller base font for better readability
-    let text_length_factor = (content.rules_text.len() as f32 / 100.0).clamp(0.5, 1.5);
+    let text_length_factor = (rules_text_component.rules_text.len() as f32 / 100.0).clamp(0.5, 1.5);
     let adjusted_font_size = base_font_size / text_length_factor.max(1.0);
     let font_size = get_card_font_size(card_size, adjusted_font_size);
 
@@ -61,7 +61,8 @@ pub fn spawn_rules_text(
     let max_text_width = text_size.x;
 
     // Format the rules text with proper line breaks and wrapping
-    let formatted_text = format_rules_text(&content.rules_text, max_text_width, font_size);
+    let formatted_text =
+        format_rules_text(&rules_text_component.rules_text, max_text_width, font_size);
 
     // Load fonts - both regular and mana fonts
     let regular_font: Handle<Font> = asset_server.load("fonts/NotoSerif-Regular.ttf");

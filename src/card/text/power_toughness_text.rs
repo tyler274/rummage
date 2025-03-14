@@ -1,14 +1,14 @@
 use bevy::prelude::*;
 
 use crate::text::{
-    components::{CardTextStyleBundle, CardTextType, TextLayoutInfo},
+    components::{CardPowerToughness, CardTextStyleBundle, CardTextType, TextLayoutInfo},
     utils::{calculate_text_size, get_card_font_size, get_card_layout},
 };
 
 /// Spawn power/toughness text for a card
 pub fn spawn_power_toughness_text(
     commands: &mut Commands,
-    pt: &str,
+    pt_component: &CardPowerToughness,
     _card_pos: Vec2,
     card_size: Vec2,
     asset_server: &AssetServer,
@@ -46,7 +46,7 @@ pub fn spawn_power_toughness_text(
     // Create text with CardTextBundle
     let entity = commands
         .spawn((
-            Text2d::new(pt.to_string()),
+            Text2d::new(pt_component.power_toughness.clone()),
             text_style,
             Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.2)),
             GlobalTransform::default(),
@@ -54,7 +54,7 @@ pub fn spawn_power_toughness_text(
             TextLayoutInfo {
                 alignment: JustifyText::Center,
             },
-            Name::new(format!("Power/Toughness: {}", pt)),
+            Name::new(format!("Power/Toughness: {}", pt_component.power_toughness)),
         ))
         .id();
 

@@ -3,8 +3,7 @@ use crate::camera::components::{AppLayer, GameCamera};
 use crate::card::{Card, CardDetails, Draggable};
 use crate::mana::convert_rules_text_to_symbols;
 use crate::text::components::{
-    CardManaCostText, CardNameText, CardPowerToughness, CardRulesText, CardTextContent,
-    CardTypeLine,
+    CardManaCostText, CardNameText, CardPowerToughness, CardRulesText, CardTypeLine,
 };
 use bevy::prelude::*;
 
@@ -176,31 +175,6 @@ pub fn spawn_visual_cards(
         }
 
         info!("Spawned text entities for card {:?}", card_entity);
-
-        // For backward compatibility - create a consolidated CardTextContent
-        let text_entity = commands
-            .spawn((
-                CardTextContent {
-                    name: card.name.clone(),
-                    mana_cost: card.cost.to_string(),
-                    type_line: card.type_line(),
-                    rules_text: convert_rules_text_to_symbols(&card.rules_text),
-                    power_toughness: if let CardDetails::Creature(creature) = &card.card_details {
-                        Some(format!("{}/{}", creature.power, creature.toughness))
-                    } else {
-                        None
-                    },
-                },
-                Transform::default(),
-                AppLayer::Cards.layer(), // Use the specific Cards layer
-            ))
-            .set_parent(card_entity)
-            .id();
-
-        info!(
-            "Spawned CardTextContent entity {:?} as child of card entity {:?}",
-            text_entity, card_entity
-        );
     }
 
     info!(

@@ -1,6 +1,6 @@
 use crate::card::Card;
 use crate::text::{
-    components::{CardTextType, TextLayoutInfo},
+    components::{CardNameText, CardTextType, TextLayoutInfo},
     utils::{CardTextLayout, get_card_font_size, get_card_layout},
 };
 use bevy::prelude::*;
@@ -8,7 +8,7 @@ use bevy::prelude::*;
 /// Creates text entity for card name
 pub fn create_name_text(
     commands: &mut Commands,
-    content: &crate::text::components::CardTextContent,
+    name_text_component: &CardNameText,
     _card_pos: Vec2,
     card_size: Vec2,
     asset_server: &AssetServer,
@@ -21,7 +21,11 @@ pub fn create_name_text(
     let font_size = get_card_font_size(card_size, 18.0);
 
     // Create formatted card name - truncate if too long
-    let name_text = format_card_name(&content.name, font_size, layout.name_width * card_size.x);
+    let name_text = format_card_name(
+        &name_text_component.name,
+        font_size,
+        layout.name_width * card_size.x,
+    );
 
     // Position the name at the top left of the card using layout parameters
     let name_position = Vec2::new(

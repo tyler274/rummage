@@ -3,7 +3,7 @@ use bevy::text::JustifyText;
 
 use crate::card::Card;
 use crate::text::{
-    components::{CardTextType, TextLayoutInfo},
+    components::{CardManaCostText, CardTextType, TextLayoutInfo},
     mana_symbols::{ManaSymbolOptions, render_mana_symbol},
     utils::get_card_layout,
 };
@@ -11,13 +11,13 @@ use crate::text::{
 /// Creates a text entity for mana cost with colored mana symbols
 pub fn create_mana_cost_text(
     commands: &mut Commands,
-    content: &crate::text::components::CardTextContent,
+    mana_cost_component: &CardManaCostText,
     _card_pos: Vec2,
     card_size: Vec2,
     asset_server: &AssetServer,
 ) -> Entity {
     // Skip cards with no mana cost
-    if content.mana_cost.is_empty() {
+    if mana_cost_component.mana_cost.is_empty() {
         return commands.spawn_empty().id();
     }
 
@@ -35,7 +35,7 @@ pub fn create_mana_cost_text(
     );
 
     // Extract individual mana symbols from the mana cost
-    let mana_cost = content.mana_cost.clone();
+    let mana_cost = mana_cost_component.mana_cost.clone();
     let mut symbols = Vec::new();
     let mut current_symbol = String::new();
     let mut inside_brace = false;
@@ -76,7 +76,7 @@ pub fn create_mana_cost_text(
             TextLayoutInfo {
                 alignment: JustifyText::Right,
             },
-            Name::new(format!("Mana Cost: {}", content.mana_cost)),
+            Name::new(format!("Mana Cost: {}", mana_cost_component.mana_cost)),
         ))
         .id();
 
@@ -136,17 +136,8 @@ pub fn mana_cost_text_system(
         let card_size = Vec2::new(layout.card_width, layout.card_height);
 
         // Create content for mana cost text
-        let content = crate::text::components::CardTextContent {
-            name: card.name.clone(),
+        let content = CardManaCostText {
             mana_cost: mana_cost_string,
-            type_line: card.type_line(),
-            rules_text: card.rules_text.clone(),
-            power_toughness: match &card.card_details {
-                crate::card::CardDetails::Creature(creature) => {
-                    Some(format!("{}/{}", creature.power, creature.toughness))
-                }
-                _ => None,
-            },
         };
 
         // Create the mana cost text
