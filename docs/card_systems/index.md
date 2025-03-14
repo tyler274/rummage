@@ -1,6 +1,6 @@
 # Card Systems
 
-This section documents the card systems of the Rummage MTG Commander game engine, covering the card database, effects implementation, rendering, and testing strategies.
+This section documents the card systems of the Rummage MTG Commander game engine, covering the card database, deck database, effects implementation, rendering, and testing strategies.
 
 ## Table of Contents
 
@@ -11,7 +11,7 @@ This section documents the card systems of the Rummage MTG Commander game engine
 
 ## Overview
 
-The Card Systems module is the heart of Rummage's MTG implementation, responsible for representing cards, their attributes, and behaviors. This module handles everything from card data storage to effect resolution and visual representation.
+The Card Systems module is the heart of Rummage's MTG implementation, responsible for representing cards, their attributes, and behaviors. This module handles everything from card data storage to deck management, effect resolution and visual representation.
 
 In Rummage's ECS architecture, cards are entities with various components that define their properties, current state, and behaviors. These components include card type, mana cost, power/toughness for creatures, and other attributes defined in the MTG Comprehensive Rules. Systems then process these components to implement game mechanics such as casting spells, resolving abilities, and applying state-based actions.
 
@@ -25,19 +25,25 @@ The Card Systems consist of the following major components:
    - Oracle text processing
    - Card metadata and identification
 
-2. [Card Effects](effects/index.md)
+2. [Deck Database](deck_database/index.md)
+   - Deck creation and management
+   - Format-specific validation
+   - Deck persistence and sharing
+   - Runtime deck operations
+
+3. [Card Effects](effects/index.md)
    - Effect resolution system
    - Targeting mechanism
    - Complex card interactions
    - Ability parsing and implementation
 
-3. [Card Rendering](rendering/index.md)
+4. [Card Rendering](rendering/index.md)
    - Visual representation of cards
    - Card layout and templating
    - Art asset management
    - Dynamic card state visualization
 
-4. [Testing Cards](testing/index.md)
+5. [Testing Cards](testing/index.md)
    - Effect verification methodology
    - Interaction testing
    - Edge case coverage
@@ -49,6 +55,8 @@ The Card Systems consist of the following major components:
 |-----------|--------|-------------|
 | Core Card Model | ✅ | Basic card data structure and properties |
 | Card Database | ✅ | Storage and retrieval of card information |
+| Deck Database | ✅ | Deck creation, storage, and manipulation |
+| Format Validation | 🔄 | Deck validation for various formats |
 | Basic Effects | ✅ | Simple card effects (damage, draw, etc.) |
 | Complex Effects | 🔄 | Advanced card effects and interactions |
 | Targeting System | 🔄 | System for selecting targets for effects |
@@ -74,6 +82,15 @@ The Card Rendering system provides the necessary data for the Game UI to visuali
 - The rendering pipeline transforms card data into visual assets
 - Dynamic updates reflect card state changes (tapped, counters, attachments)
 - Special visual effects for activated abilities and spells being cast
+
+### Deck Management
+
+The Deck Database integrates with the UI to provide deck building and management interfaces:
+
+- Deck builder UI for creating and editing decks
+- Deck validation feedback
+- Importing and exporting deck lists
+- Deck statistics and analysis
 
 ### User Interaction
 

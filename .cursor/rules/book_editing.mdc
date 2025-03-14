@@ -1,0 +1,6 @@
+---
+description: 
+globs: docs/**
+alwaysApply: false
+---
+Continue documenting the remaining features necessary for our robust and complete game, continue editing and deduplicating the docs book and making sure all links are updated and dead links updated. 
