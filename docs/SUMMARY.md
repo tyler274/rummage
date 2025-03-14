@@ -125,14 +125,12 @@
   - [Gameplay Networking](networking/gameplay/index.md)
     - [State Management](networking/gameplay/state/index.md)
       - [Rollback System](networking/gameplay/state/rollback.md)
-      - [Replicon Integration](networking/gameplay/state/replicon_rollback.md)
       - [Deterministic Logic](networking/gameplay/state/deterministic_logic.md)
     - [Action Broadcasting](networking/gameplay/action_broadcasting.md)
     - [Latency Compensation](networking/gameplay/latency_compensation.md)
   - [Testing](networking/testing/index.md)
     - [Overview](networking/testing/overview.md)
     - [RNG Synchronization Tests](networking/testing/rng_synchronization_tests.md)
-    - [Replicon RNG Tests](networking/testing/replicon_rng_tests.md)
     - [Advanced Testing Techniques](networking/testing/advanced_techniques.md)
     - [Simulated Network Conditions](networking/testing/simulated_network.md)
   - [Security](networking/security/index.md)
@@ -140,14 +138,21 @@
     - [Data Validation](networking/security/data_validation.md)
     - [Encryption](networking/security/encryption.md)
   - [UI Integration](networking/ui_integration.md)
-  - [Snapshot System Integration](networking/snapshot_integration.md)
 
 # Technical Implementation
 
 - [Game Engine](game_engine/index.md)
   - [State Management](game_engine/state/index.md)
   - [Event System](game_engine/events/index.md)
-  - [Snapshot System](game_engine/snapshot.md)
+
+# Core Systems
+
+- [Snapshot System](core_systems/snapshot/index.md)
+  - [Overview](core_systems/snapshot/overview.md)
+  - [Implementation](core_systems/snapshot/implementation.md)
+  - [Integration with Networking](core_systems/snapshot/networking_integration.md)
+  - [Testing](core_systems/snapshot/testing.md)
+  - [API Reference](core_systems/snapshot/api_reference.md)
 
 # Testing
 
@@ -173,7 +178,6 @@
     - [Camera Management](development/bevy_guide/camera.md)
     - [Random Number Generation](development/bevy_guide/rng.md)
     - [Deprecated APIs](development/bevy_guide/deprecated_apis.md)
-  - [Snapshot System](development/snapshots.md)
   - [Testing Integration](development/testing_integration.md)
 
 # Reference
