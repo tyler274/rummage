@@ -1,4 +1,4 @@
-use crate::camera::components::AppLayer;
+use crate::camera::components::{AppLayer, MenuCamera};
 use crate::menu::{
     components::*,
     logo::{
@@ -10,7 +10,7 @@ use crate::menu::{
 };
 use bevy::prelude::*;
 use bevy::text::JustifyText;
-use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
+use bevy::ui::{AlignItems, FlexDirection, JustifyContent, UiRect, Val};
 
 /// Sets up the main menu interface with buttons and layout
 pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -20,7 +20,7 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     // Spawn Star of David in world space with proper z-index
     commands.spawn(create_star_of_david());
 
-    // Main menu container
+    // Main menu container - with dark background
     commands
         .spawn((
             Node {
@@ -31,10 +31,13 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
+            // Black semi-transparent background
+            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.95)),
             MenuItem,
             AppLayer::Menu.layer(), // Add to menu layer
             Visibility::Visible,    // Explicitly set to visible
+            InheritedVisibility::default(),
+            ViewVisibility::default(),
         ))
         .with_children(|parent| {
             // Add the logo
@@ -43,22 +46,30 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                     create_logo(),
                     AppLayer::Menu.layer(), // Add to menu layer
                     Visibility::Visible,    // Explicitly set to visible
+                    InheritedVisibility::default(),
+                    ViewVisibility::default(),
                 ))
                 .with_children(|parent| {
                     parent.spawn((
                         create_hebrew_text(&asset_server),
                         AppLayer::Menu.layer(), // Add to menu layer
                         Visibility::Visible,    // Explicitly set to visible
+                        InheritedVisibility::default(),
+                        ViewVisibility::default(),
                     ));
                     parent.spawn((
                         create_english_text(&asset_server),
                         AppLayer::Menu.layer(), // Add to menu layer
                         Visibility::Visible,    // Explicitly set to visible
+                        InheritedVisibility::default(),
+                        ViewVisibility::default(),
                     ));
                     parent.spawn((
                         create_decorative_elements(),
                         AppLayer::Menu.layer(), // Add to menu layer
                         Visibility::Visible,    // Explicitly set to visible
+                        InheritedVisibility::default(),
+                        ViewVisibility::default(),
                     ));
                 });
 
@@ -77,6 +88,8 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                     BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
                     AppLayer::Menu.layer(), // Add to menu layer
                     Visibility::Visible,    // Explicitly set to visible
+                    InheritedVisibility::default(),
+                    ViewVisibility::default(),
                 ))
                 .with_children(|parent| {
                     spawn_menu_button(parent, "New Game", MenuButtonAction::NewGame, &asset_server);
@@ -106,9 +119,7 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
 /// Sets the initial zoom level for the menu camera
 pub fn set_menu_camera_zoom(mut query: Query<&mut OrthographicProjection, With<MenuCamera>>) {
     if let Ok(mut projection) = query.get_single_mut() {
-        projection.scale = 0.1; // Zoom out more to see the Star of David
-        projection.near = -1000.0;
-        projection.far = 1000.0;
+        projection.scale = 1.0; // Menu camera should be at 1:1 scale for proper UI layout
     }
 }
 
@@ -119,28 +130,33 @@ fn spawn_menu_button(
     action: MenuButtonAction,
     asset_server: &AssetServer,
 ) {
+    // Button container
     parent
         .spawn((
             button_style(),
             BackgroundColor(NORMAL_BUTTON),
             Button,
             action,
-            AppLayer::Menu.layer(), // Ensure it's on the menu layer
+            AppLayer::Menu.layer(), // Add to menu layer
             Visibility::Visible,    // Explicitly set to visible
+            InheritedVisibility::default(),
+            ViewVisibility::default(),
         ))
         .with_children(|parent| {
+            // Button text
             parent.spawn((
-                Text(text.to_string()),
+                Text::new(text),
                 TextFont {
-                    font: asset_server.load("fonts/DejaVuSans.ttf"),
-                    font_size: 20.0,
+                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font_size: 24.0,
                     ..default()
                 },
-                TextColor(Color::WHITE),
                 TextLayout::new_with_justify(JustifyText::Center),
-                Node::default(),
-                AppLayer::Menu.layer(), // Ensure it's on the menu layer
+                TextColor(Color::WHITE),
+                AppLayer::Menu.layer(), // Add to menu layer
                 Visibility::Visible,    // Explicitly set to visible
+                InheritedVisibility::default(),
+                ViewVisibility::default(),
             ));
         });
 }
@@ -157,18 +173,21 @@ pub fn menu_action(
     for (interaction, action, mut color) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => {
+                // Visual feedback - change to pressed color
                 *color = BackgroundColor(PRESSED_BUTTON);
+
+                // Process the button action
                 match action {
                     MenuButtonAction::NewGame => {
                         info!("New Game button pressed - transitioning to Loading state");
                         next_state.set(GameMenuState::Loading);
                     }
                     MenuButtonAction::LoadGame => {
-                        info!("Load Game button pressed");
-                        // TODO: Implement load game functionality
+                        info!("Load Game button pressed - not implemented yet");
+                        // TODO: Implement save/load game functionality
                     }
                     MenuButtonAction::Multiplayer => {
-                        info!("Multiplayer button pressed");
+                        info!("Multiplayer button pressed - not implemented yet");
                         // TODO: Implement multiplayer functionality
                     }
                     MenuButtonAction::Settings => {
@@ -176,18 +195,29 @@ pub fn menu_action(
                         next_state.set(GameMenuState::Settings);
                     }
                     MenuButtonAction::Quit => {
-                        info!("Quit button pressed - exiting app");
+                        info!("Quit button pressed - exiting application");
                         exit.send(bevy::app::AppExit::default());
                     }
-                    _ => {
-                        info!("Unhandled button action: {:?}", action);
+                    MenuButtonAction::Resume => {
+                        info!("Resume button pressed - transitioning to InGame state");
+                        next_state.set(GameMenuState::InGame);
+                    }
+                    MenuButtonAction::Restart => {
+                        info!("Restart button pressed - transitioning to Loading state");
+                        next_state.set(GameMenuState::Loading);
+                    }
+                    MenuButtonAction::MainMenu => {
+                        info!("Main Menu button pressed - transitioning to MainMenu state");
+                        next_state.set(GameMenuState::MainMenu);
                     }
                 }
             }
             Interaction::Hovered => {
+                // Visual feedback - change to hover color
                 *color = BackgroundColor(HOVERED_BUTTON);
             }
             Interaction::None => {
+                // Reset to normal color
                 *color = BackgroundColor(NORMAL_BUTTON);
             }
         }
