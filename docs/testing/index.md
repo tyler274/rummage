@@ -204,6 +204,43 @@ Key performance test areas:
 - **CPU Utilization**: Monitor processing requirements
 - **Load Scaling**: Test with increasing entity counts
 
+### Snapshot Testing
+
+Snapshot testing allows us to capture and verify game state at specific points:
+
+```rust
+#[test]
+fn test_game_state_evolution() {
+    // Setup test environment
+    let mut app = App::new();
+    app.add_plugins(TestingPlugins);
+    
+    // Initialize game with known state
+    setup_game_state(&mut app, "test_states/initial_board.json");
+    
+    // Create snapshot of initial state
+    let initial_snapshot = take_game_snapshot(&mut app);
+    
+    // Apply a sequence of actions
+    play_card(&mut app, "Lightning Bolt", 0);
+    
+    // Take another snapshot
+    let post_action_snapshot = take_game_snapshot(&mut app);
+    
+    // Verify snapshots match expected states
+    assert_snapshot_matches("initial_state", initial_snapshot);
+    assert_snapshot_matches("post_bolt", post_action_snapshot);
+}
+```
+
+Key snapshot testing uses:
+- **State Verification**: Validate game state correctness
+- **Regression Testing**: Detect unintended changes to game behavior
+- **Cross-System Testing**: Verify components work together correctly
+- **Replay Validation**: Ensure replay system correctly reproduces game states
+
+For more details, see the [Snapshot System Documentation](../core_systems/snapshot/testing.md).
+
 ## Specialized Testing Systems
 
 ### Network Testing

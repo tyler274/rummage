@@ -117,5 +117,5 @@ For multiplayer games, state is synchronized across clients. See [Networking](..
 The state system works closely with:
 
 - [Event System](../events/index.md): Events trigger state changes
-- [Snapshot System](../../development/snapshots.md): Captures and restores state
+- [Snapshot System](../../core_systems/snapshot/index.md): Captures and restores state
 - [Card Effects](../../card_systems/effects/index.md): Effects modify state 

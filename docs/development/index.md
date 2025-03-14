@@ -42,6 +42,7 @@ The development documentation is organized into these key areas:
 
 5. [Core Systems](../core_systems/snapshot/index.md)
    - [Snapshot System](../core_systems/snapshot/index.md) - Game state serialization and replay functionality
+   - [Testing Integration](../testing/index.md#snapshot-testing) - How core systems integrate with testing
 
 ## Development Environment
 

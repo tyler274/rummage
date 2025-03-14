@@ -17,8 +17,17 @@ The Rummage game engine is built on Bevy's Entity Component System (ECS) archite
 The game engine consists of several interconnected systems:
 
 - **[State Management](state/index.md)**: How game state is tracked and updated
+  - Entity and component management
+  - Game state progression
+  - Player state handling
 - **[Event System](events/index.md)**: How game events are processed and handled
+  - Event dispatching
+  - Event handling
+  - Custom event types
 - **[Snapshot System](../core_systems/snapshot/index.md)**: How game state is serialized for networking and replays
+  - State serialization
+  - Deterministic snapshots
+  - Replay functionality
 
 ## Integration Points
 

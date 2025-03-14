@@ -28,8 +28,23 @@ Our rules implementation follows a methodology designed for correctness, testabi
 1. **Rule Extraction**: Rules are extracted from the [Comprehensive Rules](MagicCompRules%2020250207.txt)
 2. **System Design**: Rules are modeled as composable Bevy ECS systems
 3. **State Representation**: Game state is represented as entities with components
-4. **Event-Driven Actions**: Rule applications are triggered by relevant game events
-5. **Verification**: Extensive testing ensures comprehensive rules compliance
+4. **Event-Driven Logic**: Rules are triggered by and produce game events
+5. **Deterministic Execution**: Rules execute deterministically for network play
+
+## Integration with Core Systems
+
+The rules implementation integrates with several core systems:
+
+### Snapshot System
+
+The [Snapshot System](../core_systems/snapshot/index.md) works closely with the rules implementation to:
+
+- Capture game state at specific points in the turn structure
+- Ensure deterministic rule application for networked games
+- Enable replay and analysis of rule applications
+- Support testing of complex rule interactions
+
+For more information on how snapshots are used in testing rule implementations, see [Snapshot Testing](../core_systems/snapshot/testing.md).
 
 ## Rules Categories
 

@@ -1,3 +1,7 @@
+# Snapshot System Testing
+
+This document covers testing approaches and strategies for the Rummage snapshot system. For a general overview of testing in Rummage, see the [Testing Overview](../../testing/index.md).
+
 # Testing the Snapshot System
 
 This document outlines approaches and best practices for testing the Snapshot system in Rummage.
