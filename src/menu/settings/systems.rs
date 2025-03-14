@@ -574,7 +574,7 @@ pub fn settings_button_action(
     >,
     mut next_state: ResMut<NextState<SettingsMenuState>>,
     mut game_state: ResMut<NextState<GameMenuState>>,
-    context: Res<StateTransitionContext>,
+    mut context: ResMut<StateTransitionContext>,
 ) {
     for (interaction, action, mut color) in &mut interaction_query {
         match *interaction {
@@ -597,10 +597,20 @@ pub fn settings_button_action(
                         // Return to the previous menu (main menu or pause menu)
                         if let Some(origin) = context.settings_origin {
                             info!("Returning to origin state: {:?}", origin);
+
+                            // Reset from_pause_menu flag if returning to main menu
+                            if origin == GameMenuState::MainMenu {
+                                info!(
+                                    "Resetting from_pause_menu flag because we're returning to main menu"
+                                );
+                                context.from_pause_menu = false;
+                            }
+
                             game_state.set(origin);
                         } else {
                             // Default to main menu if origin is not set
                             info!("No origin state found, defaulting to MainMenu");
+                            context.from_pause_menu = false;
                             game_state.set(GameMenuState::MainMenu);
                         }
                     }

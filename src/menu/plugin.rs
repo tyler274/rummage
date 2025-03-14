@@ -161,6 +161,12 @@ fn setup_settings_transition(
         context.from_pause_menu
     );
 
+    // Always reset from_pause_menu flag when transitioning from MainMenu
+    if *current_state.get() == GameMenuState::MainMenu {
+        info!("Resetting from_pause_menu flag because we're in MainMenu state");
+        context.from_pause_menu = false;
+    }
+
     // Store the previous state to know where to return when exiting settings
     // First check the from_pause_menu flag, which is more reliable than the current state
     if context.from_pause_menu {
