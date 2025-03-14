@@ -95,9 +95,7 @@ impl Plugin for GameEnginePlugin {
                 assign_combat_damage_system,
                 process_combat_damage_system,
                 end_combat_system,
-            )
-                .chain()
-                .run_if(in_state(GameMenuState::InGame)),
+            ),
         );
 
         // Register events
@@ -233,9 +231,7 @@ pub fn register_game_engine(app: &mut App) {
             assign_combat_damage_system,
             process_combat_damage_system,
             end_combat_system,
-        )
-            .chain()
-            .run_if(in_state(GameMenuState::InGame)),
+        ),
     );
 
     // Register commander systems

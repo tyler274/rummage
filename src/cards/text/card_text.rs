@@ -6,7 +6,7 @@ use super::{
     type_line_text::spawn_type_line_text,
 };
 use crate::cards::{
-    Card, CardCost, CardDetails, CardDetailsComponent, CardName, CardTypeInfo, CardTypes,
+    Card, CardCost, CardDetails, CardDetailsComponent, CardName, CardTypeInfo,
 };
 use crate::text::components::{
     CardManaCostText, CardNameText, CardPowerToughness, CardRulesText, CardTypeLine, DebugConfig,
@@ -492,7 +492,7 @@ pub fn spawn_card_text_components(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cards::{Card, CardDetails, CardTypes};
+    use crate::cards::{Card, CardDetails, CardTypeInfo};
     use crate::mana::Mana;
     use crate::text::components::{
         CardManaCostText, CardNameText, CardPowerToughness, CardRulesText, CardTypeLine,
@@ -517,7 +517,7 @@ mod tests {
             .spawn((
                 Card::builder("Lightning Bolt")
                     .cost(Mana::default())
-                    .types(CardTypes::INSTANT)
+                    .types(CardTypeInfo::default())
                     .rules_text("Lightning Bolt deals 3 damage to any target.")
                     .build_or_panic(),
                 SpriteBundle {
@@ -570,7 +570,7 @@ mod tests {
             .spawn((
                 Card::builder("Test Card")
                     .cost(Mana::default())
-                    .types(CardTypes::INSTANT)
+                    .types(CardTypeInfo::default())
                     .build_or_panic(),
                 SpriteBundle {
                     sprite: Sprite {

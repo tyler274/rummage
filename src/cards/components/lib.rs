@@ -1,12 +1,12 @@
-use super::counters::PermanentCounters;
-use super::details::CardDetails;
-use super::keywords::KeywordAbilities;
-use super::types::CardTypes;
+use crate::cards::counters::PermanentCounters;
+use crate::cards::details::CardDetails;
+use crate::cards::keywords::KeywordAbilities;
+use crate::cards::types::CardTypes;
 use crate::mana::Mana;
 use bevy::prelude::*;
-
+use serde::{Deserialize, Serialize};
 /// Component for storing a card's name
-#[derive(Component, Debug, Clone, Reflect)]
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct CardName {
     /// The name of the card
@@ -35,7 +35,7 @@ impl CardName {
 }
 
 /// Component for storing a card's mana cost
-#[derive(Component, Debug, Clone, Reflect)]
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct CardCost {
     /// The mana cost of the card
@@ -43,7 +43,7 @@ pub struct CardCost {
 }
 
 /// Component for storing a card's type information
-#[derive(Component, Debug, Clone, Reflect, Default)]
+#[derive(Component, Debug, Clone, Reflect, Default, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct CardTypeInfo {
     /// The types of the card (Creature, Instant, etc.)
@@ -51,7 +51,7 @@ pub struct CardTypeInfo {
 }
 
 /// Component for storing a card's rules text
-#[derive(Component, Debug, Clone, Reflect)]
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct CardRulesText {
     /// The rules text of the card
@@ -59,7 +59,7 @@ pub struct CardRulesText {
 }
 
 /// Component for storing a card's keyword abilities
-#[derive(Component, Debug, Clone, Reflect)]
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct CardKeywords {
     /// The keyword abilities the card has
@@ -67,7 +67,7 @@ pub struct CardKeywords {
 }
 
 /// Component for storing a card's details (creature stats, land types, etc.)
-#[derive(Component, Debug, Clone, Reflect)]
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct CardDetailsComponent {
     /// The details of the card
@@ -76,7 +76,7 @@ pub struct CardDetailsComponent {
 
 /// Component for tracking the state of permanents on the battlefield
 /// @deprecated Use CardState from the state module instead
-#[derive(Component, Debug, Clone, Default, Reflect)]
+#[derive(Component, Debug, Clone, Default, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct PermanentState {
     /// Whether the permanent is tapped (turned sideways)
@@ -90,7 +90,7 @@ pub struct PermanentState {
 }
 
 /// Component for permanents that have a "doesn't untap during untap step" effect
-#[derive(Component, Debug, Clone, Reflect)]
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct NoUntapEffect {
     /// The source of the effect (e.g., the card that applied this effect)
@@ -101,7 +101,7 @@ pub struct NoUntapEffect {
 }
 
 /// Conditions under which a permanent doesn't untap
-#[derive(Debug, Clone, Reflect)]
+#[derive(Debug, Clone, Reflect, Serialize, Deserialize)]
 pub enum NoUntapCondition {
     /// The permanent doesn't untap during its controller's next untap step only
     NextUntapStep,
@@ -116,7 +116,7 @@ pub enum NoUntapCondition {
 }
 
 /// Component for any entity that can be dragged by the player
-#[derive(Component, Reflect)]
+#[derive(Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct Draggable {
     pub dragging: bool,

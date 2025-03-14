@@ -1,4 +1,4 @@
-use super::counters::PermanentCounters;
+use crate::cards::counters::PermanentCounters;
 use bevy::prelude::*;
 
 /// Component for tracking the state of permanents on the battlefield

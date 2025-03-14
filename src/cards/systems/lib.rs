@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
-use super::{Card, components::Draggable};
+use crate::cards::Card;
+use crate::cards::components::Draggable;
 use crate::text;
 
 pub fn handle_card_dragging(
@@ -145,7 +146,6 @@ pub fn debug_render_text_positions(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::prelude::*;
 
     // Define the draggable_card_filter function for testing
     fn draggable_card_filter(card: Query<(), (With<Card>, With<Draggable>)>) -> bool {
@@ -160,7 +160,7 @@ mod tests {
         app.add_plugins(MinimalPlugins);
 
         // Create a card entity with the Card and Draggable components
-        app.world.spawn((
+        app.world_mut().spawn((
             Card::builder("Draggable Card").build(),
             Draggable::default(),
         ));

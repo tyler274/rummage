@@ -2,19 +2,19 @@
 
 use crate::mana::Mana;
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
-use super::components::{
+use crate::cards::components::{
     CardCost, CardDetailsComponent, CardKeywords, CardName, CardRulesText, CardTypeInfo,
 };
-use super::details::CardDetails;
-use super::keywords::KeywordAbilities;
-use super::keywords::KeywordAbility;
-use super::types::{CardTypes, format_type_line};
+use crate::cards::details::CardDetails;
+use crate::cards::keywords::KeywordAbilities;
+use crate::cards::types::{CardTypes, format_type_line};
 
 /// Bundle for Magic: The Gathering cards
 ///
 /// This bundle contains all the components that make up a card entity.
-#[derive(Component, Debug, Clone, Reflect)]
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct Card {
     pub name: CardName,
@@ -52,9 +52,9 @@ impl Card {
         }
     }
 
-    /// Create a new Card builder
-    pub fn builder(name: &str) -> super::builder::CardBuilder {
-        super::builder::CardBuilder::new(name)
+    /// Get a builder for this card type
+    pub fn builder(name: &str) -> crate::cards::builder::CardBuilder {
+        crate::cards::builder::CardBuilder::new(name)
     }
 
     /// Extract all individual components from a Card to match the old API

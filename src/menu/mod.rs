@@ -9,6 +9,11 @@ pub mod state;
 pub mod styles;
 mod systems;
 
+// Add the missing modules
+pub mod credits;
+pub mod deck;
+pub mod main;
+
 pub use plugin::MenuPlugin;
 pub use settings::SettingsPlugin;
 pub use state::*;

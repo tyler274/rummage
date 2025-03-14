@@ -9,10 +9,13 @@ use crate::{
             cleanup_star_of_david_thoroughly,
         },
         components::MenuItem,
+        credits::CreditsPlugin,
+        deck::DeckManagerPlugin,
         logo::{StarOfDavidPlugin, render_star_of_david},
+        main::MainMenuPlugin,
         main_menu::{menu_action, set_menu_camera_zoom, setup_main_menu},
         pause_menu::{handle_pause_input, pause_menu_action, setup_pause_menu},
-        settings::{SettingsMenuState, SettingsPlugin, setup_main_settings},
+        settings::{SettingsMenuState, SettingsPlugin},
         state::{GameMenuState, StateTransitionContext},
     },
 };
@@ -50,7 +53,13 @@ impl Plugin for MenuPlugin {
             .insert_resource(GameMenuState::MainMenu)
             .insert_resource(StateTransitionContext::default())
             .init_resource::<MenuVisibilityLogState>()
-            .add_plugins((StarOfDavidPlugin, SettingsPlugin))
+            .add_plugins((
+                StarOfDavidPlugin,
+                SettingsPlugin,
+                MainMenuPlugin,
+                CreditsPlugin,
+                DeckManagerPlugin,
+            ))
             // Main Menu state
             .add_systems(
                 OnEnter(GameMenuState::MainMenu),

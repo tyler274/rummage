@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use super::types::CreatureType;
+use crate::cards::types::CreatureType;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Reflect)]
 #[reflect(Serialize, Deserialize)]
@@ -64,8 +64,11 @@ pub struct CreatureCard {
     pub creature_type: CreatureType,
 }
 
-#[derive(Component, Default, Debug, Clone, PartialEq, Eq, Reflect)]
+/// A struct representing a creature on the field with tracking for its current power/toughness
+#[derive(Component, Debug, Clone, Serialize, Deserialize, Reflect)]
+#[reflect(Serialize, Deserialize)]
 pub struct CreatureOnField {
+    pub card: crate::cards::Card,
     pub power_modifier: i64,
     pub toughness_modifier: i64,
     pub battle_damage: u64,
@@ -76,7 +79,7 @@ pub struct CreatureOnField {
 #[allow(dead_code)]
 pub struct CardVisualBundle {
     pub sprite: Sprite,
-    pub card: super::Card,
+    pub card: crate::cards::card::Card,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,

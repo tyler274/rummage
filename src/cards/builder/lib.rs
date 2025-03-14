@@ -1,4 +1,4 @@
-use super::{
+use crate::cards::{
     Card, CardCost, CardDetailsComponent, CardKeywords, CardName, CardRulesText, CardTypeInfo,
     details::CardDetails, keywords::KeywordAbilities, types::CardTypes,
 };

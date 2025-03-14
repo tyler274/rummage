@@ -1,12 +1,11 @@
 use crate::cards::{
     card::Card,
     components::{
-        CardCost, CardDetailsComponent, CardKeywords, CardName, CardRulesText, CardTypeInfo,
-        Draggable, NoUntapCondition, NoUntapEffect, PermanentState,
+        CardCost, CardDetailsComponent, CardKeywords, CardName, CardRulesText, Draggable,
+        NoUntapCondition, NoUntapEffect, PermanentState,
     },
     details::{
-        ArtifactCard, CardDetails, CreatureCard, CreatureOnField, EnchantmentCard, LandCard,
-        SpellCard, SpellType,
+        ArtifactCard, CardDetails, CreatureCard, EnchantmentCard, LandCard, SpellCard, SpellType,
     },
     keywords::{KeywordAbilities, KeywordAbility},
     rarity::Rarity,

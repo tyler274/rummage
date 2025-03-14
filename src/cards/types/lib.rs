@@ -3,7 +3,7 @@ use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
 
 // Import from other modules
-use super::details::CardDetails;
+use crate::cards::details::CardDetails;
 
 bitflags! {
     #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, Hash, Reflect)]
