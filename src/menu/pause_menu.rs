@@ -123,7 +123,11 @@ pub fn pause_menu_action(
                     }
                     MenuButtonAction::MainMenu => {
                         // Reset the context flag since we're going to main menu
+                        info!("Resetting from_pause_menu flag because we're going to main menu");
                         context.from_pause_menu = false;
+                        // Also clear the settings_origin to ensure we don't have stale data
+                        info!("Clearing settings_origin to avoid stale data");
+                        context.settings_origin = None;
                         next_state.set(GameMenuState::MainMenu);
                     }
                     MenuButtonAction::Settings => {

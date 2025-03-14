@@ -172,24 +172,16 @@ fn setup_settings_transition(
     if *current_state.get() == GameMenuState::MainMenu {
         info!("Resetting from_pause_menu flag because we're in MainMenu state");
         context.from_pause_menu = false;
-    }
-
-    // Store the previous state to know where to return when exiting settings
-    // First check the from_pause_menu flag, which is more reliable than the current state
-    if context.from_pause_menu {
-        info!("Detected transition from pause menu via flag");
+        // Explicitly set the settings origin to MainMenu
+        info!("Explicitly setting settings_origin to MainMenu");
+        context.settings_origin = Some(GameMenuState::MainMenu);
+    } else if context.from_pause_menu || *current_state.get() == GameMenuState::PausedGame {
+        // If the flag is set or we're coming from the pause menu, set the origin to PausedGame
+        info!("Detected transition from pause menu");
         context.settings_origin = Some(GameMenuState::PausedGame);
     } else {
         // Fall back to checking the current state
         match current_state.get() {
-            GameMenuState::MainMenu => {
-                info!("Entering settings from main menu");
-                context.settings_origin = Some(GameMenuState::MainMenu);
-            }
-            GameMenuState::PausedGame => {
-                info!("Entering settings from pause menu via state");
-                context.settings_origin = Some(GameMenuState::PausedGame);
-            }
             GameMenuState::Settings if context.settings_origin.is_none() => {
                 // If we're already in Settings state but have no origin,
                 // default to main menu

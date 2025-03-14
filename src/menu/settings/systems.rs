@@ -598,12 +598,18 @@ pub fn settings_button_action(
                         if let Some(origin) = context.settings_origin {
                             info!("Returning to origin state: {:?}", origin);
 
-                            // Reset from_pause_menu flag if returning to main menu
+                            // Always reset from_pause_menu flag if returning to main menu
                             if origin == GameMenuState::MainMenu {
                                 info!(
                                     "Resetting from_pause_menu flag because we're returning to main menu"
                                 );
                                 context.from_pause_menu = false;
+                            } else if origin == GameMenuState::PausedGame {
+                                // Ensure the flag is set if returning to the pause menu
+                                info!(
+                                    "Setting from_pause_menu flag because we're returning to pause menu"
+                                );
+                                context.from_pause_menu = true;
                             }
 
                             game_state.set(origin);
