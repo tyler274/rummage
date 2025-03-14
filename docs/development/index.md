@@ -40,10 +40,8 @@ The development documentation is organized into these key areas:
    - [Plugin Architecture](bevy_guide/plugins.md) - Creating and using plugins
    - [Rendering](bevy_guide/rendering.md) - Card rendering and UI components
 
-5. [Snapshot System](snapshots.md)
-   - Game state serialization
-   - Replay functionality
-   - Network synchronization
+5. [Core Systems](../core_systems/snapshot/index.md)
+   - [Snapshot System](../core_systems/snapshot/index.md) - Game state serialization and replay functionality
 
 ## Development Environment
 
@@ -111,7 +109,7 @@ When developing new features for Rummage, we follow this test-driven workflow:
 Our development process is tightly integrated with testing:
 
 - **ECS System Testing**: Use `ParamSet` and other techniques described in the [ECS Guide](bevy_guide/ecs.md) to avoid runtime panics
-- **Snapshot Testing**: Leverage the [Snapshot System](snapshots.md) for deterministic state verification
+- **Snapshot Testing**: Leverage the [Snapshot System](../core_systems/snapshot/testing.md) for deterministic state verification
 - **Visual Testing**: For UI components, use our visual differential testing tools
 
 ### MTG Rule Verification

@@ -18,7 +18,7 @@ The game engine consists of several interconnected systems:
 
 - **[State Management](state/index.md)**: How game state is tracked and updated
 - **[Event System](events/index.md)**: How game events are processed and handled
-- **[Snapshot System](../development/snapshots.md)**: How game state is serialized for networking and replays
+- **[Snapshot System](../core_systems/snapshot/index.md)**: How game state is serialized for networking and replays
 
 ## Integration Points
 
