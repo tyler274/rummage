@@ -11,6 +11,7 @@ This document outlines specific test cases and methodologies for verifying the c
 5. [End-to-End Tests](#end-to-end-tests)
 6. [Performance Tests](#performance-tests)
 7. [Debugging Failures](#debugging-failures)
+8. [Snapshot System Integration](#snapshot-system-integration)
 
 ## Introduction
 
@@ -22,6 +23,16 @@ Testing the integration of bevy_replicon with RNG state management presents uniq
 4. Any deviations in RNG state can lead to unpredictable game outcomes
 
 Our testing approach focuses on verifying determinism under various network conditions and ensuring proper recovery after disruptions.
+
+## Snapshot System Integration
+
+For general information about testing the snapshot system, please refer to the centralized Snapshot System documentation:
+
+- [Snapshot System Overview](../../../core_systems/snapshot/overview.md)
+- [Snapshot Testing](../../../core_systems/snapshot/testing.md#network-testing)
+- [Snapshot Network Integration](../../../core_systems/snapshot/networking_integration.md)
+
+The tests in this document specifically focus on the integration between the snapshot system, bevy_replicon, and RNG state management. When running these tests, it's important to also run the general snapshot system tests to ensure complete coverage.
 
 ## Test Environment Setup
 
@@ -50,7 +61,8 @@ impl RepliconRngTestHarness {
         server_app.add_plugins(MinimalPlugins)
                   .add_plugins(DefaultRngPlugin)
                   .add_plugins(RepliconServerPlugin::default())
-                  .add_plugin(RepliconRngRollbackPlugin);
+                  .add_plugin(RepliconRngRollbackPlugin)
+                  .add_plugin(SnapshotPlugin); // Add the snapshot plugin
         
         // Setup RNG with specific seed for repeatability
         let test_seed = 12345u64;
@@ -62,7 +74,8 @@ impl RepliconRngTestHarness {
             client_app.add_plugins(MinimalPlugins)
                      .add_plugins(DefaultRngPlugin)
                      .add_plugins(RepliconClientPlugin::default())
-                     .add_plugin(RepliconRngRollbackPlugin);
+                     .add_plugin(RepliconRngRollbackPlugin)
+                     .add_plugin(SnapshotPlugin); // Add the snapshot plugin
                      
             // Each client gets the same seed
             client_app.world.resource_mut::<GlobalEntropy<WyRand>>().seed_from_u64(test_seed);
@@ -123,6 +136,25 @@ impl RepliconRngTestHarness {
             // Call test function
             test_fn(self, i);
         }
+    }
+    
+    /// Create a snapshot on the server
+    pub fn create_server_snapshot(&mut self) -> Uuid {
+        // Create a snapshot
+        self.server_app.world.send_event(SnapshotEvent::Take);
+        self.server_app.update();
+        
+        // Return the snapshot ID
+        self.server_app.world.resource::<SnapshotRegistry>()
+                             .most_recent()
+                             .unwrap()
+                             .id
+    }
+    
+    /// Apply a snapshot on the server
+    pub fn apply_server_snapshot(&mut self, snapshot_id: Uuid) {
+        self.server_app.world.send_event(SnapshotEvent::Apply(snapshot_id));
+        self.server_app.update();
     }
 }
 
@@ -224,6 +256,133 @@ fn test_rng_state_serialization() {
     
     // Values should now be identical
     assert_eq!(reset_values1, reset_values2);
+}
+```
+
+### Testing Snapshot System with RNG State
+
+```rust
+#[test]
+fn test_snapshot_preserves_rng_state() {
+    // Create a test app with both the RNG and snapshot plugins
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins)
+       .add_plugins(DefaultRngPlugin)
+       .add_plugin(SnapshotPlugin)
+       .add_plugin(RepliconRngRollbackPlugin)
+       .init_resource::<SequenceTracker>();
+    
+    // Seed RNG
+    let test_seed = 12345u64;
+    app.world.resource_mut::<GlobalEntropy<WyRand>>().seed_from_u64(test_seed);
+    
+    // Create an entity with a marker component
+    app.world.spawn((
+        Snapshotable,
+        RandomizedBehavior::default(),
+        Transform::default(),
+    ));
+    
+    // Generate some initial values and mark the entity as using them
+    let initial_values: Vec<u32> = {
+        let mut rng = app.world.resource_mut::<GlobalEntropy<WyRand>>();
+        (0..5).map(|_| rng.gen::<u32>()).collect()
+    };
+    
+    // Update sequence in the entity
+    let mut entities = app.world.query::<&mut RandomizedBehavior>();
+    for mut behavior in entities.iter_mut(&mut app.world) {
+        behavior.last_rng_sequence = 1;
+    }
+    
+    // Create a snapshot
+    app.world.send_event(SnapshotEvent::Take);
+    app.update();
+    
+    // Get the snapshot ID
+    let snapshot_id = app.world.resource::<SnapshotRegistry>()
+                           .most_recent()
+                           .unwrap()
+                           .id;
+    
+    // Generate more random values, changing the RNG state
+    let _more_values: Vec<u32> = {
+        let mut rng = app.world.resource_mut::<GlobalEntropy<WyRand>>();
+        (0..10).map(|_| rng.gen::<u32>()).collect()
+    };
+    
+    // Apply the snapshot to restore the game state including RNG
+    app.world.send_event(SnapshotEvent::Apply(snapshot_id));
+    app.update();
+    
+    // Generate new values from the restored RNG state
+    let restored_values: Vec<u32> = {
+        let mut rng = app.world.resource_mut::<GlobalEntropy<WyRand>>();
+        (0..5).map(|_| rng.gen::<u32>()).collect()
+    };
+    
+    // These values should be different from the initial values
+    // since the RNG state has advanced, but they should be deterministic
+    assert_ne!(initial_values, restored_values);
+    
+    // Create a new app and repeat the process to verify determinism
+    let mut app2 = App::new();
+    app2.add_plugins(MinimalPlugins)
+        .add_plugins(DefaultRngPlugin)
+        .add_plugin(SnapshotPlugin)
+        .add_plugin(RepliconRngRollbackPlugin)
+        .init_resource::<SequenceTracker>();
+    
+    // Seed RNG the same way
+    app2.world.resource_mut::<GlobalEntropy<WyRand>>().seed_from_u64(test_seed);
+    
+    // Create the same entity
+    app2.world.spawn((
+        Snapshotable,
+        RandomizedBehavior::default(),
+        Transform::default(),
+    ));
+    
+    // Generate the initial values exactly as before
+    let _initial_values2: Vec<u32> = {
+        let mut rng = app2.world.resource_mut::<GlobalEntropy<WyRand>>();
+        (0..5).map(|_| rng.gen::<u32>()).collect()
+    };
+    
+    // Update sequence in the entity
+    let mut entities = app2.world.query::<&mut RandomizedBehavior>();
+    for mut behavior in entities.iter_mut(&mut app2.world) {
+        behavior.last_rng_sequence = 1;
+    }
+    
+    // Create a snapshot
+    app2.world.send_event(SnapshotEvent::Take);
+    app2.update();
+    
+    // Get the snapshot ID
+    let snapshot_id2 = app2.world.resource::<SnapshotRegistry>()
+                             .most_recent()
+                             .unwrap()
+                             .id;
+    
+    // Generate more random values, changing the RNG state
+    let _more_values2: Vec<u32> = {
+        let mut rng = app2.world.resource_mut::<GlobalEntropy<WyRand>>();
+        (0..10).map(|_| rng.gen::<u32>()).collect()
+    };
+    
+    // Apply the snapshot to restore the game state including RNG
+    app2.world.send_event(SnapshotEvent::Apply(snapshot_id2));
+    app2.update();
+    
+    // Generate new values from the restored RNG state
+    let restored_values2: Vec<u32> = {
+        let mut rng = app2.world.resource_mut::<GlobalEntropy<WyRand>>();
+        (0..5).map(|_| rng.gen::<u32>()).collect()
+    };
+    
+    // The deterministically restored values should be identical in both runs
+    assert_eq!(restored_values, restored_values2);
 }
 ```
 

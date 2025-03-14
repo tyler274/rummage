@@ -12,6 +12,7 @@ This document details the integration of bevy_replicon with our rollback system,
 6. [Implementation Examples](#implementation-examples)
 7. [Performance Considerations](#performance-considerations)
 8. [Testing Guidelines](#testing-guidelines)
+9. [Snapshot System Integration](#snapshot-system-integration)
 
 ## Introduction
 
@@ -175,6 +176,25 @@ pub struct PlayerRng {
     pub is_remote: bool,
 }
 ```
+
+## Snapshot System Integration
+
+For detailed information about how the replicon rollback system integrates with the snapshot system, please refer to the centralized Snapshot System documentation:
+
+- [Snapshot System Overview](../../../core_systems/snapshot/overview.md)
+- [Snapshot Network Integration](../../../core_systems/snapshot/networking_integration.md)
+- [Snapshot Testing](../../../core_systems/snapshot/testing.md)
+
+The snapshot system provides the serialization and deserialization capabilities needed for the rollback system, while the replicon integration described in this document ensures proper handling of RNG state during network operations.
+
+Key integration points include:
+
+1. **RNG State Capture**: The snapshot system captures RNG state alongside other game state
+2. **Deterministic Rollback**: Integration ensures that RNG sequences remain identical after rollback
+3. **Client Synchronization**: New clients receive correct RNG state as part of their initial snapshot
+4. **Networked Events**: Random events are processed deterministically across all clients
+
+For more detailed implementation examples of how to use these systems together, see the [Implementation Examples](#implementation-examples) section below and the [Network Snapshot Testing](../../../core_systems/snapshot/testing.md#network-testing) section in the snapshot system documentation.
 
 ## Systems Integration
 
