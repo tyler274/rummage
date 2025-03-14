@@ -8,8 +8,11 @@ use crate::cards::components::{
     CardCost, CardDetailsComponent, CardKeywords, CardName, CardRulesText, CardTypeInfo,
 };
 use crate::cards::details::CardDetails;
-use crate::cards::keywords::{KeywordAbilities, KeywordAbility};
+use crate::cards::keywords::KeywordAbilities;
 use crate::cards::types::{CardTypes, format_type_line};
+
+#[cfg(test)]
+use crate::cards::keywords::KeywordAbility;
 
 /// Bundle for Magic: The Gathering cards
 ///

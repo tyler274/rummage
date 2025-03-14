@@ -174,6 +174,24 @@ impl Mana {
         Self::default()
     }
 
+    /// Returns the converted mana cost (total mana of all colors and colorless)
+    pub fn converted_mana_cost(&self) -> u64 {
+        self.total()
+    }
+
+    /// Returns the amount of mana of a specific color
+    pub fn colored_mana_cost(&self, color: Color) -> u64 {
+        match color {
+            Color::WHITE => self.white,
+            Color::BLUE => self.blue,
+            Color::BLACK => self.black,
+            Color::RED => self.red,
+            Color::GREEN => self.green,
+            Color::COLORLESS => self.colorless,
+            _ => 0,
+        }
+    }
+
     /// Returns the total amount of mana in this cost.
     ///
     #[allow(dead_code)]

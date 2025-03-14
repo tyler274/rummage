@@ -22,6 +22,17 @@ impl Default for CardDetails {
     }
 }
 
+impl CardDetails {
+    /// Create a new Creature card details
+    pub fn new_creature(power: i32, toughness: i32) -> Self {
+        CardDetails::Creature(CreatureCard {
+            power,
+            toughness,
+            creature_type: crate::cards::types::CreatureType::NONE,
+        })
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Reflect)]
 #[reflect(Serialize, Deserialize)]
 pub struct SpellCard {
