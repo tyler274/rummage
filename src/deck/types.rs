@@ -170,7 +170,7 @@ impl Deck {
         if self.deck_type != DeckType::Limited {
             let mut card_counts: HashMap<String, usize> = HashMap::new();
             for card in &self.cards {
-                *card_counts.entry(card.name.clone()).or_insert(0) += 1;
+                *card_counts.entry(card.name.name.clone()).or_insert(0) += 1;
             }
 
             // Check for max copies (4 in most formats, 1 in Commander/Brawl)

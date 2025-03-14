@@ -1,5 +1,76 @@
 use super::counters::PermanentCounters;
+use super::details::CardDetails;
+use super::keywords::KeywordAbilities;
+use super::types::CardTypes;
+use crate::mana::Mana;
 use bevy::prelude::*;
+
+/// Component for storing a card's name
+#[derive(Component, Debug, Clone, Reflect)]
+#[reflect(Component)]
+pub struct CardName {
+    /// The name of the card
+    pub name: String,
+}
+
+impl CardName {
+    /// Create a new CardName from a string
+    pub fn new(name: &str) -> Self {
+        Self {
+            name: name.to_string(),
+        }
+    }
+
+    /// Get the card name as a string reference
+    pub fn as_str(&self) -> &str {
+        &self.name
+    }
+
+    /// Check if the card name contains the given substring
+    pub fn contains(&self, text: &str) -> bool {
+        self.name.contains(text)
+    }
+}
+
+/// Component for storing a card's mana cost
+#[derive(Component, Debug, Clone, Reflect)]
+#[reflect(Component)]
+pub struct CardCost {
+    /// The mana cost of the card
+    pub cost: Mana,
+}
+
+/// Component for storing a card's type information
+#[derive(Component, Debug, Clone, Reflect, Default)]
+#[reflect(Component)]
+pub struct CardTypeInfo {
+    /// The types of the card (Creature, Instant, etc.)
+    pub types: CardTypes,
+}
+
+/// Component for storing a card's rules text
+#[derive(Component, Debug, Clone, Reflect)]
+#[reflect(Component)]
+pub struct CardRulesText {
+    /// The rules text of the card
+    pub rules_text: String,
+}
+
+/// Component for storing a card's keyword abilities
+#[derive(Component, Debug, Clone, Reflect)]
+#[reflect(Component)]
+pub struct CardKeywords {
+    /// The keyword abilities the card has
+    pub keywords: KeywordAbilities,
+}
+
+/// Component for storing a card's details (creature stats, land types, etc.)
+#[derive(Component, Debug, Clone, Reflect)]
+#[reflect(Component)]
+pub struct CardDetailsComponent {
+    /// The details of the card
+    pub details: CardDetails,
+}
 
 /// Component for tracking the state of permanents on the battlefield
 /// @deprecated Use CardState from the state module instead

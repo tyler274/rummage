@@ -1,4 +1,7 @@
-use super::{Card, details::CardDetails, keywords::KeywordAbilities, types::CardTypes};
+use super::{
+    Card, CardCost, CardDetailsComponent, CardKeywords, CardName, CardRulesText, CardTypeInfo,
+    details::CardDetails, keywords::KeywordAbilities, types::CardTypes,
+};
 use crate::mana::Mana;
 
 /// Builder for creating Card instances using a chainable API
@@ -46,8 +49,21 @@ impl CardBuilder {
         self
     }
 
-    /// Build the final Card
-    pub fn build(self) -> Result<Card, String> {
+    /// Build the final Card components
+    pub fn build(
+        self,
+    ) -> Result<
+        (
+            Card,
+            CardName,
+            CardCost,
+            CardTypeInfo,
+            CardDetailsComponent,
+            CardRulesText,
+            CardKeywords,
+        ),
+        String,
+    > {
         let cost = self
             .cost
             .ok_or_else(|| "Card must have a mana cost".to_string())?;
@@ -62,19 +78,32 @@ impl CardBuilder {
         // Initialize keywords from rules text
         let keywords = KeywordAbilities::from_rules_text(&rules_text);
 
-        Ok(Card {
-            name: self.name,
-            cost,
-            types,
-            card_details,
-            rules_text,
-            keywords,
-        })
+        Ok((
+            Card {},
+            CardName { name: self.name },
+            CardCost { cost },
+            CardTypeInfo { types },
+            CardDetailsComponent {
+                details: card_details,
+            },
+            CardRulesText { rules_text },
+            CardKeywords { keywords },
+        ))
     }
 
-    /// Build the card or panic if any required fields are missing.
+    /// Build the card components or panic if any required fields are missing.
     /// This is useful for tests or when you're sure all fields are set.
-    pub fn build_or_panic(self) -> Card {
+    pub fn build_or_panic(
+        self,
+    ) -> (
+        Card,
+        CardName,
+        CardCost,
+        CardTypeInfo,
+        CardDetailsComponent,
+        CardRulesText,
+        CardKeywords,
+    ) {
         self.build()
             .expect("Failed to build card: missing required fields")
     }

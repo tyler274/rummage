@@ -20,7 +20,10 @@ pub mod text; // Card text handling
 
 // Re-export types for external use
 pub use builder::CardBuilder;
-pub use components::{Draggable, NoUntapCondition, NoUntapEffect, PermanentState};
+pub use components::{
+    CardCost, CardDetailsComponent, CardKeywords, CardName, CardRulesText, CardTypeInfo, Draggable,
+    NoUntapCondition, NoUntapEffect, PermanentState,
+};
 pub use details::{
     ArtifactCard, CardDetails, CreatureCard, CreatureOnField, EnchantmentCard, LandCard, SpellCard,
     SpellType,
@@ -56,13 +59,13 @@ impl From<&str> for Rarity {
             "special" => Rarity::Special,
             "bonus" => Rarity::Bonus,
             "promo" => Rarity::Promo,
-            _ => Rarity::Common, // Default to common
+            _ => Rarity::Common,
         }
     }
 }
 
-/// Component that identifies which set a card belongs to
-#[derive(Component, Debug, Clone, PartialEq, Eq, Hash, Reflect)]
+/// Information about a card set
+#[derive(Component, Debug, Clone, Reflect)]
 pub struct CardSet {
     /// Set code (e.g., "MID" for Innistrad: Midnight Hunt)
     pub code: String,
@@ -72,24 +75,23 @@ pub struct CardSet {
     pub release_date: String,
 }
 
-/// Represents a Magic: The Gathering card with all its properties
+/// Bundle for Magic: The Gathering cards
+///
+/// This bundle contains all the components that make up a card entity.
 #[derive(Component, Debug, Clone, Reflect)]
+#[reflect(Component)]
 pub struct Card {
-    pub name: String,
+    pub name: CardName,
+    pub cost: CardCost,
     #[reflect(ignore)]
-    pub cost: Mana,
-    #[reflect(ignore)]
-    pub types: CardTypes,
-    #[reflect(ignore)]
-    pub card_details: CardDetails,
-    pub rules_text: String,
-    /// Keyword abilities the card has
-    #[allow(dead_code)]
-    #[reflect(ignore)]
-    pub keywords: KeywordAbilities,
+    pub type_info: CardTypeInfo,
+    pub details: CardDetailsComponent,
+    pub rules_text: CardRulesText,
+    pub keywords: CardKeywords,
 }
 
 impl Card {
+    /// Create a new Card with all required components
     pub fn new(
         name: &str,
         cost: Mana,
@@ -100,76 +102,171 @@ impl Card {
         // Initialize keywords from rules text
         let keywords = KeywordAbilities::from_rules_text(rules_text);
 
-        Card {
-            name: name.to_string(),
-            cost,
-            types,
-            card_details: details,
-            rules_text: rules_text.to_string(),
-            keywords,
+        Self {
+            name: CardName {
+                name: name.to_string(),
+            },
+            cost: CardCost { cost },
+            type_info: CardTypeInfo { types },
+            details: CardDetailsComponent { details },
+            rules_text: CardRulesText {
+                rules_text: rules_text.to_string(),
+            },
+            keywords: CardKeywords { keywords },
         }
     }
 
-    /// Create a new card builder with the given name.
-    /// This is the entry point for the builder pattern.
+    /// Create a card builder for fluent configuration
     pub fn builder(name: &str) -> CardBuilder {
         CardBuilder::new(name)
     }
 
-    pub fn type_line(&self) -> String {
-        format_type_line(&self.types, &self.card_details)
+    /// Helper method to spawn a card directly without using the builder
+    pub fn spawn(
+        commands: &mut Commands,
+        name: &str,
+        cost: Mana,
+        types: CardTypes,
+        details: CardDetails,
+        rules_text: &str,
+    ) -> Entity {
+        commands
+            .spawn(Self::new(name, cost, types, details, rules_text))
+            .id()
     }
 
-    /// Add a keyword ability to the card
-    #[allow(dead_code)]
-    pub fn add_keyword(&mut self, keyword: KeywordAbility) {
-        self.keywords.abilities.insert(keyword);
+    /// Extract all individual components from a Card to match the old API
+    /// This is for backward compatibility with code expecting separate components
+    pub fn get_components(
+        self,
+    ) -> (
+        Card,
+        CardName,
+        CardCost,
+        CardTypeInfo,
+        CardDetailsComponent,
+        CardRulesText,
+        CardKeywords,
+    ) {
+        let Card {
+            name,
+            cost,
+            type_info,
+            details,
+            rules_text,
+            keywords,
+        } = self.clone();
+
+        // Return a new card with the same data, plus the individual components
+        (self, name, cost, type_info, details, rules_text, keywords)
     }
 
-    /// Add a keyword ability with a value (like "Protection from black")
-    #[allow(dead_code)]
-    pub fn add_keyword_with_value(&mut self, keyword: KeywordAbility, value: &str) {
-        self.keywords.abilities.insert(keyword);
-        self.keywords
+    /// Get the card's type line for display
+    pub fn type_line_from_components(types: &CardTypes) -> String {
+        format_type_line(types, &CardDetails::Other) // Default to Other when no details are provided
+    }
+
+    /// Helper method to get a card's types from a query
+    pub fn get_types<'a>(card: &'a Self) -> &'a CardTypes {
+        &card.type_info.types
+    }
+
+    /// Helper method to get a card's cost from a query
+    pub fn get_cost<'a>(card: &'a Self) -> &'a Mana {
+        &card.cost.cost
+    }
+
+    /// Helper method to get a card's name from a query
+    pub fn get_name<'a>(card: &'a Self) -> &'a str {
+        &card.name.name
+    }
+
+    /// Helper method to get a card's rules text from a query
+    pub fn get_rules_text<'a>(card: &'a Self) -> &'a str {
+        &card.rules_text.rules_text
+    }
+
+    /// Helper method to get a card's details from a query
+    pub fn get_details<'a>(card: &'a Self) -> &'a CardDetails {
+        &card.details.details
+    }
+
+    /// Helper method to check if a card has a specific type
+    pub fn has_type(card: &Self, card_type: CardTypes) -> bool {
+        card.type_info.types.contains(card_type)
+    }
+
+    /// Add a keyword ability to a card
+    pub fn add_keyword(card: &mut Self, keyword: KeywordAbility) {
+        card.keywords.keywords.abilities.insert(keyword);
+    }
+
+    /// Add a keyword ability with a value to a card
+    pub fn add_keyword_with_value(card: &mut Self, keyword: KeywordAbility, value: &str) {
+        card.keywords.keywords.abilities.insert(keyword);
+        card.keywords
+            .keywords
             .ability_values
             .insert(keyword, value.to_string());
     }
 
-    /// Check if the card has a specific keyword
-    #[allow(dead_code)]
-    pub fn has_keyword(&self, keyword: KeywordAbility) -> bool {
-        self.keywords.abilities.contains(&keyword)
+    /// Check if a card has a specific keyword ability
+    pub fn has_keyword(card: &Self, keyword: KeywordAbility) -> bool {
+        card.keywords.keywords.abilities.contains(&keyword)
     }
 
-    /// Get the value for a keyword if it exists (e.g., "black" for "Protection from black")
-    #[allow(dead_code)]
-    pub fn get_keyword_value(&self, keyword: KeywordAbility) -> Option<&str> {
-        self.keywords
+    /// Get the value associated with a keyword ability
+    pub fn get_keyword_value(card: &Self, keyword: KeywordAbility) -> Option<&str> {
+        card.keywords
+            .keywords
             .ability_values
             .get(&keyword)
             .map(|s| s.as_str())
     }
+
+    /// Helper function to get card type line
+    pub fn type_line(card: &Self) -> String {
+        format_type_line(&card.type_info.types, &CardDetails::Other)
+    }
 }
 
-/// A plugin that registers all card-related systems and resources with Bevy
+/// Plugin for registering card-related systems and components
 pub struct CardPlugin;
 
 impl Plugin for CardPlugin {
     fn build(&self, app: &mut App) {
-        app
-            // Register components for ECS queries
-            .register_type::<Card>()
+        app.register_type::<Card>()
+            .register_type::<CardName>()
+            .register_type::<CardCost>()
+            // CardTypeInfo contains bitflags which don't fully implement reflection
+            // .register_type::<CardTypeInfo>()
+            .register_type::<CardDetailsComponent>()
+            .register_type::<CardRulesText>()
+            .register_type::<CardKeywords>()
+            .register_type::<PermanentState>()
             .register_type::<CardSet>()
             .register_type::<Rarity>()
-            // Initialize the card registry
-            .add_systems(Startup, sets::systems::init_card_registry)
-            // Register card when added
-            .add_systems(Update, sets::systems::register_card)
-            // Register systems
-            .add_systems(
-                Update,
-                (handle_card_dragging, debug_render_text_positions)
-                    .run_if(in_state(GameMenuState::InGame)),
-            );
+            .register_type::<CardDetails>()
+            .register_type::<CreatureCard>()
+            // These types use bitflags which don't fully implement reflection
+            // .register_type::<CardTypes>()
+            // .register_type::<CreatureType>()
+            .register_type::<KeywordAbility>()
+            .register_type::<KeywordAbilities>()
+            .register_type::<SpellType>()
+            .register_type::<SpellCard>()
+            .register_type::<EnchantmentCard>()
+            .register_type::<ArtifactCard>()
+            .register_type::<LandCard>()
+            .register_type::<NoUntapEffect>()
+            .register_type::<NoUntapCondition>()
+            .register_type::<Draggable>()
+            .register_type::<crate::mana::Mana>()
+            // Color uses bitflags which don't fully implement reflection
+            // .register_type::<crate::mana::Color>()
+            .register_type::<std::collections::HashSet<KeywordAbility>>()
+            .register_type::<std::collections::HashMap<KeywordAbility, String>>()
+            .add_systems(Update, handle_card_dragging)
+            .add_systems(Update, debug_render_text_positions);
     }
 }

@@ -15,6 +15,7 @@
 use crate::card::{
     ArtifactCard, Card, CardDetails, CardTypes, CreatureCard, CreatureType, EnchantmentCard,
     LandCard, SpellCard, SpellType,
+    CardCost, CardDetailsComponent, CardKeywords, CardName, CardRulesText, CardTypeInfo,
 };
 use crate::mana::{Color, Mana};
 use async_trait::async_trait;
@@ -564,6 +565,7 @@ impl MTGService {
                     .cards
                     .into_iter()
                     .filter_map(convert_mtgjson_to_card)
+                    .map(|(card, _, _, _, _, _, _)| card)
                     .collect();
 
                 // Update memory cache
@@ -606,6 +608,7 @@ impl MTGService {
             .cards
             .into_iter()
             .filter_map(convert_mtgjson_to_card)
+            .map(|(card, _, _, _, _, _, _)| card)
             .collect();
 
         // Update memory cache
@@ -686,57 +689,46 @@ impl MTGService {
     }
 }
 
-/// Converts a MTGJSON card representation to our internal Card type
-/// 
-/// This function handles the conversion of all card attributes including:
-/// - Basic card information (name, mana cost)
-/// - Card types and subtypes
-/// - Special card details (creature stats, spell targets, etc.)
-/// 
-/// Returns None if the card cannot be converted (e.g., invalid type)
-pub fn convert_mtgjson_to_card(mtg_card: MTGJSONCard) -> Option<Card> {
+/// Convert an MTGJSONCard to our internal Card format
+pub fn convert_mtgjson_to_card(
+    mtg_card: MTGJSONCard,
+) -> Option<(
+    Card,
+    CardName,
+    CardCost,
+    CardTypeInfo,
+    CardDetailsComponent,
+    CardRulesText,
+    CardKeywords,
+)> {
+    // Parse the mana cost
+    let mana_cost = match &mtg_card.mana_cost {
+        Some(cost) => parse_mana_cost(cost),
+        None => Mana::default(),
+    };
+
+    // Get the card types
     let types = determine_card_type(
         &mtg_card.types,
         Some(&mtg_card.supertypes),
         Some(&mtg_card.subtypes),
     )?;
-    let mana_cost = parse_mana_cost(mtg_card.mana_cost.as_deref().unwrap_or(""));
 
+    // Process card details based on type
     let card_details = if types.contains(CardTypes::CREATURE) {
-        let power = mtg_card.power.and_then(|p| p.parse().ok()).unwrap_or(0);
-        let toughness = mtg_card.toughness.and_then(|t| t.parse().ok()).unwrap_or(0);
-        let creature_type = determine_creature_types(
-            &mtg_card.subtypes,
-            &mtg_card.name,
-            mtg_card.text.as_deref().unwrap_or(""),
-        );
         CardDetails::Creature(CreatureCard {
-            power,
-            toughness,
-            creature_type,
-        })
-    } else if types.contains(CardTypes::INSTANT) {
-        CardDetails::Instant(SpellCard {
-            spell_type: SpellType::Instant,
-            targets: Vec::new(), // TODO: Parse targets from rules text
-        })
-    } else if types.contains(CardTypes::SORCERY) {
-        CardDetails::Sorcery(SpellCard {
-            spell_type: SpellType::Sorcery,
-            targets: Vec::new(), // TODO: Parse targets from rules text
-        })
-    } else if types.contains(CardTypes::ENCHANTMENT) {
-        CardDetails::Enchantment(EnchantmentCard {
-            enchantment_type: mtg_card.subtypes.first().cloned(),
-        })
-    } else if types.contains(CardTypes::ARTIFACT) {
-        CardDetails::Artifact(ArtifactCard {
-            artifact_type: mtg_card.subtypes.first().cloned(),
-        })
-    } else if types.contains(CardTypes::LAND) {
-        CardDetails::Land(LandCard {
-            land_type: mtg_card.subtypes.first().cloned(),
-            produces: Vec::new(), // TODO: Parse mana production from rules text
+            power: mtg_card.power.as_deref().unwrap_or("0").parse().unwrap_or(0),
+            toughness: mtg_card
+                .toughness
+                .as_deref()
+                .unwrap_or("0")
+                .parse()
+                .unwrap_or(0),
+            creature_type: determine_creature_types(
+                &mtg_card.subtypes,
+                &mtg_card.name,
+                mtg_card.text.as_deref().unwrap_or(""),
+            ),
         })
     } else {
         CardDetails::Other
@@ -745,14 +737,17 @@ pub fn convert_mtgjson_to_card(mtg_card: MTGJSONCard) -> Option<Card> {
     let rules_text = mtg_card.text.unwrap_or_default();
     let name = mtg_card.name;
     
-    // Use Card::new which will automatically parse keywords from rules text
-    Some(Card::new(
+    // Create the card and return it with its components
+    let card = Card::new(
         &name,
         mana_cost,
         types,
         card_details,
         &rules_text,
-    ))
+    );
+    
+    // Return the card and its individual components
+    Some(card.get_components())
 }
 
 /// Determines the card types from type strings

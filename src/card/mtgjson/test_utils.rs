@@ -1,11 +1,14 @@
 use async_trait::async_trait;
 use std::collections::HashMap;
-use std::sync::Arc;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 use super::{MTGClient, MTGJSONCard, MTGJSONCardIdentifiers, MTGJSONMeta, MTGJSONSet};
-use crate::card::{Card, CardDetails, CardTypes, CreatureCard, CreatureType};
+use crate::card::{
+    Card, CardCost, CardDetails, CardDetailsComponent, CardKeywords, CardName, CardRulesText,
+    CardTypeInfo, CardTypes, CreatureCard, CreatureType,
+};
 use crate::mana::Mana;
+use bevy::prelude::*;
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -76,8 +79,16 @@ impl MTGClient for MockClient {
 }
 
 #[allow(dead_code)]
-pub fn create_test_card() -> Card {
-    Card::new(
+pub fn create_test_card() -> (
+    Card,
+    CardName,
+    CardCost,
+    CardTypeInfo,
+    CardDetailsComponent,
+    CardRulesText,
+    CardKeywords,
+) {
+    let card = Card::new(
         "Test Card",
         Mana::default(),
         CardTypes::CREATURE,
@@ -87,7 +98,29 @@ pub fn create_test_card() -> Card {
             creature_type: CreatureType::NONE,
         }),
         "Test rules text",
-    )
+    );
+
+    // Return the card and its individual components
+    card.get_components()
+}
+
+/// Creates a test card entity with all components
+#[allow(dead_code)]
+pub fn spawn_test_card(commands: &mut Commands) -> Entity {
+    let card = Card::new(
+        "Test Card",
+        Mana::default(),
+        CardTypes::CREATURE,
+        CardDetails::Creature(CreatureCard {
+            power: 1,
+            toughness: 1,
+            creature_type: CreatureType::NONE,
+        }),
+        "Test rules text",
+    );
+
+    // Spawn the card directly
+    commands.spawn(card).insert(Name::new("Test Card")).id()
 }
 
 #[allow(dead_code)]

@@ -141,3 +141,8 @@ pub fn debug_render_text_positions(
         gizmos.circle_2d(pt_pos, 3.0, Color::srgb(1.0, 0.0, 1.0));
     }
 }
+
+// Component query filter for draggable card entities
+pub fn draggable_card_filter(card: Query<(), (With<Card>, With<Draggable>)>) -> bool {
+    !card.is_empty()
+}
