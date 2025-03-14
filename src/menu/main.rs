@@ -12,12 +12,14 @@ impl Plugin for MainMenuPlugin {
 }
 
 /// Set up the main menu UI
+#[allow(dead_code)]
 pub fn setup_main_menu(_commands: Commands) {
     // Implementation for setting up main menu UI will go here
     // This is currently a placeholder function
 }
 
 /// Handle main menu actions
+#[allow(dead_code)]
 pub fn handle_main_menu_action() {
     // Implementation for main menu action handling will go here
     // This is currently a placeholder function

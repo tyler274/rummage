@@ -11,7 +11,5 @@ mod plugin;
 mod state;
 mod systems;
 
-pub use components::*;
 pub use plugin::SettingsPlugin;
 pub use state::*;
-pub use systems::*;

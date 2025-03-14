@@ -27,7 +27,6 @@ pub mod text; // Card text handling
 
 // Re-export types for external use
 // Remove glob imports that cause ambiguity
-pub use builder::CardBuilder;
 pub use card::Card;
 pub use components::{
     CardCost, CardDetailsComponent, CardKeywords, CardName, CardRulesText, CardTypeInfo, Draggable,
@@ -37,5 +36,4 @@ pub use details::{CardDetails, CreatureCard, SpellCard, SpellType};
 pub use plugin::CardPlugin;
 pub use rarity::Rarity;
 pub use set::CardSet;
-pub use systems::{debug_render_text_positions, handle_card_dragging};
 pub use types::{CardTypes, CreatureType, format_type_line};

@@ -15,5 +15,4 @@ pub mod deck;
 pub mod main;
 
 pub use plugin::MenuPlugin;
-pub use settings::SettingsPlugin;
 pub use state::*;

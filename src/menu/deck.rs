@@ -12,12 +12,14 @@ impl Plugin for DeckManagerPlugin {
 }
 
 /// Set up the deck manager UI
+#[allow(dead_code)]
 pub fn setup_deck_manager(_commands: Commands) {
     // Implementation for setting up deck manager UI will go here
     // This is currently a placeholder function
 }
 
 /// Handle deck management actions
+#[allow(dead_code)]
 pub fn handle_deck_action() {
     // Implementation for deck action handling will go here
     // This is currently a placeholder function
