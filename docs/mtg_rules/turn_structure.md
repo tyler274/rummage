@@ -1,6 +1,6 @@
 # Turn Structure
 
-This document provides an overview of the turn structure rules in Magic: The Gathering. For the detailed implementation in Rummage, please see [Turn Structure](../mtg_core/turn_structure/index.md).
+This document provides an overview of the turn structure rules in Magic: The Gathering. For the detailed implementation in Rummage, please see [Turn Structure Implementation](../mtg_core/turn_structure/index.md).
 
 ## Overview of Turn Structure
 
@@ -56,11 +56,23 @@ The combat phase has special rules:
 - The active player chooses which creatures attack and which player or planeswalker they attack
 - The defending player(s) choose which creatures block and how blocking is assigned
 
+## Format-Specific Variations
+
+Different formats may have specific variations in how turns proceed:
+
+- **Commander**: See [Commander Turn Structure](../formats/commander/turns_and_phases/turn_structure.md) for multiplayer turn order rules
+- **Two-Headed Giant**: Teams share turns and certain steps
+- **Planechase**: Additional actions may be taken during main phases
+
 ## Related Documentation
 
-For the detailed implementation of turn structure in Rummage, including code examples and integration with other systems, see:
+For detailed information about turn structure in Rummage, please see:
 
 - [Turn Structure Implementation](../mtg_core/turn_structure/index.md): Core implementation details
-- [Combat](../mtg_core/combat/index.md): How combat fits into the turn
+- [Combat](../mtg_core/combat/index.md): How combat fits into the turn structure
 - [Stack](../mtg_core/stack/index.md): How spells and abilities interact with turn structure
-- [Priority System](../formats/commander/turns_and_phases/priority_system.md): Detailed rules on priority 
+- [Priority System](../mtg_core/turn_structure/priority.md): Detailed rules on priority
+
+For format-specific implementations:
+- [Commander Turn Structure](../formats/commander/turns_and_phases/turn_structure.md): Commander-specific turn rules
+- [Multiplayer Turns](../formats/commander/turns_and_phases/multiplayer_turns.md): How turns work in multiplayer games 

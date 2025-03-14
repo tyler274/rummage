@@ -6,6 +6,7 @@
 
 - [Core Rules Overview](mtg_core/index.md)
   - [Turn Structure](mtg_core/turn_structure/index.md)
+    - [Priority System](mtg_core/turn_structure/priority.md)
   - [Zones](mtg_core/zones/index.md)
   - [Stack](mtg_core/stack/index.md)
   - [State-Based Actions](mtg_core/state_actions/index.md)
@@ -162,7 +163,7 @@
   - [End-to-End Testing](testing/end_to_end_testing.md)
   - [Visual Testing](testing/visual_testing.md)
   - [Performance Testing](testing/performance_testing.md)
-  - [Snapshot Testing](core_systems/snapshot/testing.md)
+  - [Snapshot Testing](testing/snapshot_testing.md)
   - [CI/CD Pipeline](testing/ci_cd_pipeline.md)
   - [Development Integration](testing/development_integration.md)
 
@@ -192,6 +193,7 @@
   - [Commander-Specific Rules](mtg_rules/commander_specific.md)
   - [Turn Structure](mtg_rules/turn_structure.md)
   - [Stack](mtg_rules/stack.md)
+  - [Zones](mtg_rules/zones.md)
   - [Combat](mtg_rules/combat.md)
   - [State-Based Actions](mtg_rules/state_based_actions.md)
   - [Targeting](mtg_rules/targeting.md)

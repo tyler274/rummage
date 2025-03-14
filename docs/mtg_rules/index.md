@@ -6,9 +6,9 @@ This section provides a comprehensive reference to the Magic: The Gathering rule
 
 The Rummage documentation organizes Magic: The Gathering rules into three layers:
 
-1. **MTG Rules Reference** (this section) - A high-level explanation of the rules and mechanics
-2. **MTG Core Rules** - Detailed implementation of fundamental rules shared by all formats
-3. **Format-Specific Rules** - Extensions and modifications for specific formats (e.g., Commander)
+1. **MTG Rules Reference** (this section) - A high-level explanation of the rules and mechanics with links to implementation details
+2. **[MTG Core Rules](../mtg_core/index.md)** - Detailed implementation of fundamental rules shared by all formats
+3. **Format-Specific Rules** - Extensions and modifications for specific formats (e.g., [Commander](../formats/commander/index.md))
 
 This layered approach ensures that common rules are documented once in the core layer, while format-specific variations are documented in their respective format sections.
 
@@ -25,7 +25,7 @@ In Rummage, both are implemented as composable ECS systems, allowing shared core
 
 Our rules implementation follows a methodology designed for correctness, testability, and extensibility:
 
-1. **Rule Extraction**: Rules are extracted from the [Comprehensive Rules](MagicCompRules%2020250207.txt)
+1. **Rule Extraction**: Rules are extracted from the [Comprehensive Rules](comprehensive_rules.md)
 2. **System Design**: Rules are modeled as composable Bevy ECS systems
 3. **State Representation**: Game state is represented as entities with components
 4. **Event-Driven Logic**: Rules are triggered by and produce game events
@@ -52,10 +52,10 @@ The MTG rules are broken down into the following main categories:
 
 ### Game Structure Rules
 
-- [Turn Structure](turn_structure.md) - Phases, steps, and the progression of a turn
-- [Stack](stack.md) - How spells and abilities are put onto and resolved from the stack
-- [Zones](zones.md) - Game areas where cards can exist (library, hand, battlefield, etc.)
-- [State-Based Actions](state_based_actions.md) - Automatic game checks that maintain game integrity
+- [Turn Structure](turn_structure.md) ([Implementation](../mtg_core/turn_structure/index.md)) - Phases, steps, and the progression of a turn
+- [Stack](stack.md) ([Implementation](../mtg_core/stack/index.md)) - How spells and abilities are put onto and resolved from the stack
+- [Zones](zones.md) ([Implementation](../mtg_core/zones/index.md)) - Game areas where cards can exist (library, hand, battlefield, etc.)
+- [State-Based Actions](state_based_actions.md) ([Implementation](../mtg_core/state_actions/index.md)) - Automatic game checks that maintain game integrity
 
 ### Card Rules
 
@@ -65,7 +65,7 @@ The MTG rules are broken down into the following main categories:
 
 ### Gameplay Rules
 
-- [Combat](combat.md) - Rules for attacking, blocking, and combat damage
+- [Combat](combat.md) ([Implementation](../mtg_core/combat/index.md)) - Rules for attacking, blocking, and combat damage
 - [Targeting](targeting.md) - How targets are selected and validated
 - [Effects](effects.md) - Different types of effects and how they're applied
 - [Keywords](keywords.md) - Standard keyword abilities and their implementations
