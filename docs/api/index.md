@@ -35,4 +35,4 @@ The game engine implements the core MTG rules through several interconnected mod
 - **System Reference** - Documentation for all ECS systems and their functions
 - **Resource Reference** - Documentation for game resources and global state
 
-For implementation details, see the corresponding sections in the [MTG Core Rules](../mtg_core/index.md) and [Commander Format](../formats/commander/index.md) documentation.
+For implementation details, see the corresponding sections in the [MTG Core Rules](../mtg_core/index.md) and [Commander Format](../commander/index.md) documentation.

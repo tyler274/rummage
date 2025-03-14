@@ -176,7 +176,7 @@ Different Magic formats may implement turn structure variations:
 - **Multiplayer Formats** - Handle turn order for multiple players
 - **Special Formats** - May modify turn structure (e.g., Two-Headed Giant)
 
-For Commander-specific turn structure implementation, see [Commander Turn Structure](../../formats/commander/turns_and_phases/index.md).
+For Commander-specific turn structure implementation, see [Commander Turn Structure](../../commander/turns_and_phases/index.md).
 
 ---
 
