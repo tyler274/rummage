@@ -70,8 +70,15 @@ impl Plugin for GameEnginePlugin {
             app.insert_resource(Phase::default());
         }
 
+        // Initialize essential resources that should always be available
+        app.init_resource::<CombatState>()
+            .init_resource::<GameStack>()
+            .init_resource::<PrioritySystem>()
+            .init_resource::<GameState>();
+
         // Register all game logic systems in the FixedUpdate schedule
         // This ensures they run at a fixed timestep decoupled from the frame rate
+        // Only run these systems when in the InGame state
         app.add_systems(
             FixedUpdate,
             (
@@ -95,7 +102,8 @@ impl Plugin for GameEnginePlugin {
                 assign_combat_damage_system,
                 process_combat_damage_system,
                 end_combat_system,
-            ),
+            )
+                .run_if(in_state(GameMenuState::InGame)),
         );
 
         // Register events
@@ -156,6 +164,10 @@ fn setup_game_engine(
     player_query: Query<Entity, With<Player>>,
     context: Res<StateTransitionContext>,
     turn_manager: Option<Res<TurnManager>>,
+    mut combat_state: ResMut<CombatState>,
+    mut game_stack: ResMut<GameStack>,
+    mut priority_system: ResMut<PrioritySystem>,
+    mut game_state: ResMut<GameState>,
 ) {
     // Skip initialization if we're coming from the pause menu and already have a turn manager
     if context.from_pause_menu && turn_manager.is_some() {
@@ -173,28 +185,22 @@ fn setup_game_engine(
     let players: Vec<Entity> = player_query.iter().collect();
 
     // Initialize turn manager with player list
-    let mut turn_manager = TurnManager::default();
-    turn_manager.initialize(players.clone());
-    commands.insert_resource(turn_manager);
-
-    // Initialize the priority system (no player has priority at start)
-    commands.insert_resource(PrioritySystem::default());
-
-    // Initialize an empty stack
-    commands.insert_resource(GameStack::default());
+    let mut turn_manager_instance = TurnManager::default();
+    turn_manager_instance.initialize(players.clone());
+    commands.insert_resource(turn_manager_instance);
 
     // Initialize zone manager
     commands.insert_resource(ZoneManager::default());
-
-    // Initialize combat state
-    commands.insert_resource(CombatState::default());
 
     // Initialize the commander zone and manager
     commands.insert_resource(CommandZone::default());
     commands.insert_resource(CommandZoneManager::default());
 
-    // Initialize game state
-    commands.insert_resource(GameState::default());
+    // Reset any existing resources to their default states
+    *combat_state = CombatState::default();
+    *game_stack = GameStack::default();
+    *priority_system = PrioritySystem::default();
+    *game_state = GameState::default();
 }
 
 /// Register core game engine systems with the app
@@ -231,7 +237,8 @@ pub fn register_game_engine(app: &mut App) {
             assign_combat_damage_system,
             process_combat_damage_system,
             end_combat_system,
-        ),
+        )
+            .run_if(in_state(GameMenuState::InGame)),
     );
 
     // Register commander systems

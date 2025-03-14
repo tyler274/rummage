@@ -5,7 +5,7 @@ rustflags = [
     # (Nightly) Make the current crate share its generic instantiations
     "-Zshare-generics=y",
     "-C",
-    "link-arg=-fuse-ld=/usr/bin/mold",
+    "link-arg=-fuse-ld=/usr/local/bin/mold",
 ]
 
 [alias]
