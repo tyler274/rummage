@@ -45,9 +45,9 @@ pub fn set_initial_zoom(
     mut query: Query<&mut OrthographicProjection, (With<Camera>, With<GameCamera>)>,
 ) {
     if let Ok(mut projection) = query.get_single_mut() {
-        // Reduce scale for a closer view - smaller values zoom in more
+        // Adjust scale for a wider view - higher values zoom out more
         // In OrthographicProjection, higher scale = more zoomed out
-        projection.scale = 0.5; // Changed from 5.0 to 0.5 for much closer view
+        projection.scale = 2.0; // Changed from 0.5 to 2.0 for wider view
 
         info!("Set initial camera zoom level to {:.2}", projection.scale);
     } else {

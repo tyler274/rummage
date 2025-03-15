@@ -25,7 +25,7 @@ pub fn spawn_visual_cards(
         return;
     }
 
-    info!(
+    debug!(
         "Spawning {} cards for player {:?} (index {})",
         display_cards.len(),
         player_entity,
@@ -37,6 +37,9 @@ pub fn spawn_visual_cards(
 
     // Calculate the total width of all cards with spacing
     let total_width = display_cards.len() as f32 * spacing;
+
+    // Store card count before moving display_cards
+    let card_count = display_cards.len();
 
     // Move the starting position further to the left for better distribution
     let start_x = -(total_width) / 2.0 + spacing / 2.0;
@@ -77,18 +80,28 @@ pub fn spawn_visual_cards(
 
         let transform = Transform::from_translation(position);
 
-        info!(
-            "Positioning card '{}' at ({:.2}, {:.2}, {:.2})",
-            card.name.name, position.x, position.y, position.z
-        );
+        // Only log the first and last card position for debugging
+        if i == 0 || i == card_count - 1 {
+            debug!(
+                "{} card '{}' at ({:.2}, {:.2}, {:.2})",
+                if i == 0 { "First" } else { "Last" },
+                card.name.name,
+                position.x,
+                position.y,
+                position.z
+            );
+        }
+
+        // Increase the card size by 25% for better visibility
+        let visible_card_size = *card_size * 1.25;
 
         // Create a complete SpriteBundle rather than individual components
         let card_entity = commands
             .spawn((
                 card,
                 Sprite {
-                    color: Color::srgb(0.2, 0.6, 0.8), // bright blue color for visibility
-                    custom_size: Some(*card_size),
+                    color: Color::srgb(1.0, 0.3, 0.3), // bright red color for better visibility
+                    custom_size: Some(visible_card_size),
                     ..default()
                 },
                 transform,
@@ -129,7 +142,7 @@ pub fn spawn_visual_cards(
                 &transform,
                 &Sprite {
                     color: Color::srgb(0.85, 0.85, 0.85),
-                    custom_size: Some(*card_size),
+                    custom_size: Some(visible_card_size),
                     ..default()
                 },
                 game_asset_server,
@@ -139,9 +152,9 @@ pub fn spawn_visual_cards(
 
         // Make the card a child of the game camera to ensure it's rendered in the game view
         for camera in game_cameras.iter() {
-            info!(
-                "Attaching card {:?} to game camera {:?}",
-                card_entity, camera
+            debug!(
+                "Attaching card for player {} to game camera {:?}",
+                player_index, camera
             );
             commands.entity(camera).add_child(card_entity);
         }
