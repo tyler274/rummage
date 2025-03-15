@@ -4,16 +4,26 @@ use crate::{
     menu::{
         components::{MenuCamera, MenuItem},
         logo::StarOfDavid,
+        main_menu::MainMenuMusic,
     },
 };
 use bevy::prelude::*;
 
 /// Cleans up main menu entities
-pub fn cleanup_main_menu(mut commands: Commands, menu_items: Query<Entity, With<MenuItem>>) {
+pub fn cleanup_main_menu(
+    mut commands: Commands,
+    menu_items: Query<Entity, With<MenuItem>>,
+    main_menu_music: Query<Entity, With<MainMenuMusic>>,
+) {
     let count = menu_items.iter().count();
     info!("Cleaning up {} main menu items", count);
     for entity in menu_items.iter() {
         commands.entity(entity).despawn_recursive();
+    }
+
+    // Clean up the main menu music
+    for entity in main_menu_music.iter() {
+        commands.entity(entity).despawn();
     }
 }
 

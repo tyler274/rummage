@@ -8,6 +8,7 @@ use crate::menu::{
     state::GameMenuState,
     styles::*,
 };
+use bevy::audio::{AudioPlayer, PlaybackMode, PlaybackSettings, Volume};
 use bevy::prelude::*;
 use bevy::text::JustifyText;
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, PositionType, UiRect, Val};
@@ -17,10 +18,27 @@ use bevy::ui::{AlignItems, FlexDirection, JustifyContent, PositionType, UiRect, 
 #[allow(dead_code)]
 struct MenuBackground;
 
+/// Component to mark the main menu music entity
+#[derive(Component)]
+pub struct MainMenuMusic;
+
 /// Sets up the main menu interface with buttons and layout
 pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     // The camera is now spawned by setup_menu_camera in plugin.rs
     // No need to spawn another camera here
+
+    // Load and play background music
+    let music_handle = asset_server.load("music/Negev sings Hava Nagila [XwZwz0iCuF0].ogg");
+    commands.spawn((
+        AudioPlayer::new(music_handle),
+        PlaybackSettings {
+            mode: PlaybackMode::Loop,
+            volume: Volume::new(0.5),
+            ..default()
+        },
+        MainMenuMusic,
+        Name::new("Main Menu Music"),
+    ));
 
     // Try to load the background image, but we won't use it for now due to the difficulties
     // We're just logging to confirm the path is correct for future reference
