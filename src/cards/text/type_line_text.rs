@@ -2,8 +2,8 @@ use bevy::prelude::*;
 use bevy::text::JustifyText;
 
 use crate::text::{
-    components::{CardTextStyleBundle, CardTextType, CardTypeLine, TextLayoutInfo},
-    utils::{calculate_text_size, get_adaptive_font_size, get_card_layout},
+    components::{CardTextStyleBundle, CardTextType, CardTypeLine},
+    utils::{get_adaptive_font_size, get_card_layout},
 };
 
 /// Spawn the type line text for a card
@@ -52,15 +52,13 @@ pub fn spawn_type_line_text(
                 text_layout: TextLayout::new_with_justify(JustifyText::Left),
             },
             CardTextType::TypeLine,
-            TextLayoutInfo {
-                alignment: JustifyText::Left,
-            },
             Name::new(format!("Type Line: {}", type_line_component.type_line)),
         ))
         .id()
 }
 
 /// Format type line to match MTG standard style
+#[allow(dead_code)]
 fn format_type_line(type_line: &str) -> String {
     // If the type line already has a proper em-dash, return it as is
     if type_line.contains(" — ") {

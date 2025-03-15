@@ -18,8 +18,10 @@ pub struct CardTextLayout {
     /// Y offset of mana cost from top edge of card (normalized -0.5 to 0.5)
     pub mana_cost_y_offset: f32,
     /// The margin between text and the edge of the card for rules text (normalized)
+    #[allow(dead_code)]
     pub vertical_margin: f32,
     /// The horizontal margin for text relative to the card edge (normalized)
+    #[allow(dead_code)]
     pub horizontal_margin: f32,
     /// X offset of power/toughness from right edge of card (normalized -0.5 to 0.5)
     pub pt_x_offset: f32,
@@ -28,6 +30,7 @@ pub struct CardTextLayout {
     /// Width constraint for power/toughness as percentage of card width
     pub pt_width: f32,
     /// Height constraint for power/toughness as percentage of card height
+    #[allow(dead_code)]
     pub pt_height: f32,
     /// X offset of type line from left edge of card (normalized -0.5 to 0.5)
     pub type_line_x_offset: f32,
@@ -36,6 +39,7 @@ pub struct CardTextLayout {
     /// Width constraint for type line as percentage of card width
     pub type_line_width: f32,
     /// Height constraint for type line as percentage of card height
+    #[allow(dead_code)]
     pub type_line_height: f32,
     /// Y offset of text box from top edge of card (normalized -0.5 to 0.5)
     pub text_box_y_offset: f32,
@@ -56,11 +60,11 @@ impl Default for CardTextLayout {
             card_height: 1050.0, // 3.5 inches * 300 DPI
 
             // Position name with a proper margin from the left edge of the card frame
-            name_x_offset: -0.40,
+            name_x_offset: -0.25,
             name_y_offset: 0.41,
 
             // Adjusted width to prevent long names from extending beyond card boundaries
-            name_width: 0.40, // Further reduced to ensure name always fits
+            name_width: 0.42,
 
             // Adjusted mana cost positioning to avoid going out of bounds
             mana_cost_x_offset: 0.32,
@@ -134,21 +138,43 @@ pub fn get_adaptive_font_size(
     // Calculate approximate size needed based on text length
     // This is a heuristic that should be adjusted based on testing
     let text_length = text_content.len() as f32;
-    let max_chars_per_line = max_width / (initial_size * 0.5); // ~0.5 × font size per character average width
+
+    // More aggressive scaling for long text
+    // Decrease average character width estimate for longer text for better sizing
+    let char_width_factor = if text_length > 20.0 {
+        0.40 // More aggressive for very long names
+    } else if text_length > 12.0 {
+        0.42 // Medium-length names need more scaling too
+    } else {
+        0.50 // Short names are fine with default
+    };
+
+    let max_chars_per_line = max_width / (initial_size * char_width_factor);
 
     // Approximate number of lines needed at initial font size
     let target_line_count = (text_length / max_chars_per_line).ceil();
 
     // Scale factor based on text length (longer text = smaller font)
-    // Start reducing font size when more than 1 line is needed
-    let length_scale_factor = if target_line_count > 1.0 {
-        1.0 / target_line_count.sqrt() // Square root for gradual scaling
+    // More aggressive scaling based on name length
+    let length_scale_factor = if target_line_count > 1.5 {
+        0.8 / target_line_count.sqrt() // More aggressive reduction
+    } else if target_line_count > 1.0 {
+        0.9 / target_line_count.sqrt() // Medium reduction
     } else {
-        1.0
+        1.0 // No reduction for short names
+    };
+
+    // Additional scaling for very long names (e.g., "Champion of the Perished")
+    let long_name_factor = if text_length > 20.0 {
+        0.85 // Further reduce font size for very long names
+    } else if text_length > 14.0 {
+        0.90 // Medium reduction for medium-length names
+    } else {
+        1.0 // No reduction for short names
     };
 
     // Apply the length-based scaling, but never go below minimum size
-    (initial_size * length_scale_factor).max(min_font_size)
+    (initial_size * length_scale_factor * long_name_factor).max(min_font_size)
 }
 
 /// Get standard card layout measurements
@@ -157,6 +183,7 @@ pub fn get_card_layout() -> CardTextLayout {
 }
 
 /// Create a specific card layout with custom parameters
+#[allow(dead_code)]
 pub fn custom_card_layout(width: f32, height: f32) -> CardTextLayout {
     let mut layout = CardTextLayout::default();
     layout.card_width = width;

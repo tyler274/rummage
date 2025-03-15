@@ -332,28 +332,28 @@ pub fn toggle_battlefield_grouping(
     // Get cursor position
     let window = windows.single();
     if let Some(cursor_position) = window.cursor_position() {
-        // Get camera
-        let (camera, camera_transform) = camera_query.single();
+        // Get camera - handle case where multiple cameras might exist
+        if let Ok((camera, camera_transform)) = camera_query.get_single() {
+            // Convert cursor to world position
+            if let Ok(cursor_world_position) = camera
+                .viewport_to_world(camera_transform, cursor_position)
+                .map(|ray| ray.origin.truncate())
+            {
+                // Check for click on battlefield
+                for (mut battlefield, transform) in battlefield_query.iter_mut() {
+                    let battlefield_position = transform.translation().truncate();
+                    let distance = (battlefield_position - cursor_world_position).length();
 
-        // Convert cursor to world position
-        if let Ok(cursor_world_position) = camera
-            .viewport_to_world(camera_transform, cursor_position)
-            .map(|ray| ray.origin.truncate())
-        {
-            // Check for click on battlefield
-            for (mut battlefield, transform) in battlefield_query.iter_mut() {
-                let battlefield_position = transform.translation().truncate();
-                let distance = (battlefield_position - cursor_world_position).length();
-
-                // Simple distance-based detection
-                if distance < 300.0 {
-                    // Toggle grouping
-                    battlefield.group_by_type = !battlefield.group_by_type;
-                    info!(
-                        "Battlefield grouping toggled: {}",
-                        battlefield.group_by_type
-                    );
-                    break;
+                    // Simple distance-based detection
+                    if distance < 300.0 {
+                        // Toggle grouping
+                        battlefield.group_by_type = !battlefield.group_by_type;
+                        info!(
+                            "Battlefield grouping toggled: {}",
+                            battlefield.group_by_type
+                        );
+                        break;
+                    }
                 }
             }
         }
@@ -390,23 +390,23 @@ pub fn adjust_battlefield_zoom(
     // Get cursor position
     let window = windows.single();
     if let Some(cursor_position) = window.cursor_position() {
-        // Get camera
-        let (camera, camera_transform) = camera_query.single();
+        // Get camera - handle case where multiple cameras might exist
+        if let Ok((camera, camera_transform)) = camera_query.get_single() {
+            // Check if cursor is over battlefield
+            if let Ok(cursor_world_position) = camera
+                .viewport_to_world(camera_transform, cursor_position)
+                .map(|ray| ray.origin.truncate())
+            {
+                for (mut battlefield, transform) in battlefield_query.iter_mut() {
+                    let battlefield_position = transform.translation().truncate();
+                    let distance = (battlefield_position - cursor_world_position).length();
 
-        // Check if cursor is over battlefield
-        if let Ok(cursor_world_position) = camera
-            .viewport_to_world(camera_transform, cursor_position)
-            .map(|ray| ray.origin.truncate())
-        {
-            for (mut battlefield, transform) in battlefield_query.iter_mut() {
-                let battlefield_position = transform.translation().truncate();
-                let distance = (battlefield_position - cursor_world_position).length();
-
-                if distance < 300.0 {
-                    // Adjust zoom level
-                    battlefield.zoom_level =
-                        (battlefield.zoom_level + scroll * 0.1).max(0.3).min(2.0);
-                    break;
+                    if distance < 300.0 {
+                        // Adjust zoom level
+                        battlefield.zoom_level =
+                            (battlefield.zoom_level + scroll * 0.1).max(0.3).min(2.0);
+                        break;
+                    }
                 }
             }
         }

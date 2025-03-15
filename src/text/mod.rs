@@ -43,7 +43,4 @@ impl Plugin for TextPlugin {
 }
 
 // Re-export common text components and functions
-pub use crate::text::layout::{
-    CardTextLayout, calculate_text_size, custom_card_layout, get_battlefield_card_size_multiplier,
-    get_card_font_size, get_card_layout,
-};
+pub use crate::text::layout::get_battlefield_card_size_multiplier;

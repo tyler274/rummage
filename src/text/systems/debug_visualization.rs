@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 
-use crate::text::{
-    components::{CardTextType, TextLayoutInfo},
-    layout::CardTextLayout,
-};
+use crate::text::{components::CardTextType, layout::CardTextLayout};
 
 /// Spawn debug visualization for text boundaries
 #[allow(dead_code)]
@@ -119,9 +116,7 @@ fn spawn_debug_box(
             Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.05)),
             GlobalTransform::default(),
             CardTextType::Debug,
-            TextLayoutInfo {
-                alignment: JustifyText::Center,
-            },
+            TextLayout::new_with_justify(JustifyText::Center),
         ))
         .id();
 

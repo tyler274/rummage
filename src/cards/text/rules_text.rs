@@ -2,9 +2,9 @@ use bevy::prelude::*;
 use bevy::text::JustifyText;
 
 use crate::text::{
-    components::{CardRulesText, CardTextType, TextLayoutInfo},
+    components::{CardRulesText, CardTextType},
     mana_symbols::is_valid_mana_symbol,
-    utils::{calculate_text_size, get_adaptive_font_size, get_card_font_size, get_card_layout},
+    utils::{calculate_text_size, get_adaptive_font_size, get_card_layout},
 };
 
 /// Directly replace mana symbols in text with their Unicode equivalents
@@ -87,9 +87,6 @@ pub fn spawn_rules_text(
             TextColor(Color::BLACK),
             TextLayout::new_with_justify(JustifyText::Left),
             CardTextType::RulesText,
-            TextLayoutInfo {
-                alignment: JustifyText::Left,
-            },
             Name::new("Card Rules Text"),
         ))
         .id();

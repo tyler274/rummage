@@ -10,6 +10,7 @@ pub struct TableLayout {
     /// Number of players at the table
     pub player_count: usize,
     /// Distance from center for player positioning
+    #[allow(dead_code)]
     pub distance: f32,
     /// Distance from center for card positioning
     pub card_distance: f32,

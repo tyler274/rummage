@@ -3,7 +3,7 @@ use bevy::text::JustifyText;
 
 use crate::cards::Card;
 use crate::text::{
-    components::{CardManaCostText, CardTextType, TextLayoutInfo},
+    components::{CardManaCostText, CardTextType},
     mana_symbols::{ManaSymbolOptions, render_mana_symbol},
     utils::{get_adaptive_font_size, get_card_layout},
 };
@@ -44,9 +44,7 @@ pub fn spawn_mana_cost_text(
             // GlobalTransform is automatically added
             Visibility::default(),
             CardTextType::ManaCost,
-            TextLayoutInfo {
-                alignment: JustifyText::Right,
-            },
+            TextLayout::new_with_justify(JustifyText::Right),
             Name::new(format!("Mana Cost: {}", mana_cost_component.mana_cost)),
         ))
         .id();

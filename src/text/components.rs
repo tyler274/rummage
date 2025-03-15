@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy::text::JustifyText;
 
 /// Marker component for text that has been spawned
 #[derive(Component)]
@@ -70,23 +69,6 @@ impl Default for CardTextType {
     }
 }
 
-/// Information about text layout, used by multiple text components
-#[derive(Component, Clone, Debug)]
-pub struct TextLayoutInfo {
-    /// The alignment of the text
-    #[allow(dead_code)]
-    pub alignment: JustifyText,
-}
-
-/// Default implementations for text layout
-impl Default for TextLayoutInfo {
-    fn default() -> Self {
-        Self {
-            alignment: JustifyText::Left,
-        }
-    }
-}
-
 /// Bundle for card text components
 #[derive(Bundle)]
 pub struct CardTextBundle {
@@ -97,7 +79,6 @@ pub struct CardTextBundle {
     pub text_color: TextColor,
     pub text_layout: TextLayout,
     pub card_text_type: CardTextType,
-    pub text_layout_info: TextLayoutInfo,
     pub name: Name,
 }
 

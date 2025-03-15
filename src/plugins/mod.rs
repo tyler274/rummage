@@ -221,6 +221,7 @@ pub fn connect_cards_to_zones(
 }
 
 // Extension trait for ZoneManager to simplify diagnostic checks
+#[allow(dead_code)]
 trait ZoneManagerExt {
     fn get_card_zone(&self, card: Entity) -> Option<Zone>;
     fn get_player_zone(&self, player: Entity, zone: Zone) -> Option<&Vec<Entity>>;

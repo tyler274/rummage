@@ -2,8 +2,8 @@ use bevy::prelude::*;
 use bevy::text::JustifyText;
 
 use crate::text::{
-    components::{CardPowerToughness, CardTextStyleBundle, CardTextType, TextLayoutInfo},
-    utils::{calculate_text_size, get_adaptive_font_size, get_card_layout},
+    components::{CardPowerToughness, CardTextStyleBundle, CardTextType},
+    utils::{get_adaptive_font_size, get_card_layout},
 };
 
 /// Spawn power/toughness text for a card
@@ -52,9 +52,6 @@ pub fn spawn_power_toughness_text(
                 text_layout: TextLayout::new_with_justify(JustifyText::Center),
             },
             CardTextType::PowerToughness,
-            TextLayoutInfo {
-                alignment: JustifyText::Center,
-            },
             Name::new(format!("Power/Toughness: {}", pt_component.power_toughness)),
         ))
         .id()
