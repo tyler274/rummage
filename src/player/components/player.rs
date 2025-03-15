@@ -1,20 +1,17 @@
-use crate::cards::Card;
 use crate::mana::ManaPool;
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
 /// Represents a player in the game with their associated state
-#[derive(Component, Default, Debug, Clone)]
+#[derive(Component, Default, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component, Serialize, Deserialize)]
 pub struct Player {
     /// Player's display name
     pub name: String,
     /// Current life total
     pub life: i32,
     /// Available mana pool
-    #[allow(dead_code)]
     pub mana_pool: ManaPool,
-    /// Cards in the player's possession
-    #[allow(dead_code)]
-    pub cards: Vec<Card>,
     /// Player index (0-based) for positioning and identification
     pub player_index: usize,
 }
@@ -26,7 +23,6 @@ impl Player {
             name: name.to_string(),
             life: 40, // Default life total for Commander format
             mana_pool: ManaPool::default(),
-            cards: Vec::new(),
             player_index: 0,
         }
     }
@@ -38,15 +34,8 @@ impl Player {
     }
 
     /// Sets the player's mana pool
-    #[allow(dead_code)]
     pub fn with_mana_pool(mut self, mana_pool: ManaPool) -> Self {
         self.mana_pool = mana_pool;
-        self
-    }
-
-    /// Sets the player's cards
-    pub fn with_cards(mut self, cards: Vec<Card>) -> Self {
-        self.cards = cards;
         self
     }
 

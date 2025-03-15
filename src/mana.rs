@@ -160,9 +160,11 @@ pub struct Mana {
 ///
 /// This tracks both the amount and type of mana available to a player.
 ///
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Reflect, Serialize, Deserialize)]
+#[reflect(Serialize, Deserialize)]
 pub struct ManaPool {
     /// Map of colors to mana amounts
+    #[reflect(ignore)]
     pub mana: HashMap<Color, Mana>,
 }
 

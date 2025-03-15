@@ -4,6 +4,7 @@
 pub mod actions;
 pub mod combat;
 pub mod commander;
+pub mod permanent;
 pub mod phase;
 pub mod politics;
 pub mod priority;
@@ -155,6 +156,9 @@ impl Plugin for GameEnginePlugin {
 
         // Allow politics systems to register additional systems
         politics::register_politics_systems(app);
+
+        app.add_plugins(zones::ZonesPlugin)
+            .add_plugins(permanent::PermanentPlugin);
     }
 }
 

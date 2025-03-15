@@ -1,7 +1,9 @@
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
 /// The zones in MTG
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[reflect(Serialize, Deserialize)]
 pub enum Zone {
     Library,
     Hand,
@@ -13,7 +15,8 @@ pub enum Zone {
 }
 
 /// Component marking an entity as belonging to a specific zone
-#[derive(Component, Debug, Clone)]
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[reflect(Component, Serialize, Deserialize)]
 #[allow(dead_code)]
 pub struct ZoneMarker {
     /// The type of zone the entity is in

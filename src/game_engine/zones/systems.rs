@@ -3,6 +3,10 @@ use bevy::prelude::*;
 
 use super::events::{EntersBattlefieldEvent, ZoneChangeEvent};
 use super::resources::ZoneManager;
+use super::types::{Zone, ZoneMarker};
+use crate::game_engine::permanent::{
+    Permanent, PermanentController, PermanentOwner, PermanentState,
+};
 
 /// System for handling card movement between zones
 pub fn handle_zone_changes(
@@ -55,6 +59,50 @@ pub fn setup_zone_manager(mut commands: Commands, player_query: Query<Entity, Wi
 
     // Add the zone manager as a resource
     commands.insert_resource(zone_manager);
+}
+
+/// System to process zone change events
+pub fn process_zone_changes(
+    mut commands: Commands,
+    mut zone_events: EventReader<ZoneChangeEvent>,
+    mut enters_battlefield_events: EventWriter<EntersBattlefieldEvent>,
+    turn_manager: Option<Res<crate::game_engine::turns::TurnManager>>,
+) {
+    let current_turn = turn_manager.map(|t| t.turn_number).unwrap_or(0);
+
+    for event in zone_events.read() {
+        // Update the card's zone marker
+        commands.entity(event.card).insert(ZoneMarker {
+            zone_type: event.destination,
+            owner: Some(event.owner),
+        });
+
+        // Handle entering the battlefield
+        if event.destination == Zone::Battlefield {
+            // Add permanent components when a card enters the battlefield
+            commands
+                .entity(event.card)
+                .insert(Permanent)
+                .insert(PermanentState::new(current_turn))
+                .insert(PermanentOwner::new(event.owner))
+                .insert(PermanentController::new(event.owner));
+
+            // Send an enters battlefield event
+            enters_battlefield_events.send(EntersBattlefieldEvent {
+                permanent: event.card,
+                owner: event.owner,
+                enters_tapped: false, // Default to untapped, can be modified by effects
+            });
+        } else if event.source == Zone::Battlefield {
+            // Remove permanent components when a card leaves the battlefield
+            commands
+                .entity(event.card)
+                .remove::<Permanent>()
+                .remove::<PermanentState>()
+                .remove::<PermanentOwner>()
+                .remove::<PermanentController>();
+        }
+    }
 }
 
 /// Register zone systems with the app
