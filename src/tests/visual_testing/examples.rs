@@ -1,5 +1,4 @@
 // Visual Testing Examples
-use bevy::prelude::*;
 
 #[cfg(test)]
 mod tests {
@@ -30,19 +29,20 @@ mod tests {
             app.update();
         }
 
-        // Request a screenshot
-        let test_name = "basic_ui_test.png";
-        request_screenshot(&mut app.world, test_name.to_string());
+        // Request a screenshot - updated to match the new API
+        let test_name = "basic_ui_test.png".to_string();
+        let entity = Entity::PLACEHOLDER; // Use a proper entity or None as needed by your API
+        app.world_mut()
+            .send_event(request_screenshot(entity, test_name.clone()));
 
         // Run one more frame to process the screenshot request
         app.update();
 
-        // Get config to check if we're in update mode
-        let config = app.world.resource::<VisualTestConfig>();
-        let updating = config.update_references;
+        // Get config to check if we're in update mode - updated world access
+        let updating = app.world().resource::<VisualTestConfig>().update_references;
 
-        // Process the screenshot
-        let mut requests = app.world.resource_mut::<ScreenshotRequests>();
+        // Process the screenshot - updated world access
+        let mut requests = app.world_mut().resource_mut::<ScreenshotRequests>();
         if let Some((name, screenshot)) = requests.requests.pop_front() {
             assert_eq!(name, test_name, "Screenshot name mismatch");
 
@@ -54,11 +54,15 @@ mod tests {
                 match load_reference_image(&name) {
                     Ok(reference) => {
                         let result = compare_images(&screenshot, &reference);
+                        let threshold = app
+                            .world()
+                            .resource::<VisualTestConfig>()
+                            .similarity_threshold;
                         assert!(
-                            result.similarity_score >= config.similarity_threshold,
+                            result.similarity_score >= threshold,
                             "Visual difference detected: similarity score {} is below threshold {}",
                             result.similarity_score,
-                            config.similarity_threshold
+                            threshold
                         );
                     }
                     Err(e) => {

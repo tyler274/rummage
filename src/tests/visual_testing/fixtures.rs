@@ -1,4 +1,4 @@
-use crate::tests::visual_testing::capture::{ScreenshotRequests, request_screenshot};
+use crate::tests::visual_testing::capture::request_screenshot;
 use crate::tests::visual_testing::config::VisualTestConfig;
 use crate::tests::visual_testing::utils::ensure_test_directories;
 use bevy::prelude::*;
@@ -144,30 +144,24 @@ pub fn setup_animation_keyframe(app: &mut App, animation: &str, _keyframe: i32) 
 
 /// Generate reference images for a set of test states
 pub fn generate_reference_images(app: &mut App, test_states: &[&str]) {
-    // Ensure directories exist
-    if let Err(e) = ensure_test_directories() {
-        error!("Failed to ensure test directories: {}", e);
-        return;
+    // Override the config to generate references
+    {
+        let mut config = app.world_mut().resource_mut::<VisualTestConfig>();
+        config.update_references = true;
     }
 
-    // Enable reference image generation mode
-    app.insert_resource(VisualTestConfig {
-        update_references: true,
-        ..Default::default()
-    });
-
-    // Generate a reference image for each test state
+    // Generate a reference image for each state
     for state in test_states {
-        // Set up the scene for this state
-        setup_card_state(app, state);
-        app.update();
+        info!("Generating reference image for state: {}", state);
 
-        // Queue a screenshot request
-        // The reference image will be saved by the screenshot system
-        {
-            let mut resource = app.world_mut().resource_mut::<ScreenshotRequests>();
-            request_screenshot(&mut resource, format!("{}.png", state), None);
-        }
+        // Set up the test scene with the specific state
+        setup_ui_state(app, state);
+
+        // Queue a screenshot request using the event system
+        app.world_mut().send_event(request_screenshot(
+            Entity::PLACEHOLDER,
+            format!("{}.png", state),
+        ));
 
         // Update to process the screenshot request
         app.update();
@@ -183,7 +177,5 @@ pub fn setup_visual_test_fixtures(app: &mut App) {
     app.insert_resource(VisualTestConfig::default());
 
     // Ensure test directories exist
-    if let Err(e) = ensure_test_directories() {
-        error!("Failed to ensure test directories: {}", e);
-    }
+    let _ = ensure_test_directories();
 }

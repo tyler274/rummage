@@ -10,23 +10,21 @@ pub fn is_ci_environment() -> bool {
 }
 
 /// Configure environment-specific settings for the CI environment
-pub fn configure_for_ci(app: &mut App) {
+pub fn configure_for_ci(config: Option<ResMut<VisualTestConfig>>) {
     if is_ci_environment() {
         // Ensure test directories exist
-        ensure_test_directories();
+        let _ = ensure_test_directories();
 
         // Configure CI-specific settings
-        if let Some(mut config) = app.world.get_resource_mut::<VisualTestConfig>() {
+        if let Some(mut config) = config {
             // Use more lenient thresholds in CI environments due to potential rendering differences
             config.similarity_threshold = 0.99;
 
             // Store artifacts in CI-specific directory for easier artifact collection
             config.artifact_dir = "test_artifacts/visual_diff".to_string();
-        }
 
-        // Apply environment variables for CI configurations
-        if env::var("GENERATE_REFERENCES").is_ok() {
-            if let Some(mut config) = app.world.get_resource_mut::<VisualTestConfig>() {
+            // Apply environment variables for CI configurations
+            if env::var("GENERATE_REFERENCES").is_ok() {
                 config.update_references = true;
                 info!("CI: Running in reference generation mode");
             }
@@ -54,7 +52,7 @@ pub fn apply_ci_args(mut args: ResMut<VisualTestArgs>) {
 pub fn setup_ci_visual_test(app: &mut App) {
     if is_ci_environment() {
         info!("Setting up visual test for CI environment");
-        // Add any CI-specific systems or resources here
+        // Add a startup system that configures CI-specific settings
         app.add_systems(Startup, configure_for_ci);
     }
 }
