@@ -5,6 +5,7 @@
 // visualizing differences when changes are detected.
 
 pub mod capture;
+pub mod ci;
 pub mod comparison;
 pub mod config;
 pub mod diff;
@@ -16,6 +17,7 @@ pub mod utils;
 pub use capture::{
     capture_entity_rendering, capture_screenshot_system, request_screenshot, take_screenshot,
 };
+pub use ci::{configure_for_ci, is_ci_environment, setup_ci_visual_test};
 pub use comparison::{ComparisonResult, compare_images, save_difference_visualization};
 pub use config::{ComparisonMethod, VisualTestConfig, VisualTestingPlugin};
 pub use fixtures::{

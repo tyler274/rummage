@@ -1,6 +1,74 @@
 # Visual Testing
 
-Visual testing in Rummage ensures that the game's user interface renders correctly and consistently across different environments. This approach helps identify visual regressions and ensures a high-quality user experience.
+Visual testing in Rummage allows us to detect unintended visual regressions in the game's UI and rendering. By capturing screenshots during automated tests and comparing them to reference images, we can identify changes that might break the user experience.
+
+## How Visual Testing Works
+
+1. **Test Fixture Setup**: Each test creates a controlled environment with known entities and camera settings
+2. **Reference Images**: The system captures screenshots and compares them against reference images
+3. **Difference Detection**: Using image comparison algorithms, the system identifies visual differences
+4. **Artifact Generation**: When differences exceed a threshold, visual diffs are generated for inspection
+
+## Running Visual Tests Locally
+
+To run the visual tests locally, use:
+
+```bash
+cargo test --package rummage --lib "tests::visual_testing::"
+```
+
+### Updating Reference Images
+
+If you've made intentional visual changes, update the reference images:
+
+```bash
+GENERATE_REFERENCES=1 cargo test --package rummage --lib "tests::visual_testing::"
+```
+
+## CI Integration
+
+Visual tests run automatically on GitHub Actions:
+
+1. **Pull Requests**: Tests run to catch visual regressions
+2. **Reference Updates**: When visual changes are intentional, update references with `GENERATE_REFERENCES=1`
+3. **Artifact Inspection**: Test failures produce visual diffs that can be downloaded as artifacts
+
+## Creating New Visual Tests
+
+To create a new visual test:
+
+1. Create a test fixture that sets up the specific visual scenario
+2. Use `request_screenshot()` to capture the scene
+3. Run your test with `GENERATE_REFERENCES=1` to create the initial reference images
+4. Verify the reference images match your expectations
+5. Run without the flag to ensure tests pass
+
+## Headless Rendering
+
+For CI environments, we use Xvfb (X Virtual Framebuffer) to provide a virtual display for rendering. This allows tests to run in headless environments like GitHub Actions.
+
+The visual testing system uses a special headless configuration with:
+
+- Fixed window size for deterministic rendering
+- Vulkan backend for better compatibility
+- Low power mode for CI environments
+- Invisible windows to avoid flickering on CI servers
+
+## Troubleshooting
+
+If tests are failing unexpectedly:
+
+1. **Download Artifacts**: Check the visual diff artifacts from the GitHub Actions workflow
+2. **Check for Non-Determinism**: Ensure your test setup is deterministic
+3. **Verify References**: Make sure reference images are up to date with the current visual design
+4. **Check Environment**: The test environment should match the CI environment as closely as possible
+
+## Best Practices
+
+- Keep visual tests focused on specific components or screens
+- Use deterministic values for positions and sizes
+- Avoid animation-dependent tests that might be flaky
+- Update reference images when intentional design changes are made
 
 ## Overview
 

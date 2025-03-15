@@ -1,0 +1,66 @@
+name: Visual Testing
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  visual-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pkg-config \
+            libudev-dev \
+            libasound2-dev \
+            libxkbcommon-dev \
+            libwayland-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libvulkan-dev \
+            libx11-xcb-dev \
+            libxcb-dri3-dev \
+            libxcb-present-dev \
+            mesa-vulkan-drivers \
+            xvfb
+      
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@nextest
+
+      - name: Create test reference directories
+        run: |
+          mkdir -p test_assets/visual_references
+          mkdir -p test_artifacts/visual_diff
+
+      - name: Run visual tests with Xvfb
+        run: |
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" \
+          cargo nextest run --package rummage --lib "tests::visual_testing::" -- \
+          --test-threads=1 \
+          --no-capture
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-test-artifacts
+          path: |
+            test_artifacts/visual_diff/
+          retention-days: 5 

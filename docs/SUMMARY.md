@@ -238,11 +238,11 @@
 # Testing
 
 - [Testing Overview](testing/index.md)
-  - [Unit Testing](testing/unit_testing.md)
-  - [Integration Testing](testing/integration_testing.md)
-  - [End-to-End Testing](testing/end_to_end_testing.md)
+  - [Testing Strategies](testing/strategies.md)
+  - [Unit Tests](testing/unit_tests.md)
+  - [Integration Tests](testing/integration_tests.md)
   - [Visual Testing](testing/visual_testing.md)
-  - [Performance Testing](testing/performance_testing.md)
+  - [Test Fixtures](testing/fixtures.md)
   - [Snapshot Testing](testing/snapshot_testing.md)
   - [CI/CD Pipeline](testing/ci_cd_pipeline.md)
   - [Development Integration](testing/development_integration.md)

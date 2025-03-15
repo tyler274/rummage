@@ -96,10 +96,36 @@ pub fn apply_visual_test_args(mut config: ResMut<VisualTestConfig>, args: Res<Vi
 
 /// Setup for a headless visual testing environment
 pub fn setup_headless_visual_test_environment(app: &mut App) {
-    // Configure for headless testing - in a real implementation this would:
-    // 1. Set up a headless rendering context
-    // 2. Configure fixed-size windows
-    // 3. Set up deterministic rendering conditions
+    // Configure for headless testing
     app.add_plugins(MinimalPlugins)
+        .add_plugins(bevy::render::RenderPlugin {
+            render_creation: bevy::render::settings::RenderCreation::Automatic(
+                bevy::render::settings::WgpuSettings {
+                    // Use Vulkan backend for better compatibility in headless environments
+                    backends: Some(bevy::render::settings::Backends::VULKAN),
+                    // Use low power mode for CI environments
+                    power_preference: bevy::render::settings::PowerPreference::LowPower,
+                    // Disable unnecessary features
+                    features: bevy::render::settings::WgpuFeatures::empty(),
+                    // Don't wait for pipeline compilation
+                    synchronous_pipeline_compilation: false,
+                    ..bevy::render::settings::WgpuSettings::default()
+                },
+            ),
+            ..default()
+        })
+        .add_plugins(bevy::window::WindowPlugin {
+            primary_window: Some(Window {
+                // Create a fixed-size window for deterministic testing
+                resolution: bevy::window::WindowResolution::new(1280.0, 720.0),
+                present_mode: bevy::window::PresentMode::Immediate,
+                visible: false, // Hidden window for headless operation
+                mode: bevy::window::WindowMode::Windowed,
+                ..default()
+            }),
+            ..default()
+        })
+        .add_plugins(bevy::asset::AssetPlugin::default())
+        .add_plugins(bevy::render::texture::ImagePlugin::default())
         .add_plugins(VisualTestingPlugin);
 }
