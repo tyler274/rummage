@@ -68,6 +68,7 @@ pub fn spawn_visual_cards(
     // Spawn each card with proper positioning
     for (i, card) in display_cards.into_iter().enumerate() {
         let card_clone = card.clone(); // Clone card to use later
+
         // Calculate z-index based on position to ensure proper layering
         let z = 0.5 + (i as f32 * 0.01); // Increase z value to avoid z-fighting
 
@@ -78,50 +79,63 @@ pub fn spawn_visual_cards(
             z,
         );
 
-        let transform = Transform::from_translation(position);
+        // Increase the card size by 50% for maximum visibility
+        let visible_card_size = *card_size * 1.5;
+
+        // Build a sprite entity with all mandatory components to make it visible
+        let mut entity_builder = commands.spawn_empty();
+
+        // Add the base components that every entity needs
+        entity_builder.insert(card);
+        entity_builder.insert(Transform::from_translation(position));
+        entity_builder.insert(GlobalTransform::default());
+        entity_builder.insert(Visibility::Visible);
+        entity_builder.insert(InheritedVisibility::default());
+        entity_builder.insert(ViewVisibility::default());
+
+        // Add sprite component
+        entity_builder.insert(Sprite {
+            color: Color::srgb(1.0, 0.0, 0.0), // Red for maximum visibility
+            custom_size: Some(visible_card_size),
+            ..default()
+        });
+
+        // Add image asset - note no generic
+        if let Some(asset_server) = asset_server_option {
+            let handle = asset_server.load("textures/card_blank.png");
+            entity_builder.insert(handle);
+        }
+
+        // Add game-specific components
+        entity_builder.insert(Draggable {
+            dragging: false,
+            drag_offset: Vec2::ZERO,
+            z_index: z,
+        });
+        entity_builder.insert(AppLayer::Cards.layer());
+        entity_builder.insert(CardZone {
+            zone: Zone::Hand,
+            zone_owner: Some(player_entity),
+        });
+        entity_builder.insert(Name::new(format!("Card: {}", card_clone.name.name)));
+
+        // Get the entity ID after building
+        let card_entity = entity_builder.id();
 
         // Only log the first and last card position for debugging
         if i == 0 || i == card_count - 1 {
             debug!(
                 "{} card '{}' at ({:.2}, {:.2}, {:.2})",
                 if i == 0 { "First" } else { "Last" },
-                card.name.name,
+                card_clone.name.name,
                 position.x,
                 position.y,
                 position.z
             );
         }
 
-        // Increase the card size by 50% for maximum visibility
-        let visible_card_size = *card_size * 1.5;
-
-        // Create a complete SpriteBundle rather than individual components
-        let card_entity = commands
-            .spawn((
-                card,
-                Sprite {
-                    color: Color::srgb(1.0, 0.0, 0.0), // Pure bright red for maximum visibility
-                    custom_size: Some(visible_card_size),
-                    ..default()
-                },
-                transform,
-                Draggable {
-                    dragging: false,
-                    drag_offset: Vec2::ZERO,
-                    z_index: z,
-                },
-                AppLayer::Cards.layer(),
-                CardZone {
-                    zone: Zone::Hand,
-                    zone_owner: Some(player_entity),
-                },
-                Name::new(format!("Card: {}", card_clone.name.name)),
-            ))
-            .id();
-
         // Spawn text components directly instead of just adding marker components
         if let Some(game_asset_server) = asset_server_option {
-            // Instead of using world_mut(), use the card directly
             // Convert card::components::CardRulesText to text::components::CardRulesText
             let rules_text = crate::text::components::CardRulesText {
                 rules_text: card_clone.rules_text.rules_text.clone(),
@@ -139,7 +153,7 @@ pub fn spawn_visual_cards(
                     &card_clone.details,
                     &rules_text, // Use the converted rules text
                 ),
-                &transform,
+                &Transform::from_translation(position),
                 &Sprite {
                     color: Color::srgb(0.85, 0.85, 0.85),
                     custom_size: Some(visible_card_size),

@@ -26,20 +26,7 @@ use plugins::MainRummagePlugin;
 use snapshot::SnapshotDisabled;
 use tracing::DiagnosticsPlugin;
 
-// Debug system to verify the app is running
-fn debug_print_pulse(time: Res<Time>) {
-    // Get elapsed seconds using elapsed() which returns a Duration in Bevy 0.15
-    let elapsed = time.elapsed();
-    let seconds = elapsed.as_secs() as u64;
-
-    if seconds % 5 == 0 {
-        println!("App is running at time: {:.1}s", elapsed.as_secs_f32());
-    }
-}
-
 fn main() {
-    println!("Starting Rummage application...");
-
     let mut app = App::new();
 
     // Configure the fixed timestep update rate (20 Hz)
@@ -91,9 +78,7 @@ fn main() {
     .add_plugins(DiagnosticsPlugin) // Add our diagnostics plugin
     .add_plugins(CameraPlugin) // Add the camera plugin which manages SnapshotEvent
     .add_plugins(MenuPlugin)
-    .add_plugins(MainRummagePlugin)
-    // Add debug system to verify app is running
-    .add_systems(Update, debug_print_pulse);
+    .add_plugins(MainRummagePlugin);
 
     // Add the SnapshotDisabled resource if the snapshot feature is enabled
     #[cfg(feature = "snapshot")]
