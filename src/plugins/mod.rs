@@ -114,11 +114,54 @@ pub fn connect_cards_to_zones(
         info!("Found {} cards to connect to zones", card_count);
 
         if card_count == 0 {
-            warn!("No cards found to connect to zones - cards may not be visible");
+            error!(
+                "No cards found to connect to zones - cards are not being spawned properly. this error is only important when we are loading a game or in a game"
+            );
+
+            // Let's check if the zone manager already has any cards registered
+            let mut total_cards = 0;
+
+            // Count cards in hands
+            for player_hand in zone_manager.hands.values() {
+                total_cards += player_hand.len();
+            }
+
+            // Count cards in libraries
+            for player_library in zone_manager.libraries.values() {
+                total_cards += player_library.len();
+            }
+
+            // Count cards in battlefield
+            total_cards += zone_manager.battlefield.len();
+
+            // Count cards in graveyards
+            for player_graveyard in zone_manager.graveyards.values() {
+                total_cards += player_graveyard.len();
+            }
+
+            if total_cards > 0 {
+                info!(
+                    "Found {} cards already registered in the zone manager",
+                    total_cards
+                );
+            } else {
+                error!("Zone manager has no cards registered!");
+            }
         }
 
         // Process each card and add it to the appropriate zone in ZoneManager
         for (card_entity, card_zone) in card_query.iter() {
+            // First check if this card is already registered to avoid duplicates
+            let already_registered = zone_manager.get_card_zone(card_entity).is_some();
+
+            if already_registered {
+                info!(
+                    "Card {:?} is already registered in the zone manager, skipping",
+                    card_entity
+                );
+                continue;
+            }
+
             match card_zone.zone {
                 Zone::Hand => {
                     if let Some(owner) = card_zone.zone_owner {
@@ -232,12 +275,38 @@ fn check_card_status(
 
     *has_run = true;
 
-    if cards.is_empty() {
-        error!("No cards found! Cards are not being spawned properly.");
-        return;
+    // Count cards in all zones
+    let mut zone_manager_card_count = 0;
+
+    // Count cards in hands
+    for player_hand in zone_manager.hands.values() {
+        zone_manager_card_count += player_hand.len();
     }
 
-    info!("Found {} cards in the world", cards.iter().count());
+    // Count cards in libraries
+    for player_library in zone_manager.libraries.values() {
+        zone_manager_card_count += player_library.len();
+    }
+
+    // Count cards in battlefield
+    zone_manager_card_count += zone_manager.battlefield.len();
+
+    // Count cards in graveyards
+    for player_graveyard in zone_manager.graveyards.values() {
+        zone_manager_card_count += player_graveyard.len();
+    }
+
+    info!("Zone Manager contains {} cards", zone_manager_card_count);
+
+    if cards.is_empty() {
+        error!(
+            "No cards found! Cards are not being spawned properly. this error is only important when we are loading a game or in a game"
+        );
+
+        // Don't return early, continue with diagnostics
+    } else {
+        info!("Found {} cards in the world", cards.iter().count());
+    }
 
     // Check if cards are registered in the zone manager
     let mut cards_with_zones = 0;

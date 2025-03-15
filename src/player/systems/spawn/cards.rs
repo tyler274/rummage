@@ -65,6 +65,11 @@ pub fn spawn_visual_cards(
         )
     };
 
+    info!(
+        "Starting spawn of {} cards for player {}",
+        card_count, player_index
+    );
+
     // Spawn each card with proper positioning
     for (i, card) in display_cards.into_iter().enumerate() {
         let card_clone = card.clone(); // Clone card to use later
