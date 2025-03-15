@@ -1,6 +1,7 @@
 use bevy::core_pipeline::core_2d::Camera2d;
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
+use bevy::render::view::RenderLayers;
 use bevy::window::{PrimaryWindow, WindowResized};
 
 use crate::camera::{
@@ -20,6 +21,8 @@ pub struct CardPositionCache {
 /// This system spawns a 2D camera entity with the necessary components
 /// for rendering the game world. It's typically run during the startup phase.
 pub fn setup_camera(mut commands: Commands) {
+    info!("Setting up game camera...");
+
     // Set up the camera with improved position to see all cards clearly
     let camera_entity = commands
         .spawn((
@@ -31,16 +34,26 @@ pub fn setup_camera(mut commands: Commands) {
             Visibility::Visible, // Explicitly set to Visible
             InheritedVisibility::default(),
             ViewVisibility::default(),
-            // Position the camera even higher for a better view of all cards
-            Transform::from_xyz(0.0, 0.0, 1500.0),
+            // Position the camera looking at the center of the game board
+            // We're using a 2D camera, so we need a high Z value to see everything
+            Transform::from_xyz(0.0, 0.0, 999.0),
             GlobalTransform::default(),
             GameCamera,
-            AppLayer::all_layers(), // Use ALL layers to ensure everything is visible
+            // Make sure we explicitly include all game-related layers
+            RenderLayers::from_layers(&[
+                AppLayer::Game.as_usize(),
+                AppLayer::Cards.as_usize(),
+                AppLayer::GameWorld.as_usize(),
+                AppLayer::Background.as_usize(),
+                AppLayer::GameUI.as_usize(),
+                AppLayer::Shared.as_usize(),
+            ]),
             Name::new("Game Camera"),
         ))
         .id();
 
     info!("Game camera spawned with entity {:?}", camera_entity);
+    info!("Camera render layers set to include Cards layer");
 
     // Initialize camera pan state
     commands.insert_resource(CameraPanState::default());

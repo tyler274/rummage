@@ -70,7 +70,7 @@ pub fn spawn_visual_cards(
         let card_clone = card.clone(); // Clone card to use later
 
         // Calculate z-index based on position to ensure proper layering
-        let z = 0.5 + (i as f32 * 0.01); // Increase z value to avoid z-fighting
+        let z = 10.0 + (i as f32 * 0.1); // Increase z value to avoid z-fighting and ensure cards are above the board
 
         // Calculate the position for this card
         let position = Vec3::new(
@@ -82,57 +82,37 @@ pub fn spawn_visual_cards(
         // Increase the card size by 50% for maximum visibility
         let visible_card_size = *card_size * 1.5;
 
-        // Build a sprite entity with all mandatory components to make it visible
-        let mut entity_builder = commands.spawn_empty();
+        // Create a card with a clearly visible color and higher contrast
+        let card_entity = commands
+            .spawn(Sprite {
+                color: Color::srgb(0.9, 0.2, 0.2), // Bright red for maximum visibility
+                custom_size: Some(visible_card_size),
+                ..default()
+            })
+            .insert(Transform::from_translation(position))
+            .insert(GlobalTransform::default())
+            .insert(Visibility::Visible)
+            .insert(InheritedVisibility::default())
+            .insert(ViewVisibility::default())
+            .insert(card)
+            .insert(Draggable {
+                dragging: false,
+                drag_offset: Vec2::ZERO,
+                z_index: z,
+            })
+            .insert(AppLayer::Cards.layer())
+            .insert(CardZone {
+                zone: Zone::Hand,
+                zone_owner: Some(player_entity),
+            })
+            .insert(Name::new(format!("Card: {}", card_clone.name.name)))
+            .id();
 
-        // Add the base components that every entity needs
-        entity_builder.insert(card);
-        entity_builder.insert(Transform::from_translation(position));
-        entity_builder.insert(GlobalTransform::default());
-        entity_builder.insert(Visibility::Visible);
-        entity_builder.insert(InheritedVisibility::default());
-        entity_builder.insert(ViewVisibility::default());
-
-        // Add sprite component
-        entity_builder.insert(Sprite {
-            color: Color::srgb(1.0, 0.0, 0.0), // Red for maximum visibility
-            custom_size: Some(visible_card_size),
-            ..default()
-        });
-
-        // Add image asset - note no generic
-        if let Some(asset_server) = asset_server_option {
-            let handle = asset_server.load("textures/card_blank.png");
-            entity_builder.insert(handle);
-        }
-
-        // Add game-specific components
-        entity_builder.insert(Draggable {
-            dragging: false,
-            drag_offset: Vec2::ZERO,
-            z_index: z,
-        });
-        entity_builder.insert(AppLayer::Cards.layer());
-        entity_builder.insert(CardZone {
-            zone: Zone::Hand,
-            zone_owner: Some(player_entity),
-        });
-        entity_builder.insert(Name::new(format!("Card: {}", card_clone.name.name)));
-
-        // Get the entity ID after building
-        let card_entity = entity_builder.id();
-
-        // Only log the first and last card position for debugging
-        if i == 0 || i == card_count - 1 {
-            debug!(
-                "{} card '{}' at ({:.2}, {:.2}, {:.2})",
-                if i == 0 { "First" } else { "Last" },
-                card_clone.name.name,
-                position.x,
-                position.y,
-                position.z
-            );
-        }
+        // Debug information for every card
+        info!(
+            "Spawned card '{}' at position ({:.2}, {:.2}, {:.2}) with entity {:?}",
+            card_clone.name.name, position.x, position.y, position.z, card_entity
+        );
 
         // Spawn text components directly instead of just adding marker components
         if let Some(game_asset_server) = asset_server_option {

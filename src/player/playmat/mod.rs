@@ -462,19 +462,36 @@ pub fn spawn_player_playmat(
         player.name, player_position
     );
 
-    // Create the main playmat entity
+    // Create the main playmat entity with a visible Sprite component
     let playmat_entity = commands
         .spawn((
-            Transform::from_translation(player_position),
+            // Add a visible background for the playmat
+            Sprite {
+                color: match player.player_index {
+                    0 => Color::srgb(0.2, 0.2, 0.7), // Blue for bottom player
+                    1 => Color::srgb(0.7, 0.2, 0.2), // Red for right player
+                    2 => Color::srgb(0.2, 0.7, 0.2), // Green for top player
+                    _ => Color::srgb(0.7, 0.7, 0.2), // Yellow for left player
+                },
+                // Make the playmat large enough to see
+                custom_size: Some(Vec2::new(600.0, 400.0)),
+                ..default()
+            },
+            Transform::from_translation(Vec3::new(
+                player_position.x,
+                player_position.y,
+                5.0, // Place it below cards but above table
+            )),
             GlobalTransform::default(),
-            Visibility::default(),
+            Visibility::Visible, // Explicitly set to visible
             InheritedVisibility::default(),
             ViewVisibility::default(),
             PlayerPlaymat {
                 player_id: player_entity,
                 player_index: player.player_index,
             },
-            AppLayer::game_layers(),
+            // Ensure it's on the game world layer
+            AppLayer::GameWorld.layer(),
             Name::new(format!("Playmat-{}", player.name)),
         ))
         .id();
