@@ -9,12 +9,18 @@ use crate::camera::{
     state::CameraPanState,
 };
 
+/// Resource to track previously logged card positions to avoid redundant logging
+#[derive(Resource, Default)]
+pub struct CardPositionCache {
+    positions: std::collections::HashMap<Entity, Vec3>,
+}
+
 /// Sets up the main game camera with proper scaling and projection.
 ///
 /// This system spawns a 2D camera entity with the necessary components
 /// for rendering the game world. It's typically run during the startup phase.
 pub fn setup_camera(mut commands: Commands) {
-    // Set up the camera with normal defaults but at a better position to see the cards
+    // Set up the camera with improved position to see all cards clearly
     let camera_entity = commands
         .spawn((
             Camera2d::default(),
@@ -25,8 +31,8 @@ pub fn setup_camera(mut commands: Commands) {
             Visibility::Visible, // Explicitly set to Visible
             InheritedVisibility::default(),
             ViewVisibility::default(),
-            // Position the camera directly above the center at Z=999 to see all cards
-            Transform::from_xyz(0.0, 0.0, 999.0),
+            // Position the camera even higher for a better view of all cards
+            Transform::from_xyz(0.0, 0.0, 1500.0),
             GlobalTransform::default(),
             GameCamera,
             AppLayer::all_layers(), // Use ALL layers to ensure everything is visible
@@ -45,9 +51,9 @@ pub fn set_initial_zoom(
     mut query: Query<&mut OrthographicProjection, (With<Camera>, With<GameCamera>)>,
 ) {
     if let Ok(mut projection) = query.get_single_mut() {
-        // Adjust scale for a wider view - higher values zoom out more
+        // Use a much wider view to ensure all cards are visible
         // In OrthographicProjection, higher scale = more zoomed out
-        projection.scale = 2.0; // Changed from 0.5 to 2.0 for wider view
+        projection.scale = 5.0; // Increased from 2.0 to 5.0 for much wider view
 
         info!("Set initial camera zoom level to {:.2}", projection.scale);
     } else {
@@ -204,35 +210,47 @@ pub fn camera_movement(
 /// Draws debug visualization for card positions
 pub fn debug_draw_card_positions(
     mut gizmos: Gizmos,
-    card_query: Query<(&Transform, &Name), With<crate::cards::Card>>,
+    card_query: Query<(Entity, &Transform, &Name), With<crate::cards::Card>>,
+    mut position_cache: Local<CardPositionCache>,
 ) {
-    for (transform, name) in card_query.iter() {
-        // Draw a circle at each card position
+    // Draw center indicator - a large crosshair at origin
+    gizmos.line_2d(
+        Vec2::new(-100.0, 0.0),
+        Vec2::new(100.0, 0.0),
+        Color::srgba(0.0, 1.0, 0.0, 1.0), // Green horizontal line
+    );
+    gizmos.line_2d(
+        Vec2::new(0.0, -100.0),
+        Vec2::new(0.0, 100.0),
+        Color::srgba(0.0, 1.0, 0.0, 1.0), // Green vertical line
+    );
+
+    // Draw a circle at origin
+    gizmos.circle_2d(
+        Vec2::ZERO,
+        50.0,                             // Larger circle at origin
+        Color::srgba(0.0, 1.0, 0.0, 0.3), // Semi-transparent green
+    );
+
+    // Draw all cards
+    for (entity, transform, name) in card_query.iter() {
+        // Draw a larger circle at each card position
         gizmos.circle_2d(
             transform.translation.truncate(),
-            0.5,
-            Color::srgba(1.0, 0.0, 0.0, 1.0), // Red color
+            20.0,                             // Much larger circle to spot cards easily
+            Color::srgba(1.0, 0.0, 0.0, 0.7), // Brighter red color
         );
 
-        // Draw lines connecting adjacent cards
-        // This helps visualize the spacing
-        if let Some((prev_transform, _)) = card_query
-            .iter()
-            .filter(|(t, _)| {
-                (t.translation.x < transform.translation.x)
-                    && (t.translation.y - transform.translation.y).abs() < 0.1
-            })
-            .max_by(|(a, _), (b, _)| a.translation.x.partial_cmp(&b.translation.x).unwrap())
-        {
-            gizmos.line_2d(
-                prev_transform.translation.truncate(),
-                transform.translation.truncate(),
-                Color::srgba(1.0, 1.0, 0.0, 1.0), // Yellow color
-            );
-        }
+        // Only log if the position changed significantly or is new
+        let current_pos = transform.translation;
+        let should_log = match position_cache.positions.get(&entity) {
+            Some(prev_pos) => (*prev_pos - current_pos).length_squared() > 0.01,
+            None => true, // Always log new cards
+        };
 
-        // Add debug text for card positions if needed
-        // This requires a debug text rendering system
-        debug!("Card '{}' position: {:?}", name, transform.translation);
+        if should_log {
+            debug!("Card '{}' position changed to: {:?}", name, current_pos);
+            position_cache.positions.insert(entity, current_pos);
+        }
     }
 }

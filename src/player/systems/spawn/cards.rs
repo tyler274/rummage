@@ -92,15 +92,15 @@ pub fn spawn_visual_cards(
             );
         }
 
-        // Increase the card size by 25% for better visibility
-        let visible_card_size = *card_size * 1.25;
+        // Increase the card size by 50% for maximum visibility
+        let visible_card_size = *card_size * 1.5;
 
         // Create a complete SpriteBundle rather than individual components
         let card_entity = commands
             .spawn((
                 card,
                 Sprite {
-                    color: Color::srgb(1.0, 0.3, 0.3), // bright red color for better visibility
+                    color: Color::srgb(1.0, 0.0, 0.0), // Pure bright red for maximum visibility
                     custom_size: Some(visible_card_size),
                     ..default()
                 },
