@@ -56,14 +56,14 @@ impl Default for CardTextLayout {
             card_height: 1050.0, // 3.5 inches * 300 DPI
 
             // Position name with a proper margin from the left edge of the card frame
-            name_x_offset: -0.18, // Adjusted to prevent overflow
+            name_x_offset: -0.20, // Adjusted more to the left to create more space for mana cost
             name_y_offset: 0.41,
 
             // Adjusted width to prevent long names from extending beyond card boundaries
-            name_width: 0.55, // Reduced to avoid overlap with mana cost
+            name_width: 0.42, // Further reduced to ensure name always fits
 
             // Adjusted mana cost positioning to avoid going out of bounds
-            mana_cost_x_offset: 0.30, // Moved slightly toward center from 0.33
+            mana_cost_x_offset: 0.32, // Slightly adjusted for better spacing
             mana_cost_y_offset: 0.41,
 
             // Margins for text layout
@@ -72,21 +72,21 @@ impl Default for CardTextLayout {
 
             // Power/toughness positioning
             pt_x_offset: 0.35,
-            pt_y_offset: -0.35,
+            pt_y_offset: -0.38, // Moved slightly lower
             pt_width: 0.15,
             pt_height: 0.08,
 
-            // Type line positioning - moved down to leave space for art
-            type_line_x_offset: -0.3,
-            type_line_y_offset: 0.05,
-            type_line_width: 0.8,
-            type_line_height: 0.08,
+            // Type line positioning - adjusted to create clearer separation from art and rules text
+            type_line_x_offset: -0.32,
+            type_line_y_offset: -0.05, // Adjusted to create better spacing from art
+            type_line_width: 0.78,     // Slightly reduced
+            type_line_height: 0.07,    // Slightly reduced
 
-            // Text box positioning - adjusted to fit within card bounds
-            text_box_y_offset: -0.18, // Moved up to prevent text flowing out of bounds
-            text_box_width: 0.6,      // Reduced to keep text within horizontal bounds
-            text_box_height: 0.3,     // Increased height to give more room for text
-            text_box_padding: 0.03,   // Increased padding for better visual separation
+            // Text box positioning - refined to create better visual balance
+            text_box_y_offset: -0.28, // Further adjusted for better spacing from type line
+            text_box_width: 0.65,     // Adjusted for better content fit
+            text_box_height: 0.22,    // Slightly reduced to prevent overlap
+            text_box_padding: 0.025,  // Slightly reduced for more effective text space
         }
     }
 }
@@ -128,5 +128,5 @@ pub fn custom_card_layout(width: f32, height: f32) -> CardTextLayout {
 
 /// Standard battlefield card size multiplier
 pub fn get_battlefield_card_size_multiplier() -> f32 {
-    4.0 // Increased from 3.0 for better HiDPI visibility and detail
+    4.2 // Slightly increased for better visibility and detail on high-res displays
 }

@@ -51,45 +51,45 @@ pub fn spawn_rules_text(
         layout.text_box_height - (layout.text_box_padding * 2.0),
     );
 
-    // Adjust font size based on card size and text length
-    // For 300 DPI, we start with 14pt base font for rules text
-    let base_font_size = 14.0;
-    // Decrease font size more aggressively for longer text to prevent overflow
-    let text_length_factor = (rules_text_component.rules_text.len() as f32 / 80.0).clamp(0.8, 2.0);
-    let adjusted_font_size = base_font_size / text_length_factor.max(1.0);
-    let font_size = get_card_font_size(card_size, adjusted_font_size);
+    // Set font size based on card dimensions
+    // Using a slightly smaller base size for rules text to fit more content
+    let font_size = get_card_font_size(card_size, 14.0);
 
-    // Calculate the maximum width for text in pixels
-    let max_text_width = text_size.x;
-
-    // Format the rules text with proper line breaks and wrapping
+    // Format the rules text to fit within the specified width
     let formatted_text =
-        format_rules_text(&rules_text_component.rules_text, max_text_width, font_size);
+        format_rules_text(&rules_text_component.rules_text, text_size.x, font_size);
 
-    // Load fonts - both regular and mana fonts
-    let regular_font: Handle<Font> = asset_server.load("fonts/NotoSerif-Regular.ttf");
-    let _mana_font: Handle<Font> = asset_server.load("fonts/Mana.ttf");
+    // Load fonts
+    let regular_font: Handle<Font> = asset_server.load("fonts/DejaVuSans.ttf");
+    let _mana_font: Handle<Font> = asset_server.load("fonts/Mana.ttf"); // Keep for future mana symbol rendering
 
-    // Create the root text entity with sections for the entire text content
+    // Spawn the text entity with proper positioning
     let text_entity = commands
         .spawn((
             Text2d::new(formatted_text.clone()),
-            Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.2)),
+            Transform::from_translation(Vec3::new(
+                local_offset.x,
+                local_offset.y,
+                0.1, // Slightly above the card surface
+            )),
             GlobalTransform::default(),
             TextFont {
                 font: regular_font.clone(),
                 font_size,
                 ..default()
             },
-            TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
-            TextLayout::new_with_justify(JustifyText::Left), // Changed back to Left for rules text
+            TextColor(Color::BLACK),
+            TextLayout::new_with_justify(JustifyText::Left),
             CardTextType::RulesText,
             TextLayoutInfo {
-                alignment: JustifyText::Left, // Changed to match the actual layout
+                alignment: JustifyText::Left,
             },
-            Name::new(format!("Rules Text: {}", formatted_text.replace('\n', " "))),
+            Name::new("Card Rules Text"),
         ))
         .id();
+
+    // For now, we're not adding inline mana symbols
+    // Future: add_mana_symbols_as_children(commands, text_entity, &formatted_text, font_size, &regular_font, &mana_font);
 
     text_entity
 }
@@ -152,103 +152,55 @@ fn extract_mana_symbol_segments(text: &str) -> Vec<(String, bool)> {
     segments
 }
 
-/// Format rules text with proper line breaks, spacing, and wrapping
-/// Now includes better paragraph separation and support for flavor text
+/// Format rules text to fit within the specified width
 fn format_rules_text(text: &str, max_width: f32, font_size: f32) -> String {
-    // Check for flavor text separator (MTG uses a line between rules and flavor)
-    let (rules_part, flavor_part) = if text.contains("—") {
-        let parts: Vec<&str> = text.splitn(2, "—").collect();
-        if parts.len() > 1 {
-            (parts[0].trim(), Some(parts[1].trim()))
-        } else {
-            (text, None)
-        }
-    } else {
-        (text, None)
-    };
+    // Calculate approximate characters per line based on font size
+    // Using a conservative estimate for proportional font
+    let approximate_char_width = font_size * 0.5; // Roughly half the font size
+    let chars_per_line = (max_width / approximate_char_width).floor() as usize;
 
-    // Split rules by existing line breaks
-    let paragraphs: Vec<&str> = rules_part.split('\n').collect();
-
-    // Process each paragraph for proper wrapping
-    let mut result = String::new();
-    // Use a smaller character width approximation to fit more text
-    let avg_char_width = font_size * 0.45; // Reduced from 0.5 for tighter packing
-    let chars_per_line = (max_width / avg_char_width) as usize;
-
-    for (i, paragraph) in paragraphs.iter().enumerate() {
-        if i > 0 {
-            result.push('\n');
-        }
-
-        // Simple word wrap algorithm
-        let words: Vec<&str> = paragraph.split_whitespace().collect();
-        let mut current_line = String::new();
-        let mut current_line_len = 0;
-
-        for word in words {
-            let word_len = word.len();
-
-            // Check if adding this word would exceed line width
-            if current_line_len + word_len + 1 > chars_per_line && !current_line.is_empty() {
-                // Line would be too long, add a line break
-                result.push_str(&current_line);
-                result.push('\n');
-                current_line = word.to_string();
-                current_line_len = word_len;
-            } else {
-                // Add space before word (except at beginning of line)
-                if !current_line.is_empty() {
-                    current_line.push(' ');
-                    current_line_len += 1;
-                }
-                current_line.push_str(word);
-                current_line_len += word_len;
-            }
-        }
-
-        // Add the last line of the paragraph
-        result.push_str(&current_line);
+    // If text is empty, return empty string
+    if text.is_empty() {
+        return String::new();
     }
 
-    // Add flavor text if present
-    if let Some(flavor) = flavor_part {
-        // Add a blank line and the separator
-        result.push_str("\n\n—");
+    let mut formatted = String::new();
+    let mut current_line_length = 0;
 
-        // Simple word wrap for flavor text with tighter spacing
-        let words: Vec<&str> = flavor.split_whitespace().collect();
-        let mut current_line = String::new();
-        let mut current_line_len = 0;
-        // Use more horizontal space for flavor text
-        let flavor_chars_per_line = (chars_per_line as f32 * 0.95) as usize;
-
-        for word in words {
-            let word_len = word.len();
-
-            // Check if adding this word would exceed line width
-            if current_line_len + word_len + 1 > flavor_chars_per_line && !current_line.is_empty() {
-                // Line would be too long, add a line break
-                result.push_str(&current_line);
-                result.push('\n');
-                current_line = word.to_string();
-                current_line_len = word_len;
-            } else {
-                // Add space before word (except at beginning of line)
-                if !current_line.is_empty() {
-                    current_line.push(' ');
-                    current_line_len += 1;
-                }
-                current_line.push_str(word);
-                current_line_len += word_len;
-            }
+    // Split on existing newlines first to respect source formatting
+    for paragraph in text.split('\n') {
+        if !formatted.is_empty() {
+            formatted.push('\n');
+            current_line_length = 0;
         }
 
-        // Add the last line of the flavor text
-        result.push_str(&current_line);
+        let words = paragraph.split_whitespace().collect::<Vec<&str>>();
+
+        for (i, word) in words.iter().enumerate() {
+            // Check if adding this word would exceed the line width
+            if current_line_length + word.len() + 1 > chars_per_line && current_line_length > 0 {
+                formatted.push('\n');
+                current_line_length = 0;
+            } else if i > 0 && current_line_length > 0 {
+                // Add space before word unless it's the first word of a line
+                formatted.push(' ');
+                current_line_length += 1;
+            }
+
+            // Special handling for mana symbols to keep them together
+            if word.contains('{') && word.contains('}') {
+                // Add the word without breaking it
+                formatted.push_str(word);
+                current_line_length += word.len();
+            } else {
+                // Add the word
+                formatted.push_str(word);
+                current_line_length += word.len();
+            }
+        }
     }
 
-    result
+    formatted
 }
 
 /// Renders a line of text with inline mana symbols
