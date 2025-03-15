@@ -86,19 +86,12 @@ pub fn spawn_visual_cards(
         let card_entity = commands
             .spawn((
                 card,
-                SpriteBundle {
-                    sprite: Sprite {
-                        color: Color::srgb(0.2, 0.6, 0.8), // bright blue color for visibility
-                        custom_size: Some(*card_size),
-                        ..default()
-                    },
-                    transform,
-                    global_transform: GlobalTransform::default(),
-                    visibility: Visibility::Visible,
-                    inherited_visibility: InheritedVisibility::default(),
-                    view_visibility: ViewVisibility::default(),
+                Sprite {
+                    color: Color::srgb(0.2, 0.6, 0.8), // bright blue color for visibility
+                    custom_size: Some(*card_size),
                     ..default()
                 },
+                transform,
                 Draggable {
                     dragging: false,
                     drag_offset: Vec2::ZERO,
