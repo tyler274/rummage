@@ -116,8 +116,7 @@ bitflags! {
     /// Color represents the five colors of Magic and colorless as bit flags, allowing combinations
     /// of colors to be represented efficiently.
     ///
-    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
-    #[reflect(Serialize, Deserialize)]
+    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
     pub struct Color: u32 {
         const NONE = 0;
         const WHITE = 1 << 0;
@@ -126,6 +125,37 @@ bitflags! {
         const RED = 1 << 3;
         const GREEN = 1 << 4;
         const COLORLESS = 1 << 5;
+    }
+}
+
+/// Wrapper around Color for reflection support
+#[derive(
+    Component, Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect,
+)]
+#[reflect(Serialize, Deserialize)]
+pub struct ReflectableColor {
+    bits: u32,
+}
+
+impl ReflectableColor {
+    pub fn new(color: Color) -> Self {
+        Self { bits: color.bits() }
+    }
+
+    pub fn color(&self) -> Color {
+        Color::from_bits_truncate(self.bits)
+    }
+}
+
+impl From<Color> for ReflectableColor {
+    fn from(color: Color) -> Self {
+        Self::new(color)
+    }
+}
+
+impl From<ReflectableColor> for Color {
+    fn from(reflectable: ReflectableColor) -> Self {
+        reflectable.color()
     }
 }
 
@@ -142,6 +172,8 @@ pub struct Mana {
     /// The colors present in this mana cost
     #[reflect(ignore)]
     pub color: Color,
+    /// Reflectable version of the color
+    pub reflectable_color: ReflectableColor,
     /// Amount of white mana
     pub white: u64,
     /// Amount of blue mana
@@ -163,9 +195,11 @@ pub struct Mana {
 #[derive(Default, Debug, Clone, PartialEq, Eq, Reflect, Serialize, Deserialize)]
 #[reflect(Serialize, Deserialize)]
 pub struct ManaPool {
-    /// Map of colors to mana amounts
+    /// Map of colors to mana amounts - we need to use a wrapper here since Color can't be a HashMap key with Reflect
     #[reflect(ignore)]
     pub mana: HashMap<Color, Mana>,
+    /// Reflectable version of the mana map using u32 keys (the bits of Color)
+    pub reflectable_mana: Vec<(ReflectableColor, Mana)>,
 }
 
 impl Mana {
@@ -263,6 +297,7 @@ impl Mana {
 
         Self {
             color,
+            reflectable_color: ReflectableColor::from(color),
             white,
             blue,
             black,
@@ -350,62 +385,77 @@ impl fmt::Display for Mana {
 
 impl ManaPool {
     /// Creates a new empty mana pool.
+    ///
     #[allow(dead_code)]
     pub fn new() -> Self {
-        Self {
-            mana: HashMap::new(),
-        }
+        Self::default()
     }
 
     /// Adds mana to the pool.
-    #[allow(dead_code)]
+    ///
     pub fn add(&mut self, mana: Mana) {
-        self.mana
-            .entry(mana.color)
-            .and_modify(|e| {
-                e.white += mana.white;
-                e.blue += mana.blue;
-                e.black += mana.black;
-                e.red += mana.red;
-                e.green += mana.green;
-                e.colorless += mana.colorless;
-            })
-            .or_insert(mana);
+        // Add to the HashMap for efficient access
+        let entry = self.mana.entry(mana.color).or_default();
+        entry.white += mana.white;
+        entry.blue += mana.blue;
+        entry.black += mana.black;
+        entry.red += mana.red;
+        entry.green += mana.green;
+        entry.colorless += mana.colorless;
+        entry.color |= mana.color;
+
+        // Update the reflectable version
+        self.sync_reflectable_mana();
     }
 
-    /// Removes mana from the pool if possible.
+    /// Removes mana from the pool. Returns true if successful.
     ///
-    /// Returns true if the mana was successfully removed,
-    /// false if there wasn't enough mana of the right types.
-    #[allow(dead_code)]
     pub fn remove(&mut self, mana: Mana) -> bool {
-        if let Some(existing) = self.mana.get_mut(&mana.color) {
-            if existing.white >= mana.white
-                && existing.blue >= mana.blue
-                && existing.black >= mana.black
-                && existing.red >= mana.red
-                && existing.green >= mana.green
-                && existing.colorless >= mana.colorless
+        if let Some(entry) = self.mana.get_mut(&mana.color) {
+            if entry.white >= mana.white
+                && entry.blue >= mana.blue
+                && entry.black >= mana.black
+                && entry.red >= mana.red
+                && entry.green >= mana.green
+                && entry.colorless >= mana.colorless
             {
-                existing.white -= mana.white;
-                existing.blue -= mana.blue;
-                existing.black -= mana.black;
-                existing.red -= mana.red;
-                existing.green -= mana.green;
-                existing.colorless -= mana.colorless;
+                entry.white -= mana.white;
+                entry.blue -= mana.blue;
+                entry.black -= mana.black;
+                entry.red -= mana.red;
+                entry.green -= mana.green;
+                entry.colorless -= mana.colorless;
 
-                if existing.total() == 0 {
-                    self.mana.remove(&mana.color);
-                }
+                // Update the reflectable version
+                self.sync_reflectable_mana();
+
                 return true;
             }
         }
         false
     }
 
-    /// Empties the mana pool.
-    #[allow(dead_code)]
+    /// Clears all mana from the pool.
+    ///
     pub fn clear(&mut self) {
         self.mana.clear();
+        self.reflectable_mana.clear();
+    }
+
+    /// Sync the reflectable mana with the actual mana HashMap
+    fn sync_reflectable_mana(&mut self) {
+        self.reflectable_mana.clear();
+        for (&color, &mana) in self.mana.iter() {
+            self.reflectable_mana
+                .push((ReflectableColor::from(color), mana));
+        }
+    }
+
+    /// Rebuild the mana HashMap from reflectable_mana (used after deserialization)
+    pub fn rebuild_from_reflectable(&mut self) {
+        self.mana.clear();
+        for (reflectable_color, mana) in &self.reflectable_mana {
+            self.mana.insert(reflectable_color.color(), *mana);
+        }
     }
 }

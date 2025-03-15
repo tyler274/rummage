@@ -11,7 +11,9 @@ use crate::cards::{
     rarity::Rarity,
     set::CardSet,
     systems::{debug_render_text_positions, handle_card_dragging},
+    types::{CardTypes, CreatureType, ReflectableCardTypes, ReflectableCreatureType},
 };
+use crate::mana::{Mana, ReflectableColor};
 use bevy::prelude::*;
 
 /// Plugin for registering card-related systems and components
@@ -22,8 +24,7 @@ impl Plugin for CardPlugin {
         app.register_type::<Card>()
             .register_type::<CardName>()
             .register_type::<CardCost>()
-            // CardTypeInfo contains bitflags which don't fully implement reflection
-            // .register_type::<CardTypeInfo>()
+            // CardTypeInfo contains bitflags which now support reflection
             .register_type::<CardDetailsComponent>()
             .register_type::<CardRulesText>()
             .register_type::<CardKeywords>()
@@ -32,9 +33,9 @@ impl Plugin for CardPlugin {
             .register_type::<Rarity>()
             .register_type::<CardDetails>()
             .register_type::<CreatureCard>()
-            // These types use bitflags which don't fully implement reflection
-            // .register_type::<CardTypes>()
-            // .register_type::<CreatureType>()
+            // Register the reflectable wrappers for bitflags
+            .register_type::<ReflectableCardTypes>()
+            .register_type::<ReflectableCreatureType>()
             .register_type::<KeywordAbility>()
             .register_type::<KeywordAbilities>()
             .register_type::<SpellType>()
@@ -45,9 +46,9 @@ impl Plugin for CardPlugin {
             .register_type::<NoUntapEffect>()
             .register_type::<NoUntapCondition>()
             .register_type::<Draggable>()
-            .register_type::<crate::mana::Mana>()
-            // Color uses bitflags which don't fully implement reflection
-            // .register_type::<crate::mana::Color>()
+            .register_type::<Mana>()
+            // Register the reflectable wrapper for Color
+            .register_type::<ReflectableColor>()
             .register_type::<std::collections::HashSet<KeywordAbility>>()
             .register_type::<std::collections::HashMap<KeywordAbility, String>>()
             .add_systems(Update, handle_card_dragging)
