@@ -84,17 +84,23 @@ pub fn spawn_visual_cards(
             z,
         );
 
-        // Increase the card size for better visibility and to fill the playmat space
-        let visible_card_size = *card_size * 2.5;
+        // Draw cards at a much larger internal size for better text layout
+        // but scale them down visually to fit in the playmat
+        let internal_card_size = *card_size * 6.0; // Much larger internal size for text positioning
+        let display_scale = 2.5 / 6.0; // Scale factor to display correctly in the playmat
 
         // Create a card with a grayish white background for better readability
         let card_entity = commands
             .spawn(Sprite {
                 color: Color::srgb(0.92, 0.92, 0.94), // Grayish white for better readability
-                custom_size: Some(visible_card_size),
+                custom_size: Some(internal_card_size),
                 ..default()
             })
-            .insert(Transform::from_translation(position))
+            .insert(Transform {
+                translation: position,
+                scale: Vec3::splat(display_scale), // Scale down for display
+                ..default()
+            })
             .insert(GlobalTransform::default())
             .insert(Visibility::Visible)
             .insert(InheritedVisibility::default())
@@ -115,8 +121,8 @@ pub fn spawn_visual_cards(
 
         // Debug information for every card
         info!(
-            "Spawned card '{}' at position ({:.2}, {:.2}, {:.2}) with entity {:?}",
-            card_clone.name.name, position.x, position.y, position.z, card_entity
+            "Spawned card '{}' at position ({:.2}, {:.2}, {:.2}) with scale {:.2} and entity {:?}",
+            card_clone.name.name, position.x, position.y, position.z, display_scale, card_entity
         );
 
         // Spawn text components directly instead of just adding marker components
@@ -138,10 +144,10 @@ pub fn spawn_visual_cards(
                     &card_clone.details,
                     &rules_text, // Use the converted rules text
                 ),
-                &Transform::from_translation(position),
+                &Transform::from_translation(Vec3::ZERO), // Position at origin since text is relative to card
                 &Sprite {
                     color: Color::srgb(0.85, 0.85, 0.85),
-                    custom_size: Some(visible_card_size),
+                    custom_size: Some(internal_card_size),
                     ..default()
                 },
                 game_asset_server,
