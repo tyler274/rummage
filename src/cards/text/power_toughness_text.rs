@@ -1,8 +1,9 @@
 use bevy::prelude::*;
+use bevy::text::JustifyText;
 
 use crate::text::{
     components::{CardPowerToughness, CardTextStyleBundle, CardTextType, TextLayoutInfo},
-    utils::{calculate_text_size, get_card_font_size, get_card_layout},
+    utils::{calculate_text_size, get_adaptive_font_size, get_card_layout},
 };
 
 /// Spawn power/toughness text for a card
@@ -15,48 +16,46 @@ pub fn spawn_power_toughness_text(
 ) -> Entity {
     let layout = get_card_layout();
 
-    // Calculate relative position offsets
-    let horizontal_offset = layout.pt_x_offset;
-    let vertical_offset = layout.pt_y_offset;
+    // Calculate the position for P/T - bottom right of the card
+    let pt_x = layout.pt_x_offset * card_size.x;
+    let pt_y = layout.pt_y_offset * card_size.y;
 
-    // Calculate the relative position in local space
-    let local_offset = Vec2::new(
-        card_size.x * horizontal_offset,
-        card_size.y * vertical_offset,
+    // Calculate available width for P/T display
+    let available_width = layout.pt_width * card_size.x;
+
+    // Use adaptive font sizing
+    // Base size of 14pt, minimum 10pt
+    let font_size = get_adaptive_font_size(
+        card_size,
+        14.0,
+        &pt_component.power_toughness,
+        available_width,
+        10.0,
     );
 
-    // We don't need text_size for the simplified TextLayoutInfo
-    let _text_size = calculate_text_size(card_size, layout.pt_width, layout.pt_height);
+    // Get the font
+    let font = asset_server.load("fonts/DejaVuSans-Bold.ttf");
 
-    // Power/toughness uses a larger font (26pt at 300 DPI) to make it stand out
-    let font_size = get_card_font_size(card_size, 26.0);
-
-    // Create text style bundle
-    let text_style = CardTextStyleBundle {
-        text_font: TextFont {
-            // Bold font for power/toughness like MTG cards
-            font: asset_server.load("fonts/DejaVuSans-Bold.ttf"),
-            font_size,
-            ..default()
-        },
-        text_color: TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
-        text_layout: TextLayout::new_with_justify(JustifyText::Center),
-    };
-
-    // Create text with CardTextBundle
-    let entity = commands
+    // Spawn the P/T entity
+    commands
         .spawn((
             Text2d::new(pt_component.power_toughness.clone()),
-            text_style,
-            Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.2)),
+            Transform::from_translation(Vec3::new(pt_x, pt_y, 0.1)),
             GlobalTransform::default(),
+            CardTextStyleBundle {
+                text_font: TextFont {
+                    font,
+                    font_size,
+                    ..default()
+                },
+                text_color: TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
+                text_layout: TextLayout::new_with_justify(JustifyText::Center),
+            },
             CardTextType::PowerToughness,
             TextLayoutInfo {
                 alignment: JustifyText::Center,
             },
             Name::new(format!("Power/Toughness: {}", pt_component.power_toughness)),
         ))
-        .id();
-
-    entity
+        .id()
 }

@@ -56,14 +56,14 @@ impl Default for CardTextLayout {
             card_height: 1050.0, // 3.5 inches * 300 DPI
 
             // Position name with a proper margin from the left edge of the card frame
-            name_x_offset: -0.20, // Adjusted more to the left to create more space for mana cost
+            name_x_offset: -0.20,
             name_y_offset: 0.41,
 
             // Adjusted width to prevent long names from extending beyond card boundaries
-            name_width: 0.42, // Further reduced to ensure name always fits
+            name_width: 0.40, // Further reduced to ensure name always fits
 
             // Adjusted mana cost positioning to avoid going out of bounds
-            mana_cost_x_offset: 0.32, // Slightly adjusted for better spacing
+            mana_cost_x_offset: 0.32,
             mana_cost_y_offset: 0.41,
 
             // Margins for text layout
@@ -72,21 +72,21 @@ impl Default for CardTextLayout {
 
             // Power/toughness positioning
             pt_x_offset: 0.35,
-            pt_y_offset: -0.38, // Moved slightly lower
+            pt_y_offset: -0.38,
             pt_width: 0.15,
             pt_height: 0.08,
 
             // Type line positioning - adjusted to create clearer separation from art and rules text
             type_line_x_offset: -0.32,
-            type_line_y_offset: -0.05, // Adjusted to create better spacing from art
-            type_line_width: 0.78,     // Slightly reduced
-            type_line_height: 0.07,    // Slightly reduced
+            type_line_y_offset: -0.05,
+            type_line_width: 0.76, // Slightly reduced to ensure text fits
+            type_line_height: 0.07,
 
             // Text box positioning - refined to create better visual balance
-            text_box_y_offset: -0.28, // Further adjusted for better spacing from type line
-            text_box_width: 0.65,     // Adjusted for better content fit
-            text_box_height: 0.22,    // Slightly reduced to prevent overlap
-            text_box_padding: 0.025,  // Slightly reduced for more effective text space
+            text_box_y_offset: -0.28,
+            text_box_width: 0.65,
+            text_box_height: 0.22,
+            text_box_padding: 0.025,
         }
     }
 }
@@ -100,6 +100,12 @@ pub fn calculate_text_size(card_size: Vec2, width_percentage: f32, height_percen
 }
 
 /// Get the appropriate font size for a card based on its size
+/// Base sizes by text type:
+/// - Card Name: ~16pt
+/// - Mana Cost: ~14pt
+/// - Type Line: ~14pt
+/// - Rules Text: ~12pt
+/// - P/T: ~14pt
 pub fn get_card_font_size(card_size: Vec2, base_size: f32) -> f32 {
     // Calculate font size based on 300 DPI standard
     // Standard Magic card width is 2.5" at 300 DPI = 750 pixels
@@ -109,8 +115,40 @@ pub fn get_card_font_size(card_size: Vec2, base_size: f32) -> f32 {
     let reference_width = 750.0; // Full-sized card width at 300 DPI
     let scale_factor = card_size.x / reference_width;
 
-    // Apply scaling with improved limits for better quality at various zoom levels
-    base_size * dpi_factor * scale_factor.clamp(0.7, 5.0)
+    // Apply scaling with improved limits for better readability at various zoom levels
+    // Use a more conservative scaling to prevent text overflow
+    base_size * dpi_factor * scale_factor.clamp(0.5, 4.0)
+}
+
+/// Get adaptive font size based on text content and container size
+pub fn get_adaptive_font_size(
+    card_size: Vec2,
+    base_size: f32,
+    text_content: &str,
+    max_width: f32,
+    min_font_size: f32,
+) -> f32 {
+    // Start with the standard card font size
+    let initial_size = get_card_font_size(card_size, base_size);
+
+    // Calculate approximate size needed based on text length
+    // This is a heuristic that should be adjusted based on testing
+    let text_length = text_content.len() as f32;
+    let max_chars_per_line = max_width / (initial_size * 0.5); // ~0.5 × font size per character average width
+
+    // Approximate number of lines needed at initial font size
+    let target_line_count = (text_length / max_chars_per_line).ceil();
+
+    // Scale factor based on text length (longer text = smaller font)
+    // Start reducing font size when more than 1 line is needed
+    let length_scale_factor = if target_line_count > 1.0 {
+        1.0 / target_line_count.sqrt() // Square root for gradual scaling
+    } else {
+        1.0
+    };
+
+    // Apply the length-based scaling, but never go below minimum size
+    (initial_size * length_scale_factor).max(min_font_size)
 }
 
 /// Get standard card layout measurements
@@ -128,5 +166,5 @@ pub fn custom_card_layout(width: f32, height: f32) -> CardTextLayout {
 
 /// Standard battlefield card size multiplier
 pub fn get_battlefield_card_size_multiplier() -> f32 {
-    4.2 // Slightly increased for better visibility and detail on high-res displays
+    4.0 // Adjusted for better text sizing and readability
 }

@@ -34,10 +34,10 @@ pub fn get_mana_symbol_color(symbol: &str) -> Color {
     color
 }
 
-// Re-export layout components and functions to maintain backward compatibility
+// Re-export CardTextLayout and utility functions from layout module
 pub use crate::text::layout::{
-    CardTextLayout, calculate_text_size, get_battlefield_card_size_multiplier, get_card_font_size,
-    get_card_layout,
+    CardTextLayout, calculate_text_size, get_adaptive_font_size,
+    get_battlefield_card_size_multiplier, get_card_font_size, get_card_layout,
 };
 
 /// Spawn debug bounds visualization for text

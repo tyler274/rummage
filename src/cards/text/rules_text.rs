@@ -4,7 +4,7 @@ use bevy::text::JustifyText;
 use crate::text::{
     components::{CardRulesText, CardTextType, TextLayoutInfo},
     mana_symbols::is_valid_mana_symbol,
-    utils::{calculate_text_size, get_card_font_size, get_card_layout},
+    utils::{calculate_text_size, get_adaptive_font_size, get_card_font_size, get_card_layout},
 };
 
 /// Directly replace mana symbols in text with their Unicode equivalents
@@ -51,9 +51,15 @@ pub fn spawn_rules_text(
         layout.text_box_height - (layout.text_box_padding * 2.0),
     );
 
-    // Set font size based on card dimensions
-    // Using a slightly smaller base size for rules text to fit more content
-    let font_size = get_card_font_size(card_size, 14.0);
+    // Get adaptive font size based on rules text length and available space
+    // Base size 12pt, minimum 8pt for rules text
+    let font_size = get_adaptive_font_size(
+        card_size,
+        12.0, // Reduced base size for rules text
+        &rules_text_component.rules_text,
+        text_size.x,
+        8.0, // Minimum size
+    );
 
     // Format the rules text to fit within the specified width
     let formatted_text =
@@ -156,7 +162,7 @@ fn extract_mana_symbol_segments(text: &str) -> Vec<(String, bool)> {
 fn format_rules_text(text: &str, max_width: f32, font_size: f32) -> String {
     // Calculate approximate characters per line based on font size
     // Using a conservative estimate for proportional font
-    let approximate_char_width = font_size * 0.5; // Roughly half the font size
+    let approximate_char_width = font_size * 0.4; // More conservative estimate (was 0.5)
     let chars_per_line = (max_width / approximate_char_width).floor() as usize;
 
     // If text is empty, return empty string

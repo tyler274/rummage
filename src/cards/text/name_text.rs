@@ -1,7 +1,7 @@
 use crate::cards::Card;
 use crate::text::{
     components::{CardNameText, CardTextType, TextLayoutInfo},
-    utils::{CardTextLayout, get_card_font_size, get_card_layout},
+    utils::{CardTextLayout, get_adaptive_font_size, get_card_font_size, get_card_layout},
 };
 use bevy::prelude::*;
 
@@ -17,15 +17,17 @@ pub fn create_name_text(
     let font = asset_server.load("fonts/DejaVuSans-Bold.ttf");
     let layout = get_card_layout();
 
-    // Set font size for card name - updating for 300 DPI standard
-    // 18pt font should be readable at print quality
-    let font_size = get_card_font_size(card_size, 18.0);
+    // Calculate available width for the name
+    let available_width = layout.name_width * card_size.x;
 
-    // Create formatted card name - truncate if too long
-    let name_text = format_card_name(
+    // Calculate adaptive font size based on name length
+    // Base size 16pt, minimum 10pt
+    let font_size = get_adaptive_font_size(
+        card_size,
+        16.0,
         &name_text_component.name,
-        font_size,
-        layout.name_width * card_size.x,
+        available_width,
+        10.0,
     );
 
     // Position the name at the top left of the card using layout parameters
@@ -37,7 +39,7 @@ pub fn create_name_text(
     // Create the text entity
     commands
         .spawn((
-            Text2d::new(name_text.clone()),
+            Text2d::new(name_text_component.name.clone()),
             Transform::from_translation(Vec3::new(
                 name_position.x,
                 name_position.y,
@@ -55,7 +57,7 @@ pub fn create_name_text(
             TextLayoutInfo {
                 alignment: JustifyText::Left,
             },
-            Name::new(format!("Card Name: {}", name_text)),
+            Name::new(format!("Card Name: {}", name_text_component.name)),
         ))
         .id()
 }

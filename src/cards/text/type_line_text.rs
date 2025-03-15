@@ -1,11 +1,12 @@
 use bevy::prelude::*;
+use bevy::text::JustifyText;
 
 use crate::text::{
     components::{CardTextStyleBundle, CardTextType, CardTypeLine, TextLayoutInfo},
-    utils::{calculate_text_size, get_card_font_size, get_card_layout},
+    utils::{calculate_text_size, get_adaptive_font_size, get_card_layout},
 };
 
-/// Spawn type line text for a card
+/// Spawn the type line text for a card
 pub fn spawn_type_line_text(
     commands: &mut Commands,
     type_line_component: &CardTypeLine,
@@ -15,53 +16,48 @@ pub fn spawn_type_line_text(
 ) -> Entity {
     let layout = get_card_layout();
 
-    // Calculate relative position offsets
-    let horizontal_offset = 0.0; // Centered horizontally
-    let vertical_offset = layout.type_line_y_offset;
+    // Calculate the position for the type line - centered horizontally, below the art
+    let type_line_x = layout.type_line_x_offset * card_size.x;
+    let type_line_y = layout.type_line_y_offset * card_size.y;
 
-    // Calculate the relative position in local space
-    let local_offset = Vec2::new(
-        card_size.x * horizontal_offset,
-        card_size.y * vertical_offset,
+    // Calculate the available width for the type line
+    let available_width = layout.type_line_width * card_size.x;
+
+    // Use adaptive font sizing based on type line length
+    // Base size of 14pt, minimum 9pt
+    let font_size = get_adaptive_font_size(
+        card_size,
+        14.0,
+        &type_line_component.type_line,
+        available_width,
+        9.0,
     );
 
-    // We don't need text_size for the simplified TextLayoutInfo
-    let _text_size =
-        calculate_text_size(card_size, layout.type_line_width, layout.type_line_height);
+    // Get the font
+    let font = asset_server.load("fonts/DejaVuSans.ttf");
 
-    // Type line uses a slightly smaller font than the name text (16pt for 300 DPI standard)
-    let font_size = get_card_font_size(card_size, 16.0);
-
-    // Format type line consistently (match MTG style with em-dash between types)
-    let formatted_type_line = format_type_line(&type_line_component.type_line);
-
-    // Create text style bundle
-    let text_style = CardTextStyleBundle {
-        text_font: TextFont {
-            font: asset_server.load("fonts/DejaVuSans-Bold.ttf"),
-            font_size,
-            ..default()
-        },
-        text_color: TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
-        text_layout: TextLayout::new_with_justify(JustifyText::Left),
-    };
-
-    // Create text with CardTextBundle
-    let entity = commands
+    // Spawn the type line entity with proper styling
+    commands
         .spawn((
-            Text2d::new(formatted_type_line.clone()),
-            text_style,
-            Transform::from_translation(Vec3::new(local_offset.x, local_offset.y, 0.2)),
+            Text2d::new(type_line_component.type_line.clone()),
+            Transform::from_translation(Vec3::new(type_line_x, type_line_y, 0.1)),
             GlobalTransform::default(),
+            CardTextStyleBundle {
+                text_font: TextFont {
+                    font,
+                    font_size,
+                    ..default()
+                },
+                text_color: TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
+                text_layout: TextLayout::new_with_justify(JustifyText::Left),
+            },
             CardTextType::TypeLine,
             TextLayoutInfo {
-                alignment: JustifyText::Center,
+                alignment: JustifyText::Left,
             },
-            Name::new(format!("Type Line: {}", formatted_type_line)),
+            Name::new(format!("Type Line: {}", type_line_component.type_line)),
         ))
-        .id();
-
-    entity
+        .id()
 }
 
 /// Format type line to match MTG standard style
