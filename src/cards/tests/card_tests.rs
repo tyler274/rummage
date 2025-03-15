@@ -3,7 +3,6 @@ use crate::cards::details::CardDetails;
 use crate::cards::keywords::KeywordAbility;
 use crate::cards::types::CardTypes;
 use crate::mana::{Color, Mana};
-use bevy::prelude::*;
 
 /// Test that demonstrates using the various Card accessor methods
 #[test]

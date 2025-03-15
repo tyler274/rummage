@@ -16,7 +16,7 @@ fn test_card_spawn() {
         let _card_entity = Card::spawn(
             &mut commands,
             "Test Card",
-            Mana::new(1, 0, 0, 0, 0, 0),
+            Mana::new_with_colors(1, 0, 0, 0, 0, 0),
             CardTypes::new_creature(vec!["Wizard".to_string()]),
             CardDetails::new_creature(2, 2),
             "Flying",
@@ -28,6 +28,23 @@ fn test_card_spawn() {
     app.update();
 
     // Check that the entity was created with Card component
-    let card_exists = app.world.query::<&Card>().iter(&app.world).count() > 0;
-    assert!(card_exists);
+    // Use a system to check if cards exist
+    #[derive(Resource)]
+    struct CardCheckState {
+        has_cards: bool,
+    }
+
+    let state = CardCheckState { has_cards: false };
+    app.insert_resource(state);
+
+    app.add_systems(
+        Update,
+        |query: Query<&Card>, mut state: ResMut<CardCheckState>| {
+            state.has_cards = !query.is_empty();
+        },
+    );
+    app.update();
+
+    let state = app.world().resource::<CardCheckState>();
+    assert!(state.has_cards);
 }

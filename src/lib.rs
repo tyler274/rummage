@@ -31,7 +31,7 @@ pub use crate::plugins::RummagePlugin;
 
 /// Setup reflection for bevy_persist serialization
 pub fn setup_reflection(app: &mut bevy::prelude::App) {
-    use bevy::prelude::*;
+    
 
     // Register Card types
     app.register_type::<cards::Card>()

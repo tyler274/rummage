@@ -2,10 +2,9 @@ use bevy::{
     app::AppExit,
     prelude::*,
     window::{
-        PresentMode, Window, WindowPlugin, WindowPosition, WindowResizeConstraints,
+        PresentMode, Window, WindowPlugin, WindowResizeConstraints,
         WindowResolution,
     },
-    winit::WinitSettings,
 };
 
 use super::{systems::*, utils::detect_wsl2};

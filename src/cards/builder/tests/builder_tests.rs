@@ -1,6 +1,5 @@
-use crate::cards::{Card, builder::CardBuilder, details::CardDetails, types::CardTypes};
+use crate::cards::{Card, details::CardDetails, types::CardTypes};
 use crate::mana::{Color, Mana};
-use bevy::prelude::*;
 
 /// Test the basic functionality of the CardBuilder
 #[test]
