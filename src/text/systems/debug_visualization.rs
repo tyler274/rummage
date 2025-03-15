@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::text::{
     components::{CardTextType, TextLayoutInfo},
-    utils::CardTextLayout,
+    layout::CardTextLayout,
 };
 
 /// Spawn debug visualization for text boundaries

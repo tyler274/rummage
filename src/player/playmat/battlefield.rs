@@ -252,9 +252,10 @@ fn calculate_battlefield_layout(
     window_width: f32,
     window_height: f32,
 ) -> (f32, f32, f32, f32) {
-    // Standard card dimensions
-    let card_width: f32 = 63.0 * 1.5;
-    let card_height: f32 = 88.0 * 1.5;
+    // Standard card dimensions with increased size multiplier
+    let multiplier = crate::text::get_battlefield_card_size_multiplier();
+    let card_width: f32 = 63.0 * multiplier;
+    let card_height: f32 = 88.0 * multiplier;
 
     // Available space
     let available_width = window_width * 0.7;

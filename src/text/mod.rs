@@ -8,6 +8,7 @@
 //! - Mana symbol rendering using the Mana font
 
 pub mod components;
+pub mod layout;
 pub mod mana_circles;
 pub mod mana_symbols;
 pub mod systems;
@@ -40,3 +41,9 @@ impl Plugin for TextPlugin {
         app.add_systems(Update, mana_circles::update_mana_circles);
     }
 }
+
+// Re-export common text components and functions
+pub use crate::text::layout::{
+    CardTextLayout, calculate_text_size, custom_card_layout, get_battlefield_card_size_multiplier,
+    get_card_font_size, get_card_layout,
+};
