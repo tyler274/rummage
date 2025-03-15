@@ -44,18 +44,14 @@ pub fn handle_save_game(
     mut event_reader: EventReader<SaveGameEvent>,
     game_state: Res<GameState>,
     query_players: Query<(Entity, &Player)>,
-    zones: Option<Res<ZoneManager>>,
-    commanders: Option<Res<CommandZoneManager>>,
+    _zones: Option<Res<ZoneManager>>,
+    _commanders: Option<Res<CommandZoneManager>>,
     mut save_metadata: ResMut<Persistent<SaveMetadata>>,
-    config: Res<SaveConfig>,
+    _config: Res<SaveConfig>,
+    mut commands: Commands,
 ) {
     for event in event_reader.read() {
         info!("Saving game to slot: {}", event.slot_name);
-
-        // Create save path
-        let save_path = config
-            .save_directory
-            .join(format!("{}.bin", event.slot_name));
 
         let mut player_data = Vec::new();
 
@@ -76,43 +72,61 @@ pub fn handle_save_game(
 
         // Create game save data using helper method
         let save_data = GameSaveData::from_game_state(&game_state, &entity_to_index, player_data);
+        let save_path = format!("saves/{}.bin", event.slot_name);
 
-        // Serialize and save to file
-        match File::create(&save_path) {
-            Ok(mut file) => {
-                match bincode::serialize(&save_data) {
-                    Ok(serialized) => {
-                        if let Err(e) = file.write_all(&serialized) {
-                            error!("Failed to write save file: {}", e);
-                        } else {
-                            info!("Game saved successfully to {}", save_path.display());
+        // Insert as a resource first, then create persistent
+        commands.insert_resource(save_data.clone());
 
-                            // Update save metadata
-                            let save_info = SaveInfo {
-                                slot_name: event.slot_name.clone(),
-                                timestamp: std::time::SystemTime::now()
-                                    .duration_since(std::time::UNIX_EPOCH)
-                                    .unwrap_or_default()
-                                    .as_secs(),
-                                description: format!("Turn {}", game_state.turn_number),
-                                turn_number: game_state.turn_number,
-                                player_count: query_players.iter().count(),
-                            };
+        // Create persistent resource for this save
+        let persistent_save = Persistent::<GameSaveData>::builder()
+            .name(&format!("game_save_{}", event.slot_name))
+            .format(StorageFormat::Bincode)
+            .path(&save_path)
+            .build();
 
-                            // Remove existing save with the same name if it exists
-                            save_metadata
-                                .saves
-                                .retain(|s| s.slot_name != event.slot_name);
+        match persistent_save {
+            Ok(save) => {
+                // Persist the save immediately
+                if let Err(e) = save.persist() {
+                    error!("Failed to save game: {}", e);
+                    continue;
+                }
 
-                            // Add new save info
-                            save_metadata.saves.push(save_info);
-                            save_metadata.save();
-                        }
-                    }
-                    Err(e) => error!("Failed to serialize save data: {}", e),
+                info!("Game saved successfully to {}", save_path);
+
+                // Update metadata
+                let timestamp = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs();
+
+                let save_info = SaveInfo {
+                    slot_name: event.slot_name.clone(),
+                    timestamp,
+                    description: format!("Turn {}", game_state.turn_number),
+                    turn_number: game_state.turn_number,
+                    player_count: query_players.iter().count(),
+                };
+
+                // Add or update save info in metadata
+                if let Some(existing) = save_metadata
+                    .saves
+                    .iter_mut()
+                    .find(|s| s.slot_name == event.slot_name)
+                {
+                    *existing = save_info;
+                } else {
+                    save_metadata.saves.push(save_info);
+                }
+
+                // Save metadata
+                if let Err(e) = save_metadata.persist() {
+                    error!("Failed to update save metadata: {}", e);
                 }
             }
-            Err(e) => error!("Failed to create save file: {}", e),
+            Err(e) => {
+                error!("Failed to create persistent save: {}", e);
+            }
         }
     }
 }
@@ -121,97 +135,90 @@ pub fn handle_save_game(
 pub fn handle_load_game(
     mut event_reader: EventReader<LoadGameEvent>,
     mut commands: Commands,
-    config: Res<SaveConfig>,
+    _config: Res<SaveConfig>,
     mut query_players: Query<(Entity, &mut Player)>,
     mut game_state: Option<ResMut<GameState>>,
-    zones: Option<ResMut<ZoneManager>>,
-    commanders: Option<ResMut<CommandZoneManager>>,
+    mut zones: Option<ResMut<ZoneManager>>,
+    mut commanders: Option<ResMut<CommandZoneManager>>,
 ) {
     for event in event_reader.read() {
         info!("Loading game from slot: {}", event.slot_name);
 
-        let save_path = config
-            .save_directory
-            .join(format!("{}.bin", event.slot_name));
+        let save_path = format!("saves/{}.bin", event.slot_name);
 
-        if !Path::new(&save_path).exists() {
-            error!("Save file does not exist: {}", save_path.display());
-            continue;
-        }
+        // Create a persistent resource to load the save
+        let persistent_save = Persistent::<GameSaveData>::builder()
+            .name(&format!("game_save_{}", event.slot_name))
+            .format(StorageFormat::Bincode)
+            .path(&save_path)
+            .build();
 
-        // Read and deserialize save data
-        match File::open(&save_path) {
-            Ok(mut file) => {
-                let mut buffer = Vec::new();
-                if let Err(e) = file.read_to_end(&mut buffer) {
-                    error!("Failed to read save file: {}", e);
-                    continue;
-                }
+        match persistent_save {
+            Ok(save) => {
+                // Get the loaded data
+                let save_data = save.clone();
 
-                match bincode::deserialize::<GameSaveData>(&buffer) {
-                    Ok(save_data) => {
-                        // Rebuild entity mapping
-                        let mut index_to_entity = Vec::new();
-                        let mut existing_player_entities = HashMap::new();
+                // Rebuild entity mapping
+                let mut index_to_entity = Vec::new();
+                let mut existing_player_entities = HashMap::new();
 
-                        // Map existing players if possible
-                        for (entity, player) in query_players.iter() {
-                            for saved_player in &save_data.players {
-                                if player.name == saved_player.name {
-                                    existing_player_entities.insert(saved_player.id, entity);
-                                    break;
-                                }
-                            }
+                // Map existing players if possible
+                for (entity, player) in query_players.iter() {
+                    for saved_player in &save_data.players {
+                        if player.name == saved_player.name {
+                            existing_player_entities.insert(saved_player.id, entity);
+                            break;
                         }
-
-                        // Recreate player entities
-                        for player_data in &save_data.players {
-                            if let Some(&entity) = existing_player_entities.get(&player_data.id) {
-                                index_to_entity.push(entity);
-
-                                // Update existing player data
-                                if let Ok((_, mut player)) = query_players.get_mut(entity) {
-                                    player.life = player_data.life;
-                                    player.mana_pool = player_data.mana_pool.clone();
-                                }
-                            } else {
-                                // Create new player entity
-                                let player_entity = commands
-                                    .spawn((Player {
-                                        name: player_data.name.clone(),
-                                        life: player_data.life,
-                                        mana_pool: player_data.mana_pool.clone(),
-                                        ..Default::default()
-                                    },))
-                                    .id();
-
-                                index_to_entity.push(player_entity);
-                            }
-                        }
-
-                        // Restore game state
-                        if let Some(mut game_state) = game_state {
-                            *game_state = save_data.to_game_state(&index_to_entity);
-                        } else {
-                            commands.insert_resource(save_data.to_game_state(&index_to_entity));
-                        }
-
-                        // TODO: Restore zone contents
-                        if let Some(mut zones) = zones {
-                            // Implement zone restoration based on your ZoneManager
-                        }
-
-                        // TODO: Restore commander zone contents
-                        if let Some(mut commanders) = commanders {
-                            // Implement commander zone restoration based on your CommandZoneManager
-                        }
-
-                        info!("Game loaded successfully from {}", save_path.display());
                     }
-                    Err(e) => error!("Failed to deserialize save data: {}", e),
                 }
+
+                // Recreate player entities
+                for player_data in &save_data.players {
+                    if let Some(&entity) = existing_player_entities.get(&player_data.id) {
+                        index_to_entity.push(entity);
+
+                        // Update existing player data
+                        if let Ok((_, mut player)) = query_players.get_mut(entity) {
+                            player.life = player_data.life;
+                            player.mana_pool = player_data.mana_pool.clone();
+                        }
+                    } else {
+                        // Create new player entity
+                        let player_entity = commands
+                            .spawn((Player {
+                                name: player_data.name.clone(),
+                                life: player_data.life,
+                                mana_pool: player_data.mana_pool.clone(),
+                                ..Default::default()
+                            },))
+                            .id();
+
+                        index_to_entity.push(player_entity);
+                    }
+                }
+
+                // Restore game state
+                if let Some(game_state) = &mut game_state {
+                    **game_state = save_data.to_game_state(&index_to_entity);
+                } else {
+                    commands.insert_resource(save_data.to_game_state(&index_to_entity));
+                }
+
+                // TODO: Restore zone contents
+                if let Some(zones) = &mut zones {
+                    // Implement zone restoration based on your ZoneManager
+                }
+
+                // TODO: Restore commander zone contents
+                if let Some(commanders) = &mut commanders {
+                    // Implement commander zone restoration based on your CommandZoneManager
+                }
+
+                info!("Game loaded successfully from {}", save_path);
             }
-            Err(e) => error!("Failed to open save file: {}", e),
+            Err(e) => {
+                error!("Failed to load save: {}", e);
+            }
         }
     }
 }
@@ -247,60 +254,47 @@ pub fn handle_auto_save(
 pub fn handle_start_replay(
     mut event_reader: EventReader<StartReplayEvent>,
     mut replay_state: ResMut<ReplayState>,
-    mut commands: Commands,
-    config: Res<SaveConfig>,
+    _commands: Commands,
+    _config: Res<SaveConfig>,
+    mut load_events: EventWriter<LoadGameEvent>,
 ) {
     for event in event_reader.read() {
         info!("Starting replay from save slot: {}", event.slot_name);
 
-        // Create save path
-        let save_path = config
-            .save_directory
-            .join(format!("{}.bin", event.slot_name));
+        let save_path = format!("saves/{}.bin", event.slot_name);
 
-        // Check if save file exists
-        if !save_path.exists() {
-            error!("Save file for replay not found: {}", save_path.display());
-            continue;
+        // Create a persistent resource to load the save
+        let persistent_save = Persistent::<GameSaveData>::builder()
+            .name(&format!("game_save_{}", event.slot_name))
+            .format(StorageFormat::Bincode)
+            .path(&save_path)
+            .build();
+
+        match persistent_save {
+            Ok(save) => {
+                // Get the loaded data
+                let save_data = save.clone();
+
+                // Set up replay state with the loaded save
+                replay_state.active = true;
+                replay_state.original_save = Some(save_data.clone());
+                replay_state.current_game_state = Some(save_data);
+                replay_state.current_step = 0;
+
+                // Load initial actions
+                // TODO: Load replay actions from a separate file
+
+                info!("Replay started from save {}", event.slot_name);
+
+                // Send a load event to actually load the game state
+                load_events.send(LoadGameEvent {
+                    slot_name: event.slot_name.clone(),
+                });
+            }
+            Err(e) => {
+                error!("Failed to load replay save: {}", e);
+            }
         }
-
-        // Load and deserialize the save data
-        let file = match File::open(&save_path) {
-            Ok(file) => file,
-            Err(e) => {
-                error!("Failed to open save file for replay: {}", e);
-                continue;
-            }
-        };
-
-        let save_data: GameSaveData = match bincode::deserialize_from(&file) {
-            Ok(data) => data,
-            Err(e) => {
-                error!("Failed to deserialize save data for replay: {}", e);
-                continue;
-            }
-        };
-
-        // Initialize the replay state
-        replay_state.active = true;
-        replay_state.original_save = Some(save_data.clone());
-        replay_state.current_game_state = Some(save_data);
-        replay_state.current_step = 0;
-
-        // TODO: Load action log for replay
-        // This would typically load a sequence of actions that occurred during the original game
-        // for now we'll just have an empty queue
-        replay_state.action_queue.clear();
-
-        info!("Replay initialized from slot: {}", event.slot_name);
-
-        // Optionally: Start loading the game state into the actual game
-        // by dispatching a load event
-        commands.add(|world: &mut World| {
-            world.send_event(LoadGameEvent {
-                slot_name: event.slot_name.clone(),
-            });
-        });
     }
 }
 

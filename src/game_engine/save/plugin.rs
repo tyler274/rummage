@@ -18,7 +18,7 @@ impl Plugin for SaveLoadPlugin {
             .add_systems(
                 Update,
                 (
-                    handle_save_game.run_if(resource_exists::<GameState>()),
+                    handle_save_game.run_if(|res: Option<Res<GameState>>| resource_exists(res)),
                     handle_load_game,
                     handle_auto_save,
                     handle_start_replay,

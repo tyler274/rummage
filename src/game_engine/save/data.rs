@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
 /// Complete game save data
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Resource)]
 pub struct GameSaveData {
     pub game_state: GameStateData,
     pub players: Vec<PlayerData>,
