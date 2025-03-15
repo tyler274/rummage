@@ -39,7 +39,8 @@ fn main() {
             .set(WindowPlugin {
                 primary_window: Some(Window {
                     title: "Rummage".to_string(),
-                    resolution: WindowResolution::new(1920.0, 1080.0),
+                    resolution: WindowResolution::new(1920.0, 1080.0)
+                        .with_scale_factor_override(1.0),
                     present_mode: bevy::window::PresentMode::AutoNoVsync,
                     resizable: true,
                     resize_constraints: bevy::window::WindowResizeConstraints {

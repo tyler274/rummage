@@ -51,8 +51,8 @@ impl Default for CardTextLayout {
     fn default() -> Self {
         Self {
             // Increased card size for better rendering quality and DPI
-            card_width: 63.0 * 3.0,  // Increased from 2.0
-            card_height: 88.0 * 3.0, // Increased from 2.0
+            card_width: 63.0 * 4.0, // Increased from 3.0 for better HiDPI rendering
+            card_height: 88.0 * 4.0, // Increased from 3.0 for better HiDPI rendering
 
             // Position name with a proper margin from the left edge of the card frame
             name_x_offset: -0.18, // Adjusted to prevent overflow
@@ -100,9 +100,9 @@ pub fn calculate_text_size(card_size: Vec2, width_percentage: f32, height_percen
 
 /// Get the appropriate font size for a card based on its size
 pub fn get_card_font_size(card_size: Vec2, base_size: f32) -> f32 {
-    // Scale font size based on card width with an improved scaling factor
+    // Scale font size based on card width with an improved scaling factor for HiDPI
     let scale_factor = card_size.x / 250.0;
-    base_size * scale_factor.clamp(0.7, 3.0) // Increased max scale for better text visibility
+    base_size * scale_factor.clamp(0.7, 4.0) // Increased max scale from 3.0 to 4.0 for better text visibility on HiDPI displays
 }
 
 /// Get standard card layout measurements
@@ -120,5 +120,5 @@ pub fn custom_card_layout(width: f32, height: f32) -> CardTextLayout {
 
 /// Standard battlefield card size multiplier
 pub fn get_battlefield_card_size_multiplier() -> f32 {
-    2.0 // Increased from 1.5 for better visibility
+    2.5 // Increased from 2.0 for better HiDPI visibility and detail
 }
