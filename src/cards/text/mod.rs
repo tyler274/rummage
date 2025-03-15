@@ -12,4 +12,8 @@ pub mod mana_cost_text;
 pub mod name_text;
 pub mod power_toughness_text;
 pub mod rules_text;
+pub mod tests;
 pub mod type_line_text;
+
+// Re-export primary functions
+pub use card_text::{spawn_card_text, spawn_card_text_components};
