@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_persistent::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::path::PathBuf;
@@ -16,8 +15,14 @@ pub struct SaveConfig {
 
 impl Default for SaveConfig {
     fn default() -> Self {
+        #[cfg(target_arch = "wasm32")]
+        let save_directory = PathBuf::from("/local/saves");
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let save_directory = PathBuf::from("saves");
+
         Self {
-            save_directory: PathBuf::from("saves"),
+            save_directory,
             auto_save_enabled: true,
             auto_save_frequency: 10, // Auto-save every 10 state-based action checks
         }

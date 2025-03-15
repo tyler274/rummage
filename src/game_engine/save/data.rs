@@ -14,6 +14,18 @@ pub struct GameSaveData {
     pub save_version: String,
 }
 
+impl Default for GameSaveData {
+    fn default() -> Self {
+        Self {
+            game_state: GameStateData::default(),
+            players: Vec::new(),
+            zones: ZoneData::default(),
+            commanders: CommanderData::default(),
+            save_version: env!("CARGO_PKG_VERSION").to_string(),
+        }
+    }
+}
+
 /// Serializable game state data
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameStateData {
@@ -28,6 +40,24 @@ pub struct GameStateData {
     pub use_commander_damage: bool,
     pub commander_damage_threshold: u32,
     pub starting_life: i32,
+}
+
+impl Default for GameStateData {
+    fn default() -> Self {
+        Self {
+            turn_number: 1,
+            active_player_index: 0,
+            priority_holder_index: 0,
+            turn_order_indices: Vec::new(),
+            lands_played: Vec::new(),
+            main_phase_action_taken: false,
+            drawn_this_turn: Vec::new(),
+            eliminated_players: Vec::new(),
+            use_commander_damage: true,
+            commander_damage_threshold: 21,
+            starting_life: 40,
+        }
+    }
 }
 
 /// Serializable player data
@@ -47,11 +77,23 @@ pub struct ZoneData {
     // This will need customization based on how your ZoneManager works
 }
 
+impl Default for ZoneData {
+    fn default() -> Self {
+        Self {}
+    }
+}
+
 /// Serializable commander data
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CommanderData {
     // Serialize all commander-specific data
     // This will need customization based on how your CommandZoneManager works
+}
+
+impl Default for CommanderData {
+    fn default() -> Self {
+        Self {}
+    }
 }
 
 /// Information about a single save file

@@ -1,11 +1,8 @@
 use bevy::prelude::*;
 use bevy_persistent::prelude::*;
-use bincode;
 use std::collections::HashMap;
-use std::collections::VecDeque;
-use std::fs::File;
-use std::io::{Read, Write};
 use std::path::Path;
+use std::path::PathBuf;
 
 use crate::game_engine::commander::CommandZoneManager;
 use crate::game_engine::save::data::*;
@@ -19,6 +16,9 @@ use crate::player::Player;
 pub fn setup_save_system(mut commands: Commands) {
     // Create save directory if it doesn't exist
     let config = SaveConfig::default();
+
+    // Only try to create directory on native platforms
+    #[cfg(not(target_arch = "wasm32"))]
     std::fs::create_dir_all(&config.save_directory).unwrap_or_else(|e| {
         error!("Failed to create save directory: {}", e);
     });
@@ -27,16 +27,34 @@ pub fn setup_save_system(mut commands: Commands) {
     commands.insert_resource(AutoSaveTracker::default());
     commands.insert_resource(ReplayState::default());
 
+    // Determine the appropriate base path for persistence based on platform
+    let metadata_path = get_storage_path("metadata.bin");
+
     // Initialize persistent save metadata
     let save_metadata = Persistent::builder()
         .name("save_metadata")
         .format(StorageFormat::Bincode)
-        .path("saves/metadata.bin")
+        .path(metadata_path)
         .default(SaveMetadata::default())
         .build()
         .expect("Failed to create persistent save metadata");
 
     commands.insert_resource(save_metadata);
+}
+
+/// Helper function to get the appropriate storage path based on platform
+fn get_storage_path(filename: &str) -> PathBuf {
+    #[cfg(target_arch = "wasm32")]
+    {
+        // For WebAssembly, use local storage with a prefix
+        Path::new("/local/saves").join(filename)
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        // For native platforms, use the filesystem
+        Path::new("saves").join(filename)
+    }
 }
 
 /// System to handle save game requests
@@ -72,7 +90,7 @@ pub fn handle_save_game(
 
         // Create game save data using helper method
         let save_data = GameSaveData::from_game_state(&game_state, &entity_to_index, player_data);
-        let save_path = format!("saves/{}.bin", event.slot_name);
+        let save_path = get_storage_path(&format!("{}.bin", event.slot_name));
 
         // Insert as a resource first, then create persistent
         commands.insert_resource(save_data.clone());
@@ -81,7 +99,8 @@ pub fn handle_save_game(
         let persistent_save = Persistent::<GameSaveData>::builder()
             .name(&format!("game_save_{}", event.slot_name))
             .format(StorageFormat::Bincode)
-            .path(&save_path)
+            .path(save_path)
+            .default(save_data.clone())
             .build();
 
         match persistent_save {
@@ -92,7 +111,7 @@ pub fn handle_save_game(
                     continue;
                 }
 
-                info!("Game saved successfully to {}", save_path);
+                info!("Game saved successfully to slot {}", event.slot_name);
 
                 // Update metadata
                 let timestamp = std::time::SystemTime::now()
@@ -144,13 +163,14 @@ pub fn handle_load_game(
     for event in event_reader.read() {
         info!("Loading game from slot: {}", event.slot_name);
 
-        let save_path = format!("saves/{}.bin", event.slot_name);
+        let save_path = get_storage_path(&format!("{}.bin", event.slot_name));
 
         // Create a persistent resource to load the save
         let persistent_save = Persistent::<GameSaveData>::builder()
             .name(&format!("game_save_{}", event.slot_name))
             .format(StorageFormat::Bincode)
-            .path(&save_path)
+            .path(save_path)
+            .default(GameSaveData::default())
             .build();
 
         match persistent_save {
@@ -214,7 +234,7 @@ pub fn handle_load_game(
                     // Implement commander zone restoration based on your CommandZoneManager
                 }
 
-                info!("Game loaded successfully from {}", save_path);
+                info!("Game loaded successfully from slot {}", event.slot_name);
             }
             Err(e) => {
                 error!("Failed to load save: {}", e);
@@ -261,13 +281,14 @@ pub fn handle_start_replay(
     for event in event_reader.read() {
         info!("Starting replay from save slot: {}", event.slot_name);
 
-        let save_path = format!("saves/{}.bin", event.slot_name);
+        let save_path = get_storage_path(&format!("{}.bin", event.slot_name));
 
         // Create a persistent resource to load the save
         let persistent_save = Persistent::<GameSaveData>::builder()
             .name(&format!("game_save_{}", event.slot_name))
             .format(StorageFormat::Bincode)
-            .path(&save_path)
+            .path(save_path)
+            .default(GameSaveData::default())
             .build();
 
         match persistent_save {

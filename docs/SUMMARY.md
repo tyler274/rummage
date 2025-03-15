@@ -299,5 +299,6 @@
   - [Implementation](save_load_system/implementation.md)
   - [Integration with Networking](save_load_system/networking_integration.md)
   - [Persistent Storage](save_load_system/bevy_persistent_integration.md)
+  - [WebAssembly Local Storage](save_load_system/web_storage.md)
   - [Testing](save_load_system/testing.md)
   - [API Reference](save_load_system/api_reference.md) 
