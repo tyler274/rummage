@@ -462,36 +462,55 @@ pub fn spawn_player_playmat(
         player.name, player_position
     );
 
+    // Get playmat color based on player index
+    let playmat_color = match player.player_index {
+        0 => Color::srgb(0.2, 0.2, 0.7), // Blue for bottom player
+        1 => Color::srgb(0.7, 0.2, 0.2), // Red for right player
+        2 => Color::srgb(0.2, 0.7, 0.2), // Green for top player
+        _ => Color::srgb(0.7, 0.7, 0.2), // Yellow for left player
+    };
+
     // Create the main playmat entity with a visible Sprite component
     let playmat_entity = commands
         .spawn((
             // Add a visible background for the playmat
             Sprite {
-                color: match player.player_index {
-                    0 => Color::srgb(0.2, 0.2, 0.7), // Blue for bottom player
-                    1 => Color::srgb(0.7, 0.2, 0.2), // Red for right player
-                    2 => Color::srgb(0.2, 0.7, 0.2), // Green for top player
-                    _ => Color::srgb(0.7, 0.7, 0.2), // Yellow for left player
-                },
-                // Make the playmat dimensions more suited to card layout and avoid corner overlap
-                custom_size: Some(Vec2::new(340.0, 260.0)), // Further reduced size to prevent overlap
+                color: playmat_color,
+                // Use the standard playmat size - adjusted for better corner-to-corner positioning
+                custom_size: Some(Vec2::new(330.0, 250.0)),
                 ..default()
             },
-            // Calculate rotation based on player position to orient long edge toward center
+            // Use the position from the parameter with appropriate rotation
             Transform {
                 translation: Vec3::new(
                     player_position.x,
                     player_position.y,
                     // Use player index to stagger z-index, this prevents visual overlap
                     // Player 0 (bottom) has highest z-index, then decreasing
-                    10.0 - (player.player_index as f32 * 2.0), // Increased z-index separation
+                    10.0 - (player.player_index as f32 * 2.0),
                 ),
-                // Rotate based on player position
-                rotation: match player.player_index {
-                    0 => Quat::from_rotation_z(0.0), // Bottom player - no rotation
-                    1 => Quat::from_rotation_z(std::f32::consts::FRAC_PI_2), // Right player - 90 degrees
-                    2 => Quat::from_rotation_z(std::f32::consts::PI), // Top player - 180 degrees
-                    _ => Quat::from_rotation_z(-std::f32::consts::FRAC_PI_2), // Left player - -90 degrees
+                // Apply appropriate rotation based on player position to orient toward table center
+                rotation: if config.player_count <= 2 {
+                    // For 2 players, simple top/bottom orientation
+                    match player.player_index {
+                        0 => Quat::from_rotation_z(0.0),                  // Bottom player
+                        _ => Quat::from_rotation_z(std::f32::consts::PI), // Top player
+                    }
+                } else if config.player_count == 4 {
+                    // For 4 players, standard layout
+                    match player.player_index {
+                        0 => Quat::from_rotation_z(0.0), // Bottom player
+                        1 => Quat::from_rotation_z(std::f32::consts::FRAC_PI_2), // Right player
+                        2 => Quat::from_rotation_z(std::f32::consts::PI), // Top player
+                        _ => Quat::from_rotation_z(-std::f32::consts::FRAC_PI_2), // Left player
+                    }
+                } else {
+                    // For other player counts, calculate angle to face center
+                    let angle = std::f32::consts::PI
+                        + 2.0
+                            * std::f32::consts::PI
+                            * (player.player_index as f32 / config.player_count as f32);
+                    Quat::from_rotation_z(angle + std::f32::consts::PI)
                 },
                 scale: Vec3::ONE,
             },
