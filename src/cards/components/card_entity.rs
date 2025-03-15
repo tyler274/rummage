@@ -9,7 +9,7 @@ use crate::game_engine::zones::Zone;
 pub struct CardEntity;
 
 /// Component to track which zone a card is in
-#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
+#[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize, PartialEq, Eq)]
 #[reflect(Component, Serialize, Deserialize)]
 pub struct CardZone {
     /// The current zone the card is in
@@ -34,19 +34,36 @@ impl CardZone {
         self.zone = zone;
         self.zone_owner = zone_owner;
     }
+
+    // Constants for easier access in tests
+    pub const HAND: Self = Self {
+        zone: Zone::Hand,
+        zone_owner: None,
+    };
+    pub const BATTLEFIELD: Self = Self {
+        zone: Zone::Battlefield,
+        zone_owner: None,
+    };
+    pub const GRAVEYARD: Self = Self {
+        zone: Zone::Graveyard,
+        zone_owner: None,
+    };
 }
 
 /// Component to track the owner of a card (the player whose deck it came from)
 #[derive(Component, Debug, Clone, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Serialize, Deserialize)]
-pub struct CardOwner {
-    /// The player who owns this card
-    pub player: Entity,
-}
+pub struct CardOwner(pub Entity);
 
 impl CardOwner {
     /// Create a new card owner component
     pub fn new(player: Entity) -> Self {
-        Self { player }
+        Self(player)
+    }
+}
+
+impl From<Entity> for CardOwner {
+    fn from(entity: Entity) -> Self {
+        Self(entity)
     }
 }

@@ -121,6 +121,7 @@
   - [Testing Cards](card_systems/testing/index.md)
     - [Effect Verification](card_systems/testing/effect_verification.md)
     - [Interaction Testing](card_systems/testing/interaction_testing.md)
+    - [Card Interaction Testing](card_systems/testing/card_interaction_testing.md)
   - [UI Integration](card_systems/ui_integration.md)
 
 # Game UI
