@@ -31,13 +31,18 @@ pub fn handle_card_dragging(
                 // First pass: find the card with highest z-index at cursor position
                 for (entity, _, draggable, global_transform) in card_query.iter() {
                     let card_pos = global_transform.translation().truncate();
-                    // Use the card size from player config instead of hardcoded values
-                    let card_size = player_config.card_size;
+
+                    // Get the base card size from player config
+                    let base_card_size = player_config.card_size;
+
+                    // Apply the same size multiplier as in card spawning (2.5)
+                    // This ensures the draggable area matches the visual card size
+                    let actual_card_size = base_card_size * 2.5;
 
                     // Check if the cursor is within the card bounds
-                    // We're using a slightly larger hit area for easier selection
-                    let hit_area_multiplier = 1.5; // 50% larger hit area for easier selection
-                    let selection_size = card_size * hit_area_multiplier;
+                    // Use the actual sized card for hit detection with a small margin for easier selection
+                    let hit_area_multiplier = 1.1; // Just 10% larger hit area for precision with buffer
+                    let selection_size = actual_card_size * hit_area_multiplier;
 
                     if world_pos.x >= card_pos.x - selection_size.x / 2.0
                         && world_pos.x <= card_pos.x + selection_size.x / 2.0
