@@ -199,6 +199,40 @@ fn check_card_status(
 
     info!("Found {} cards in the world", cards.iter().count());
 
+    // Check if cards are registered in the zone manager
+    let mut cards_with_zones = 0;
+    let mut cards_without_zones = 0;
+
+    for (entity, transform, visibility) in cards.iter() {
+        let is_visible = match visibility {
+            Visibility::Visible => "visible",
+            Visibility::Hidden => "hidden",
+            Visibility::Inherited => "inherited",
+        };
+
+        // Check if the card is registered in any zone
+        let zone = zone_manager.get_card_zone(entity);
+
+        if let Some(zone) = zone {
+            cards_with_zones += 1;
+            info!(
+                "Card {:?} at position {:?} is {} and in zone {:?}",
+                entity, transform.translation, is_visible, zone
+            );
+        } else {
+            cards_without_zones += 1;
+            warn!(
+                "Card {:?} at position {:?} is {} but not registered in any zone!",
+                entity, transform.translation, is_visible
+            );
+        }
+    }
+
+    info!(
+        "Zone registration status: {} cards in zones, {} cards without zones",
+        cards_with_zones, cards_without_zones
+    );
+
     // Check player entities
     if player_query.is_empty() {
         error!("No player entities found!");
@@ -209,6 +243,13 @@ fn check_card_status(
                 "Player {:?} with name '{}' at index {}",
                 entity, player.name, player.player_index
             );
+
+            // Check cards in player's hand
+            if let Some(hand) = zone_manager.get_player_zone(entity, Zone::Hand) {
+                info!("Player {} has {} cards in hand", player.name, hand.len());
+            } else {
+                warn!("Player {} has no hand zone registered!", player.name);
+            }
         }
     }
 
