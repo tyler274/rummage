@@ -12,9 +12,9 @@ use crate::text::DebugConfig;
 use bevy::prelude::*;
 
 // Plugin for the actual game systems
-pub struct GamePlugin;
+pub struct RummagePlugin;
 
-impl Plugin for GamePlugin {
+impl Plugin for RummagePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(crate::drag::DragPlugin)
             .add_plugins(crate::cards::CardPlugin)

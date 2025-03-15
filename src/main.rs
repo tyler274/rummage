@@ -3,7 +3,6 @@
 mod camera;
 mod cards;
 mod deck;
-mod docs;
 mod drag;
 mod game_engine;
 mod mana;
@@ -21,38 +20,13 @@ use bevy::prelude::*;
 use bevy::time::Fixed;
 use bevy::window::WindowResolution;
 use camera::CameraPlugin;
-use docs::Docs;
 use menu::MenuPlugin;
-use plugins::GamePlugin;
+use plugins::RummagePlugin;
 #[cfg(feature = "snapshot")]
 use snapshot::SnapshotDisabled;
 use tracing::DiagnosticsPlugin;
 
 fn main() {
-    // Check if we're being called with documentation commands
-    let args: Vec<String> = std::env::args().collect();
-    if args.len() > 1 {
-        if args[1] == "docs-build" {
-            if let Err(e) = Docs::build() {
-                eprintln!("Documentation build error: {}", e);
-                std::process::exit(1);
-            }
-            std::process::exit(0);
-        } else if args[1] == "docs-serve" {
-            if let Err(e) = Docs::serve() {
-                eprintln!("Documentation server error: {}", e);
-                std::process::exit(1);
-            }
-            std::process::exit(0);
-        } else if args[1] == "docs-check" {
-            if let Err(e) = Docs::check() {
-                eprintln!("Documentation check error: {}", e);
-                std::process::exit(1);
-            }
-            std::process::exit(0);
-        }
-    }
-
     let mut app = App::new();
 
     // Configure the fixed timestep update rate (20 Hz)
@@ -104,7 +78,7 @@ fn main() {
     .add_plugins(DiagnosticsPlugin) // Add our diagnostics plugin
     .add_plugins(CameraPlugin) // Add the camera plugin which manages SnapshotEvent
     .add_plugins(MenuPlugin)
-    .add_plugins(GamePlugin);
+    .add_plugins(RummagePlugin);
 
     // Add the SnapshotDisabled resource if the snapshot feature is enabled
     #[cfg(feature = "snapshot")]

@@ -12,7 +12,6 @@
 pub mod camera;
 pub mod cards;
 pub mod deck;
-pub mod docs;
 pub mod drag;
 pub mod game_engine;
 pub mod mana;
@@ -31,8 +30,6 @@ pub use crate::plugins::RummagePlugin;
 
 /// Setup reflection for bevy_persist serialization
 pub fn setup_reflection(app: &mut bevy::prelude::App) {
-    
-
     // Register Card types
     app.register_type::<cards::Card>()
         .register_type::<cards::CardEntity>()

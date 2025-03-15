@@ -7,21 +7,38 @@ use std::path::PathBuf;
 use crate::game_engine::commander::CommandZoneManager;
 use crate::game_engine::state::GameState;
 use crate::game_engine::zones::ZoneManager;
+use crate::mana::ManaPool;
 use crate::player::Player;
+
+mod data;
+mod events;
+mod plugin;
+mod resources;
+mod systems;
+
+// Re-export public API
+pub use data::*;
+pub use events::*;
+pub use plugin::SaveLoadPlugin;
+pub use resources::*;
 
 /// Plugin for save and load game functionality
 pub struct SaveLoadPlugin;
 
 impl Plugin for SaveLoadPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_save_system).add_systems(
-            Update,
-            (
-                handle_save_game.run_if(on_event::<SaveGameEvent>()),
-                handle_load_game.run_if(on_event::<LoadGameEvent>()),
-                handle_auto_save.run_if(on_event::<CheckStateBasedActionsEvent>()),
-            ),
-        );
+        app.add_event::<SaveGameEvent>()
+            .add_event::<LoadGameEvent>()
+            .add_event::<CheckStateBasedActionsEvent>()
+            .add_systems(Startup, setup_save_system)
+            .add_systems(
+                Update,
+                (
+                    handle_save_game.run_if(resource_exists::<GameState>()),
+                    handle_load_game,
+                    handle_auto_save,
+                ),
+            );
     }
 }
 
@@ -36,6 +53,10 @@ pub struct SaveGameEvent {
 pub struct LoadGameEvent {
     pub slot_name: String,
 }
+
+/// Event for checking state-based actions
+#[derive(Event)]
+pub struct CheckStateBasedActionsEvent;
 
 /// Configuration for the save system
 #[derive(Resource)]
@@ -99,6 +120,8 @@ pub struct PlayerData {
     pub id: usize,
     pub name: String,
     pub life: i32,
+    pub mana_pool: ManaPool,
+    pub player_index: usize,
     // Add other player-specific data
 }
 
@@ -164,10 +187,10 @@ pub struct SaveInfo {
 /// System to handle save game requests
 fn handle_save_game(
     mut event_reader: EventReader<SaveGameEvent>,
-    query_state: Query<&GameState>,
+    game_state: Res<GameState>,
     query_players: Query<(Entity, &Player)>,
-    query_zones: Query<&ZoneManager>,
-    query_commanders: Query<&CommandZoneManager>,
+    zones: Option<Res<ZoneManager>>,
+    commanders: Option<Res<CommandZoneManager>>,
     mut save_metadata: ResMut<Persistent<SaveMetadata>>,
     config: Res<SaveConfig>,
 ) {
@@ -179,130 +202,127 @@ fn handle_save_game(
             .save_directory
             .join(format!("{}.bin", event.slot_name));
 
-        // Get all the required data
-        if let Ok(game_state) = query_state.get_single() {
-            let mut player_data = Vec::new();
+        let mut player_data = Vec::new();
 
-            // Convert entity-based references to indices for serialization
-            let mut entity_to_index = std::collections::HashMap::new();
+        // Convert entity-based references to indices for serialization
+        let mut entity_to_index = std::collections::HashMap::new();
 
-            for (i, (entity, player)) in query_players.iter().enumerate() {
-                entity_to_index.insert(entity, i);
+        for (i, (entity, player)) in query_players.iter().enumerate() {
+            entity_to_index.insert(entity, i);
 
-                player_data.push(PlayerData {
-                    id: i,
-                    name: player.name.clone(),
-                    life: player.life,
-                    // Add other player data as needed
-                });
-            }
-
-            // Transform GameState to serializable GameStateData
-            let active_player_index = *entity_to_index.get(&game_state.active_player).unwrap_or(&0);
-            let priority_holder_index = *entity_to_index
-                .get(&game_state.priority_holder)
-                .unwrap_or(&0);
-
-            let turn_order_indices = game_state
-                .turn_order
-                .iter()
-                .filter_map(|e| entity_to_index.get(e).cloned())
-                .collect();
-
-            let lands_played = game_state
-                .lands_played
-                .iter()
-                .filter_map(|(e, count)| entity_to_index.get(e).map(|i| (*i, *count)))
-                .collect();
-
-            let drawn_this_turn = game_state
-                .drawn_this_turn
-                .iter()
-                .filter_map(|e| entity_to_index.get(e).cloned())
-                .collect();
-
-            let eliminated_players = game_state
-                .eliminated_players
-                .iter()
-                .filter_map(|e| entity_to_index.get(e).cloned())
-                .collect();
-
-            let game_state_data = GameStateData {
-                turn_number: game_state.turn_number,
-                active_player_index,
-                priority_holder_index,
-                turn_order_indices,
-                lands_played,
-                main_phase_action_taken: game_state.main_phase_action_taken,
-                drawn_this_turn,
-                eliminated_players,
-                use_commander_damage: game_state.use_commander_damage,
-                commander_damage_threshold: game_state.commander_damage_threshold,
-                starting_life: game_state.starting_life,
-            };
-
-            // TODO: Extract and serialize zone data
-            let zone_data = ZoneData {
-                // Implement based on your ZoneManager structure
-            };
-
-            // TODO: Extract and serialize commander data
-            let commander_data = CommanderData {
-                // Implement based on your CommandZoneManager structure  
-            };
-
-            // Create complete save data
-            let save_data = GameSaveData {
-                game_state: game_state_data,
-                players: player_data,
-                zones: zone_data,
-                commanders: commander_data,
-                save_version: env!("CARGO_PKG_VERSION").to_string(),
-            };
-
-            // Serialize and save the data
-            if let Err(e) = bincode::serialize_into(
-                std::fs::File::create(save_path).expect("Failed to create save file"),
-                &save_data,
-            ) {
-                error!("Failed to save game: {}", e);
-                continue;
-            }
-
-            // Update metadata
-            let timestamp = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs();
-
-            let save_info = SaveInfo {
-                slot_name: event.slot_name.clone(),
-                timestamp,
-                description: format!("Turn {}", game_state.turn_number),
-                turn_number: game_state.turn_number,
-                player_count: player_data.len(),
-            };
-
-            // Add or update save info in metadata
-            if let Some(existing) = save_metadata
-                .saves
-                .iter_mut()
-                .find(|s| s.slot_name == event.slot_name)
-            {
-                *existing = save_info;
-            } else {
-                save_metadata.saves.push(save_info);
-            }
-
-            // Save metadata
-            if let Err(e) = save_metadata.persist() {
-                error!("Failed to update save metadata: {}", e);
-            }
-
-            info!("Game saved successfully to slot: {}", event.slot_name);
-        } else {
-            error!("Failed to save game: GameState not found");
+            player_data.push(PlayerData {
+                id: i,
+                name: player.name.clone(),
+                life: player.life,
+                mana_pool: player.mana_pool,
+                player_index: i,
+                // Add other player data as needed
+            });
         }
+
+        // Transform GameState to serializable GameStateData
+        let active_player_index = *entity_to_index.get(&game_state.active_player).unwrap_or(&0);
+        let priority_holder_index = *entity_to_index
+            .get(&game_state.priority_holder)
+            .unwrap_or(&0);
+
+        let turn_order_indices = game_state
+            .turn_order
+            .iter()
+            .filter_map(|e| entity_to_index.get(e).cloned())
+            .collect();
+
+        let lands_played = game_state
+            .lands_played
+            .iter()
+            .filter_map(|(e, count)| entity_to_index.get(e).map(|i| (*i, *count)))
+            .collect();
+
+        let drawn_this_turn = game_state
+            .drawn_this_turn
+            .iter()
+            .filter_map(|e| entity_to_index.get(e).cloned())
+            .collect();
+
+        let eliminated_players = game_state
+            .eliminated_players
+            .iter()
+            .filter_map(|e| entity_to_index.get(e).cloned())
+            .collect();
+
+        let game_state_data = GameStateData {
+            turn_number: game_state.turn_number,
+            active_player_index,
+            priority_holder_index,
+            turn_order_indices,
+            lands_played,
+            main_phase_action_taken: game_state.main_phase_action_taken,
+            drawn_this_turn,
+            eliminated_players,
+            use_commander_damage: game_state.use_commander_damage,
+            commander_damage_threshold: game_state.commander_damage_threshold,
+            starting_life: game_state.starting_life,
+        };
+
+        // TODO: Extract and serialize zone data
+        let zone_data = ZoneData {
+            // Implement based on your ZoneManager structure
+        };
+
+        // TODO: Extract and serialize commander data
+        let commander_data = CommanderData {
+            // Implement based on your CommandZoneManager structure  
+        };
+
+        // Create complete save data
+        let save_data = GameSaveData {
+            game_state: game_state_data,
+            players: player_data,
+            zones: zone_data,
+            commanders: commander_data,
+            save_version: env!("CARGO_PKG_VERSION").to_string(),
+        };
+
+        // Serialize and save the data
+        if let Err(e) = bincode::serialize_into(
+            std::fs::File::create(save_path).expect("Failed to create save file"),
+            &save_data,
+        ) {
+            error!("Failed to save game: {}", e);
+            continue;
+        }
+
+        // Update metadata
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+
+        let save_info = SaveInfo {
+            slot_name: event.slot_name.clone(),
+            timestamp,
+            description: format!("Turn {}", game_state.turn_number),
+            turn_number: game_state.turn_number,
+            player_count: player_data.len(),
+        };
+
+        // Add or update save info in metadata
+        if let Some(existing) = save_metadata
+            .saves
+            .iter_mut()
+            .find(|s| s.slot_name == event.slot_name)
+        {
+            *existing = save_info;
+        } else {
+            save_metadata.saves.push(save_info);
+        }
+
+        // Save metadata
+        if let Err(e) = save_metadata.persist() {
+            error!("Failed to update save metadata: {}", e);
+        }
+
+        info!("Game saved successfully to slot: {}", event.slot_name);
     }
 }
 

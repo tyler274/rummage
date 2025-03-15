@@ -211,11 +211,13 @@ impl Mana {
     }
 
     /// Returns the converted mana cost (total mana of all colors and colorless)
+    #[allow(dead_code)]
     pub fn converted_mana_cost(&self) -> u64 {
         self.total()
     }
 
     /// Returns the amount of mana of a specific color
+    #[allow(dead_code)]
     pub fn colored_mana_cost(&self, color: Color) -> u64 {
         match color {
             Color::WHITE => self.white,
