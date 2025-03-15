@@ -79,13 +79,13 @@ pub fn spawn_visual_cards(
             z,
         );
 
-        // Increase the card size by 50% for maximum visibility
-        let visible_card_size = *card_size * 2.0;
+        // Increase the card size for better visibility but ensure it fits within bounds
+        let visible_card_size = *card_size * 1.5;
 
-        // Create a card with a clearly visible color and higher contrast
+        // Create a card with a grayish white background for better readability
         let card_entity = commands
             .spawn(Sprite {
-                color: Color::srgb(0.9, 0.2, 0.2), // Bright red for maximum visibility
+                color: Color::srgb(0.92, 0.92, 0.94), // Grayish white for better readability
                 custom_size: Some(visible_card_size),
                 ..default()
             })
