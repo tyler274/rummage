@@ -48,9 +48,9 @@ impl TableLayout {
             // Calculate distance based on playmat size to ensure they don't overlap
             self.playmat_size.y * 1.2
         } else {
-            // For a regular N-sided polygon where playmats touch at inner corners:
-            // 1. Calculate the diagonal distance from center to inner corner
-            // 2. Position playmats so adjacent inner corners touch
+            // For a regular N-sided polygon where playmats touch ONLY at corners:
+            // 1. Calculate the diagonal distance from center to corner
+            // 2. Position playmats so only the outer corners touch
 
             let angle_between_players = 2.0 * PI / self.player_count as f32;
 
@@ -58,21 +58,22 @@ impl TableLayout {
             let half_width = self.playmat_size.x / 2.0;
             let half_height = self.playmat_size.y / 2.0;
 
-            // Distance from center of playmat to its inner corner
-            // For inner corner, we subtract both dimensions when oriented toward center
-            let to_inner_corner = (half_width.powi(2) + half_height.powi(2)).sqrt();
+            // Distance from center of playmat to its corner
+            let to_corner = (half_width.powi(2) + half_height.powi(2)).sqrt();
 
-            // Calculate the distance needed for inner corners to touch
-            // Using law of cosines: c² = a² + b² - 2ab*cos(C)
-            // Where:
-            // - a and b are the distances from center to each playmat's center
-            // - c is the distance between inner corners (should be 0 for touching)
-            // - C is the angle between playmats (2π/n)
+            // Calculate the distance needed for corners to barely touch
+            // We need to position the playmats so that adjacent corners just touch
+            // This requires a distance that's slightly larger than if they were overlapping
 
-            // Distance from polygon center to playmat center where inner corners touch
-            let distance = to_inner_corner / angle_between_players.sin() * 1.08; // 8% buffer for minimal gap between corners
+            // Sine of half the angle between players gives us the ratio we need
+            let half_angle = angle_between_players / 2.0;
 
-            distance
+            // The distance from center to each playmat where corners just touch
+            // Formula derived from geometry: distance = to_corner / sin(half_angle)
+            let distance = to_corner / half_angle.sin();
+
+            // Add a small buffer (2%) to ensure corners only touch and don't overlap
+            distance * 1.02
         }
     }
 
