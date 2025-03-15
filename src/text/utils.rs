@@ -56,27 +56,36 @@ pub fn spawn_debug_bounds(
 
     let corners = [
         // Top-left
-        (Vec3::new(-half_width, half_height, 0.0), Color::RED),
+        (
+            Vec3::new(-half_width, half_height, 0.0),
+            Color::srgb(1.0, 0.0, 0.0),
+        ), // Red
         // Top-right
-        (Vec3::new(half_width, half_height, 0.0), Color::GREEN),
+        (
+            Vec3::new(half_width, half_height, 0.0),
+            Color::srgb(0.0, 1.0, 0.0),
+        ), // Green
         // Bottom-right
-        (Vec3::new(half_width, -half_height, 0.0), Color::BLUE),
+        (
+            Vec3::new(half_width, -half_height, 0.0),
+            Color::srgb(0.0, 0.0, 1.0),
+        ), // Blue
         // Bottom-left
-        (Vec3::new(-half_width, -half_height, 0.0), Color::YELLOW),
+        (
+            Vec3::new(-half_width, -half_height, 0.0),
+            Color::srgb(1.0, 1.0, 0.0),
+        ), // Yellow
     ];
 
     for (corner_pos, color) in corners.iter() {
         let corner_entity = commands
             .spawn((
-                SpriteBundle {
-                    sprite: Sprite {
-                        color: *color,
-                        custom_size: Some(Vec2::new(corner_size, corner_size)),
-                        ..Default::default()
-                    },
-                    transform: Transform::from_translation(*corner_pos),
+                Sprite {
+                    color: *color,
+                    custom_size: Some(Vec2::new(corner_size, corner_size)),
                     ..Default::default()
                 },
+                Transform::from_translation(*corner_pos),
                 CardTextType::Debug,
             ))
             .id();
@@ -89,15 +98,12 @@ pub fn spawn_debug_bounds(
     // Draw bounding box outline
     let outline_entity = commands
         .spawn((
-            SpriteBundle {
-                sprite: Sprite {
-                    color: Color::rgba(0.5, 0.5, 0.5, 0.3),
-                    custom_size: Some(size),
-                    ..Default::default()
-                },
-                transform,
+            Sprite {
+                color: Color::srgba(0.5, 0.5, 0.5, 0.3),
+                custom_size: Some(size),
                 ..Default::default()
             },
+            transform,
             CardTextType::Debug,
         ))
         .id();
@@ -112,15 +118,12 @@ pub fn spawn_debug_bounds(
 pub fn spawn_debug_rect(commands: &mut Commands, size: Vec2, color: Color, z_layer: f32) -> Entity {
     commands
         .spawn((
-            SpriteBundle {
-                sprite: Sprite {
-                    color,
-                    custom_size: Some(size),
-                    ..Default::default()
-                },
-                transform: Transform::from_translation(Vec3::new(0.0, 0.0, z_layer)),
+            Sprite {
+                color,
+                custom_size: Some(size),
                 ..Default::default()
             },
+            Transform::from_translation(Vec3::new(0.0, 0.0, z_layer)),
             CardTextType::Debug,
         ))
         .id()
