@@ -14,7 +14,7 @@ use crate::camera::{
 /// This system spawns a 2D camera entity with the necessary components
 /// for rendering the game world. It's typically run during the startup phase.
 pub fn setup_camera(mut commands: Commands) {
-    // Set up the camera with normal defaults
+    // Set up the camera with normal defaults but at a better position to see the cards
     let camera_entity = commands
         .spawn((
             Camera2d::default(),
@@ -25,10 +25,12 @@ pub fn setup_camera(mut commands: Commands) {
             Visibility::Visible, // Explicitly set to Visible
             InheritedVisibility::default(),
             ViewVisibility::default(),
-            Transform::default(), // Use default transform position (0,0,0)
+            // Position the camera directly above the center at Z=999 to see all cards
+            Transform::from_xyz(0.0, 0.0, 999.0),
             GlobalTransform::default(),
             GameCamera,
             AppLayer::all_layers(), // Use ALL layers to ensure everything is visible
+            Name::new("Game Camera"),
         ))
         .id();
 
@@ -43,10 +45,9 @@ pub fn set_initial_zoom(
     mut query: Query<&mut OrthographicProjection, (With<Camera>, With<GameCamera>)>,
 ) {
     if let Ok(mut projection) = query.get_single_mut() {
-        // Set to 5.0 for a more readable view of the playing field
+        // Reduce scale for a closer view - smaller values zoom in more
         // In OrthographicProjection, higher scale = more zoomed out
-        // This provides a balance between seeing the overall board and card details
-        projection.scale = 5.0;
+        projection.scale = 0.5; // Changed from 5.0 to 0.5 for much closer view
 
         info!("Set initial camera zoom level to {:.2}", projection.scale);
     } else {

@@ -76,21 +76,21 @@ impl TableLayout {
     /// Calculate the card offset for a player based on their position
     pub fn get_card_offset(&self, player_index: usize) -> Vec3 {
         if self.player_count == 4 {
-            // Standard 4-player layout with reduced offsets to keep cards more visible
+            // Standard 4-player layout with much smaller offsets to keep cards visible
             match player_index % 4 {
-                0 => Vec3::new(0.0, -600.0, 0.0), // Bottom: below player (reduced from -1200.0)
-                1 => Vec3::new(600.0, 0.0, 0.0),  // Right: to the right (reduced from 4500.0)
-                2 => Vec3::new(0.0, 600.0, 0.0),  // Top: above player (reduced from 1200.0)
-                3 => Vec3::new(-600.0, 0.0, 0.0), // Left: to the left (reduced from -4500.0)
+                0 => Vec3::new(0.0, -200.0, 0.0), // Bottom: closer to center (reduced from -600.0)
+                1 => Vec3::new(200.0, 0.0, 0.0),  // Right: closer to center (reduced from 600.0)
+                2 => Vec3::new(0.0, 200.0, 0.0),  // Top: closer to center (reduced from 600.0)
+                3 => Vec3::new(-200.0, 0.0, 0.0), // Left: closer to center (reduced from -600.0)
                 _ => Vec3::ZERO,                  // Fallback
             }
         } else {
-            // For other player counts, calculate based on angle with reduced distance
+            // For other player counts, calculate based on angle with minimal distance
             let angle = self.get_player_angle(player_index);
-            // Position cards in front of players, offset toward the center
+            // Position cards in front of players, very close to center
             Vec3::new(
-                -self.card_distance * 0.25 * angle.sin(), // Reduced from 0.5
-                -self.card_distance * 0.25 * angle.cos(), // Reduced from 0.5
+                -self.card_distance * 0.1 * angle.sin(), // Reduced from 0.25
+                -self.card_distance * 0.1 * angle.cos(), // Reduced from 0.25
                 0.0,
             )
         }

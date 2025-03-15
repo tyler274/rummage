@@ -82,29 +82,35 @@ pub fn spawn_visual_cards(
             card.name.name, position.x, position.y, position.z
         );
 
+        // Create a complete SpriteBundle rather than individual components
         let card_entity = commands
-            .spawn(card)
-            .insert(Sprite {
-                color: Color::srgb(0.2, 0.6, 0.8), // Use a blue background color for visibility
-                custom_size: Some(*card_size),
-                ..default()
-            })
-            .insert(transform)
-            .insert(GlobalTransform::default())
-            .insert(Visibility::Visible) // Explicitly set to Visible instead of default
-            .insert(InheritedVisibility::default())
-            .insert(ViewVisibility::default())
-            .insert(Draggable {
-                dragging: false,
-                drag_offset: Vec2::ZERO,
-                z_index: z,
-            })
-            .insert(AppLayer::Cards.layer()) // Use the specific Cards layer
-            // Add CardZone component to link to game engine state with the actual player entity
-            .insert(CardZone {
-                zone: Zone::Hand,
-                zone_owner: Some(player_entity),
-            })
+            .spawn((
+                card,
+                SpriteBundle {
+                    sprite: Sprite {
+                        color: Color::srgb(0.2, 0.6, 0.8), // bright blue color for visibility
+                        custom_size: Some(*card_size),
+                        ..default()
+                    },
+                    transform,
+                    global_transform: GlobalTransform::default(),
+                    visibility: Visibility::Visible,
+                    inherited_visibility: InheritedVisibility::default(),
+                    view_visibility: ViewVisibility::default(),
+                    ..default()
+                },
+                Draggable {
+                    dragging: false,
+                    drag_offset: Vec2::ZERO,
+                    z_index: z,
+                },
+                AppLayer::Cards.layer(),
+                CardZone {
+                    zone: Zone::Hand,
+                    zone_owner: Some(player_entity),
+                },
+                Name::new(format!("Card: {}", card_clone.name.name)),
+            ))
             .id();
 
         // Spawn text components directly instead of just adding marker components
