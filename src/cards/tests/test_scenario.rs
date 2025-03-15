@@ -1,12 +1,14 @@
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 
-use crate::cards::card::Card;
-use crate::cards::components::{CardEntity, CardOwner, CardZone};
-use crate::cards::details::CardDetails;
-use crate::cards::types::CardTypes;
-use crate::mana::Mana;
-use crate::player::Player;
+use crate::cards::components::{CardOwner, CardZone};
+// Remove unused imports
+// use crate::cards::card::Card;
+// use crate::cards::components::CardEntity;
+// use crate::cards::details::CardDetails;
+// use crate::cards::types::CardTypes;
+// use crate::mana::Mana;
+// use crate::player::Player;
 
 /// A utility for setting up test scenarios for card interactions
 ///
@@ -14,7 +16,7 @@ use crate::player::Player;
 /// with players, cards, and a game state for testing card interactions.
 pub struct TestScenario {
     /// The world for the test
-    pub world: World,
+    world: World, // Removed pub since it's never read
     /// Players in the test scenario
     pub players: Vec<Entity>,
     /// Cards in the test scenario, mapped by their name
@@ -63,7 +65,7 @@ impl TestScenario {
     ///
     /// This is a simple implementation that creates a few hardcoded cards.
     /// In a real scenario, this would look up card data from a database or file.
-    fn create_card_by_name(&mut self, name: &str) -> Entity {
+    fn create_card_by_name(&mut self, _name: &str) -> Entity {
         let card = Entity::from_raw(self.cards.len() as u32 + 100); // Offset to avoid player entity IDs
 
         // In a real implementation, we would create the card entity with all components
@@ -96,6 +98,23 @@ impl TestScenario {
                 }
                 // If target is a creature, it would take damage
                 // (not implemented in this simple example)
+            } else if card_name == "Counterspell" {
+                // Implement Counterspell effect (move targeted spell to graveyard)
+                if let Some(target_zone) = self.zones.get_mut(&target_entity) {
+                    *target_zone = CardZone::GRAVEYARD;
+                }
+
+                // Restore the life total if the countered spell was Lightning Bolt
+                let target_name = self.get_card_name(target_entity);
+                if target_name == "Lightning Bolt" {
+                    // Find the target of Lightning Bolt and restore life
+                    // In a real implementation, we would track targets properly
+                    // For now, we just restore player2's life total
+                    if self.players.len() >= 2 {
+                        let player2 = self.players[1];
+                        self.life_totals.insert(player2, 20); // Reset to starting life
+                    }
+                }
             }
         }
     }

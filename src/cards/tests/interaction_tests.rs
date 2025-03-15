@@ -23,11 +23,11 @@ fn test_counterspell_vs_lightning_bolt() {
     test.resolve_top_of_stack(); // Counterspell resolves
 
     // Verify that Lightning Bolt is countered and goes to the graveyard
-    // (this would happen in a real game, but our simple implementation doesn't
-    // move countered spells to the graveyard yet)
-
-    // Attempt to resolve Lightning Bolt (should have no effect since it was countered)
-    test.resolve_top_of_stack();
+    assert_eq!(
+        test.zones.get(&bolt),
+        Some(&CardZone::GRAVEYARD),
+        "Lightning Bolt should be in the graveyard after being countered"
+    );
 
     // Verify player2 still has 20 life (Lightning Bolt was countered)
     assert_eq!(test.get_player_life(player2), 20);

@@ -17,6 +17,7 @@ pub mod systems;
 pub mod types; // Making types public so it can be accessed directly
 
 // Test modules
+// Use a private module to avoid shadowing the components::tests module
 #[cfg(test)]
 mod tests;
 
@@ -29,11 +30,22 @@ pub mod text; // Card text handling
 // Re-export types for external use
 // Remove glob imports that cause ambiguity
 pub use card::Card;
-pub use components::card_entity::*;
-pub use components::*;
+// Avoid glob imports and be explicit about what's being exported
+pub use components::CardCost;
+pub use components::CardDetailsComponent;
+pub use components::CardEntity;
+pub use components::CardKeywords;
+pub use components::CardName;
+pub use components::CardOwner;
+pub use components::CardRulesText;
+pub use components::CardTypeInfo;
+pub use components::CardZone;
+pub use components::Draggable;
+pub use components::NoUntapCondition;
+pub use components::NoUntapEffect;
+pub use components::PermanentState;
 pub use details::*;
 pub use keywords::*;
-pub use state::*;
 pub use systems::*;
 pub use types::*;
 
@@ -49,7 +61,8 @@ impl bevy::prelude::Plugin for CardPlugin {
             .register_type::<CardOwner>()
             .register_type::<components::CardName>()
             .register_type::<components::CardCost>()
-            .register_type::<components::CardTypeInfo>()
+            // CardTypeInfo contains bitflags which don't fully implement reflection
+            // .register_type::<components::CardTypeInfo>()
             .register_type::<components::CardDetailsComponent>()
             .register_type::<components::CardRulesText>()
             .register_type::<components::CardKeywords>();
