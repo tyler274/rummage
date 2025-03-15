@@ -26,10 +26,11 @@ impl Plugin for MainRummagePlugin {
                     .with_spawn_all_cards(true)
                     .with_starting_life(40)
                     .with_card_size(Vec2::new(67.2, 93.6)) // Reduce card size to 1/10th original size
-                    .with_player_card_distance(400.0)
-                    .with_player_card_offset(0, -200.0) // Bottom player
+                    .with_card_spacing_multiplier(0.8) // Add tighter spacing between cards
+                    .with_player_card_distance(300.0) // Reduce distance to bring players closer together
+                    .with_player_card_offset(0, -100.0) // Bottom player - reduced offset
                     .with_player_card_offset(1, 0.0) // Right player
-                    .with_player_card_offset(2, 200.0) // Top player
+                    .with_player_card_offset(2, 100.0) // Top player - reduced offset
                     .with_player_card_offset(3, 0.0), // Left player
             )
             // Initialize zone manager resource

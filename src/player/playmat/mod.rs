@@ -473,8 +473,8 @@ pub fn spawn_player_playmat(
                     2 => Color::srgb(0.2, 0.7, 0.2), // Green for top player
                     _ => Color::srgb(0.7, 0.7, 0.2), // Yellow for left player
                 },
-                // Make the playmat large enough to see
-                custom_size: Some(Vec2::new(600.0, 400.0)),
+                // Make the playmat dimensions more suited to card layout
+                custom_size: Some(Vec2::new(400.0, 300.0)),
                 ..default()
             },
             Transform::from_translation(Vec3::new(

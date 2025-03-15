@@ -32,8 +32,8 @@ pub fn spawn_visual_cards(
         player_index
     );
 
-    // Increase the spacing between cards
-    let spacing = card_size.x * spacing_multiplier * 1.5;
+    // Increase the spacing between cards, but use a smaller multiplier
+    let spacing = card_size.x * spacing_multiplier * 0.6; // Reduced from 1.5 to 0.6 for tighter card layout
 
     // Calculate the total width of all cards with spacing
     let total_width = display_cards.len() as f32 * spacing;
@@ -41,7 +41,7 @@ pub fn spawn_visual_cards(
     // Store card count before moving display_cards
     let card_count = display_cards.len();
 
-    // Move the starting position further to the left for better distribution
+    // Calculate start position with better centering
     let start_x = -(total_width) / 2.0 + spacing / 2.0;
 
     // Get the card offset for this player based on table position

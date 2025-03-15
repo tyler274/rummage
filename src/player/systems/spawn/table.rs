@@ -76,21 +76,21 @@ impl TableLayout {
     /// Calculate the card offset for a player based on their position
     pub fn get_card_offset(&self, player_index: usize) -> Vec3 {
         if self.player_count == 4 {
-            // Standard 4-player layout with minimal offsets to keep cards visible in center
+            // Standard 4-player layout with cards positioned better on playmats
             match player_index % 4 {
-                0 => Vec3::new(0.0, -150.0, 0.0), // Bottom: much closer to center
-                1 => Vec3::new(150.0, 0.0, 0.0),  // Right: much closer to center
-                2 => Vec3::new(0.0, 150.0, 0.0),  // Top: much closer to center
-                3 => Vec3::new(-150.0, 0.0, 0.0), // Left: much closer to center
+                0 => Vec3::new(0.0, -100.0, 0.0), // Bottom: offset downward on playmat
+                1 => Vec3::new(100.0, 0.0, 0.0),  // Right: offset rightward on playmat
+                2 => Vec3::new(0.0, 100.0, 0.0),  // Top: offset upward on playmat
+                3 => Vec3::new(-100.0, 0.0, 0.0), // Left: offset leftward on playmat
                 _ => Vec3::ZERO,                  // Fallback
             }
         } else {
-            // For other player counts, calculate based on angle with very minimal distance
+            // For other player counts, calculate based on angle with minimal distance
             let angle = self.get_player_angle(player_index);
-            // Position cards in front of players, very close to center
+            // Position cards closer to their respective playmats
             Vec3::new(
-                -self.card_distance * 0.05 * angle.sin(), // Reduced even further to keep cards visible
-                -self.card_distance * 0.05 * angle.cos(), // Reduced even further to keep cards visible
+                -75.0 * angle.sin(), // Reduced offset to keep cards on playmat
+                -75.0 * angle.cos(), // Reduced offset to keep cards on playmat
                 0.0,
             )
         }
