@@ -80,7 +80,7 @@ pub fn spawn_visual_cards(
         );
 
         // Increase the card size by 50% for maximum visibility
-        let visible_card_size = *card_size * 1.5;
+        let visible_card_size = *card_size * 2.0;
 
         // Create a card with a clearly visible color and higher contrast
         let card_entity = commands

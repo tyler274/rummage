@@ -5,11 +5,13 @@ use bevy::prelude::*;
 // Import what we need
 use crate::camera::components::GameCamera;
 use crate::camera::systems::setup_camera;
-use crate::cards::CardZone;
+use crate::cards::{CardPlugin, CardZone};
+use crate::drag::DragPlugin;
 use crate::game_engine::save::SaveLoadPlugin;
 use crate::game_engine::zones::{Zone, ZoneManager};
 use crate::menu::GameMenuState;
 use crate::player::{PlayerPlugin, components::Player, resources::PlayerConfig, spawn_players};
+use crate::text::DebugConfig;
 
 pub struct MainRummagePlugin;
 
@@ -17,6 +19,16 @@ impl Plugin for MainRummagePlugin {
     fn build(&self, app: &mut App) {
         // Add Player Plugin
         app.add_plugins(PlayerPlugin)
+            // Add Card Plugin for card dragging and other card functionality
+            .add_plugins(CardPlugin)
+            // Add Drag Plugin for drag and drop functionality
+            .add_plugins(DragPlugin)
+            // Add Text Plugin for text rendering and debugging
+            .add_plugins(crate::text::TextPlugin::default())
+            // Initialize debug config resource
+            .insert_resource(DebugConfig {
+                show_text_positions: false,
+            })
             // Add Save/Load system
             .add_plugins(SaveLoadPlugin)
             // Setup game configuration

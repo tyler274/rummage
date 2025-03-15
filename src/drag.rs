@@ -30,7 +30,7 @@ impl Plugin for DragPlugin {
 
 /// System for handling drag and drop interactions
 pub fn drag_system(
-    mut draggable_query: Query<(&mut Transform, &mut Draggable)>,
+    mut draggable_query: Query<(&mut Transform, &mut Draggable), Without<crate::cards::Card>>,
     mouse_button: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window, With<PrimaryWindow>>,
     camera_q: Query<(&Camera, &GlobalTransform), With<crate::camera::components::GameCamera>>,

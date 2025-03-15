@@ -149,7 +149,7 @@ fn calculate_hand_layout(
     window_width: f32,
 ) -> (f32, f32, f32) {
     // Card dimensions (assumed standard card size)
-    let card_width = 63.0;
+    let card_width = 63.0 * 1.5;
     let available_width = window_width * 0.8; // Use 80% of window width
 
     // Calculate spacing and scale

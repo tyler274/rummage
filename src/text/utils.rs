@@ -89,8 +89,8 @@ pub struct CardTextLayout {
 impl Default for CardTextLayout {
     fn default() -> Self {
         Self {
-            card_width: 63.0 * 1.4,
-            card_height: 88.0 * 1.4,
+            card_width: 63.0 * 2.0,
+            card_height: 88.0 * 2.0,
             // Position name with a proper margin from the left edge of the card frame
             name_x_offset: -0.20, // Further increased right margin for long card names
             name_y_offset: 0.41,

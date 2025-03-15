@@ -253,8 +253,8 @@ fn calculate_battlefield_layout(
     window_height: f32,
 ) -> (f32, f32, f32, f32) {
     // Standard card dimensions
-    let card_width: f32 = 63.0;
-    let card_height: f32 = 88.0;
+    let card_width: f32 = 63.0 * 1.5;
+    let card_height: f32 = 88.0 * 1.5;
 
     // Available space
     let available_width = window_width * 0.7;

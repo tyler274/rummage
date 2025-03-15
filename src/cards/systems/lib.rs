@@ -9,6 +9,7 @@ pub fn handle_card_dragging(
     mouse_button: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window>,
     camera_q: Query<(&Camera, &GlobalTransform), With<crate::camera::components::GameCamera>>,
+    player_config: Res<crate::player::resources::PlayerConfig>,
 ) {
     // Safely get window and camera
     let Ok(window) = windows.get_single() else {
@@ -30,44 +31,52 @@ pub fn handle_card_dragging(
                 // First pass: find the card with highest z-index at cursor position
                 for (entity, _, draggable, global_transform) in card_query.iter() {
                     let card_pos = global_transform.translation().truncate();
-                    // Using actual card dimensions (672x936) to match Magic card proportions
-                    let card_size = Vec2::new(672.0, 936.0);
-                    // No additional scaling needed since viewport_to_world_2d already gives us
-                    // coordinates in the same space as our card positions
-                    let scaled_size = card_size * 1.0;
+                    // Use the card size from player config instead of hardcoded values
+                    let card_size = player_config.card_size;
 
                     // Check if the cursor is within the card bounds
-                    // The hit detection area now perfectly matches the visible card boundaries
-                    if world_pos.x >= card_pos.x - scaled_size.x / 2.0
-                        && world_pos.x <= card_pos.x + scaled_size.x / 2.0
-                        && world_pos.y >= card_pos.y - scaled_size.y / 2.0
-                        && world_pos.y <= card_pos.y + scaled_size.y / 2.0
+                    // We're using a slightly larger hit area for easier selection
+                    let hit_area_multiplier = 1.5; // 50% larger hit area for easier selection
+                    let selection_size = card_size * hit_area_multiplier;
+
+                    if world_pos.x >= card_pos.x - selection_size.x / 2.0
+                        && world_pos.x <= card_pos.x + selection_size.x / 2.0
+                        && world_pos.y >= card_pos.y - selection_size.y / 2.0
+                        && world_pos.y <= card_pos.y + selection_size.y / 2.0
                     {
+                        // Debug card hit test
+                        info!(
+                            "Card hit test - Entity: {:?}, z-index: {}",
+                            entity, draggable.z_index
+                        );
+
                         if draggable.z_index > highest_z {
                             highest_z = draggable.z_index;
-                            top_card = Some(entity);
+                            top_card = Some((entity, card_pos));
                         }
                     }
                 }
 
                 // Second pass: start dragging only the top card
-                if let Some(top_entity) = top_card {
+                if let Some((top_entity, card_pos)) = top_card {
+                    info!("Dragging card: {:?}", top_entity);
+
                     // Find the highest z-index among all cards
-                    let mut max_z = highest_z;
+                    let mut max_z = 10.0f32; // Start at a sensible baseline
                     for (_, _, draggable, _) in card_query.iter() {
-                        max_z = max_z.max(draggable.z_index);
+                        max_z = max_z.max(draggable.z_index + 0.1);
                     }
 
-                    for (entity, mut transform, mut draggable, global_transform) in
-                        card_query.iter_mut()
-                    {
+                    for (entity, mut transform, mut draggable, _) in card_query.iter_mut() {
                         if entity == top_entity {
-                            let card_pos = global_transform.translation().truncate();
                             draggable.dragging = true;
                             draggable.drag_offset = card_pos - world_pos;
                             // Set the dragged card's z-index higher than all others
-                            draggable.z_index = max_z + 1.0;
-                            transform.translation.z = max_z + 1.0;
+                            let new_z = max_z + 5.0; // Add a significant bump to ensure it's on top
+                            draggable.z_index = new_z;
+                            transform.translation.z = new_z;
+
+                            info!("Card {:?} now has z-index: {}", entity, new_z);
                         }
                     }
                 }
@@ -75,24 +84,39 @@ pub fn handle_card_dragging(
 
             // Handle mouse release - stop dragging and update z-index
             if mouse_button.just_released(MouseButton::Left) {
-                let mut max_z = f32::NEG_INFINITY;
+                // Find any cards that were being dragged
+                let mut any_dragged = false;
 
-                // First find the highest z-index
-                for (_, _, draggable, _) in card_query.iter() {
-                    max_z = max_z.max(draggable.z_index);
+                for (entity, _, draggable, _) in card_query.iter() {
+                    if draggable.dragging {
+                        any_dragged = true;
+                        info!("Dropping card: {:?}", entity);
+                    }
                 }
 
-                // Then update the previously dragged card
-                for (_, _, mut draggable, _) in card_query.iter_mut() {
-                    if draggable.dragging {
-                        draggable.dragging = false;
-                        draggable.z_index = max_z + 1.0; // Place it on top
+                if any_dragged {
+                    // Find highest z-index
+                    let mut max_z = 10.0f32;
+                    for (_, _, draggable, _) in card_query.iter() {
+                        max_z = max_z.max(draggable.z_index);
+                    }
+
+                    // Update cards that were being dragged
+                    for (entity, mut transform, mut draggable, _) in card_query.iter_mut() {
+                        if draggable.dragging {
+                            draggable.dragging = false;
+                            // Place the dropped card on top of all other cards
+                            let new_z = max_z + 1.0;
+                            draggable.z_index = new_z;
+                            transform.translation.z = new_z;
+                            info!("Dropped card {:?} at z-index: {}", entity, new_z);
+                        }
                     }
                 }
             }
 
             // Update position of dragged cards
-            for (_, mut transform, draggable, _) in card_query.iter_mut() {
+            for (entity, mut transform, draggable, _) in card_query.iter_mut() {
                 if draggable.dragging {
                     let new_pos = world_pos + draggable.drag_offset;
                     transform.translation.x = new_pos.x;
