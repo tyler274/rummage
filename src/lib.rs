@@ -26,7 +26,7 @@ pub mod utils;
 pub mod wsl2;
 
 // Re-export for main app
-pub use crate::plugins::RummagePlugin;
+pub use crate::plugins::MainRummagePlugin;
 
 /// Setup reflection for bevy_persist serialization
 pub fn setup_reflection(app: &mut bevy::prelude::App) {

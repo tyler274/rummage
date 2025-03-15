@@ -225,12 +225,12 @@ pub fn handle_load_game(
                 }
 
                 // TODO: Restore zone contents
-                if let Some(zones) = &mut zones {
+                if let Some(_zones) = &mut zones {
                     // Implement zone restoration based on your ZoneManager
                 }
 
                 // TODO: Restore commander zone contents
-                if let Some(commanders) = &mut commanders {
+                if let Some(_commanders) = &mut commanders {
                     // Implement commander zone restoration based on your CommandZoneManager
                 }
 
@@ -415,7 +415,8 @@ fn apply_replay_action(game_state: &mut GameState, action: &ReplayAction) {
     }
 }
 
-/// Capture a game action for replay purposes
+/// Captures a game action for replaying
+#[allow(dead_code)]
 pub fn capture_game_action(
     action_type: ReplayActionType,
     player_index: usize,

@@ -21,7 +21,7 @@ use bevy::time::Fixed;
 use bevy::window::WindowResolution;
 use camera::CameraPlugin;
 use menu::MenuPlugin;
-use plugins::RummagePlugin;
+use plugins::MainRummagePlugin;
 #[cfg(feature = "snapshot")]
 use snapshot::SnapshotDisabled;
 use tracing::DiagnosticsPlugin;
@@ -78,7 +78,7 @@ fn main() {
     .add_plugins(DiagnosticsPlugin) // Add our diagnostics plugin
     .add_plugins(CameraPlugin) // Add the camera plugin which manages SnapshotEvent
     .add_plugins(MenuPlugin)
-    .add_plugins(RummagePlugin);
+    .add_plugins(MainRummagePlugin);
 
     // Add the SnapshotDisabled resource if the snapshot feature is enabled
     #[cfg(feature = "snapshot")]

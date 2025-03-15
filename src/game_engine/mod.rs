@@ -15,6 +15,10 @@ pub mod tests;
 pub mod turns;
 pub mod zones;
 
+// Import required types
+use crate::menu::{GameMenuState, StateTransitionContext};
+use crate::player::Player;
+
 // Re-export important types for easier access
 pub use actions::GameAction;
 pub use combat::{CombatState, DeclareAttackersEvent, DeclareBlockersEvent};
@@ -23,7 +27,7 @@ pub use phase::Phase;
 pub use priority::{
     EffectCounteredEvent, NextPhaseEvent, PassPriorityEvent, PrioritySystem, ResolveStackItemEvent,
 };
-pub use save::{LoadGameEvent, SaveConfig, SaveGameEvent, SaveLoadPlugin};
+pub use save::SaveLoadPlugin;
 pub use stack::{GameStack, StackItemResolvedEvent};
 pub use state::{CheckStateBasedActionsEvent, GameState};
 pub use turns::{

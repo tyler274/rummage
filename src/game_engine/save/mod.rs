@@ -6,8 +6,8 @@ mod resources;
 mod systems;
 
 // Re-export public API
-pub use data::*;
 pub use events::*;
 pub use plugin::SaveLoadPlugin;
-pub use resources::*;
-pub use systems::*;
+
+// Re-export specific systems if needed elsewhere
+// pub use systems::*;
