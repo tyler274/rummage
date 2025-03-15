@@ -28,7 +28,7 @@ pub fn spawn_power_toughness_text(
     // We don't need text_size for the simplified TextLayoutInfo
     let _text_size = calculate_text_size(card_size, layout.pt_width, layout.pt_height);
 
-    // Make power/toughness prominent like MTG cards
+    // Power/toughness uses a larger font (26pt at 300 DPI) to make it stand out
     let font_size = get_card_font_size(card_size, 26.0);
 
     // Create text style bundle

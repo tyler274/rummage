@@ -29,7 +29,7 @@ pub fn spawn_type_line_text(
     let _text_size =
         calculate_text_size(card_size, layout.type_line_width, layout.type_line_height);
 
-    // Smaller font size for type line to better match MTG card proportions
+    // Type line uses a slightly smaller font than the name text (16pt for 300 DPI standard)
     let font_size = get_card_font_size(card_size, 16.0);
 
     // Format type line consistently (match MTG style with em-dash between types)

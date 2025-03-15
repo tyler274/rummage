@@ -52,7 +52,8 @@ pub fn spawn_rules_text(
     );
 
     // Adjust font size based on card size and text length
-    let base_font_size = 16.0; // Slightly smaller base font for better readability
+    // For 300 DPI, we start with 14pt base font for rules text
+    let base_font_size = 14.0;
     let text_length_factor = (rules_text_component.rules_text.len() as f32 / 100.0).clamp(0.5, 1.5);
     let adjusted_font_size = base_font_size / text_length_factor.max(1.0);
     let font_size = get_card_font_size(card_size, adjusted_font_size);

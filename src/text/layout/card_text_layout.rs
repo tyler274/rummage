@@ -50,9 +50,10 @@ pub struct CardTextLayout {
 impl Default for CardTextLayout {
     fn default() -> Self {
         Self {
-            // Increased card size for better rendering quality and DPI
-            card_width: 63.0 * 4.0, // Increased from 3.0 for better HiDPI rendering
-            card_height: 88.0 * 4.0, // Increased from 3.0 for better HiDPI rendering
+            // Standard Magic card is 2.5" × 3.5" (63mm × 88mm)
+            // At 300 DPI, that would be 750 × 1050 pixels
+            card_width: 750.0,   // 2.5 inches * 300 DPI
+            card_height: 1050.0, // 3.5 inches * 300 DPI
 
             // Position name with a proper margin from the left edge of the card frame
             name_x_offset: -0.18, // Adjusted to prevent overflow
@@ -100,9 +101,16 @@ pub fn calculate_text_size(card_size: Vec2, width_percentage: f32, height_percen
 
 /// Get the appropriate font size for a card based on its size
 pub fn get_card_font_size(card_size: Vec2, base_size: f32) -> f32 {
-    // Scale font size based on card width with an improved scaling factor for HiDPI
-    let scale_factor = card_size.x / 250.0;
-    base_size * scale_factor.clamp(0.7, 4.0) // Increased max scale from 3.0 to 4.0 for better text visibility on HiDPI displays
+    // Calculate font size based on 300 DPI standard
+    // Standard Magic card width is 2.5" at 300 DPI = 750 pixels
+    // Font sizes are typically measured in points where 1 point = 1/72 inch
+    // At 300 DPI, 1 point = 300/72 = 4.167 pixels
+    let dpi_factor = 300.0 / 72.0; // Convert points to pixels at 300 DPI
+    let reference_width = 750.0; // Full-sized card width at 300 DPI
+    let scale_factor = card_size.x / reference_width;
+
+    // Apply scaling with improved limits for better quality at various zoom levels
+    base_size * dpi_factor * scale_factor.clamp(0.7, 5.0)
 }
 
 /// Get standard card layout measurements
@@ -120,5 +128,5 @@ pub fn custom_card_layout(width: f32, height: f32) -> CardTextLayout {
 
 /// Standard battlefield card size multiplier
 pub fn get_battlefield_card_size_multiplier() -> f32 {
-    2.5 // Increased from 2.0 for better HiDPI visibility and detail
+    3.0 // Increased from 2.5 for better HiDPI visibility and detail
 }

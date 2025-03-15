@@ -17,7 +17,8 @@ pub fn create_name_text(
     let font = asset_server.load("fonts/DejaVuSans-Bold.ttf");
     let layout = get_card_layout();
 
-    // Set font size for card name
+    // Set font size for card name - updating for 300 DPI standard
+    // 18pt font should be readable at print quality
     let font_size = get_card_font_size(card_size, 18.0);
 
     // Create formatted card name - truncate if too long
