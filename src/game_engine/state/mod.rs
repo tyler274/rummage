@@ -9,6 +9,9 @@ use crate::player::Player;
 use bevy::prelude::*;
 use std::collections::VecDeque;
 
+// Re-export save module's event
+pub use crate::game_engine::save::CheckStateBasedActionsEvent;
+
 /// The global game state for an MTG game
 #[derive(Resource)]
 pub struct GameState {
@@ -473,10 +476,6 @@ pub fn state_based_actions_system(
         }
     }
 }
-
-/// Event to trigger state-based action checks
-#[derive(Event)]
-pub struct CheckStateBasedActionsEvent;
 
 /// System that triggers state-based action checks when needed
 pub fn trigger_state_based_actions_system(

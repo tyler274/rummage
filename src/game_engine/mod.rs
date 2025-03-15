@@ -8,6 +8,7 @@ pub mod permanent;
 pub mod phase;
 pub mod politics;
 pub mod priority;
+pub mod save;
 pub mod stack;
 pub mod state;
 pub mod tests;
@@ -22,6 +23,7 @@ pub use phase::Phase;
 pub use priority::{
     EffectCounteredEvent, NextPhaseEvent, PassPriorityEvent, PrioritySystem, ResolveStackItemEvent,
 };
+pub use save::{LoadGameEvent, SaveConfig, SaveGameEvent, SaveLoadPlugin};
 pub use stack::{GameStack, StackItemResolvedEvent};
 pub use state::{CheckStateBasedActionsEvent, GameState};
 pub use turns::{
@@ -48,8 +50,7 @@ use crate::game_engine::politics::{
 };
 use crate::game_engine::priority::{priority_passing_system, priority_system};
 
-use crate::menu::{GameMenuState, state::StateTransitionContext};
-use crate::player::Player;
+// Game Engine Plugin
 use bevy::prelude::*;
 
 /// Custom schedule for fixed timestep game logic updates
@@ -61,11 +62,15 @@ pub fn game_state_condition(state: Res<State<GameMenuState>>) -> bool {
     *state.get() == GameMenuState::InGame
 }
 
-/// Plugin that sets up the MTG Commander game engine
 pub struct GameEnginePlugin;
 
 impl Plugin for GameEnginePlugin {
     fn build(&self, app: &mut App) {
+        // Core game state
+
+        // Save/Load system
+        app.add_plugins(SaveLoadPlugin);
+
         // First, add the essential resources
         if !app.world().contains_resource::<Phase>() {
             app.insert_resource(Phase::default());
