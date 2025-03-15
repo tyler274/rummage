@@ -119,7 +119,7 @@ impl Default for PlayerConfig {
             starting_life: 40, // Commander starting life total
             card_size: Vec2::new(672.0, 936.0),
             card_spacing_multiplier: 1.1,
-            player_card_distance: 400.0, // Distance from center to player position
+            player_card_distance: 750.0, // Significantly increased to eliminate playmat overlap
             player_card_offsets: [-1200.0, 0.0, 1200.0, 0.0], // Y offsets for cards relative to player position
         }
     }

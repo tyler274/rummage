@@ -474,7 +474,7 @@ pub fn spawn_player_playmat(
                     _ => Color::srgb(0.7, 0.7, 0.2), // Yellow for left player
                 },
                 // Make the playmat dimensions more suited to card layout
-                custom_size: Some(Vec2::new(600.0, 450.0)),
+                custom_size: Some(Vec2::new(400.0, 300.0)), // Further reduced size with narrower proportions
                 ..default()
             },
             // Calculate rotation based on player position to orient long edge toward center
@@ -482,7 +482,9 @@ pub fn spawn_player_playmat(
                 translation: Vec3::new(
                     player_position.x,
                     player_position.y,
-                    5.0, // Place it below cards but above table
+                    // Use player index to stagger z-index, this prevents visual overlap
+                    // Player 0 (bottom) has highest z-index, then decreasing
+                    5.0 - (player.player_index as f32 * 0.5),
                 ),
                 // Rotate based on player position
                 rotation: match player.player_index {
