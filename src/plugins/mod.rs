@@ -4,6 +4,7 @@ use bevy::prelude::*;
 
 // Import what we need
 use crate::camera::components::GameCamera;
+use crate::camera::systems::setup_camera;
 use crate::cards::CardZone;
 use crate::game_engine::save::SaveLoadPlugin;
 use crate::game_engine::zones::{Zone, ZoneManager};
@@ -35,6 +36,8 @@ impl Plugin for MainRummagePlugin {
             .init_resource::<ZoneManager>()
             // Add game setup system
             .add_systems(OnEnter(GameMenuState::InGame), setup_game)
+            // Add system to create game camera when entering game state
+            .add_systems(OnEnter(GameMenuState::InGame), setup_game_camera)
             // System to connect cards to zones after they're spawned
             .add_systems(Update, connect_cards_to_zones)
             // Add a system to ensure game camera is visible in InGame state
@@ -145,9 +148,10 @@ pub fn connect_cards_to_zones(
                         );
                     }
                 }
-                _ => {
+                Zone::Exile | Zone::Stack | Zone::CommandZone => {
+                    // These zones are managed differently and might require special handling
                     warn!(
-                        "Card {:?} has unknown zone {:?}",
+                        "Card {:?} in {:?} zone - this zone is managed differently",
                         card_entity, card_zone.zone
                     );
                 }
@@ -160,8 +164,31 @@ pub fn connect_cards_to_zones(
     }
 }
 
+// Extension trait for ZoneManager to simplify diagnostic checks
+trait ZoneManagerExt {
+    fn get_card_zone(&self, card: Entity) -> Option<Zone>;
+    fn get_player_zone(&self, player: Entity, zone: Zone) -> Option<&Vec<Entity>>;
+}
+
+impl ZoneManagerExt for ZoneManager {
+    fn get_card_zone(&self, card: Entity) -> Option<Zone> {
+        // Use the public get_card_zone method
+        self.get_card_zone(card)
+    }
+
+    fn get_player_zone(&self, player: Entity, zone: Zone) -> Option<&Vec<Entity>> {
+        // Use the public get_player_zone method
+        self.get_player_zone(player, zone)
+    }
+}
+
 // Ensure game camera is visible when entering game state
 fn ensure_game_camera_visible(mut game_camera_query: Query<&mut Visibility, With<GameCamera>>) {
+    if game_camera_query.is_empty() {
+        error!("No game camera found when entering game state!");
+        return;
+    }
+
     for mut visibility in game_camera_query.iter_mut() {
         *visibility = Visibility::Visible;
         info!("Ensuring game camera is visible for card rendering");
@@ -273,4 +300,18 @@ fn check_card_status(
             i, entity, transform.translation, is_visible
         );
     }
+}
+
+// Setup game camera when entering the game state
+fn setup_game_camera(commands: Commands, game_cameras: Query<Entity, With<GameCamera>>) {
+    // Check if a game camera already exists
+    if !game_cameras.is_empty() {
+        info!("Game camera already exists, not creating a new one");
+        return;
+    }
+
+    info!("No game camera found, creating a new one for the game state");
+
+    // Call the camera module's setup system directly
+    setup_camera(commands);
 }
