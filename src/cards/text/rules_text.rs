@@ -55,10 +55,10 @@ pub fn spawn_rules_text(
     // Base size 12pt, minimum 8pt for rules text
     let font_size = get_adaptive_font_size(
         card_size,
-        12.0, // Reduced base size for rules text
+        14.0, // Increased from 12.0 to make rules text more readable
         &rules_text_component.rules_text,
         text_size.x,
-        8.0, // Minimum size
+        9.0, // Increased minimum size from 8.0 to 9.0
     );
 
     // Format the rules text to fit within the specified width
