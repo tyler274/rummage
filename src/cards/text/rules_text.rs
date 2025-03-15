@@ -54,7 +54,8 @@ pub fn spawn_rules_text(
     // Adjust font size based on card size and text length
     // For 300 DPI, we start with 14pt base font for rules text
     let base_font_size = 14.0;
-    let text_length_factor = (rules_text_component.rules_text.len() as f32 / 100.0).clamp(0.5, 1.5);
+    // Decrease font size more aggressively for longer text to prevent overflow
+    let text_length_factor = (rules_text_component.rules_text.len() as f32 / 80.0).clamp(0.8, 2.0);
     let adjusted_font_size = base_font_size / text_length_factor.max(1.0);
     let font_size = get_card_font_size(card_size, adjusted_font_size);
 
@@ -81,10 +82,10 @@ pub fn spawn_rules_text(
                 ..default()
             },
             TextColor(Color::srgba(0.0, 0.0, 0.0, 0.9)),
-            TextLayout::new_with_justify(JustifyText::Left),
+            TextLayout::new_with_justify(JustifyText::Left), // Changed back to Left for rules text
             CardTextType::RulesText,
             TextLayoutInfo {
-                alignment: JustifyText::Center,
+                alignment: JustifyText::Left, // Changed to match the actual layout
             },
             Name::new(format!("Rules Text: {}", formatted_text.replace('\n', " "))),
         ))
@@ -171,7 +172,8 @@ fn format_rules_text(text: &str, max_width: f32, font_size: f32) -> String {
 
     // Process each paragraph for proper wrapping
     let mut result = String::new();
-    let avg_char_width = font_size * 0.5; // Approximate character width
+    // Use a smaller character width approximation to fit more text
+    let avg_char_width = font_size * 0.45; // Reduced from 0.5 for tighter packing
     let chars_per_line = (max_width / avg_char_width) as usize;
 
     for (i, paragraph) in paragraphs.iter().enumerate() {
@@ -214,11 +216,12 @@ fn format_rules_text(text: &str, max_width: f32, font_size: f32) -> String {
         // Add a blank line and the separator
         result.push_str("\n\n—");
 
-        // Simple word wrap for flavor text
+        // Simple word wrap for flavor text with tighter spacing
         let words: Vec<&str> = flavor.split_whitespace().collect();
         let mut current_line = String::new();
         let mut current_line_len = 0;
-        let flavor_chars_per_line = chars_per_line - 2; // Slight indent for flavor text
+        // Use more horizontal space for flavor text
+        let flavor_chars_per_line = (chars_per_line as f32 * 0.95) as usize;
 
         for word in words {
             let word_len = word.len();
