@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::cards::text::{
-    mana_cost_text::create_mana_cost_text, name_text::create_name_text,
+    mana_cost_text::spawn_mana_cost_text, name_text::create_name_text,
     power_toughness_text::spawn_power_toughness_text, rules_text::spawn_rules_text,
     type_line_text::spawn_type_line_text,
 };
@@ -60,7 +60,7 @@ pub fn spawn_card_text_components(
         create_name_text(commands, &name_component, card_pos, card_size, asset_server);
 
     // Spawn mana cost text
-    let mana_cost_entity = create_mana_cost_text(
+    let mana_cost_entity = spawn_mana_cost_text(
         commands,
         &mana_cost_component,
         card_pos,

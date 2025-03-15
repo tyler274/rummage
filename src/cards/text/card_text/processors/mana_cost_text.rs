@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::cards::text::mana_cost_text::create_mana_cost_text;
+use crate::cards::text::mana_cost_text::spawn_mana_cost_text;
 use crate::cards::{Card, CardCost, CardDetailsComponent, CardName, CardTypeInfo};
 use crate::text::components::{CardManaCostText, CardRulesText, DebugConfig, SpawnedText};
 
@@ -39,7 +39,7 @@ pub fn process_mana_cost_text_components(
 
             // Spawn the text
             let text_entity =
-                create_mana_cost_text(commands, component, card_pos, card_size, asset_server);
+                spawn_mana_cost_text(commands, component, card_pos, card_size, asset_server);
             commands.entity(parent_entity).add_child(text_entity);
 
             // Mark as spawned

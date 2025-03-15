@@ -4,8 +4,7 @@ use bevy::text::JustifyText;
 use crate::cards::Card;
 use crate::text::{
     components::{CardManaCostText, CardTextType, TextLayoutInfo},
-    mana_symbols::{ManaSymbolOptions, render_mana_symbol},
-    utils::{calculate_text_size, get_adaptive_font_size, get_card_layout},
+    utils::{get_adaptive_font_size, get_card_layout},
 };
 
 /// Spawn mana cost text for a card

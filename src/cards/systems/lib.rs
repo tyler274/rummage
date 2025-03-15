@@ -121,7 +121,7 @@ pub fn handle_card_dragging(
             }
 
             // Update position of dragged cards
-            for (entity, mut transform, draggable, _) in card_query.iter_mut() {
+            for (_entity, mut transform, draggable, _) in card_query.iter_mut() {
                 if draggable.dragging {
                     let new_pos = world_pos + draggable.drag_offset;
                     transform.translation.x = new_pos.x;
