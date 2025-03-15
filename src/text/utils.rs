@@ -197,9 +197,9 @@ pub fn calculate_text_size(card_size: Vec2, width_percentage: f32, height_percen
 
 /// Get the appropriate font size for a card based on its size
 pub fn get_card_font_size(card_size: Vec2, base_size: f32) -> f32 {
-    // Scale font size based on card width
-    let scale_factor = card_size.x / 300.0; // 300 is a reference width
-    base_size * scale_factor.clamp(0.5, 2.0) // Clamp to avoid extreme sizes
+    // Scale font size based on card width with an improved scaling factor
+    let scale_factor = card_size.x / 250.0; // Reduced from 300.0 to increase relative font size
+    base_size * scale_factor.clamp(0.7, 2.5) // Increased min and max scale to ensure better text visibility
 }
 
 /// Get standard card layout measurements

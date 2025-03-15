@@ -79,8 +79,8 @@ pub fn spawn_visual_cards(
             z,
         );
 
-        // Increase the card size for better visibility but ensure it fits within bounds
-        let visible_card_size = *card_size * 1.5;
+        // Increase the card size for better visibility and to fill more of the playmat space
+        let visible_card_size = *card_size * 2.0;
 
         // Create a card with a grayish white background for better readability
         let card_entity = commands
