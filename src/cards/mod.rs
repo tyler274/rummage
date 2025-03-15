@@ -44,30 +44,17 @@ pub use components::Draggable;
 pub use components::NoUntapCondition;
 pub use components::NoUntapEffect;
 pub use components::PermanentState;
-pub use details::*;
-pub use keywords::*;
-pub use systems::*;
-pub use types::*;
 
-/// Plugin responsible for registering all card-related systems and resources
-pub struct CardPlugin;
+// Re-export from details
+pub use details::CardDetails;
+pub use details::CreatureCard;
+pub use details::SpellCard;
+pub use details::SpellType;
 
-impl bevy::prelude::Plugin for CardPlugin {
-    fn build(&self, app: &mut bevy::prelude::App) {
-        // Register types with bevy_reflect
-        app.register_type::<Card>()
-            .register_type::<CardEntity>()
-            .register_type::<CardZone>()
-            .register_type::<CardOwner>()
-            .register_type::<components::CardName>()
-            .register_type::<components::CardCost>()
-            // CardTypeInfo contains bitflags which don't fully implement reflection
-            // .register_type::<components::CardTypeInfo>()
-            .register_type::<components::CardDetailsComponent>()
-            .register_type::<components::CardRulesText>()
-            .register_type::<components::CardKeywords>();
+// Re-export from types
+pub use types::CardTypes;
+pub use types::CreatureType;
+pub use types::format_type_line;
 
-        // Add the card systems plugin
-        app.add_plugins(systems::CardSystemsPlugin);
-    }
-}
+// Re-export the plugin
+pub use plugin::CardPlugin;

@@ -24,6 +24,7 @@ impl Default for CardDetails {
 
 impl CardDetails {
     /// Create a new Creature card details
+    #[allow(dead_code)]
     pub fn new_creature(power: i32, toughness: i32) -> Self {
         CardDetails::Creature(CreatureCard {
             power,

@@ -11,7 +11,7 @@ use crate::cards::{
     rarity::Rarity,
     set::CardSet,
     systems::{debug_render_text_positions, handle_card_dragging},
-    types::{CardTypes, CreatureType, ReflectableCardTypes, ReflectableCreatureType},
+    types::{ReflectableCardTypes, ReflectableCreatureType},
 };
 use crate::mana::{Mana, ReflectableColor};
 use bevy::prelude::*;

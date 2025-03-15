@@ -4,7 +4,7 @@ use crate::cards::{Card, CardEntity, CardName, CardOwner, CardZone};
 use crate::game_engine::zones::Zone;
 
 /// Bundle of components needed for a card entity
-#[derive(Bundle)]
+#[allow(dead_code)]
 pub struct CardEntityBundle {
     /// The card data
     pub card: Card,
@@ -19,6 +19,7 @@ pub struct CardEntityBundle {
 }
 
 /// Spawn a new card entity in a specified zone
+#[allow(dead_code)]
 pub fn spawn_card(
     commands: &mut Commands,
     card: Card,
@@ -30,12 +31,12 @@ pub fn spawn_card(
     let name = card.name.clone();
 
     commands
-        .spawn(CardEntityBundle {
+        .spawn((
             card,
-            card_entity: CardEntity::default(),
-            card_zone: CardZone::new(zone, zone_owner),
-            card_owner: CardOwner::new(owner),
+            CardEntity::default(),
+            CardZone::new(zone, zone_owner),
+            CardOwner::new(owner),
             name,
-        })
+        ))
         .id()
 }

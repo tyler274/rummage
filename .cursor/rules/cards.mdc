@@ -1,0 +1,10 @@
+---
+description: 
+globs: src/cards/**
+alwaysApply: false
+---
+please continue refactoring the cards module to be more in line with the docs in docs/
+updating either as needed to improve the robustness of the implementation with unit tests.
+Make sure the docs and the code stay synced. Focus on fixing all the warnings and then the
+failing tests. 
+Its ok to remove unused code that has no place in the final implementation, and there should not be much dead code

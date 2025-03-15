@@ -2,9 +2,6 @@ use bevy::prelude::*;
 
 use crate::cards::Card;
 use crate::cards::components::Draggable;
-use crate::cards::details::CardDetails;
-use crate::cards::types::CardTypes;
-use crate::mana::Mana;
 use crate::text;
 
 pub fn handle_card_dragging(
@@ -149,6 +146,9 @@ pub fn debug_render_text_positions(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cards::details::CardDetails;
+    use crate::cards::types::CardTypes;
+    use crate::mana::Mana;
 
     // Define the draggable_card_filter function for testing
     fn draggable_card_filter(card: Query<(), (With<Card>, With<Draggable>)>) -> bool {

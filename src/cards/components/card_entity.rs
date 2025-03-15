@@ -20,11 +20,13 @@ pub struct CardZone {
 
 impl CardZone {
     /// Create a new card zone component
+    #[allow(dead_code)]
     pub fn new(zone: Zone, zone_owner: Option<Entity>) -> Self {
         Self { zone, zone_owner }
     }
 
     /// Check if the card is in a specific zone
+    #[allow(dead_code)]
     pub fn is_in_zone(&self, zone: Zone) -> bool {
         self.zone == zone
     }
@@ -36,14 +38,17 @@ impl CardZone {
     }
 
     // Constants for easier access in tests
+    #[allow(dead_code)]
     pub const HAND: Self = Self {
         zone: Zone::Hand,
         zone_owner: None,
     };
+    #[allow(dead_code)]
     pub const BATTLEFIELD: Self = Self {
         zone: Zone::Battlefield,
         zone_owner: None,
     };
+    #[allow(dead_code)]
     pub const GRAVEYARD: Self = Self {
         zone: Zone::Graveyard,
         zone_owner: None,
@@ -57,6 +62,7 @@ pub struct CardOwner(pub Entity);
 
 impl CardOwner {
     /// Create a new card owner component
+    #[allow(dead_code)]
     pub fn new(player: Entity) -> Self {
         Self(player)
     }

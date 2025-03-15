@@ -279,6 +279,7 @@ pub fn format_type_line(types: &CardTypes, card_details: &CardDetails) -> String
 // CardTypes implementation
 impl CardTypes {
     /// Create a new creature card type with the specified creature types
+    #[allow(dead_code)]
     pub fn new_creature(creature_types: Vec<String>) -> Self {
         let card_type = Self::CREATURE;
 
@@ -293,26 +294,31 @@ impl CardTypes {
     }
 
     /// Create a new instant card type
+    #[allow(dead_code)]
     pub fn new_instant() -> Self {
         Self::INSTANT
     }
 
     /// Create a new sorcery card type
+    #[allow(dead_code)]
     pub fn new_sorcery() -> Self {
         Self::SORCERY
     }
 
     /// Create a new enchantment card type
+    #[allow(dead_code)]
     pub fn new_enchantment() -> Self {
         Self::ENCHANTMENT
     }
 
     /// Check if this card is a creature
+    #[allow(dead_code)]
     pub fn is_creature(&self) -> bool {
         self.contains(Self::CREATURE)
     }
 
     /// Get the creature types for this card
+    #[allow(dead_code)]
     pub fn get_creature_types(&self) -> Vec<String> {
         if self.is_creature() {
             // Retrieve the stored creature types
@@ -331,9 +337,13 @@ impl CardTypes {
 
 // Add constants for easier access in tests
 impl CardTypes {
+    #[allow(dead_code)]
     pub const TYPE_INSTANT: Self = Self::INSTANT;
+    #[allow(dead_code)]
     pub const TYPE_SORCERY: Self = Self::SORCERY;
+    #[allow(dead_code)]
     pub const TYPE_CREATURE: Self = Self::CREATURE;
+    #[allow(dead_code)]
     pub const TYPE_ENCHANTMENT: Self = Self::ENCHANTMENT;
 }
 

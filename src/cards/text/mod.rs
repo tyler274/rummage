@@ -15,5 +15,5 @@ pub mod rules_text;
 pub mod tests;
 pub mod type_line_text;
 
-// Re-export primary functions
-pub use card_text::{spawn_card_text, spawn_card_text_components};
+// Re-export only what's used
+// Explicitly re-export functions as needed elsewhere in the codebase
