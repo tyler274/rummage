@@ -24,7 +24,7 @@ impl TableLayout {
             player_count,
             distance,
             card_distance: distance * 1.5, // Default card distance is 150% of player distance
-            playmat_size: Vec2::new(330.0, 250.0), // Adjusted playmat size
+            playmat_size: Vec2::new(430.0, 330.0), // Increased playmat size for larger cards
         }
     }
 

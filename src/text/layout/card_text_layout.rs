@@ -128,5 +128,5 @@ pub fn custom_card_layout(width: f32, height: f32) -> CardTextLayout {
 
 /// Standard battlefield card size multiplier
 pub fn get_battlefield_card_size_multiplier() -> f32 {
-    3.0 // Increased from 2.5 for better HiDPI visibility and detail
+    4.0 // Increased from 3.0 for better HiDPI visibility and detail
 }

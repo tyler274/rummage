@@ -47,10 +47,10 @@ pub fn spawn_hand_zone(
 
     // Determine position relative to playmat based on player index
     let position = match player.player_index {
-        0 => Vec3::new(0.0, -200.0, 0.0), // Bottom player
-        1 => Vec3::new(200.0, 0.0, 0.0),  // Right player
-        2 => Vec3::new(0.0, 200.0, 0.0),  // Top player
-        3 => Vec3::new(-200.0, 0.0, 0.0), // Left player
+        0 => Vec3::new(0.0, -250.0, 0.0), // Bottom player - moved further down
+        1 => Vec3::new(250.0, 0.0, 0.0),  // Right player - moved further right
+        2 => Vec3::new(0.0, 250.0, 0.0),  // Top player - moved further up
+        3 => Vec3::new(-250.0, 0.0, 0.0), // Left player - moved further left
         _ => Vec3::ZERO,
     };
 

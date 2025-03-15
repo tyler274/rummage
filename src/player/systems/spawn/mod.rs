@@ -32,7 +32,7 @@ pub fn spawn_players(
     info!("Spawning {} players...", config.player_count);
 
     // Create a table layout calculator for the players with appropriate playmat size
-    let playmat_size = Vec2::new(330.0, 250.0); // Adjusted playmat size for corner-to-corner touching
+    let playmat_size = Vec2::new(430.0, 330.0); // Increased playmat size for larger cards
     let table = table::TableLayout::new(config.player_count, config.player_card_distance)
         .with_playmat_size(playmat_size);
 

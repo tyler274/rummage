@@ -116,11 +116,11 @@ impl Default for PlayerConfig {
         Self {
             player_count: 4, // Default to 4 players for Commander format
             spawn_all_cards: false,
-            starting_life: 40, // Commander starting life total
-            card_size: Vec2::new(672.0, 936.0),
-            card_spacing_multiplier: 1.1,
-            player_card_distance: 950.0, // Increased from 850.0 to further eliminate playmat overlap
-            player_card_offsets: [-1200.0, 0.0, 1200.0, 0.0], // Y offsets for cards relative to player position
+            starting_life: 40,                   // Commander starting life total
+            card_size: Vec2::new(896.0, 1248.0), // Increased from 672x936 to match the multiplier increase
+            card_spacing_multiplier: 1.2,        // Increased from 1.1 for better spacing
+            player_card_distance: 1200.0, // Increased from 950.0 to further eliminate playmat overlap
+            player_card_offsets: [-1500.0, 0.0, 1500.0, 0.0], // Increased Y offsets for cards relative to player position
         }
     }
 }
