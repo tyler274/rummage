@@ -35,7 +35,9 @@ impl Plugin for MainRummagePlugin {
             // Add game setup system
             .add_systems(OnEnter(GameMenuState::InGame), setup_game)
             // System to connect cards to zones after they're spawned
-            .add_systems(Update, connect_cards_to_zones);
+            .add_systems(Update, connect_cards_to_zones)
+            // Add a system to ensure game camera is visible in InGame state
+            .add_systems(OnEnter(GameMenuState::InGame), ensure_game_camera_visible);
     }
 }
 
@@ -120,5 +122,13 @@ pub fn connect_cards_to_zones(
 
         // Remove the one-time event
         commands.entity(entity).despawn();
+    }
+}
+
+// Ensure game camera is visible when entering game state
+fn ensure_game_camera_visible(mut game_camera_query: Query<&mut Visibility, With<GameCamera>>) {
+    for mut visibility in game_camera_query.iter_mut() {
+        *visibility = Visibility::Visible;
+        info!("Ensuring game camera is visible for card rendering");
     }
 }

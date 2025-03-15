@@ -69,7 +69,7 @@ pub fn spawn_visual_cards(
     for (i, card) in display_cards.into_iter().enumerate() {
         let card_clone = card.clone(); // Clone card to use later
         // Calculate z-index based on position to ensure proper layering
-        let z = 0.1 + (i as f32 * 0.001);
+        let z = 0.5 + (i as f32 * 0.01); // Increase z value to avoid z-fighting
 
         // Calculate the position for this card
         let position = Vec3::new(
@@ -88,13 +88,13 @@ pub fn spawn_visual_cards(
         let card_entity = commands
             .spawn(card)
             .insert(Sprite {
-                color: Color::srgb(0.85, 0.85, 0.85),
+                color: Color::srgb(0.2, 0.6, 0.8), // Use a blue background color for visibility
                 custom_size: Some(*card_size),
                 ..default()
             })
             .insert(transform)
             .insert(GlobalTransform::default())
-            .insert(Visibility::default())
+            .insert(Visibility::Visible) // Explicitly set to Visible instead of default
             .insert(InheritedVisibility::default())
             .insert(ViewVisibility::default())
             .insert(Draggable {
@@ -143,6 +143,10 @@ pub fn spawn_visual_cards(
 
         // Make the card a child of the game camera to ensure it's rendered in the game view
         for camera in game_cameras.iter() {
+            info!(
+                "Attaching card {:?} to game camera {:?}",
+                card_entity, camera
+            );
             commands.entity(camera).add_child(card_entity);
         }
     }

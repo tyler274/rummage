@@ -15,20 +15,24 @@ use crate::camera::{
 /// for rendering the game world. It's typically run during the startup phase.
 pub fn setup_camera(mut commands: Commands) {
     // Set up the camera with normal defaults
-    commands.spawn((
-        Camera2d::default(),
-        Camera {
-            order: 0, // Explicitly set order to 0 for game camera
-            ..default()
-        },
-        Visibility::default(),
-        InheritedVisibility::default(),
-        ViewVisibility::default(),
-        Transform::default(), // Use default transform position (0,0,0)
-        GlobalTransform::default(),
-        GameCamera,
-        AppLayer::game_layers(), // Use combined game layers to see all game elements including cards
-    ));
+    let camera_entity = commands
+        .spawn((
+            Camera2d::default(),
+            Camera {
+                order: 0, // Explicitly set order to 0 for game camera
+                ..default()
+            },
+            Visibility::Visible, // Explicitly set to Visible
+            InheritedVisibility::default(),
+            ViewVisibility::default(),
+            Transform::default(), // Use default transform position (0,0,0)
+            GlobalTransform::default(),
+            GameCamera,
+            AppLayer::all_layers(), // Use ALL layers to ensure everything is visible
+        ))
+        .id();
+
+    info!("Game camera spawned with entity {:?}", camera_entity);
 
     // Initialize camera pan state
     commands.insert_resource(CameraPanState::default());

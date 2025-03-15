@@ -123,7 +123,12 @@ fn setup_game(
 
         // Spawn the players using the new system
         info!("Spawning initial hand...");
-        spawn_players(commands, asset_server, game_cameras, Some(player_config));
+        spawn_players(
+            &mut commands,
+            asset_server,
+            game_cameras,
+            Some(player_config),
+        );
     }
 
     info!("Game setup complete!");
