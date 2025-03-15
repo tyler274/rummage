@@ -114,8 +114,7 @@ pub fn spawn_players(
             commands.entity(player_entity).insert(
                 Player::new(&player.name)
                     .with_life(player.life)
-                    .with_player_index(player.player_index)
-                    .with_cards(display_cards.clone()),
+                    .with_player_index(player.player_index),
             );
 
             // Spawn visual cards for all players that have cards

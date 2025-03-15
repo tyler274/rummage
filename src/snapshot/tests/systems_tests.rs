@@ -139,7 +139,8 @@ fn test_handle_snapshot_events() {
     // Add required resources
     app.init_resource::<SnapshotConfig>()
         .init_resource::<Time>()
-        .add_event::<SnapshotEvent>();
+        .add_event::<SnapshotEvent>()
+        .init_resource::<crate::snapshot::resources::SnapshotDebugState>();
 
     // Create a camera entity
     let camera_entity = app.world_mut().spawn((GameCamera,)).id();

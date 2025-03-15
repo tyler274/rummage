@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
-use crate::cards::{Card, CardDetails, CardTypes, CreatureCard, CreatureType, Rarity};
+use crate::cards::rarity::Rarity;
+use crate::cards::{Card, CardDetails, CardTypes, CreatureCard, CreatureType};
 use crate::mana::Mana;
 
 use super::set_info;

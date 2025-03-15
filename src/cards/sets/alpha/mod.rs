@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::cards::CardSet;
+use crate::cards::set::CardSet;
 
 // Card modules for Alpha
 pub mod ancestral_recall;

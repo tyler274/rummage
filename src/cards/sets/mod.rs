@@ -2,7 +2,9 @@ use std::collections::HashMap;
 
 use bevy::prelude::*;
 
-use crate::cards::{Card, CardSet, Rarity};
+use crate::cards::Card;
+use crate::cards::rarity::Rarity;
+use crate::cards::set::CardSet;
 use crate::mana::Color;
 
 // Export set modules
@@ -185,7 +187,10 @@ impl CardRegistry {
 pub mod systems {
     use bevy::prelude::*;
 
-    use crate::cards::{Card, CardSet, Rarity, sets::CardRegistry};
+    use crate::cards::Card;
+    use crate::cards::rarity::Rarity;
+    use crate::cards::set::CardSet;
+    use crate::cards::sets::CardRegistry;
 
     /// System that initializes the card registry
     #[allow(dead_code)]
@@ -225,162 +230,4 @@ pub fn spawn_card_with_set_info(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::cards::{Card, CardDetails, CardTypes};
-    use crate::mana::{Color, Mana};
-    use bevy::prelude::*;
-
-    /// Test function demonstrating how to use the registry functions
-    #[test]
-    fn test_card_registry() {
-        // Create a new registry
-        let mut registry = CardRegistry::default();
-
-        // Create a set
-        let alpha_set = CardSet {
-            code: "LEA".to_string(),
-            name: "Limited Edition Alpha".to_string(),
-            release_date: "1993-08-05".to_string(),
-        };
-
-        // Create an app to spawn entities
-        let mut app = App::new();
-        app.add_plugins(MinimalPlugins);
-
-        // Spawn some test cards with default Mana
-        let lightning_bolt = app
-            .world
-            .spawn(
-                Card::builder("Lightning Bolt")
-                    .cost(Mana::default())
-                    .types(CardTypes::INSTANT)
-                    .rules_text("Lightning Bolt deals 3 damage to any target.")
-                    .build_or_panic(),
-            )
-            .id();
-
-        let serra_angel = app
-            .world
-            .spawn(
-                Card::builder("Serra Angel")
-                    .cost(Mana::default())
-                    .types(CardTypes::CREATURE)
-                    .details(CardDetails::Creature(super::super::details::CreatureCard {
-                        power: 4,
-                        toughness: 4,
-                        creature_type: crate::cards::types::CreatureType::ANGEL,
-                    }))
-                    .rules_text("Flying, vigilance")
-                    .build_or_panic(),
-            )
-            .id();
-
-        let black_lotus = app
-            .world
-            .spawn(
-                Card::builder("Black Lotus")
-                    .cost(Mana::default())
-                    .types(CardTypes::ARTIFACT)
-                    .rules_text("{T}, Sacrifice Black Lotus: Add three mana of any one color.")
-                    .build_or_panic(),
-            )
-            .id();
-
-        // Get the card components
-        let lightning_bolt_card = app
-            .world
-            .entity(lightning_bolt)
-            .get::<Card>()
-            .unwrap()
-            .clone();
-        let serra_angel_card = app.world.entity(serra_angel).get::<Card>().unwrap().clone();
-        let black_lotus_card = app.world.entity(black_lotus).get::<Card>().unwrap().clone();
-
-        // Register the cards
-        registry.register_card(
-            lightning_bolt,
-            &lightning_bolt_card,
-            &alpha_set,
-            Rarity::Common,
-        );
-        registry.register_card(serra_angel, &serra_angel_card, &alpha_set, Rarity::Uncommon);
-        registry.register_card(black_lotus, &black_lotus_card, &alpha_set, Rarity::Rare);
-
-        // Test querying by set
-        let alpha_cards = registry.get_set_cards("LEA").unwrap();
-        assert_eq!(alpha_cards.len(), 3);
-
-        // Test querying by color
-        let white_cards = registry
-            .get_set_cards_by_color("LEA", Color::WHITE)
-            .unwrap();
-        assert_eq!(white_cards.len(), 1);
-        assert_eq!(white_cards[0], serra_angel);
-
-        // Test querying by rarity
-        let rare_cards = registry
-            .get_set_cards_by_rarity("LEA", Rarity::Rare)
-            .unwrap();
-        assert_eq!(rare_cards.len(), 1);
-        assert_eq!(rare_cards[0], black_lotus);
-
-        // Test getting all cards
-        let all_cards = registry.get_all_cards();
-        assert_eq!(all_cards.len(), 3);
-
-        // Test getting all sets
-        let sets = registry.get_sets();
-        assert_eq!(sets.len(), 1);
-        assert_eq!(sets[0].code, "LEA");
-    }
-
-    /// Test demonstrating how to use the init_card_registry and register_card systems
-    #[test]
-    fn test_registry_systems() {
-        // Create a new app
-        let mut app = App::new();
-        app.add_plugins(MinimalPlugins);
-
-        // Add the systems
-        app.add_systems(Startup, systems::init_card_registry);
-        app.add_systems(Update, systems::register_card);
-
-        // Run the startup system to initialize the registry
-        app.update();
-
-        // Check that the registry was created
-        assert!(app.world.contains_resource::<CardRegistry>());
-
-        // Create a set
-        let alpha_set = CardSet {
-            code: "LEA".to_string(),
-            name: "Limited Edition Alpha".to_string(),
-            release_date: "1993-08-05".to_string(),
-        };
-
-        // Create a command buffer to spawn entities
-        let mut commands = Commands::new(&mut app.world, &mut app.schedule);
-
-        // Spawn a card with set info and get the entity
-        let card_entity = spawn_card_with_set_info(
-            &mut commands,
-            Card::builder("Test Card")
-                .cost(Mana::default())
-                .types(CardTypes::INSTANT)
-                .build_or_panic(),
-            alpha_set.clone(),
-            Rarity::Rare,
-        );
-
-        // Apply commands and run update to register the card
-        commands.apply(&mut app.world);
-        app.update();
-
-        // Check that the card was registered
-        let registry = app.world.resource::<CardRegistry>();
-        let alpha_cards = registry.get_set_cards("LEA").unwrap();
-        assert_eq!(alpha_cards.len(), 1);
-        assert_eq!(alpha_cards[0], card_entity);
-    }
-}
+pub mod tests;

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::cards::CardSet;
+use crate::cards::set::CardSet;
 
 // Card modules - Each card gets its own module
 pub mod briarbridge_tracker;

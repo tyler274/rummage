@@ -1,4 +1,4 @@
-use crate::tests::visual_testing::capture::capture_screenshot_system;
+use crate::tests::visual_testing::capture::{ScreenshotEvent, capture_screenshot_system};
 use bevy::prelude::*;
 
 /// Configuration for visual testing
@@ -35,6 +35,7 @@ pub struct VisualTestingPlugin;
 impl Plugin for VisualTestingPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<VisualTestConfig>()
+            .add_event::<ScreenshotEvent>()
             .add_systems(Update, capture_screenshot_system);
 
         // Don't add render systems for now - we'll implement this properly later
@@ -107,8 +108,7 @@ pub fn setup_headless_visual_test_environment(app: &mut App) {
                     power_preference: bevy::render::settings::PowerPreference::LowPower,
                     // Disable unnecessary features
                     features: bevy::render::settings::WgpuFeatures::empty(),
-                    // Don't wait for pipeline compilation
-                    synchronous_pipeline_compilation: false,
+                    // Don't wait for pipeline compilation (handled differently in 0.15+)
                     ..bevy::render::settings::WgpuSettings::default()
                 },
             ),

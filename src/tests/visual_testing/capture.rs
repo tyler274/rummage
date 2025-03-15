@@ -1,76 +1,59 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use image::{DynamicImage, ImageBuffer, Rgba};
+use std::collections::VecDeque;
 
-/// Resource to track screenshot requests
-#[derive(Resource, Default)]
-pub struct ScreenshotRequests {
-    pending: Vec<ScreenshotRequest>,
+/// Screenshot request event
+#[derive(Event)]
+pub struct ScreenshotEvent {
+    pub entity: Entity,
+    pub name: String,
 }
 
-/// Request for capturing a screenshot
-pub struct ScreenshotRequest {
-    pub name: String,
-    pub callback: Option<Box<dyn Fn(DynamicImage) + Send + Sync>>,
+/// Helper function to create a screenshot request event
+pub fn request_screenshot(entity: Entity, name: String) -> ScreenshotEvent {
+    ScreenshotEvent { entity, name }
+}
+
+/// Resource to track screenshot requests and results
+#[derive(Resource, Default)]
+pub struct ScreenshotRequests {
+    /// Queue of processed screenshots (name, image)
+    pub requests: VecDeque<(String, DynamicImage)>,
 }
 
 /// System that processes screenshot requests
 pub fn capture_screenshot_system(
+    mut er_screenshot: EventReader<ScreenshotEvent>,
     mut screenshot_requests: ResMut<ScreenshotRequests>,
     q_window: Query<&Window, With<PrimaryWindow>>,
 ) {
-    // Check if there are any pending requests
-    if screenshot_requests.pending.is_empty() {
-        return;
-    }
-
-    // Get window
-    let window = match q_window.get_single() {
-        Ok(window) => window,
-        Err(_) => {
-            error!("Failed to get primary window for screenshot");
-            return;
-        }
-    };
-
-    // Create a placeholder screenshot
-    let width = window.physical_width();
-    let height = window.physical_height();
-    let buffer = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
-    let image = DynamicImage::ImageRgba8(buffer);
-
-    // Process all pending requests with this screenshot
-    let requests = std::mem::take(&mut screenshot_requests.pending);
-
-    for request in requests {
-        if let Some(callback) = request.callback {
-            callback(image.clone());
-        } else {
-            // If no callback, save as reference
-            use crate::tests::visual_testing::utils::save_reference_image;
-            if let Err(e) = save_reference_image(image.clone(), &request.name) {
-                error!("Failed to save screenshot {}: {}", request.name, e);
+    // Process any screenshot events
+    for event in er_screenshot.read() {
+        // Get window
+        let window = match q_window.get_single() {
+            Ok(window) => window,
+            Err(_) => {
+                error!("Failed to get primary window for screenshot");
+                continue;
             }
-        }
+        };
+
+        // Create a screenshot (in a real implementation, this would use the GPU to capture the screen)
+        let width = window.physical_width();
+        let height = window.physical_height();
+        let buffer = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
+        let image = DynamicImage::ImageRgba8(buffer);
+
+        // Store the screenshot result
+        screenshot_requests
+            .requests
+            .push_back((event.name.clone(), image));
     }
-}
-
-#[allow(dead_code)]
-/// Takes a screenshot of the current frame from world
-fn take_screenshot_from_window(window: &Window) -> Option<DynamicImage> {
-    // Create a blank image with the window size
-    let width = window.physical_width();
-    let height = window.physical_height();
-
-    // Create a blank image
-    let buffer = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
-    let image = DynamicImage::ImageRgba8(buffer);
-
-    Some(image)
 }
 
 /// Takes a screenshot of the current frame
-pub fn take_screenshot(_app: &App) -> Option<DynamicImage> {
+pub fn take_screenshot() -> Option<DynamicImage> {
     // For the placeholder implementation, we'll just create a blank image with fixed size
     // In a real implementation, we would need to properly access the render app
 
@@ -85,28 +68,18 @@ pub fn take_screenshot(_app: &App) -> Option<DynamicImage> {
     Some(image)
 }
 
-/// Request a screenshot to be taken on the next frame
-pub fn request_screenshot<'a, T: AsMut<ScreenshotRequests>>(
-    screenshot_requests: &mut T,
-    name: String,
-    callback: Option<Box<dyn Fn(DynamicImage) + Send + Sync>>,
-) {
-    screenshot_requests
-        .as_mut()
-        .pending
-        .push(ScreenshotRequest { name, callback });
-}
-
 /// Captures rendering of a specific entity
-pub fn capture_entity_rendering(app: &App, _entity: Entity) -> DynamicImage {
+pub fn capture_entity_rendering(_world: &World, entity: Entity) -> DynamicImage {
     // In a real implementation, this would:
     // 1. Set up a temporary camera focused on just this entity
     // 2. Render a single frame
     // 3. Capture the output
     // 4. Clean up the temporary camera
 
-    // Placeholder for now
-    if let Some(screenshot) = take_screenshot(app) {
+    // Placeholder for now - in real implementation, we would use the entity parameter
+    let _ = entity;
+
+    if let Some(screenshot) = take_screenshot() {
         screenshot
     } else {
         // Fallback to a 1x1 pixel
@@ -118,7 +91,7 @@ pub fn capture_entity_rendering(app: &App, _entity: Entity) -> DynamicImage {
 pub fn capture_on_command_system(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut screenshot_counter: Local<u32>,
-    mut screenshot_requests: ResMut<ScreenshotRequests>,
+    mut ew_screenshots: EventWriter<ScreenshotEvent>,
 ) {
     // Capture screenshot when F12 is pressed
     if keyboard_input.just_pressed(KeyCode::F12) {
@@ -126,16 +99,9 @@ pub fn capture_on_command_system(
         *screenshot_counter += 1;
 
         // Queue screenshot capture for next frame
-        screenshot_requests.pending.push(ScreenshotRequest {
-            name: screenshot_name.clone(),
-            callback: Some(Box::new(move |image| {
-                use crate::tests::visual_testing::utils::save_reference_image;
-                if let Err(e) = save_reference_image(image, &screenshot_name) {
-                    error!("Failed to save screenshot {}: {}", screenshot_name, e);
-                } else {
-                    info!("Screenshot saved as {}", screenshot_name);
-                }
-            })),
+        ew_screenshots.send(ScreenshotEvent {
+            entity: Entity::PLACEHOLDER,
+            name: screenshot_name,
         });
     }
 }
@@ -146,6 +112,10 @@ pub struct ScreenshotCapturePlugin;
 impl Plugin for ScreenshotCapturePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ScreenshotRequests>()
-            .add_systems(Update, capture_on_command_system);
+            .add_event::<ScreenshotEvent>()
+            .add_systems(
+                Update,
+                (capture_screenshot_system, capture_on_command_system),
+            );
     }
 }

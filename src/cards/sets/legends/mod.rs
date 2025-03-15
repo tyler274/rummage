@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::cards::CardSet;
+use crate::cards::set::CardSet;
 
 // Card modules for Legends
 pub mod mana_drain;

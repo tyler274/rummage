@@ -82,7 +82,8 @@ fn test_comprehensive_snapshot_workflow() {
     app.init_resource::<SnapshotConfig>()
         .insert_resource(SnapshotDisabled::enabled())
         .add_event::<SnapshotEvent>()
-        .init_resource::<Time>();
+        .init_resource::<Time>()
+        .init_resource::<crate::snapshot::resources::SnapshotDebugState>();
 
     // Instead of adding an exclusive system run directly, use the non-exclusive version
     // that takes component-based system parameters

@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 
+use crate::cards::rarity::Rarity;
 use crate::cards::{
     Card, CardCost, CardDetails, CardDetailsComponent, CardKeywords, CardName, CardRulesText,
-    CardTypeInfo, CardTypes, Rarity,
+    CardTypeInfo, CardTypes,
 };
 use crate::mana::Mana;
 
