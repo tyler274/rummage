@@ -2,6 +2,9 @@ use bevy::prelude::*;
 
 use crate::cards::Card;
 use crate::cards::components::Draggable;
+use crate::cards::details::CardDetails;
+use crate::cards::types::CardTypes;
+use crate::mana::Mana;
 use crate::text;
 
 pub fn handle_card_dragging(
@@ -109,6 +112,7 @@ pub fn debug_render_text_positions(
     mut gizmos: Gizmos,
     card_query: Query<(&Transform, &Card), With<Card>>,
     config: Res<text::DebugConfig>,
+    player_config: Res<crate::player::resources::PlayerConfig>,
 ) {
     if !config.show_text_positions {
         return;
@@ -116,29 +120,28 @@ pub fn debug_render_text_positions(
 
     for (transform, _) in card_query.iter() {
         let card_pos = transform.translation.truncate();
-        let card_width = 100.0;
-        let card_height = card_width * 1.4;
+        let card_size = player_config.card_size;
 
         // Note: Using Color::srgb instead of Color::rgb as rgb is deprecated
 
         // Name position (top left) - red dot
-        let name_pos = card_pos + Vec2::new(-card_width * 0.25, card_height * 0.35);
+        let name_pos = card_pos + Vec2::new(-card_size.x * 0.25, card_size.y * 0.35);
         gizmos.circle_2d(name_pos, 3.0, Color::srgb(1.0, 0.0, 0.0));
 
         // Mana cost position (top right) - blue dot
-        let cost_pos = card_pos + Vec2::new(card_width * 0.35, card_height * 0.35);
+        let cost_pos = card_pos + Vec2::new(card_size.x * 0.35, card_size.y * 0.35);
         gizmos.circle_2d(cost_pos, 3.0, Color::srgb(0.0, 0.0, 1.0));
 
         // Type position (middle center) - green dot
-        let type_pos = card_pos + Vec2::new(0.0, card_height * 0.05);
+        let type_pos = card_pos + Vec2::new(0.0, card_size.y * 0.05);
         gizmos.circle_2d(type_pos, 3.0, Color::srgb(0.0, 1.0, 0.0));
 
         // Rules text position (middle/bottom center) - yellow dot
-        let rules_pos = card_pos + Vec2::new(0.0, -card_height * 0.15);
+        let rules_pos = card_pos + Vec2::new(0.0, -card_size.y * 0.15);
         gizmos.circle_2d(rules_pos, 3.0, Color::srgb(1.0, 1.0, 0.0));
 
         // Power/toughness position (bottom right) - purple dot
-        let pt_pos = card_pos + Vec2::new(card_width * 0.35, -card_height * 0.35);
+        let pt_pos = card_pos + Vec2::new(card_size.x * 0.35, -card_size.y * 0.35);
         gizmos.circle_2d(pt_pos, 3.0, Color::srgb(1.0, 0.0, 1.0));
     }
 }
@@ -161,12 +164,22 @@ mod tests {
 
         // Create a card entity with the Card and Draggable components
         app.world_mut().spawn((
-            Card::builder("Draggable Card").build(),
+            Card::builder("Draggable Card")
+                .cost(Mana::default())
+                .types(CardTypes::default())
+                .details(CardDetails::default())
+                .build_or_panic(),
             Draggable::default(),
         ));
 
         // Create a non-draggable card
-        app.world.spawn(Card::builder("Non-Draggable Card").build());
+        app.world_mut().spawn(
+            Card::builder("Non-Draggable Card")
+                .cost(Mana::default())
+                .types(CardTypes::default())
+                .details(CardDetails::default())
+                .build_or_panic(),
+        );
 
         // Run the system that uses the filter
         fn test_system(card_query: Query<(), (With<Card>, With<Draggable>)>) {
@@ -182,8 +195,13 @@ mod tests {
         app2.add_plugins(MinimalPlugins);
 
         // Only add non-draggable cards
-        app2.world
-            .spawn(Card::builder("Non-Draggable Card").build());
+        app2.world_mut().spawn(
+            Card::builder("Non-Draggable Card")
+                .cost(Mana::default())
+                .types(CardTypes::default())
+                .details(CardDetails::default())
+                .build_or_panic(),
+        );
 
         fn test_system_no_draggable(card_query: Query<(), (With<Card>, With<Draggable>)>) {
             let has_draggable_cards = draggable_card_filter(card_query);
