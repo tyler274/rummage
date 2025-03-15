@@ -4,6 +4,7 @@ use bevy::text::JustifyText;
 use crate::cards::Card;
 use crate::text::{
     components::{CardManaCostText, CardTextType, TextLayoutInfo},
+    mana_symbols::{ManaSymbolOptions, render_mana_symbol},
     utils::{get_adaptive_font_size, get_card_layout},
 };
 
@@ -35,34 +36,81 @@ pub fn spawn_mana_cost_text(
         10.0, // Minimum size
     );
 
-    // Load font - we'll use regular font for now
-    // In future updates this could be replaced with specialized mana symbol rendering
-    let font = asset_server.load("fonts/DejaVuSans.ttf");
-
-    // Create the mana cost entity
-    commands
+    // Create parent entity for all mana symbols
+    let parent_entity = commands
         .spawn((
-            Text2d::new(mana_cost_component.mana_cost.clone()),
-            Transform::from_translation(Vec3::new(
-                mana_position.x,
-                mana_position.y,
-                0.1, // Slightly above the card
-            )),
-            GlobalTransform::default(),
-            TextFont {
-                font,
-                font_size,
-                ..default()
-            },
-            TextColor(Color::BLACK),
-            TextLayout::new_with_justify(JustifyText::Right), // Right-justified
+            // Use separate components instead of SpatialBundle
+            Transform::from_translation(Vec3::new(mana_position.x, mana_position.y, 0.1)),
+            // GlobalTransform is automatically added
+            Visibility::default(),
             CardTextType::ManaCost,
             TextLayoutInfo {
                 alignment: JustifyText::Right,
             },
             Name::new(format!("Mana Cost: {}", mana_cost_component.mana_cost)),
         ))
-        .id()
+        .id();
+
+    // Load the specialized mana font
+    let mana_font = asset_server.load("fonts/Mana.ttf");
+
+    // Parse the mana cost string and create individual symbols
+    let mana_string = &mana_cost_component.mana_cost;
+
+    // Look for patterns like {W}, {U}, {B}, {R}, {G}, {1}, etc.
+    let symbol_spacing = font_size * 0.8; // Spacing between symbols
+
+    // Count symbols to center properly (right-aligned)
+    let mut symbols = Vec::new();
+    let mut current_symbol = String::new();
+    let mut in_symbol = false;
+
+    for c in mana_string.chars() {
+        match c {
+            '{' => {
+                in_symbol = true;
+                current_symbol.push('{');
+            }
+            '}' => {
+                if in_symbol {
+                    current_symbol.push('}');
+                    symbols.push(current_symbol.clone());
+                    current_symbol.clear();
+                    in_symbol = false;
+                }
+            }
+            _ => {
+                if in_symbol {
+                    current_symbol.push(c);
+                }
+            }
+        }
+    }
+
+    // Calculate total width for right alignment
+    let total_width = symbols.len() as f32 * symbol_spacing;
+
+    // Render each symbol
+    for (i, symbol) in symbols.iter().enumerate() {
+        // Position for this symbol (right-aligned)
+        let pos_x = -total_width / 2.0 + i as f32 * symbol_spacing;
+
+        // Render the mana symbol with the appropriate styling
+        render_mana_symbol(
+            commands,
+            symbol,
+            Vec2::new(pos_x, 0.0), // Local position relative to parent
+            mana_font.clone(),
+            ManaSymbolOptions {
+                font_size,
+                with_colored_background: true,
+                ..default()
+            },
+            parent_entity,
+        );
+    }
+
+    parent_entity
 }
 
 /// System implementation that finds cards and creates mana cost text for them

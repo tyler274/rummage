@@ -56,7 +56,7 @@ impl Default for CardTextLayout {
             card_height: 1050.0, // 3.5 inches * 300 DPI
 
             // Position name with a proper margin from the left edge of the card frame
-            name_x_offset: -0.20,
+            name_x_offset: -0.40,
             name_y_offset: 0.41,
 
             // Adjusted width to prevent long names from extending beyond card boundaries
