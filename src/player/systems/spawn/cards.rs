@@ -1,7 +1,8 @@
 use super::table::TableLayout;
 use crate::camera::components::{AppLayer, GameCamera};
-use crate::cards::Draggable;
 use crate::cards::text::card_text::spawn_card_text_components;
+use crate::cards::{CardZone, Draggable};
+use crate::game_engine::zones::Zone;
 
 use bevy::prelude::*;
 
@@ -17,6 +18,23 @@ pub fn spawn_visual_cards(
     table: &TableLayout,
     asset_server_option: Option<&AssetServer>,
 ) {
+    // Skip if no cards to spawn
+    if display_cards.is_empty() {
+        warn!("No cards to spawn for player {}", player_index);
+        return;
+    }
+
+    // Use the player index to create a placeholder for the player entity
+    // The actual connection to zones will be done in the connect_cards_to_zones system
+    let player_entity = Entity::from_raw(1000 + player_index as u32);
+
+    info!(
+        "Spawning {} cards for player {} (index {})",
+        display_cards.len(),
+        player_entity.index(),
+        player_index
+    );
+
     // Increase the spacing between cards
     let spacing = card_size.x * spacing_multiplier * 1.5;
 
@@ -85,6 +103,11 @@ pub fn spawn_visual_cards(
                 z_index: z,
             })
             .insert(AppLayer::Cards.layer()) // Use the specific Cards layer
+            // Add CardZone component to link to game engine state
+            .insert(CardZone {
+                zone: Zone::Hand,
+                zone_owner: Some(player_entity),
+            })
             .id();
 
         // Spawn text components directly instead of just adding marker components

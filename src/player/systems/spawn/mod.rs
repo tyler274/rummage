@@ -21,7 +21,7 @@ use bevy::prelude::*;
 /// 4. Creates a playmat for each player using the game engine Zone structure
 /// 5. Creates independent deck components for each player
 pub fn spawn_players(
-    mut commands: Commands,
+    commands: &mut Commands,
     asset_server: Res<AssetServer>,
     game_cameras: Query<Entity, With<GameCamera>>,
     player_config: Option<Res<PlayerConfig>>,
@@ -69,7 +69,7 @@ pub fn spawn_players(
 
         // Spawn the player's playmat
         spawn_player_playmat(
-            &mut commands,
+            commands,
             &asset_server,
             player_entity,
             &player,
@@ -128,7 +128,7 @@ pub fn spawn_players(
 
             // Create visual representations of the cards
             cards::spawn_visual_cards(
-                &mut commands,
+                commands,
                 display_cards,
                 &game_cameras,
                 &config.card_size,

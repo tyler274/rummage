@@ -4,7 +4,9 @@ use bevy::prelude::*;
 
 // Import what we need
 use crate::camera::components::GameCamera;
+use crate::cards::CardZone;
 use crate::game_engine::save::SaveLoadPlugin;
+use crate::game_engine::zones::{Zone, ZoneManager};
 use crate::menu::GameMenuState;
 use crate::player::{PlayerPlugin, resources::PlayerConfig, spawn_players};
 
@@ -28,18 +30,23 @@ impl Plugin for MainRummagePlugin {
                     .with_player_card_offset(2, 1200.0) // Top player
                     .with_player_card_offset(3, 0.0), // Left player
             )
+            // Initialize zone manager resource
+            .init_resource::<ZoneManager>()
             // Add game setup system
-            .add_systems(OnEnter(GameMenuState::InGame), setup_game);
+            .add_systems(OnEnter(GameMenuState::InGame), setup_game)
+            // System to connect cards to zones after they're spawned
+            .add_systems(Update, connect_cards_to_zones);
     }
 }
 
 // Game setup system that spawns players
 fn setup_game(
-    commands: Commands,
+    mut commands: Commands,
     asset_server: Res<AssetServer>,
     game_cameras: Query<Entity, With<GameCamera>>,
     context: Res<crate::menu::state::StateTransitionContext>,
     player_config: Res<PlayerConfig>,
+    _zone_manager: ResMut<ZoneManager>,
 ) {
     // Skip setup if we're coming from pause menu
     if context.from_pause_menu {
@@ -50,8 +57,68 @@ fn setup_game(
     // Normal game setup - this is a fresh game
     info!("Spawning players...");
 
-    // Spawn the players
-    spawn_players(commands, asset_server, game_cameras, Some(player_config));
+    // Spawn the players (passing commands by reference)
+    spawn_players(
+        &mut commands,
+        asset_server,
+        game_cameras,
+        Some(player_config),
+    );
 
     info!("Game setup complete!");
+
+    // Post-setup connection of cards to zones
+    // Add system to connect spawned cards to hand zones in the next frame
+    commands.spawn((
+        Name::new("Card-to-Zone Connection System"),
+        InitializeCardsEvent,
+    ));
+}
+
+// One-time event to connect cards to zones after they're spawned
+#[derive(Component)]
+pub struct InitializeCardsEvent;
+
+// Additional systems that run after game setup
+pub fn connect_cards_to_zones(
+    mut commands: Commands,
+    query: Query<(Entity, &InitializeCardsEvent)>,
+    card_query: Query<(Entity, &CardZone)>,
+    mut zone_manager: ResMut<ZoneManager>,
+) {
+    for (entity, _) in query.iter() {
+        info!("Connecting cards to zones...");
+
+        // Process each card and add it to the appropriate zone in ZoneManager
+        for (card_entity, card_zone) in card_query.iter() {
+            match card_zone.zone {
+                Zone::Hand => {
+                    if let Some(owner) = card_zone.zone_owner {
+                        zone_manager.add_to_hand(owner, card_entity);
+                        info!("Added card {:?} to player {:?}'s hand", card_entity, owner);
+                    }
+                }
+                Zone::Library => {
+                    if let Some(owner) = card_zone.zone_owner {
+                        zone_manager.add_to_library(owner, card_entity);
+                    }
+                }
+                Zone::Battlefield => {
+                    zone_manager.add_to_battlefield(
+                        card_zone.zone_owner.unwrap_or(Entity::PLACEHOLDER),
+                        card_entity,
+                    );
+                }
+                Zone::Graveyard => {
+                    if let Some(owner) = card_zone.zone_owner {
+                        zone_manager.add_to_graveyard(owner, card_entity);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        // Remove the one-time event
+        commands.entity(entity).despawn();
+    }
 }
