@@ -8,7 +8,7 @@ use crate::cards::CardZone;
 use crate::game_engine::save::SaveLoadPlugin;
 use crate::game_engine::zones::{Zone, ZoneManager};
 use crate::menu::GameMenuState;
-use crate::player::{PlayerPlugin, resources::PlayerConfig, spawn_players};
+use crate::player::{PlayerPlugin, components::Player, resources::PlayerConfig, spawn_players};
 
 pub struct MainRummagePlugin;
 
@@ -37,7 +37,9 @@ impl Plugin for MainRummagePlugin {
             // System to connect cards to zones after they're spawned
             .add_systems(Update, connect_cards_to_zones)
             // Add a system to ensure game camera is visible in InGame state
-            .add_systems(OnEnter(GameMenuState::InGame), ensure_game_camera_visible);
+            .add_systems(OnEnter(GameMenuState::InGame), ensure_game_camera_visible)
+            // Add a diagnostic system to check card status
+            .add_systems(Update, check_card_status);
     }
 }
 
@@ -91,6 +93,13 @@ pub fn connect_cards_to_zones(
     for (entity, _) in query.iter() {
         info!("Connecting cards to zones...");
 
+        let card_count = card_query.iter().count();
+        info!("Found {} cards to connect to zones", card_count);
+
+        if card_count == 0 {
+            warn!("No cards found to connect to zones - cards may not be visible");
+        }
+
         // Process each card and add it to the appropriate zone in ZoneManager
         for (card_entity, card_zone) in card_query.iter() {
             match card_zone.zone {
@@ -98,30 +107,55 @@ pub fn connect_cards_to_zones(
                     if let Some(owner) = card_zone.zone_owner {
                         zone_manager.add_to_hand(owner, card_entity);
                         info!("Added card {:?} to player {:?}'s hand", card_entity, owner);
+                    } else {
+                        warn!("Card {:?} has no owner, cannot add to hand", card_entity);
                     }
                 }
                 Zone::Library => {
                     if let Some(owner) = card_zone.zone_owner {
                         zone_manager.add_to_library(owner, card_entity);
+                        info!(
+                            "Added card {:?} to player {:?}'s library",
+                            card_entity, owner
+                        );
+                    } else {
+                        warn!("Card {:?} has no owner, cannot add to library", card_entity);
                     }
                 }
                 Zone::Battlefield => {
-                    zone_manager.add_to_battlefield(
-                        card_zone.zone_owner.unwrap_or(Entity::PLACEHOLDER),
-                        card_entity,
+                    let owner = card_zone.zone_owner.unwrap_or(Entity::PLACEHOLDER);
+                    zone_manager.add_to_battlefield(owner, card_entity);
+                    info!(
+                        "Added card {:?} to battlefield with owner {:?}",
+                        card_entity, owner
                     );
                 }
                 Zone::Graveyard => {
                     if let Some(owner) = card_zone.zone_owner {
                         zone_manager.add_to_graveyard(owner, card_entity);
+                        info!(
+                            "Added card {:?} to player {:?}'s graveyard",
+                            card_entity, owner
+                        );
+                    } else {
+                        warn!(
+                            "Card {:?} has no owner, cannot add to graveyard",
+                            card_entity
+                        );
                     }
                 }
-                _ => {}
+                _ => {
+                    warn!(
+                        "Card {:?} has unknown zone {:?}",
+                        card_entity, card_zone.zone
+                    );
+                }
             }
         }
 
         // Remove the one-time event
         commands.entity(entity).despawn();
+        info!("Card connection complete");
     }
 }
 
@@ -130,5 +164,71 @@ fn ensure_game_camera_visible(mut game_camera_query: Query<&mut Visibility, With
     for mut visibility in game_camera_query.iter_mut() {
         *visibility = Visibility::Visible;
         info!("Ensuring game camera is visible for card rendering");
+    }
+}
+
+// Diagnostic system to check card status
+fn check_card_status(
+    cards: Query<(Entity, &Transform, &Visibility), With<crate::cards::Card>>,
+    player_query: Query<(Entity, &Player)>,
+    game_camera_query: Query<Entity, With<GameCamera>>,
+    zone_manager: Res<ZoneManager>,
+    mut has_run: Local<bool>,
+) {
+    // Only run once
+    if *has_run {
+        return;
+    }
+
+    // Wait a few frames before checking
+    static mut FRAME_COUNT: u32 = 0;
+    unsafe {
+        FRAME_COUNT += 1;
+        if FRAME_COUNT < 30 {
+            return;
+        }
+    }
+
+    *has_run = true;
+
+    if cards.is_empty() {
+        error!("No cards found! Cards are not being spawned properly.");
+        return;
+    }
+
+    info!("Found {} cards in the world", cards.iter().count());
+
+    // Check player entities
+    if player_query.is_empty() {
+        error!("No player entities found!");
+    } else {
+        info!("Found {} player entities", player_query.iter().count());
+        for (entity, player) in player_query.iter() {
+            info!(
+                "Player {:?} with name '{}' at index {}",
+                entity, player.name, player.player_index
+            );
+        }
+    }
+
+    // Check game camera
+    if game_camera_query.is_empty() {
+        error!("No game camera found!");
+    } else {
+        info!("Game camera entity: {:?}", game_camera_query.single());
+    }
+
+    // Print some cards for debugging
+    for (i, (entity, transform, visibility)) in cards.iter().enumerate().take(3) {
+        let is_visible = match visibility {
+            Visibility::Visible => "visible",
+            Visibility::Hidden => "hidden",
+            Visibility::Inherited => "inherited",
+        };
+
+        info!(
+            "Card {}: Entity {:?} at position {:?} is {}",
+            i, entity, transform.translation, is_visible
+        );
     }
 }

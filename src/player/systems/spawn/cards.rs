@@ -15,6 +15,7 @@ pub fn spawn_visual_cards(
     spacing_multiplier: f32,
     player_position: Vec3,
     player_index: usize,
+    player_entity: Entity,
     table: &TableLayout,
     asset_server_option: Option<&AssetServer>,
 ) {
@@ -24,14 +25,10 @@ pub fn spawn_visual_cards(
         return;
     }
 
-    // Use the player index to create a placeholder for the player entity
-    // The actual connection to zones will be done in the connect_cards_to_zones system
-    let player_entity = Entity::from_raw(1000 + player_index as u32);
-
     info!(
-        "Spawning {} cards for player {} (index {})",
+        "Spawning {} cards for player {:?} (index {})",
         display_cards.len(),
-        player_entity.index(),
+        player_entity,
         player_index
     );
 
@@ -103,7 +100,7 @@ pub fn spawn_visual_cards(
                 z_index: z,
             })
             .insert(AppLayer::Cards.layer()) // Use the specific Cards layer
-            // Add CardZone component to link to game engine state
+            // Add CardZone component to link to game engine state with the actual player entity
             .insert(CardZone {
                 zone: Zone::Hand,
                 zone_owner: Some(player_entity),

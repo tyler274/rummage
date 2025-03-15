@@ -135,6 +135,7 @@ pub fn spawn_players(
                 config.card_spacing_multiplier,
                 card_position,
                 player_index,
+                player_entity,
                 &table,
                 Some(&asset_server),
             );
