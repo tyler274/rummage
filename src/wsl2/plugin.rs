@@ -1,15 +1,13 @@
 use bevy::{
     app::AppExit,
     prelude::*,
-    window::{
-        PresentMode, Window, WindowPlugin, WindowResizeConstraints,
-        WindowResolution,
-    },
+    window::{PresentMode, Window, WindowPlugin, WindowResizeConstraints, WindowResolution},
 };
 
 use super::{systems::*, utils::detect_wsl2};
 
 /// Handle exit events from the application
+#[allow(dead_code)]
 fn handle_exit_events(mut exit_events: EventReader<AppExit>) {
     for _ in exit_events.read() {
         info!("WSL2 plugin: Processing exit event");

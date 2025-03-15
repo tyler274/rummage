@@ -34,6 +34,7 @@ impl Player {
     }
 
     /// Sets the player's mana pool
+    #[allow(dead_code)]
     pub fn with_mana_pool(mut self, mana_pool: ManaPool) -> Self {
         self.mana_pool = mana_pool;
         self

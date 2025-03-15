@@ -33,6 +33,7 @@ impl PermanentState {
     }
 
     /// Tap a permanent. Returns false if already tapped.
+    #[allow(dead_code)]
     pub fn tap(&mut self) -> bool {
         if self.is_tapped {
             return false;
@@ -42,6 +43,7 @@ impl PermanentState {
     }
 
     /// Untap a permanent. Returns false if already untapped.
+    #[allow(dead_code)]
     pub fn untap(&mut self) -> bool {
         if !self.is_tapped {
             return false;
@@ -51,6 +53,7 @@ impl PermanentState {
     }
 
     /// Check if the permanent can be tapped (not already tapped and no summoning sickness for creatures)
+    #[allow(dead_code)]
     pub fn can_tap(&self, is_creature: bool) -> bool {
         !self.is_tapped && (!is_creature || !self.has_summoning_sickness)
     }

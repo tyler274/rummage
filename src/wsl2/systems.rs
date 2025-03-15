@@ -4,12 +4,14 @@ use bevy::{
 };
 
 /// A simple heartbeat system that keeps the app responsive in WSL2
+#[allow(dead_code)]
 pub fn wsl2_heartbeat() {
     // This empty system runs every frame and helps prevent the app from freezing
     // by ensuring the event loop continues to process events
 }
 
 /// Handle window focus events to prevent freezing
+#[allow(dead_code)]
 pub fn handle_window_focus(
     mut window_focused_events: EventReader<WindowFocused>,
     mut windows: Query<&mut Window>,

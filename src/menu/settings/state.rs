@@ -20,6 +20,7 @@ pub enum SettingsMenuState {
 
 impl SettingsMenuState {
     /// Get a user-friendly name for the settings state
+    #[allow(dead_code)]
     pub fn name(&self) -> &'static str {
         match self {
             Self::Main => "Main Settings",

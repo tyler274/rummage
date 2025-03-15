@@ -14,6 +14,7 @@ use bevy::ui::{AlignItems, FlexDirection, JustifyContent, PositionType, UiRect, 
 
 /// Component to mark background image for easier access
 #[derive(Component)]
+#[allow(dead_code)]
 struct MenuBackground;
 
 /// Sets up the main menu interface with buttons and layout

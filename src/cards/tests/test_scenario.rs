@@ -16,6 +16,7 @@ use crate::cards::components::{CardOwner, CardZone};
 /// with players, cards, and a game state for testing card interactions.
 pub struct TestScenario {
     /// The world for the test
+    #[allow(dead_code)]
     world: World, // Removed pub since it's never read
     /// Players in the test scenario
     pub players: Vec<Entity>,

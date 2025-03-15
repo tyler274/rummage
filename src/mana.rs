@@ -393,6 +393,7 @@ impl ManaPool {
 
     /// Adds mana to the pool.
     ///
+    #[allow(dead_code)]
     pub fn add(&mut self, mana: Mana) {
         // Add to the HashMap for efficient access
         let entry = self.mana.entry(mana.color).or_default();
@@ -410,6 +411,7 @@ impl ManaPool {
 
     /// Removes mana from the pool. Returns true if successful.
     ///
+    #[allow(dead_code)]
     pub fn remove(&mut self, mana: Mana) -> bool {
         if let Some(entry) = self.mana.get_mut(&mana.color) {
             if entry.white >= mana.white
@@ -437,6 +439,7 @@ impl ManaPool {
 
     /// Clears all mana from the pool.
     ///
+    #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.mana.clear();
         self.reflectable_mana.clear();
@@ -452,6 +455,7 @@ impl ManaPool {
     }
 
     /// Rebuild the mana HashMap from reflectable_mana (used after deserialization)
+    #[allow(dead_code)]
     pub fn rebuild_from_reflectable(&mut self) {
         self.mana.clear();
         for (reflectable_color, mana) in &self.reflectable_mana {
