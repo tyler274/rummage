@@ -70,7 +70,7 @@ pub fn spawn_visual_cards(
         let card_clone = card.clone(); // Clone card to use later
 
         // Calculate z-index based on position to ensure proper layering
-        let z = 10.0 + (i as f32 * 0.1); // Increase z value to avoid z-fighting and ensure cards are above the board
+        let z = 10.0 + (i as f32 * 1.0); // Increased z-index separation to avoid z-fighting
 
         // Calculate the position for this card
         let position = Vec3::new(

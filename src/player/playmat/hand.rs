@@ -132,7 +132,9 @@ pub fn arrange_cards_in_hand(
                 let rotation = if hand.is_expanded { angle * 0.3 } else { 0.0 };
 
                 // Apply the calculated position and rotation
-                card_transform.translation = Vec3::new(x, y, i as f32);
+                // Significantly increase z-index differences between cards to prevent z-fighting
+                let z = 10.0 + (i as f32 * 1.0); // Increased from 0.1 to 1.0 for clearer z separation
+                card_transform.translation = Vec3::new(x, y, z);
                 card_transform.rotation = Quat::from_rotation_z(rotation);
                 card_transform.scale = Vec3::splat(scale);
             }
@@ -159,7 +161,14 @@ fn calculate_hand_layout(
         (optimal_count as f32 / card_count as f32).max(0.6)
     };
 
-    let min_card_spacing = card_width * (1.0 - max_overlap) * scale;
+    // Decrease maximum overlap to prevent cards stacking too closely
+    let effective_max_overlap = if card_count > optimal_count {
+        max_overlap * 0.8 // Reduce overlap for larger hands to prevent text rendering issues
+    } else {
+        max_overlap
+    };
+
+    let min_card_spacing = card_width * (1.0 - effective_max_overlap) * scale;
 
     // Calculate actual spacing
     let spacing = if is_expanded {
