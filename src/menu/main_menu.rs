@@ -29,6 +29,7 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     // Load and play background music
     let music_handle = asset_server.load("music/Negev sings Hava Nagila [XwZwz0iCuF0].ogg");
+    debug!("Starting main menu music playback");
     commands.spawn((
         AudioPlayer::new(music_handle),
         PlaybackSettings {

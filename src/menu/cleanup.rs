@@ -23,6 +23,7 @@ pub fn cleanup_main_menu(
 
     // Clean up the main menu music
     for entity in main_menu_music.iter() {
+        debug!("Stopping main menu music");
         commands.entity(entity).despawn();
     }
 }
