@@ -15,7 +15,7 @@ mod tracing;
 mod utils;
 
 use bevy::DefaultPlugins;
-use bevy::audio::{AudioPlayer, AudioPlugin, PlaybackMode, PlaybackSettings, Volume};
+use bevy::audio::AudioPlugin;
 use bevy::log::Level;
 use bevy::prelude::*;
 use bevy::time::Fixed;
@@ -26,10 +26,6 @@ use plugins::MainRummagePlugin;
 #[cfg(feature = "snapshot")]
 use snapshot::SnapshotDisabled;
 use tracing::DiagnosticsPlugin;
-
-// A simple component to mark the test sound
-#[derive(Component)]
-struct TestSound;
 
 fn main() {
     println!("Starting Rummage application...");
@@ -64,11 +60,11 @@ fn main() {
                         // Prefer Vulkan backend for better WSL2 compatibility
                         backends: Some(bevy::render::settings::Backends::VULKAN),
                         // Use low power preference for better WSL2 compatibility
-                        power_preference: bevy::render::settings::PowerPreference::LowPower,
+                        // power_preference: bevy::render::settings::PowerPreference::LowPower,
                         // Don't require all features, adapt to what's available in WSL2
-                        features: bevy::render::settings::WgpuFeatures::empty(),
+                        // features: bevy::render::settings::WgpuFeatures::empty(),
                         // Add more conservative options for WSL2 compatibility
-                        dx12_shader_compiler: bevy::render::settings::Dx12Compiler::Fxc,
+                        // dx12_shader_compiler: bevy::render::settings::Dx12Compiler::Fxc,
                         ..default()
                     },
                 ),
@@ -91,12 +87,7 @@ fn main() {
     .add_plugins(DiagnosticsPlugin) // Add our diagnostics plugin
     .add_plugins(CameraPlugin) // Add the camera plugin which manages SnapshotEvent
     .add_plugins(MenuPlugin)
-    .add_plugins(MainRummagePlugin)
-    // Add a startup system to test audio
-    .add_systems(Startup, test_audio)
-    // Add a system to clean up the test sound after a delay
-    .add_systems(Update, cleanup_test_sound);
-
+    .add_plugins(MainRummagePlugin);
     // Add debug logging for audio system
     info!("Audio system initialized with DefaultPlugins");
 
@@ -105,77 +96,4 @@ fn main() {
     app.insert_resource(SnapshotDisabled::enabled()); // Enable snapshots
 
     app.add_systems(Update, utils::handle_exit).run();
-}
-
-// System to test if audio works at all
-fn test_audio(mut commands: Commands, asset_server: Res<AssetServer>) {
-    info!("Attempting to play test audio");
-
-    // Use an absolute path for testing
-    let file_path = "music/Negev sings Hava Nagila [XwZwz0iCuF0].ogg";
-    info!("Loading audio file from path: {}", file_path);
-
-    let test_sound = asset_server.load(file_path);
-
-    // Spawn two audio entities with different configurations to maximize chances of working
-    let entity1 = commands
-        .spawn((
-            AudioPlayer::new(test_sound.clone()),
-            PlaybackSettings {
-                mode: PlaybackMode::Loop, // Change to loop to keep playing
-                volume: Volume::new(1.0),
-                speed: 1.0,
-                paused: false,
-                ..default()
-            },
-            TestSound,
-            Name::new("Test Sound 1 - Loop"),
-        ))
-        .id();
-
-    info!("Spawned test sound entity 1: {:?}", entity1);
-
-    // Spawn a second test sound with slightly different settings
-    let entity2 = commands
-        .spawn((
-            AudioPlayer::new(test_sound),
-            PlaybackSettings {
-                mode: PlaybackMode::Once,
-                volume: Volume::new(1.0),
-                speed: 1.0,
-                paused: false,
-                ..default()
-            },
-            TestSound,
-            Name::new("Test Sound 2 - Once"),
-        ))
-        .id();
-
-    info!("Spawned test sound entity 2: {:?}", entity2);
-}
-
-// System to clean up the test sound after a delay
-fn cleanup_test_sound(
-    mut commands: Commands,
-    test_sounds: Query<(Entity, &TestSound)>,
-    time: Res<Time>,
-    mut timer: Local<Option<Timer>>,
-) {
-    // Initialize the timer if it's None
-    if timer.is_none() {
-        *timer = Some(Timer::from_seconds(5.0, TimerMode::Once));
-    }
-
-    // Tick the timer
-    if let Some(timer_ref) = timer.as_mut() {
-        timer_ref.tick(time.delta());
-
-        // If the timer finished, despawn the test sounds
-        if timer_ref.just_finished() {
-            info!("Cleaning up test sounds");
-            for (entity, _) in test_sounds.iter() {
-                commands.entity(entity).despawn();
-            }
-        }
-    }
 }

@@ -25,3 +25,4 @@ target/
 
 # Ignore generated book files
 docs/book/
+settings/
