@@ -28,4 +28,4 @@ docs/book/
 settings/
 
 # Ignore all files in the save directory
-save/
+saves/
