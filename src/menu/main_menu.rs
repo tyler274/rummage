@@ -65,6 +65,8 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
         Transform::from_xyz(0.0, 0.0, -10.0),
         // Marker component
         MenuBackground,
+        // Add MenuItem component for proper cleanup
+        MenuItem,
         // Ensure visibility
         Visibility::Visible,
         InheritedVisibility::default(),
