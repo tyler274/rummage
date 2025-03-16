@@ -18,3 +18,8 @@ To fix audio issues in WSL2:
    ```bash
    source ~/.bashrc
    ```
+
+4. Install Alsa/Pulse deps
+   ```bash
+   sudo apt install libasound2t64 libasound2-plugins libpulse0
+   ```
