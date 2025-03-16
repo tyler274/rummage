@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_persistent::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// Marker component for settings menu entities

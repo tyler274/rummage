@@ -161,7 +161,7 @@ fn start_drag(
     mut commands: Commands,
     mouse_button_input: Res<ButtonInput<MouseButton>>,
     camera_query: Query<(&Camera, &GlobalTransform), With<crate::camera::components::GameCamera>>,
-    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
+    _window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     draggable_query: Query<(Entity, &GlobalTransform, &Draggable)>,
 ) {
     if !mouse_button_input.just_pressed(MouseButton::Left) {
@@ -173,7 +173,7 @@ fn start_drag(
         Err(_) => return, // No camera, can't process dragging
     };
 
-    let window = match window_query.get_single() {
+    let window = match _window_query.get_single() {
         Ok(result) => result,
         Err(_) => return, // No window, can't process dragging
     };
@@ -217,7 +217,7 @@ fn screen_to_world(
     camera: &Camera,
     camera_transform: &GlobalTransform,
     screen_pos: Vec2,
-    window: &Window,
+    _window: &Window,
 ) -> Option<Vec2> {
     camera
         .viewport_to_world_2d(camera_transform, screen_pos)

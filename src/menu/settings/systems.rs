@@ -370,7 +370,7 @@ fn create_volume_slider(
 
 /// Component to mark volume value text for updating
 #[derive(Component)]
-struct VolumeValueText(VolumeType);
+pub struct VolumeValueText(pub VolumeType);
 
 /// Sets up the gameplay settings screen
 pub fn setup_gameplay_settings(
@@ -731,6 +731,7 @@ pub fn volume_slider_interaction(
         (&Interaction, &VolumeType, &Node, &GlobalTransform),
         (Changed<Interaction>, With<Button>),
     >,
+    volume_type_query: Query<&VolumeType>,
     mut volume_settings: ResMut<VolumeSettings>,
     mut text_query: Query<(&mut Text, &VolumeValueText)>,
     mut volume_indicators: Query<(&mut Node, &Parent), Without<Button>>,
@@ -795,8 +796,8 @@ pub fn volume_slider_interaction(
 
                 // Update the visual slider
                 for (mut indicator_node, parent) in volume_indicators.iter_mut() {
-                    // Try to find the parent node that has the VolumeType component
-                    if let Ok((_, parent_volume_type, _, _)) = interaction_query.get(parent.get()) {
+                    // Use the separate query to get the parent's volume type
+                    if let Ok(parent_volume_type) = volume_type_query.get(parent.get()) {
                         if *parent_volume_type as u8 == *volume_type as u8 {
                             indicator_node.width = Val::Percent(clamped_value as f32);
                         }

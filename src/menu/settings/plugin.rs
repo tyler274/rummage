@@ -97,20 +97,13 @@ fn apply_volume_settings(
     mut global_volume: ResMut<bevy::prelude::GlobalVolume>
 ) {
     if let Some(persistent) = persistent_volume {
-        // Persistent.get() returns Result<&VolumeSettings, PersistenceError>
-        match persistent.get() {
-            Ok(volume) => {
-                info!("Applying saved volume settings: {:?}", volume);
-                // Update the actual settings resource
-                *volume_settings = volume.clone();
-                // Apply to global volume
-                global_volume.volume = bevy::audio::Volume::new(volume.master);
-            }
-            Err(e) => {
-                info!("No saved volume settings found, using defaults: {:?}", e);
-                global_volume.volume = bevy::audio::Volume::new(volume_settings.master);
-            }
-        }
+        info!("Applying saved volume settings: {:?}", *persistent);
+        
+        // Update the actual settings resource 
+        *volume_settings = (*persistent).clone();
+        
+        // Apply to global volume
+        global_volume.volume = bevy::audio::Volume::new(volume_settings.master);
     } else {
         info!("No persistent volume settings available, using defaults");
         global_volume.volume = bevy::audio::Volume::new(volume_settings.master);
