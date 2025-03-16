@@ -123,20 +123,20 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 BackgroundColor(Color::srgba(0.05, 0.03, 0.01, 0.6)),
             ));
 
-            // Add a center highlight (subtle radial effect)
-            parent.spawn((
-                Node {
-                    width: Val::Percent(70.0),
-                    height: Val::Percent(70.0),
-                    position_type: PositionType::Absolute,
-                    top: Val::Percent(15.0),
-                    left: Val::Percent(15.0),
-                    ..default()
-                },
-                BackgroundColor(Color::srgba(0.5, 0.4, 0.15, 0.15)),
-                // Add rounded corners to create a soft radial effect
-                BorderRadius::all(Val::Percent(50.0)),
-            ));
+            // // Add a center highlight (subtle radial effect)
+            // parent.spawn((
+            //     Node {
+            //         width: Val::Percent(70.0),
+            //         height: Val::Percent(70.0),
+            //         position_type: PositionType::Absolute,
+            //         top: Val::Percent(15.0),
+            //         left: Val::Percent(15.0),
+            //         ..default()
+            //     },
+            //     BackgroundColor(Color::srgba(0.5, 0.4, 0.15, 0.15)),
+            //     // Add rounded corners to create a soft radial effect
+            //     BorderRadius::all(Val::Percent(50.0)),
+            // ));
 
             // Add decorative horizontal line at top
             parent.spawn((
@@ -148,6 +148,8 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                     ..default()
                 },
                 BackgroundColor(Color::srgba(0.7, 0.6, 0.2, 0.6)),
+                MenuItem,
+                MenuDecorativeElement,
             ));
 
             // Add decorative horizontal line at bottom
@@ -160,6 +162,8 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                     ..default()
                 },
                 BackgroundColor(Color::srgba(0.7, 0.6, 0.2, 0.6)),
+                MenuItem,
+                MenuDecorativeElement,
             ));
 
             // Add left decorative vertical element
@@ -174,6 +178,8 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 },
                 BackgroundColor(Color::srgba(0.7, 0.6, 0.2, 0.3)),
                 BorderRadius::all(Val::Px(4.0)),
+                MenuItem,
+                MenuDecorativeElement,
             ));
 
             // Add right decorative vertical element
@@ -188,37 +194,8 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 },
                 BackgroundColor(Color::srgba(0.7, 0.6, 0.2, 0.3)),
                 BorderRadius::all(Val::Px(4.0)),
-            ));
-
-            // Add diagonal decorative elements for extra flair
-            parent.spawn((
-                Node {
-                    width: Val::Percent(60.0),
-                    height: Val::Px(1.0),
-                    position_type: PositionType::Absolute,
-                    top: Val::Percent(25.0),
-                    left: Val::Percent(10.0),
-                    ..default()
-                },
-                BackgroundColor(Color::srgba(0.7, 0.6, 0.2, 0.2)),
-                // Rotate the element
-                Transform::from_rotation(Quat::from_rotation_z(0.2)),
-                GlobalTransform::default(),
-            ));
-
-            parent.spawn((
-                Node {
-                    width: Val::Percent(60.0),
-                    height: Val::Px(1.0),
-                    position_type: PositionType::Absolute,
-                    top: Val::Percent(75.0),
-                    left: Val::Percent(30.0),
-                    ..default()
-                },
-                BackgroundColor(Color::srgba(0.7, 0.6, 0.2, 0.2)),
-                // Rotate the element in the opposite direction
-                Transform::from_rotation(Quat::from_rotation_z(-0.2)),
-                GlobalTransform::default(),
+                MenuItem,
+                MenuDecorativeElement,
             ));
 
             // Add the logo

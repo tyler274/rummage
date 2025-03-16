@@ -12,11 +12,15 @@ pub struct SettingsPlugin;
 
 impl Plugin for SettingsPlugin {
     fn build(&self, app: &mut App) {
+        // Initialize the VolumeSettings resource first
+        app.init_resource::<VolumeSettings>();
+        
         // Set up persistent volume settings
         match Persistent::<VolumeSettings>::builder()
             .name("volume_settings")
             .format(StorageFormat::Bincode)
             .path("settings/volume.bin")
+            .default(VolumeSettings::default())
             .revertible(true)
             .revert_to_default_on_deserialization_errors(true)
             .build()
@@ -27,8 +31,7 @@ impl Plugin for SettingsPlugin {
             }
             Err(e) => {
                 error!("Failed to initialize persistent volume settings: {:?}", e);
-                // Fall back to regular volume settings
-                app.init_resource::<VolumeSettings>();
+                // No need to fall back as we already initialized VolumeSettings above
             }
         }
 

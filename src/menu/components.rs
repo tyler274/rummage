@@ -13,6 +13,10 @@ pub struct MenuCamera;
 #[derive(Component)]
 pub struct GameCamera;
 
+/// Marker component for menu item decorative elements
+#[derive(Component)]
+pub struct MenuDecorativeElement;
+
 /// Button actions for different menu states
 #[derive(Component, Clone, Debug)]
 pub enum MenuButtonAction {
