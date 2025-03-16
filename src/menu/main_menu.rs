@@ -430,6 +430,12 @@ pub fn menu_action(
                         info!("Main Menu button pressed - transitioning to MainMenu state");
                         next_state.set(GameMenuState::MainMenu);
                     }
+                    MenuButtonAction::SaveGame => {
+                        info!(
+                            "Save Game button pressed from main menu - not applicable in this context"
+                        );
+                        // No action needed in main menu context
+                    }
                 }
             }
             Interaction::Hovered => {
