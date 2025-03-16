@@ -36,4 +36,6 @@ pub enum MenuButtonAction {
     Restart,
     /// Return to the main menu
     MainMenu,
+    /// Save the current game
+    SaveGame,
 }

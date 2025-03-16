@@ -1,4 +1,5 @@
 use crate::camera::components::AppLayer;
+use crate::game_engine::save::{LoadGameEvent, SaveGameEvent};
 use crate::menu::{
     components::*,
     state::{GameMenuState, StateTransitionContext},
@@ -53,6 +54,18 @@ pub fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) 
 
                     // Menu buttons
                     spawn_menu_button(parent, "Resume", MenuButtonAction::Resume, &asset_server);
+                    spawn_menu_button(
+                        parent,
+                        "Save Game",
+                        MenuButtonAction::SaveGame,
+                        &asset_server,
+                    );
+                    spawn_menu_button(
+                        parent,
+                        "Load Game",
+                        MenuButtonAction::LoadGame,
+                        &asset_server,
+                    );
                     spawn_menu_button(parent, "Restart", MenuButtonAction::Restart, &asset_server);
                     spawn_menu_button(
                         parent,
@@ -105,6 +118,8 @@ pub fn pause_menu_action(
     mut next_state: ResMut<NextState<GameMenuState>>,
     mut context: ResMut<StateTransitionContext>,
     mut exit: EventWriter<bevy::app::AppExit>,
+    mut save_events: EventWriter<SaveGameEvent>,
+    mut load_events: EventWriter<LoadGameEvent>,
 ) {
     for (interaction, action, mut color) in &mut interaction_query {
         match *interaction {
@@ -115,6 +130,20 @@ pub fn pause_menu_action(
                         // Set the context flag to indicate we're coming from the pause menu
                         context.from_pause_menu = true;
                         next_state.set(GameMenuState::InGame);
+                    }
+                    MenuButtonAction::SaveGame => {
+                        // Send event to save the game to the default slot
+                        info!("Saving game to default slot");
+                        save_events.send(SaveGameEvent {
+                            slot_name: "default".to_string(),
+                        });
+                    }
+                    MenuButtonAction::LoadGame => {
+                        // Send event to load the game from the default slot
+                        info!("Loading game from default slot");
+                        load_events.send(LoadGameEvent {
+                            slot_name: "default".to_string(),
+                        });
                     }
                     MenuButtonAction::Restart => {
                         // Reset the context flag since we want a full restart
