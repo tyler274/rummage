@@ -219,9 +219,23 @@ pub fn handle_load_game(
 
                 // Restore game state
                 if let Some(game_state) = &mut game_state {
-                    **game_state = save_data.to_game_state(&index_to_entity);
+                    // Only attempt to restore the game state if we have valid player entities
+                    if !index_to_entity.is_empty() {
+                        **game_state = save_data.to_game_state(&index_to_entity);
+                    } else {
+                        // In case of no players, just reset to default
+                        **game_state = GameState::default();
+                        warn!(
+                            "No player entities found when loading game, resetting to default state"
+                        );
+                    }
                 } else {
-                    commands.insert_resource(save_data.to_game_state(&index_to_entity));
+                    if !index_to_entity.is_empty() {
+                        commands.insert_resource(save_data.to_game_state(&index_to_entity));
+                    } else {
+                        commands.insert_resource(GameState::default());
+                        warn!("No player entities found when loading game, using default state");
+                    }
                 }
 
                 // TODO: Restore zone contents

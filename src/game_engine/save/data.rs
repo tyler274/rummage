@@ -109,14 +109,36 @@ pub struct SaveInfo {
 impl GameSaveData {
     /// Convert serialized game state data back into a GameState resource
     pub fn to_game_state(&self, index_to_entity: &[Entity]) -> GameState {
-        let active_player = index_to_entity[self.game_state.active_player_index];
-        let priority_holder = index_to_entity[self.game_state.priority_holder_index];
+        // Add safety checks to handle empty entity lists
+        let active_player = if !index_to_entity.is_empty()
+            && self.game_state.active_player_index < index_to_entity.len()
+        {
+            index_to_entity[self.game_state.active_player_index]
+        } else {
+            // Return a default Entity if there are no entities
+            Entity::from_raw(0)
+        };
+
+        let priority_holder = if !index_to_entity.is_empty()
+            && self.game_state.priority_holder_index < index_to_entity.len()
+        {
+            index_to_entity[self.game_state.priority_holder_index]
+        } else {
+            // Return a default Entity if there are no entities
+            Entity::from_raw(0)
+        };
 
         let turn_order = VecDeque::from(
             self.game_state
                 .turn_order_indices
                 .iter()
-                .map(|&i| index_to_entity[i])
+                .filter_map(|&i| {
+                    if i < index_to_entity.len() {
+                        Some(index_to_entity[i])
+                    } else {
+                        None
+                    }
+                })
                 .collect::<Vec<_>>(),
         );
 
@@ -124,21 +146,39 @@ impl GameSaveData {
             .game_state
             .lands_played
             .iter()
-            .map(|(i, count)| (index_to_entity[*i], *count))
+            .filter_map(|(i, count)| {
+                if *i < index_to_entity.len() {
+                    Some((index_to_entity[*i], *count))
+                } else {
+                    None
+                }
+            })
             .collect();
 
         let drawn_this_turn = self
             .game_state
             .drawn_this_turn
             .iter()
-            .map(|&i| index_to_entity[i])
+            .filter_map(|&i| {
+                if i < index_to_entity.len() {
+                    Some(index_to_entity[i])
+                } else {
+                    None
+                }
+            })
             .collect();
 
         let eliminated_players = self
             .game_state
             .eliminated_players
             .iter()
-            .map(|&i| index_to_entity[i])
+            .filter_map(|&i| {
+                if i < index_to_entity.len() {
+                    Some(index_to_entity[i])
+                } else {
+                    None
+                }
+            })
             .collect();
 
         GameState {
