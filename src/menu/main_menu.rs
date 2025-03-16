@@ -51,18 +51,37 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     info!("Spawned main menu music entity: {:?}", music_entity);
 
     // Load the background image
-    let _background_handle: Handle<Image> = asset_server.load("images/menu_background.jpeg");
+    let background_image: Handle<Image> = asset_server.load("images/menu_background.jpeg");
     info!("Loading menu background image: images/menu_background.jpeg");
-    // WARNING: We're having issues displaying this image as a background.
-    // We'll need a different approach to properly show it.
-    // For now, we're keeping the rich gold background since it looks good.
+
+    // Create the background image using a simpler approach
+    // In Bevy 0.15, we'll use Sprite::from_image for the correct association
+    let mut sprite = Sprite::from_image(background_image);
+    sprite.custom_size = Some(Vec2::new(1920.0, 1080.0)); // Match window size
+
+    commands.spawn((
+        sprite,
+        // Position in world space behind UI (negative z ensures it's behind UI)
+        Transform::from_xyz(0.0, 0.0, -10.0),
+        // Marker component
+        MenuBackground,
+        // Ensure visibility
+        Visibility::Visible,
+        InheritedVisibility::default(),
+        ViewVisibility::default(),
+        // Add proper layer for menu camera to render it
+        AppLayer::Menu.layer(),
+        // Name for debugging
+        Name::new("Menu Background Image"),
+    ));
 
     // Spawn Star of David in world space with proper z-index
     commands.spawn(create_star_of_david());
 
-    // Main menu container - with rich golden background
+    // Main menu container - now transparent to let the background image show through
     commands
         .spawn((
+            // Node component (non-deprecated in Bevy 0.15.x)
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
@@ -71,8 +90,8 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            // Rich background with a deeper brown at the base - more golden tone
-            BackgroundColor(Color::srgb(0.22, 0.15, 0.05)),
+            // Semi-transparent background for better text readability - using srgba instead of rgba
+            BackgroundColor(Color::srgba(0.22, 0.15, 0.05, 0.7)),
             MenuItem,
             AppLayer::Menu.layer(),
             Visibility::Visible,
@@ -89,7 +108,7 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                     top: Val::Px(0.0),
                     ..default()
                 },
-                BackgroundColor(Color::srgba(0.4, 0.3, 0.1, 0.4)),
+                BackgroundColor(Color::srgba(0.4, 0.3, 0.1, 0.3)),
             ));
 
             // Add bottom vignette (darker at bottom)
