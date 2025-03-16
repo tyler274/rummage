@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_persistent::prelude::*;
 
 use crate::menu::state::GameMenuState;
 
@@ -11,10 +12,29 @@ pub struct SettingsPlugin;
 
 impl Plugin for SettingsPlugin {
     fn build(&self, app: &mut App) {
+        // Set up persistent volume settings
+        match Persistent::<VolumeSettings>::builder()
+            .name("volume_settings")
+            .format(StorageFormat::Bincode)
+            .path("settings/volume.bin")
+            .revertible(true)
+            .revert_to_default_on_deserialization_errors(true)
+            .build()
+        {
+            Ok(persistent_volume) => {
+                // Store the persistent volume settings
+                app.insert_resource(persistent_volume);
+            }
+            Err(e) => {
+                error!("Failed to initialize persistent volume settings: {:?}", e);
+                // Fall back to regular volume settings
+                app.init_resource::<VolumeSettings>();
+            }
+        }
+
         // Register settings states
         app.init_state::<SettingsMenuState>()
-            // Register default resources
-            .init_resource::<VolumeSettings>()
+            // Register other resources
             .init_resource::<GameplaySettings>()
             .insert_resource(GraphicsQuality::default())
             // Settings state - Main screen
@@ -51,8 +71,15 @@ impl Plugin for SettingsPlugin {
             // Settings interaction system
             .add_systems(
                 Update,
-                settings_button_action.run_if(in_state(GameMenuState::Settings)),
+                (
+                    settings_button_action,
+                    volume_slider_interaction
+                ).run_if(in_state(GameMenuState::Settings)),
             )
+            // Apply volume settings on startup
+            .add_systems(Startup, apply_volume_settings)
+            // Apply volume changes when leaving the audio settings menu
+            .add_systems(OnExit(SettingsMenuState::Audio), save_volume_settings)
             // Cleanup systems for each settings state exit
             .add_systems(OnExit(SettingsMenuState::Video), cleanup_settings_menu)
             .add_systems(OnExit(SettingsMenuState::Audio), cleanup_settings_menu)
@@ -60,5 +87,47 @@ impl Plugin for SettingsPlugin {
             .add_systems(OnExit(SettingsMenuState::Controls), cleanup_settings_menu)
             // Cleanup system for the main settings menu
             .add_systems(OnExit(GameMenuState::Settings), cleanup_settings_menu);
+    }
+}
+
+/// Apply saved volume settings on startup
+fn apply_volume_settings(
+    persistent_volume: Option<Res<Persistent<VolumeSettings>>>, 
+    mut volume_settings: ResMut<VolumeSettings>,
+    mut global_volume: ResMut<bevy::prelude::GlobalVolume>
+) {
+    if let Some(persistent) = persistent_volume {
+        // Persistent.get() returns Result<&VolumeSettings, PersistenceError>
+        match persistent.get() {
+            Ok(volume) => {
+                info!("Applying saved volume settings: {:?}", volume);
+                // Update the actual settings resource
+                *volume_settings = volume.clone();
+                // Apply to global volume
+                global_volume.volume = bevy::audio::Volume::new(volume.master);
+            }
+            Err(e) => {
+                info!("No saved volume settings found, using defaults: {:?}", e);
+                global_volume.volume = bevy::audio::Volume::new(volume_settings.master);
+            }
+        }
+    } else {
+        info!("No persistent volume settings available, using defaults");
+        global_volume.volume = bevy::audio::Volume::new(volume_settings.master);
+    }
+}
+
+/// Save volume settings when leaving the audio settings menu
+fn save_volume_settings(
+    persistent_volume: Option<ResMut<Persistent<VolumeSettings>>>,
+    volume_settings: Res<VolumeSettings>
+) {
+    if let Some(mut persistent) = persistent_volume {
+        info!("Saving volume settings: {:?}", *volume_settings);
+        if let Err(e) = persistent.set(volume_settings.clone()) {
+            error!("Failed to save volume settings: {:?}", e);
+        }
+    } else {
+        warn!("Cannot save volume settings: persistent storage not available");
     }
 }

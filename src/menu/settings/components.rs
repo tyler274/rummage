@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+use bevy_persistent::prelude::*;
+use serde::{Deserialize, Serialize};
 
 /// Marker component for settings menu entities
 #[derive(Component)]
@@ -42,7 +44,7 @@ pub enum SettingsButtonAction {
 }
 
 /// Volume settings resource
-#[derive(Resource, Debug, Clone)]
+#[derive(Resource, Debug, Clone, Serialize, Deserialize)]
 pub struct VolumeSettings {
     /// Master volume level (0.0 - 1.0)
     pub master: f32,
