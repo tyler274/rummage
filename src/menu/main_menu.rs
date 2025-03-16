@@ -50,13 +50,12 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     info!("Spawned main menu music entity: {:?}", music_entity);
 
-    // Try to load the background image, but we won't use it for now due to the difficulties
-    // We're just logging to confirm the path is correct for future reference
+    // Load the background image
     let _background_handle: Handle<Image> = asset_server.load("images/menu_background.jpeg");
-    info!("Attempted to load background image, not using it currently");
-
-    // Since we've had so many issues with the background image, just focus on the current UI
-    // The decorative gold styling actually looks very good!
+    info!("Loading menu background image: images/menu_background.jpeg");
+    // WARNING: We're having issues displaying this image as a background.
+    // We'll need a different approach to properly show it.
+    // For now, we're keeping the rich gold background since it looks good.
 
     // Spawn Star of David in world space with proper z-index
     commands.spawn(create_star_of_david());
