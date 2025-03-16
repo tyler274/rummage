@@ -30,16 +30,25 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     // Load and play background music
     let music_handle = asset_server.load("music/Negev sings Hava Nagila [XwZwz0iCuF0].ogg");
     debug!("Starting main menu music playback");
-    commands.spawn((
-        AudioPlayer::new(music_handle),
-        PlaybackSettings {
-            mode: PlaybackMode::Loop,
-            volume: Volume::new(0.5),
-            ..default()
-        },
-        MainMenuMusic,
-        Name::new("Main Menu Music"),
-    ));
+    info!("Loading music file: music/Negev sings Hava Nagila [XwZwz0iCuF0].ogg");
+
+    // Create audio entity with increased volume and explicit settings
+    let music_entity = commands
+        .spawn((
+            AudioPlayer::new(music_handle),
+            PlaybackSettings {
+                mode: PlaybackMode::Loop,
+                volume: Volume::new(1.0), // Maximum volume
+                speed: 1.0,               // Normal speed
+                paused: false,            // Ensure not paused
+                ..default()
+            },
+            MainMenuMusic,
+            Name::new("Main Menu Music"),
+        ))
+        .id();
+
+    info!("Spawned main menu music entity: {:?}", music_entity);
 
     // Try to load the background image, but we won't use it for now due to the difficulties
     // We're just logging to confirm the path is correct for future reference

@@ -24,6 +24,7 @@ pub fn cleanup_main_menu(
     // Clean up the main menu music
     for entity in main_menu_music.iter() {
         debug!("Stopping main menu music");
+        info!("Despawning main menu music entity: {:?}", entity);
         commands.entity(entity).despawn();
     }
 }
