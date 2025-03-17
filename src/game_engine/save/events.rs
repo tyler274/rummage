@@ -1,9 +1,14 @@
 use bevy::prelude::*;
 
-/// Event to trigger saving the game
-#[derive(Event)]
+/// Event to request saving a game
+#[derive(Event, Debug, Clone)]
 pub struct SaveGameEvent {
+    /// Name of the save slot
     pub slot_name: String,
+    /// Optional description
+    pub description: Option<String>,
+    /// If set to true, an associated snapshot will be created
+    pub with_snapshot: bool,
 }
 
 /// Event to trigger loading a saved game
@@ -32,3 +37,46 @@ pub struct StepReplayEvent {
 /// Event to stop an ongoing replay
 #[derive(Event)]
 pub struct StopReplayEvent;
+
+/// Event to start rewinding a game
+#[derive(Event)]
+pub struct StartRewindEvent {
+    pub steps: usize,
+}
+
+/// Event to rewind to a specific turn
+#[derive(Event)]
+pub struct RewindToTurnEvent {
+    pub turn: u32,
+}
+
+/// Event to rollback to a previous save or checkpoint
+#[derive(Event)]
+pub struct RollbackEvent {
+    pub checkpoint_name: Option<String>,
+}
+
+/// Event to create a new branch from current state
+#[derive(Event)]
+pub struct CreateBranchEvent {
+    /// Optional name for the new branch
+    pub name: Option<String>,
+}
+
+/// Event to switch to a different branch
+#[derive(Event)]
+pub struct SwitchBranchEvent {
+    pub branch_id: u64,
+}
+
+/// Event to capture the current game state into history
+#[derive(Event)]
+pub struct CaptureHistoryEvent;
+
+/// Event to go forward one step in history
+#[derive(Event)]
+pub struct HistoryForwardEvent;
+
+/// Event to go backward one step in history
+#[derive(Event)]
+pub struct HistoryBackwardEvent;

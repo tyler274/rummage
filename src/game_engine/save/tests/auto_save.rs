@@ -29,7 +29,10 @@ fn test_auto_save() {
     }
 
     // Reset auto-save counter
-    app.insert_resource(AutoSaveTracker { counter: 0 });
+    app.insert_resource(AutoSaveTracker {
+        counter: 0,
+        last_checkpoint_turn: 0,
+    });
 
     let auto_save_path = test_dir.join("auto_save.bin");
 
@@ -83,7 +86,10 @@ fn test_auto_save() {
 
     // Reset counter and modify game state
     {
-        app.insert_resource(AutoSaveTracker { counter: 0 });
+        app.insert_resource(AutoSaveTracker {
+            counter: 0,
+            last_checkpoint_turn: 0,
+        });
         let mut game_state = app.world_mut().resource_mut::<GameState>();
         game_state.turn_number = 10; // Different from original
     }

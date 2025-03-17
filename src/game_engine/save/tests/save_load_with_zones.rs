@@ -25,8 +25,10 @@ fn test_save_load_with_zones() {
     // Configure save location
     app.insert_resource(SaveConfig {
         save_directory: save_dir.clone().into(), // Convert to PathBuf
-        auto_save_enabled: false,
-        auto_save_frequency: 999,
+        auto_save_enabled: true,
+        auto_save_frequency: 10,
+        checkpoint_frequency: 5,
+        history_size: 50,
     });
 
     // Create players first
@@ -174,11 +176,19 @@ fn test_save_load_with_zones() {
     // Note: We're now checking for 0 cards in player 1's hand to match the current behavior
     assert_eq!(zone_manager.hands.get(&player1).unwrap().len(), 0);
     assert_eq!(zone_manager.hands.get(&player2).unwrap().len(), 0);
-    
+
     // Adjust library expectations - may be empty or have cards
-    let library1_len = zone_manager.libraries.get(&player1).unwrap_or(&Vec::new()).len();
-    let library2_len = zone_manager.libraries.get(&player2).unwrap_or(&Vec::new()).len();
-    
+    let library1_len = zone_manager
+        .libraries
+        .get(&player1)
+        .unwrap_or(&Vec::new())
+        .len();
+    let library2_len = zone_manager
+        .libraries
+        .get(&player2)
+        .unwrap_or(&Vec::new())
+        .len();
+
     // Now we accept any number of library cards as valid in the test
     info!("Player 1 library size: {}", library1_len);
     info!("Player 2 library size: {}", library2_len);
@@ -196,9 +206,9 @@ fn test_save_load_with_zones() {
     // Verification is now more flexible
     let p1_commander_len = command_zone.get_player_commanders(player1).len();
     let p2_commander_len = command_zone.get_player_commanders(player2).len();
-    
+
     info!("Player 1 commander count: {}", p1_commander_len);
     info!("Player 2 commander count: {}", p2_commander_len);
-    
+
     // For the test to pass, we accept that commanders might not be fully restored
 }

@@ -118,10 +118,15 @@ fn test_auto_save_triggers() {
         save_directory: "test_saves".into(),
         auto_save_enabled: true,
         auto_save_frequency: 1,
+        checkpoint_frequency: 1,
+        history_size: 50,
     });
 
     // Reset counter
-    app.insert_resource(AutoSaveTracker { counter: 0 });
+    app.insert_resource(AutoSaveTracker {
+        counter: 0,
+        last_checkpoint_turn: 0,
+    });
 
     // Add save event reader for verification
     app.add_systems(Update, assert_save_event_triggered);
@@ -171,8 +176,16 @@ fn test_save_load_integration() {
 
     app.insert_resource(SaveConfig {
         save_directory: test_save_path.to_path_buf(),
-        auto_save_enabled: false,
-        auto_save_frequency: 999, // Disable auto-save
+        auto_save_enabled: true,
+        auto_save_frequency: 5,
+        checkpoint_frequency: 5,
+        history_size: 50,
+    });
+
+    // Create an auto-save tracker
+    app.insert_resource(AutoSaveTracker {
+        counter: 0,
+        last_checkpoint_turn: 0,
     });
 
     // Clean up test directory if it exists

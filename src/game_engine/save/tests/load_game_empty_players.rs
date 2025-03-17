@@ -32,26 +32,28 @@ fn test_load_game_empty_players() {
     let slot_name = "empty_players";
     let save_path = test_dir.join(format!("{}.bin", slot_name));
 
-    // Create empty save data
-    let save_data = GameSaveData {
-        game_state: GameStateData {
-            turn_number: 5,
-            active_player_index: 0,
-            priority_holder_index: 0,
-            turn_order_indices: Vec::new(),
-            lands_played: Vec::new(),
-            main_phase_action_taken: false,
-            drawn_this_turn: Vec::new(),
-            eliminated_players: Vec::new(),
-            use_commander_damage: true,
-            commander_damage_threshold: 21,
-            starting_life: 40,
-        },
-        players: Vec::new(), // Empty player list
-        save_version: "1.0".to_string(),
-        zones: Default::default(),
-        commanders: Default::default(),
-    };
+    // Create empty save data using the builder pattern
+    let save_data = GameSaveData::builder()
+        .game_state(
+            GameStateData::builder()
+                .turn_number(5)
+                .active_player_index(0)
+                .priority_holder_index(0)
+                .turn_order_indices(Vec::new())
+                .lands_played(Vec::new())
+                .main_phase_action_taken(false)
+                .drawn_this_turn(Vec::new())
+                .eliminated_players(Vec::new())
+                .use_commander_damage(true)
+                .commander_damage_threshold(21)
+                .starting_life(40)
+                .build(),
+        )
+        .players(Vec::new()) // Empty player list
+        .save_version("1.0".to_string())
+        .zones(Default::default())
+        .commanders(Default::default())
+        .build();
 
     // Create a persistent resource and save it
     let persistent_save = Persistent::<GameSaveData>::builder()

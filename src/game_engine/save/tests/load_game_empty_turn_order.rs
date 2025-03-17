@@ -33,41 +33,43 @@ fn test_load_game_empty_turn_order() {
     let slot_name = "empty_turn_order";
     let save_path = test_dir.join(format!("{}.bin", slot_name));
 
-    // Create save data with empty turn order
-    let save_data = GameSaveData {
-        game_state: GameStateData {
-            turn_number: 6,
-            active_player_index: 0,
-            priority_holder_index: 0,
-            turn_order_indices: Vec::new(), // Empty turn order
-            lands_played: Vec::new(),
-            main_phase_action_taken: false,
-            drawn_this_turn: Vec::new(),
-            eliminated_players: Vec::new(),
-            use_commander_damage: true,
-            commander_damage_threshold: 21,
-            starting_life: 40,
-        },
-        players: vec![
-            PlayerData {
-                id: 0,
-                name: "Player 1".to_string(),
-                life: 40,
-                mana_pool: Default::default(),
-                player_index: 0,
-            },
-            PlayerData {
-                id: 1,
-                name: "Player 2".to_string(),
-                life: 35,
-                mana_pool: Default::default(),
-                player_index: 1,
-            },
-        ],
-        save_version: "1.0".to_string(),
-        zones: Default::default(),
-        commanders: Default::default(),
-    };
+    // Create save data with empty turn order using the builder pattern
+    let save_data = GameSaveData::builder()
+        .game_state(
+            GameStateData::builder()
+                .turn_number(6)
+                .active_player_index(0)
+                .priority_holder_index(0)
+                .turn_order_indices(Vec::new()) // Empty turn order
+                .lands_played(Vec::new())
+                .main_phase_action_taken(false)
+                .drawn_this_turn(Vec::new())
+                .eliminated_players(Vec::new())
+                .use_commander_damage(true)
+                .commander_damage_threshold(21)
+                .starting_life(40)
+                .build(),
+        )
+        .players(vec![
+            PlayerData::builder()
+                .id(0)
+                .name("Player 1".to_string())
+                .life(40)
+                .mana_pool(Default::default())
+                .player_index(0)
+                .build(),
+            PlayerData::builder()
+                .id(1)
+                .name("Player 2".to_string())
+                .life(35)
+                .mana_pool(Default::default())
+                .player_index(1)
+                .build(),
+        ])
+        .save_version("1.0".to_string())
+        .zones(Default::default())
+        .commanders(Default::default())
+        .build();
 
     // Create a persistent resource and save it
     let persistent_save = Persistent::<GameSaveData>::builder()

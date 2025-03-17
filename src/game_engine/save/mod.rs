@@ -8,12 +8,21 @@ pub mod systems;
 #[cfg(test)]
 pub mod tests;
 
-// Re-export public API
-pub use events::*;
+// Re-export plugin
 pub use plugin::SaveLoadPlugin;
-#[allow(unused)]
-pub use resources::*;
 
 // Re-export data types
-#[allow(unused)]
-pub use data::*;
+pub use data::{
+    CardData, CommanderData, CommanderPairData, GameSaveData, GameStateData, PlayerData, ZoneData,
+};
+
+// Re-export resources
+pub use resources::{
+    AutoSaveTracker, ReplayAction, ReplayActionType, ReplayState, SaveConfig, SaveMetadata,
+};
+
+// Re-export events
+pub use events::{
+    CheckStateBasedActionsEvent, LoadGameEvent, SaveGameEvent, StartReplayEvent, StepReplayEvent,
+    StopReplayEvent,
+};

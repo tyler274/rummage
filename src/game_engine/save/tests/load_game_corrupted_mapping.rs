@@ -24,32 +24,36 @@ fn test_load_game_corrupted_mapping() {
     let slot_name = "corrupted_mapping";
     let save_path = test_dir.join(format!("{}.bin", slot_name));
 
-    // Create save data with invalid entity indices
-    let save_data = GameSaveData {
-        game_state: GameStateData {
-            turn_number: 7,
-            active_player_index: 999,                  // Invalid index
-            priority_holder_index: 999,                // Invalid index
-            turn_order_indices: vec![999, 1000, 1001], // Invalid indices
-            lands_played: Vec::new(),
-            main_phase_action_taken: false,
-            drawn_this_turn: Vec::new(),
-            eliminated_players: Vec::new(),
-            use_commander_damage: true,
-            commander_damage_threshold: 21,
-            starting_life: 40,
-        },
-        players: vec![PlayerData {
-            id: 999,
-            name: "Corrupted Player".to_string(),
-            life: 40,
-            mana_pool: Default::default(),
-            player_index: 999,
-        }],
-        save_version: "1.0".to_string(),
-        zones: Default::default(),
-        commanders: Default::default(),
-    };
+    // Create save data with invalid entity indices using the builder pattern
+    let save_data = GameSaveData::builder()
+        .game_state(
+            GameStateData::builder()
+                .turn_number(7)
+                .active_player_index(999) // Invalid index
+                .priority_holder_index(999) // Invalid index
+                .turn_order_indices(vec![999, 1000, 1001]) // Invalid indices
+                .lands_played(Vec::new())
+                .main_phase_action_taken(false)
+                .drawn_this_turn(Vec::new())
+                .eliminated_players(Vec::new())
+                .use_commander_damage(true)
+                .commander_damage_threshold(21)
+                .starting_life(40)
+                .build(),
+        )
+        .players(vec![
+            PlayerData::builder()
+                .id(999)
+                .name("Corrupted Player".to_string())
+                .life(40)
+                .mana_pool(Default::default())
+                .player_index(999)
+                .build(),
+        ])
+        .save_version("1.0".to_string())
+        .zones(Default::default())
+        .commanders(Default::default())
+        .build();
 
     // Create a persistent resource and set its value to our save data
     let mut persistent_save = Persistent::<GameSaveData>::builder()

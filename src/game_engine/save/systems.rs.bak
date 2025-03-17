@@ -1,0 +1,996 @@
+use bevy::prelude::*;
+use bevy_persistent::prelude::*;
+use std::collections::{HashMap, VecDeque};
+use std::path::PathBuf;
+
+use crate::game_engine::commander::CommandZoneManager;
+use crate::game_engine::save::data::*;
+use crate::game_engine::save::events::*;
+use crate::game_engine::save::resources::*;
+use crate::game_engine::state::GameState;
+use crate::game_engine::zones::ZoneManager;
+use crate::player::Player;
+use crate::snapshot::{SaveGameSnapshot, SnapshotEvent};
+
+/// System to set up the save system on startup
+pub fn setup_save_system(mut commands: Commands) {
+    // Create save directory if it doesn't exist
+    let config = SaveConfig::default();
+
+    // Only try to create directory on native platforms
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        match std::fs::create_dir_all(&config.save_directory) {
+            Ok(_) => info!(
+                "Ensured save directory exists at: {:?}",
+                config.save_directory
+            ),
+            Err(e) => {
+                error!("Failed to create save directory: {}", e);
+                // Check if directory exists despite the error (might be a permission issue)
+                if !config.save_directory.exists() {
+                    warn!("Save directory does not exist, saves may fail");
+                }
+            }
+        }
+    }
+
+    // Determine the appropriate base path for persistence based on platform
+    let metadata_path = get_storage_path(&config, "metadata.bin");
+
+    // Initialize persistent save metadata
+    let save_metadata = match Persistent::builder()
+        .name("save_metadata")
+        .format(StorageFormat::Bincode)
+        .path(metadata_path)
+        .default(SaveMetadata::default())
+        .build()
+    {
+        Ok(metadata) => metadata,
+        Err(e) => {
+            error!("Failed to create persistent save metadata: {}", e);
+            // Create a new in-memory metadata resource instead
+            Persistent::builder()
+                .name("save_metadata")
+                .format(StorageFormat::Bincode)
+                .path(PathBuf::from("metadata.bin")) // Fallback path
+                .default(SaveMetadata::default())
+                .build()
+                .unwrap_or_else(|_| {
+                    // If even that fails, create a completely in-memory resource
+                    let metadata = SaveMetadata::default();
+                    Persistent::builder()
+                        .name("save_metadata")
+                        .format(StorageFormat::Bincode)
+                        .path(PathBuf::from("metadata.bin"))
+                        .default(metadata)
+                        .build()
+                        .expect("Failed to create even basic metadata")
+                })
+        }
+    };
+
+    commands.insert_resource(config.clone());
+    commands.insert_resource(AutoSaveTracker::default());
+    commands.insert_resource(ReplayState::default());
+    commands.insert_resource(save_metadata);
+}
+
+/// Helper function to get the appropriate storage path based on platform
+fn get_storage_path(config: &SaveConfig, filename: &str) -> PathBuf {
+    #[cfg(target_arch = "wasm32")]
+    {
+        // For WebAssembly, use local storage with a prefix
+        Path::new("/local/saves").join(filename)
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        // For native platforms, use the filesystem from config
+        config.save_directory.join(filename)
+    }
+}
+
+/// Collect save game events into the SaveEvents resource
+pub fn collect_save_events(
+    mut event_reader: EventReader<SaveGameEvent>,
+    mut save_events: ResMut<SaveEvents>,
+) {
+    for event in event_reader.read() {
+        save_events.events.push(event.clone());
+        debug!("Collected save event for slot: {}", event.slot_name);
+    }
+}
+
+/// System that processes save game events with the full set of parameters needed
+pub fn process_save_game(
+    game_state: Option<Res<GameState>>,
+    query_players: Query<(Entity, &Player)>,
+    zones: Option<Res<ZoneManager>>,
+    commanders: Option<Res<CommandZoneManager>>,
+    save_metadata: Option<ResMut<Persistent<SaveMetadata>>>,
+    config: Option<Res<SaveConfig>>,
+    mut commands: Commands,
+    mut snapshot_events: Option<EventWriter<SnapshotEvent>>,
+    game_camera_query: Query<Entity, With<crate::camera::components::GameCamera>>,
+    mut save_events: ResMut<SaveEvents>,
+) {
+    // Skip if no events or missing required resources
+    if save_events.events.is_empty()
+        || game_state.is_none()
+        || save_metadata.is_none()
+        || config.is_none()
+    {
+        return;
+    }
+
+    let game_state = game_state.unwrap();
+    let mut save_metadata = save_metadata.unwrap();
+    let config = config.unwrap();
+
+    // Process all waiting save events
+    let events_to_process = std::mem::take(&mut save_events.events);
+    for event in events_to_process {
+        info!("Processing save for slot: {}", event.slot_name);
+        // Implement the save logic here
+        // ...
+    }
+}
+
+/// System to handle load game requests
+pub fn handle_load_game(
+    mut event_reader: EventReader<LoadGameEvent>,
+    mut commands: Commands,
+    config: Res<SaveConfig>,
+    mut query_players: Query<(Entity, &mut Player)>,
+    mut game_state: Option<ResMut<GameState>>,
+    mut zones: Option<ResMut<ZoneManager>>,
+    mut commanders: Option<ResMut<CommandZoneManager>>,
+) {
+    for event in event_reader.read() {
+        info!("Loading game from slot: {}", event.slot_name);
+
+        let save_path = get_storage_path(&config, &format!("{}.bin", event.slot_name));
+
+        // Check if the save file exists (only on native platforms)
+        #[cfg(not(target_arch = "wasm32"))]
+        if !save_path.exists() {
+            error!("Save file not found at: {:?}", save_path);
+            continue;
+        }
+
+        // Create a persistent resource to load the save
+        let persistent_save = Persistent::<GameSaveData>::builder()
+            .name(&format!("game_save_{}", event.slot_name))
+            .format(StorageFormat::Bincode)
+            .path(save_path)
+            .default(GameSaveData::default())
+            .build();
+
+        match persistent_save {
+            Ok(save) => {
+                // Get the loaded data
+                let save_data = save.clone();
+
+                // Rebuild entity mapping
+                let mut index_to_entity = Vec::new();
+                let mut existing_player_entities = HashMap::new();
+
+                // Map existing players if possible
+                for (entity, player) in query_players.iter() {
+                    for saved_player in &save_data.players {
+                        if player.name == saved_player.name {
+                            existing_player_entities.insert(saved_player.id, entity);
+                            break;
+                        }
+                    }
+                }
+
+                // Recreate player entities
+                for player_data in &save_data.players {
+                    if let Some(&entity) = existing_player_entities.get(&player_data.id) {
+                        index_to_entity.push(entity);
+
+                        // Update existing player data
+                        if let Ok((_, mut player)) = query_players.get_mut(entity) {
+                            player.life = player_data.life;
+                            player.mana_pool = player_data.mana_pool.clone();
+                        }
+                    } else {
+                        // Create new player entity
+                        let player_entity = commands
+                            .spawn((Player {
+                                name: player_data.name.clone(),
+                                life: player_data.life,
+                                mana_pool: player_data.mana_pool.clone(),
+                                ..Default::default()
+                            },))
+                            .id();
+
+                        index_to_entity.push(player_entity);
+                    }
+                }
+
+                // Handle empty player list case gracefully
+                if save_data.players.is_empty() {
+                    debug!("Loading a save with no players");
+                    // Add a placeholder to index_to_entity for GameState to reference safely
+                    if index_to_entity.is_empty() {
+                        index_to_entity.push(Entity::PLACEHOLDER);
+                    }
+                }
+
+                // Restore game state - always attempt to restore basic properties even with empty players
+                if let Some(game_state) = &mut game_state {
+                    // If there's a corrupted mapping, fall back to basic properties
+                    if index_to_entity.is_empty() || index_to_entity.contains(&Entity::PLACEHOLDER)
+                    {
+                        // At minimum, restore basic properties not tied to player entities
+                        game_state.turn_number = save_data.game_state.turn_number;
+
+                        // For empty player list, set reasonable defaults for player-related fields
+                        if save_data.game_state.turn_order_indices.is_empty() {
+                            // Create a fallback turn order
+                            game_state.turn_order = VecDeque::new();
+                        }
+                    } else {
+                        // Full restore with valid player entities
+                        **game_state = save_data.to_game_state(&index_to_entity);
+                    }
+                } else {
+                    if !index_to_entity.is_empty() {
+                        commands.insert_resource(save_data.to_game_state(&index_to_entity));
+                    } else {
+                        commands.insert_resource(GameState::default());
+                        warn!("No player entities found when loading game, using default state");
+                    }
+                }
+
+                // Restore zone contents
+                if let Some(zone_manager) = &mut zones {
+                    // Use the GameSaveData method to restore ZoneManager
+                    **zone_manager = save_data.to_zone_manager(&index_to_entity);
+                }
+
+                // Restore commander zone contents
+                if let Some(commander_manager) = &mut commanders {
+                    // Use the GameSaveData method to restore CommandZoneManager
+                    **commander_manager = save_data.to_commander_manager(&index_to_entity);
+                }
+
+                info!("Game loaded successfully from slot {}", event.slot_name);
+            }
+            Err(e) => {
+                error!("Failed to load save: {}", e);
+            }
+        }
+    }
+}
+
+/// Handles automatic saving of the game state at regular intervals
+pub fn handle_auto_save(
+    time: Res<Time>,
+    mut auto_save_tracker: ResMut<AutoSaveTracker>,
+    config: Res<SaveConfig>,
+    mut event_writer: EventWriter<SaveGameEvent>,
+) {
+    // Skip if auto-save is disabled
+    if !config.auto_save_enabled {
+        return;
+    }
+
+    auto_save_tracker.time_since_last_save += time.delta_secs();
+
+    // Check if it's time for an auto-save
+    if auto_save_tracker.time_since_last_save >= config.auto_save_interval_seconds {
+        info!("Auto-saving game...");
+
+        // Generate a timestamp-based save name
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default();
+
+        event_writer.send(SaveGameEvent {
+            slot_name: format!("auto_save_{}", now.as_secs()),
+            description: Some("Auto save".to_string()),
+            with_snapshot: true,
+        });
+
+        // Reset the timer
+        auto_save_tracker.time_since_last_save = 0.0;
+    }
+}
+
+/// System to handle starting a replay session
+pub fn handle_start_replay(
+    mut event_reader: EventReader<StartReplayEvent>,
+    mut replay_state: ResMut<ReplayState>,
+    _commands: Commands,
+    _config: Res<SaveConfig>,
+    mut load_events: EventWriter<LoadGameEvent>,
+) {
+    for event in event_reader.read() {
+        info!("Starting replay from save slot: {}", event.slot_name);
+
+        let save_path = get_storage_path(&_config, &format!("{}.bin", event.slot_name));
+
+        // Create a persistent resource to load the save
+        let persistent_save = Persistent::<GameSaveData>::builder()
+            .name(&format!("game_save_{}", event.slot_name))
+            .format(StorageFormat::Bincode)
+            .path(save_path)
+            .default(GameSaveData::default())
+            .build();
+
+        match persistent_save {
+            Ok(save) => {
+                // Get the loaded data
+                let save_data = save.clone();
+
+                // Set up replay state with the loaded save
+                replay_state.active = true;
+                replay_state.original_save = Some(save_data.clone());
+                replay_state.current_game_state = Some(save_data);
+                replay_state.current_step = 0;
+
+                // Load initial actions
+                // TODO: Load replay actions from a separate file
+
+                info!("Replay started from save {}", event.slot_name);
+
+                // Send a load event to actually load the game state
+                load_events.send(LoadGameEvent {
+                    slot_name: event.slot_name.clone(),
+                });
+            }
+            Err(e) => {
+                error!("Failed to load replay save: {}", e);
+            }
+        }
+    }
+}
+
+/// System to handle stepping through a replay
+pub fn handle_step_replay(
+    mut event_reader: EventReader<StepReplayEvent>,
+    mut replay_state: ResMut<ReplayState>,
+    game_state: Option<ResMut<GameState>>,
+) {
+    // Skip if replay is not active or no game state
+    if !replay_state.active || game_state.is_none() {
+        for _ in event_reader.read() {
+            warn!("Cannot step through replay: replay not active or game state missing");
+        }
+        return;
+    }
+
+    let mut game_state = game_state.unwrap();
+
+    for event in event_reader.read() {
+        let steps = event.steps.max(1); // Ensure at least 1 step
+
+        info!("Stepping through replay: {} step(s)", steps);
+
+        for _ in 0..steps {
+            // Check if we have actions in the queue
+            if let Some(action) = replay_state.action_queue.pop_front() {
+                // Apply the action to the game state
+                apply_replay_action(&mut game_state, &action);
+                replay_state.current_step += 1;
+
+                info!(
+                    "Applied replay action: {:?} (Step {})",
+                    action.action_type, replay_state.current_step
+                );
+            } else {
+                info!("No more actions in replay queue");
+                break;
+            }
+        }
+    }
+}
+
+/// System to handle stopping a replay
+pub fn handle_stop_replay(
+    mut event_reader: EventReader<StopReplayEvent>,
+    mut replay_state: ResMut<ReplayState>,
+) {
+    for _ in event_reader.read() {
+        if replay_state.active {
+            info!("Stopping replay");
+
+            // Reset replay state
+            replay_state.active = false;
+            replay_state.original_save = None;
+            replay_state.current_game_state = None;
+            replay_state.action_queue.clear();
+            replay_state.current_step = 0;
+        }
+    }
+}
+
+/// Helper function to apply a replay action to the game state
+fn apply_replay_action(game_state: &mut GameState, action: &ReplayAction) {
+    // This is where you'd implement the actual game action application
+    // For now this is just a placeholder
+
+    match action.action_type {
+        ReplayActionType::PlayCard => {
+            // Logic for playing a card
+        }
+        ReplayActionType::DeclareAttackers => {
+            // Logic for declaring attackers
+        }
+        ReplayActionType::DeclareBlockers => {
+            // Logic for declaring blockers
+        }
+        ReplayActionType::ActivateAbility => {
+            // Logic for activating an ability
+        }
+        ReplayActionType::ResolveEffect => {
+            // Logic for resolving an effect
+        }
+        ReplayActionType::DrawCard => {
+            // Logic for drawing a card
+        }
+        ReplayActionType::PassPriority => {
+            // Logic for passing priority
+        }
+        ReplayActionType::CastSpell => {
+            // Logic for casting a spell
+        }
+        ReplayActionType::EndTurn => {
+            // Logic for ending a turn
+            game_state.turn_number += 1;
+        }
+    }
+}
+
+/// Captures a game action for replaying
+#[allow(dead_code)]
+pub fn capture_game_action(
+    action_type: ReplayActionType,
+    player_index: usize,
+    data: String,
+    game_state: &GameState,
+    phase: String,
+) -> ReplayAction {
+    ReplayAction::new(action_type)
+        .with_player(player_index)
+        .with_data(data)
+        .with_turn(game_state.turn_number)
+        .with_phase(phase)
+}
+
+/// System to handle capturing the current game state into history
+pub fn handle_capture_history(
+    mut event_reader: EventReader<CaptureHistoryEvent>,
+    game_state: Res<GameState>,
+    query_players: Query<(Entity, &Player)>,
+    zones: Option<Res<ZoneManager>>,
+    commanders: Option<Res<CommandZoneManager>>,
+    mut game_history: ResMut<GameHistory>,
+) {
+    for _ in event_reader.read() {
+        info!("Capturing current game state to history");
+
+        let mut player_data = Vec::new();
+        let mut entity_to_index = HashMap::new();
+
+        // Convert entity-based references to indices for serialization
+        for (i, (entity, player)) in query_players.iter().enumerate() {
+            entity_to_index.insert(entity, i);
+
+            player_data.push(PlayerData {
+                id: i,
+                name: player.name.clone(),
+                life: player.life,
+                mana_pool: player.mana_pool.clone(),
+                player_index: i,
+            });
+        }
+
+        // Create game save data
+        let mut save_data =
+            GameSaveData::from_game_state(&game_state, &entity_to_index, player_data);
+
+        // Add zone data if ZoneManager is available
+        if let Some(zone_manager) = zones.as_ref() {
+            save_data.zones = GameSaveData::from_zone_manager(zone_manager, &entity_to_index);
+        }
+
+        // Add commander data if CommandZoneManager is available
+        if let Some(commander_manager) = commanders.as_ref() {
+            save_data.commanders =
+                GameSaveData::from_commander_manager(commander_manager, &entity_to_index);
+        }
+
+        // Add to history
+        game_history.add_state(save_data);
+    }
+}
+
+/// System to handle the start rewind event
+pub fn handle_rewind(
+    mut event_reader: EventReader<StartRewindEvent>,
+    mut game_history: ResMut<GameHistory>,
+    mut game_state: Option<ResMut<GameState>>,
+    mut commands: Commands,
+    mut query_players: Query<(Entity, &mut Player)>,
+    mut zones: Option<ResMut<ZoneManager>>,
+    mut commanders: Option<ResMut<CommandZoneManager>>,
+) {
+    for event in event_reader.read() {
+        info!("Rewinding game by {} steps", event.steps);
+
+        // Ensure we have at least one game state in history
+        if game_history.active_branch().is_none()
+            || game_history.active_branch().unwrap().states.is_empty()
+        {
+            warn!("Cannot rewind: no history available");
+            continue;
+        }
+
+        // If not already in navigation mode, we need to capture current state first
+        if !game_history.is_navigating {
+            // Capture current state before rewinding
+            let mut player_data = Vec::new();
+            let mut entity_to_index = HashMap::new();
+
+            // Create a mapping for existing entities
+            for (i, (entity, player)) in query_players.iter().enumerate() {
+                entity_to_index.insert(entity, i);
+
+                player_data.push(PlayerData {
+                    id: i,
+                    name: player.name.clone(),
+                    life: player.life,
+                    mana_pool: player.mana_pool.clone(),
+                    player_index: i,
+                });
+            }
+
+            if let Some(state) = game_state.as_ref() {
+                // Create game save data
+                let mut current_save_data =
+                    GameSaveData::from_game_state(&state, &entity_to_index, player_data);
+
+                // Add zone data if ZoneManager is available
+                if let Some(zone_manager) = zones.as_ref() {
+                    current_save_data.zones =
+                        GameSaveData::from_zone_manager(zone_manager, &entity_to_index);
+                }
+
+                // Add commander data if CommandZoneManager is available
+                if let Some(commander_manager) = commanders.as_ref() {
+                    current_save_data.commanders =
+                        GameSaveData::from_commander_manager(commander_manager, &entity_to_index);
+                }
+
+                // Create a new branch from current state when starting to rewind
+                // This preserves the original timeline
+                game_history.create_branch(current_save_data);
+                info!("Created new branch for rewind operation");
+            }
+
+            game_history.is_navigating = true;
+        }
+
+        // Perform the rewind steps
+        let mut rewound_state = None;
+        for _ in 0..event.steps {
+            if let Some(state) = game_history.rewind() {
+                rewound_state = Some(state.clone());
+            } else {
+                info!("Reached beginning of history branch");
+                break;
+            }
+        }
+
+        // Apply the rewound state if available
+        if let Some(rewound_state) = rewound_state {
+            apply_game_state(
+                &rewound_state,
+                &mut game_state,
+                &mut commands,
+                &mut query_players,
+                &mut zones,
+                &mut commanders,
+            );
+            info!("Rewound to turn {}", rewound_state.game_state.turn_number);
+        }
+    }
+}
+
+/// System to handle rewinding to a specific turn
+pub fn handle_rewind_to_turn(
+    mut event_reader: EventReader<RewindToTurnEvent>,
+    mut game_history: ResMut<GameHistory>,
+    mut game_state: Option<ResMut<GameState>>,
+    mut commands: Commands,
+    mut query_players: Query<(Entity, &mut Player)>,
+    mut zones: Option<ResMut<ZoneManager>>,
+    mut commanders: Option<ResMut<CommandZoneManager>>,
+) {
+    for event in event_reader.read() {
+        info!("Rewinding to turn {}", event.turn);
+
+        // Ensure we have game states in history
+        if game_history.active_branch().is_none()
+            || game_history.active_branch().unwrap().states.is_empty()
+        {
+            warn!("Cannot rewind: no history available");
+            continue;
+        }
+
+        // If not already in navigation mode, we need to capture current state first
+        if !game_history.is_navigating {
+            // Capture current state before rewinding
+            let mut player_data = Vec::new();
+            let mut entity_to_index = HashMap::new();
+
+            // Create a mapping for existing entities
+            for (i, (entity, player)) in query_players.iter().enumerate() {
+                entity_to_index.insert(entity, i);
+
+                player_data.push(PlayerData {
+                    id: i,
+                    name: player.name.clone(),
+                    life: player.life,
+                    mana_pool: player.mana_pool.clone(),
+                    player_index: i,
+                });
+            }
+
+            if let Some(state) = game_state.as_ref() {
+                // Create game save data
+                let mut current_save_data =
+                    GameSaveData::from_game_state(&state, &entity_to_index, player_data);
+
+                // Add zone data if ZoneManager is available
+                if let Some(zone_manager) = zones.as_ref() {
+                    current_save_data.zones =
+                        GameSaveData::from_zone_manager(zone_manager, &entity_to_index);
+                }
+
+                // Add commander data if CommandZoneManager is available
+                if let Some(commander_manager) = commanders.as_ref() {
+                    current_save_data.commanders =
+                        GameSaveData::from_commander_manager(commander_manager, &entity_to_index);
+                }
+
+                // Create a new branch from current state when starting to rewind
+                // This preserves the original timeline
+                game_history.create_branch(current_save_data);
+                info!("Created new branch for rewind operation");
+            }
+
+            game_history.is_navigating = true;
+        }
+
+        // Try to jump to the specific turn
+        if let Some(state) = game_history.go_to_turn(event.turn) {
+            let rewound_state = state.clone();
+            apply_game_state(
+                &rewound_state,
+                &mut game_state,
+                &mut commands,
+                &mut query_players,
+                &mut zones,
+                &mut commanders,
+            );
+            info!("Rewound to turn {}", event.turn);
+        } else {
+            warn!("Turn {} not found in history", event.turn);
+        }
+    }
+}
+
+/// System to handle rollback to a previous checkpoint
+pub fn handle_rollback(
+    mut event_reader: EventReader<RollbackEvent>,
+    _config: Res<SaveConfig>,
+    mut load_events: EventWriter<LoadGameEvent>,
+) {
+    for event in event_reader.read() {
+        let slot_name = if let Some(checkpoint_name) = &event.checkpoint_name {
+            info!("Rolling back to checkpoint: {}", checkpoint_name);
+            checkpoint_name.clone()
+        } else {
+            info!("Rolling back to last auto-save");
+            "auto_save".to_string()
+        };
+
+        // Just use the load system to perform the rollback
+        load_events.send(LoadGameEvent { slot_name });
+    }
+}
+
+/// System to handle creating a new branch
+pub fn handle_create_branch(
+    mut event_reader: EventReader<CreateBranchEvent>,
+    mut game_history: ResMut<GameHistory>,
+    game_state: Res<GameState>,
+    query_players: Query<(Entity, &Player)>,
+    zones: Option<Res<ZoneManager>>,
+    commanders: Option<Res<CommandZoneManager>>,
+) {
+    for event in event_reader.read() {
+        info!("Creating new game history branch");
+
+        let mut player_data = Vec::new();
+        let mut entity_to_index = HashMap::new();
+
+        // Convert entity-based references to indices for serialization
+        for (i, (entity, player)) in query_players.iter().enumerate() {
+            entity_to_index.insert(entity, i);
+
+            player_data.push(PlayerData {
+                id: i,
+                name: player.name.clone(),
+                life: player.life,
+                mana_pool: player.mana_pool.clone(),
+                player_index: i,
+            });
+        }
+
+        // Create game save data
+        let mut save_data =
+            GameSaveData::from_game_state(&game_state, &entity_to_index, player_data);
+
+        // Add zone data if ZoneManager is available
+        if let Some(zone_manager) = zones.as_ref() {
+            save_data.zones = GameSaveData::from_zone_manager(zone_manager, &entity_to_index);
+        }
+
+        // Add commander data if CommandZoneManager is available
+        if let Some(commander_manager) = commanders.as_ref() {
+            save_data.commanders =
+                GameSaveData::from_commander_manager(commander_manager, &entity_to_index);
+        }
+
+        // Create a new branch
+        let branch_id = game_history.create_branch(save_data);
+
+        // Set the branch name if provided
+        if let Some(name) = &event.name {
+            if let Some(branch) = game_history.branches.iter_mut().find(|b| b.id == branch_id) {
+                branch.name = Some(name.clone());
+                info!("Named branch {} as '{}'", branch_id, name);
+            }
+        }
+
+        info!("Created new branch with ID: {}", branch_id);
+    }
+}
+
+/// System to handle switching between branches
+pub fn handle_switch_branch(
+    mut event_reader: EventReader<SwitchBranchEvent>,
+    mut game_history: ResMut<GameHistory>,
+    mut game_state: Option<ResMut<GameState>>,
+    mut commands: Commands,
+    mut query_players: Query<(Entity, &mut Player)>,
+    mut zones: Option<ResMut<ZoneManager>>,
+    mut commanders: Option<ResMut<CommandZoneManager>>,
+) {
+    for event in event_reader.read() {
+        info!("Switching to branch {}", event.branch_id);
+
+        // Switch to the branch
+        if game_history.switch_to_branch(event.branch_id) {
+            // Get the current state from the branch
+            if let Some(state) = game_history.current_state() {
+                let branch_state = state.clone();
+                apply_game_state(
+                    &branch_state,
+                    &mut game_state,
+                    &mut commands,
+                    &mut query_players,
+                    &mut zones,
+                    &mut commanders,
+                );
+                info!(
+                    "Switched to branch {} at turn {}",
+                    event.branch_id, branch_state.game_state.turn_number
+                );
+            } else {
+                warn!("Branch {} exists but has no states", event.branch_id);
+            }
+        } else {
+            warn!("Branch with ID {} not found", event.branch_id);
+        }
+    }
+}
+
+/// System to handle moving forward in history
+pub fn handle_history_forward(
+    mut event_reader: EventReader<HistoryForwardEvent>,
+    mut game_history: ResMut<GameHistory>,
+    mut game_state: Option<ResMut<GameState>>,
+    mut commands: Commands,
+    mut query_players: Query<(Entity, &mut Player)>,
+    mut zones: Option<ResMut<ZoneManager>>,
+    mut commanders: Option<ResMut<CommandZoneManager>>,
+) {
+    for _ in event_reader.read() {
+        if !game_history.is_navigating {
+            warn!("Not in history navigation mode");
+            continue;
+        }
+
+        info!("Moving forward in history");
+
+        // Try to move forward in history
+        if let Some(state) = game_history.fast_forward() {
+            let forward_state = state.clone();
+            apply_game_state(
+                &forward_state,
+                &mut game_state,
+                &mut commands,
+                &mut query_players,
+                &mut zones,
+                &mut commanders,
+            );
+            info!(
+                "Moved forward to turn {}",
+                forward_state.game_state.turn_number
+            );
+        } else {
+            info!("Already at latest state in branch");
+        }
+    }
+}
+
+/// System to handle moving backward in history
+pub fn handle_history_backward(
+    mut event_reader: EventReader<HistoryBackwardEvent>,
+    mut game_history: ResMut<GameHistory>,
+    mut game_state: Option<ResMut<GameState>>,
+    mut commands: Commands,
+    mut query_players: Query<(Entity, &mut Player)>,
+    mut zones: Option<ResMut<ZoneManager>>,
+    mut commanders: Option<ResMut<CommandZoneManager>>,
+) {
+    for _ in event_reader.read() {
+        if !game_history.is_navigating {
+            warn!("Not in history navigation mode");
+            continue;
+        }
+
+        info!("Moving backward in history");
+
+        // Try to move backward in history
+        if let Some(state) = game_history.rewind() {
+            let backward_state = state.clone();
+            apply_game_state(
+                &backward_state,
+                &mut game_state,
+                &mut commands,
+                &mut query_players,
+                &mut zones,
+                &mut commanders,
+            );
+            info!(
+                "Moved backward to turn {}",
+                backward_state.game_state.turn_number
+            );
+        } else {
+            info!("Already at earliest state in branch");
+        }
+    }
+}
+
+/// Helper function to apply a game state to the world
+fn apply_game_state(
+    save_data: &GameSaveData,
+    game_state: &mut Option<ResMut<GameState>>,
+    commands: &mut Commands,
+    query_players: &mut Query<(Entity, &mut Player)>,
+    zones: &mut Option<ResMut<ZoneManager>>,
+    commanders: &mut Option<ResMut<CommandZoneManager>>,
+) {
+    // Rebuild entity mapping
+    let mut index_to_entity = Vec::new();
+    let mut existing_player_entities = HashMap::new();
+
+    // Map existing players if possible
+    for (entity, player) in query_players.iter() {
+        for saved_player in &save_data.players {
+            if player.name == saved_player.name {
+                existing_player_entities.insert(saved_player.id, entity);
+                break;
+            }
+        }
+    }
+
+    // Update player entities
+    for player_data in &save_data.players {
+        if let Some(&entity) = existing_player_entities.get(&player_data.id) {
+            index_to_entity.push(entity);
+
+            // Update existing player data
+            if let Ok((_, mut player)) = query_players.get_mut(entity) {
+                player.life = player_data.life;
+                player.mana_pool = player_data.mana_pool.clone();
+            }
+        } else {
+            // Create new player entity
+            let player_entity = commands
+                .spawn((Player {
+                    name: player_data.name.clone(),
+                    life: player_data.life,
+                    mana_pool: player_data.mana_pool.clone(),
+                    ..Default::default()
+                },))
+                .id();
+
+            index_to_entity.push(player_entity);
+        }
+    }
+
+    // Handle empty player list case gracefully
+    if save_data.players.is_empty() {
+        debug!("Loading a save with no players");
+        // Add a placeholder to index_to_entity for GameState to reference safely
+        if index_to_entity.is_empty() {
+            index_to_entity.push(Entity::PLACEHOLDER);
+        }
+    }
+
+    // Restore game state
+    if let Some(game_state) = game_state.as_mut() {
+        // If there's a corrupted mapping, fall back to basic properties
+        if index_to_entity.is_empty() || index_to_entity.contains(&Entity::PLACEHOLDER) {
+            // At minimum, restore basic properties not tied to player entities
+            game_state.turn_number = save_data.game_state.turn_number;
+
+            // For empty player list, set reasonable defaults for player-related fields
+            if save_data.game_state.turn_order_indices.is_empty() {
+                // Create a fallback turn order
+                game_state.turn_order = VecDeque::new();
+            }
+        } else {
+            // Full restore with valid player entities
+            **game_state = save_data.to_game_state(&index_to_entity);
+        }
+    } else {
+        if !index_to_entity.is_empty() {
+            commands.insert_resource(save_data.to_game_state(&index_to_entity));
+        } else {
+            commands.insert_resource(GameState::default());
+            warn!("No player entities found when loading game, using default state");
+        }
+    }
+
+    // Restore zone contents
+    if let Some(zone_manager) = &mut *zones {
+        // Use the GameSaveData method to restore ZoneManager
+        **zone_manager = save_data.to_zone_manager(&index_to_entity);
+    }
+
+    // Restore commander zone contents
+    if let Some(commander_manager) = &mut *commanders {
+        // Use the GameSaveData method to restore CommandZoneManager
+        **commander_manager = save_data.to_commander_manager(&index_to_entity);
+    }
+}
+
+/// System to automatically capture game state for history
+pub fn auto_capture_history(
+    mut event_writer: EventWriter<CaptureHistoryEvent>,
+    mut auto_save_tracker: ResMut<AutoSaveTracker>,
+    game_state: Res<GameState>,
+    _config: Res<SaveConfig>,
+) {
+    // Check if turn has changed
+    if auto_save_tracker.time_since_last_save >= _config.auto_save_interval_seconds / 2.0
+        && game_state.turn_number != auto_save_tracker.last_turn_checkpoint
+    {
+        // Capture state at the beginning of each turn
+        event_writer.send(CaptureHistoryEvent);
+
+        // Update last turn
+        auto_save_tracker.last_turn_checkpoint = game_state.turn_number;
+    }
+}

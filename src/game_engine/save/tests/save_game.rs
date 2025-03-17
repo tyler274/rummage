@@ -11,11 +11,17 @@ fn test_save_game() {
     let mut app = App::new();
     app.add_plugins(SaveLoadPlugin);
 
+    // Register SnapshotEvent for testing
+    app.add_event::<crate::snapshot::SnapshotEvent>();
+
     // Run once to initialize resources
     app.update();
 
     // Set up test environment with real players and game state
     let _player_entities = setup_test_environment(&mut app);
+
+    // Add a game camera for snapshots
+    add_test_game_camera(&mut app);
 
     // Get the configured save directory
     let test_dir = app.world().resource::<SaveConfig>().save_directory.clone();

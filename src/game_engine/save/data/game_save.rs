@@ -1,8 +1,10 @@
+use crate::game_engine::save::resources::ReplayAction;
 use crate::game_engine::state::GameState;
-use crate::mana::ManaPool;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
+
+use super::{CommanderData, GameStateData, PlayerData, ZoneData};
 
 /// Complete game save data
 #[derive(Debug, Clone, Serialize, Deserialize, Resource)]
@@ -12,6 +14,14 @@ pub struct GameSaveData {
     pub zones: ZoneData,
     pub commanders: CommanderData,
     pub save_version: String,
+    pub game_id: String,
+    pub turn_number: u32,
+    pub phase: String,
+    pub active_player: Option<usize>,
+    pub priority_player: Option<usize>,
+    pub replay_history: Vec<ReplayAction>,
+    pub board_snapshot: Option<String>,
+    pub timestamp: u64,
 }
 
 impl Default for GameSaveData {
@@ -22,130 +32,150 @@ impl Default for GameSaveData {
             zones: ZoneData::default(),
             commanders: CommanderData::default(),
             save_version: env!("CARGO_PKG_VERSION").to_string(),
-        }
-    }
-}
-
-/// Serializable game state data
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GameStateData {
-    pub turn_number: u32,
-    pub active_player_index: usize,
-    pub priority_holder_index: usize,
-    pub turn_order_indices: Vec<usize>,
-    pub lands_played: Vec<(usize, u32)>,
-    pub main_phase_action_taken: bool,
-    pub drawn_this_turn: Vec<usize>,
-    pub eliminated_players: Vec<usize>,
-    pub use_commander_damage: bool,
-    pub commander_damage_threshold: u32,
-    pub starting_life: i32,
-}
-
-impl Default for GameStateData {
-    fn default() -> Self {
-        Self {
+            game_id: String::new(),
             turn_number: 1,
-            active_player_index: 0,
-            priority_holder_index: 0,
-            turn_order_indices: Vec::new(),
-            lands_played: Vec::new(),
-            main_phase_action_taken: false,
-            drawn_this_turn: Vec::new(),
-            eliminated_players: Vec::new(),
-            use_commander_damage: true,
-            commander_damage_threshold: 21,
-            starting_life: 40,
+            phase: String::new(),
+            active_player: None,
+            priority_player: None,
+            replay_history: Vec::new(),
+            board_snapshot: None,
+            timestamp: 0,
         }
     }
 }
 
-/// Serializable player data
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PlayerData {
-    pub id: usize,
-    pub name: String,
-    pub life: i32,
-    pub mana_pool: ManaPool,
-    pub player_index: usize,
+/// Builder for GameSaveData
+#[derive(Default)]
+pub struct GameSaveDataBuilder {
+    game_state: GameStateData,
+    players: Vec<PlayerData>,
+    zones: ZoneData,
+    commanders: CommanderData,
+    save_version: String,
+    game_id: String,
+    turn_number: u32,
+    phase: String,
+    active_player: Option<usize>,
+    priority_player: Option<usize>,
+    replay_history: Vec<ReplayAction>,
+    board_snapshot: Option<String>,
+    timestamp: u64,
 }
 
-/// Serializable zone data
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ZoneData {
-    // Maps player indices to their libraries
-    pub libraries: std::collections::HashMap<usize, Vec<usize>>,
-
-    // Maps player indices to their hands
-    pub hands: std::collections::HashMap<usize, Vec<usize>>,
-
-    // Shared battlefield (all permanents in play)
-    pub battlefield: Vec<usize>,
-
-    // Maps player indices to their graveyards
-    pub graveyards: std::collections::HashMap<usize, Vec<usize>>,
-
-    // Shared exile zone
-    pub exile: Vec<usize>,
-
-    // Command zone
-    pub command_zone: Vec<usize>,
-
-    // Maps card indices to their current zone
-    pub card_zone_map: std::collections::HashMap<usize, crate::game_engine::zones::types::Zone>,
-}
-
-impl Default for ZoneData {
-    fn default() -> Self {
+impl GameSaveDataBuilder {
+    /// Create a new builder with default values
+    pub fn new() -> Self {
         Self {
-            libraries: std::collections::HashMap::new(),
-            hands: std::collections::HashMap::new(),
-            battlefield: Vec::new(),
-            graveyards: std::collections::HashMap::new(),
-            exile: Vec::new(),
-            command_zone: Vec::new(),
-            card_zone_map: std::collections::HashMap::new(),
+            save_version: env!("CARGO_PKG_VERSION").to_string(),
+            turn_number: 1,
+            ..Default::default()
         }
     }
-}
 
-/// Serializable commander data
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CommanderData {
-    // Maps player indices to their commander indices
-    pub player_commanders: std::collections::HashMap<usize, Vec<usize>>,
+    /// Set the game state data
+    pub fn game_state(mut self, game_state: GameStateData) -> Self {
+        self.game_state = game_state;
+        self
+    }
 
-    // Maps commander indices to their current zone
-    pub commander_zone_status: std::collections::HashMap<
-        usize,
-        crate::game_engine::commander::components::CommanderZoneLocation,
-    >,
+    /// Set the players data
+    pub fn players(mut self, players: Vec<PlayerData>) -> Self {
+        self.players = players;
+        self
+    }
 
-    // Tracks how many times a commander has moved zones
-    pub zone_transition_count: std::collections::HashMap<usize, u32>,
-}
+    /// Set the zones data
+    pub fn zones(mut self, zones: ZoneData) -> Self {
+        self.zones = zones;
+        self
+    }
 
-impl Default for CommanderData {
-    fn default() -> Self {
-        Self {
-            player_commanders: std::collections::HashMap::new(),
-            commander_zone_status: std::collections::HashMap::new(),
-            zone_transition_count: std::collections::HashMap::new(),
+    /// Set the commanders data
+    pub fn commanders(mut self, commanders: CommanderData) -> Self {
+        self.commanders = commanders;
+        self
+    }
+
+    /// Set the save version
+    pub fn save_version(mut self, save_version: String) -> Self {
+        self.save_version = save_version;
+        self
+    }
+
+    /// Set the game ID
+    pub fn game_id(mut self, game_id: String) -> Self {
+        self.game_id = game_id;
+        self
+    }
+
+    /// Set the turn number
+    pub fn turn_number(mut self, turn_number: u32) -> Self {
+        self.turn_number = turn_number;
+        self
+    }
+
+    /// Set the current phase
+    pub fn phase(mut self, phase: String) -> Self {
+        self.phase = phase;
+        self
+    }
+
+    /// Set the active player
+    pub fn active_player(mut self, active_player: Option<usize>) -> Self {
+        self.active_player = active_player;
+        self
+    }
+
+    /// Set the priority player
+    pub fn priority_player(mut self, priority_player: Option<usize>) -> Self {
+        self.priority_player = priority_player;
+        self
+    }
+
+    /// Set the replay history
+    pub fn replay_history(mut self, replay_history: Vec<ReplayAction>) -> Self {
+        self.replay_history = replay_history;
+        self
+    }
+
+    /// Set the board snapshot
+    pub fn board_snapshot(mut self, board_snapshot: Option<String>) -> Self {
+        self.board_snapshot = board_snapshot;
+        self
+    }
+
+    /// Set the timestamp
+    pub fn timestamp(mut self, timestamp: u64) -> Self {
+        self.timestamp = timestamp;
+        self
+    }
+
+    /// Build the GameSaveData instance
+    pub fn build(self) -> GameSaveData {
+        GameSaveData {
+            game_state: self.game_state,
+            players: self.players,
+            zones: self.zones,
+            commanders: self.commanders,
+            save_version: self.save_version,
+            game_id: self.game_id,
+            turn_number: self.turn_number,
+            phase: self.phase,
+            active_player: self.active_player,
+            priority_player: self.priority_player,
+            replay_history: self.replay_history,
+            board_snapshot: self.board_snapshot,
+            timestamp: self.timestamp,
         }
     }
-}
-
-/// Information about a single save file
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SaveInfo {
-    pub slot_name: String,
-    pub timestamp: u64,
-    pub description: String,
-    pub turn_number: u32,
-    pub player_count: usize,
 }
 
 impl GameSaveData {
+    /// Create a new builder for GameSaveData
+    pub fn builder() -> GameSaveDataBuilder {
+        GameSaveDataBuilder::new()
+    }
+
     /// Convert serialized game state data back into a GameState resource
     pub fn to_game_state(&self, index_to_entity: &[Entity]) -> GameState {
         // Add safety checks to handle empty entity lists
@@ -239,7 +269,7 @@ impl GameSaveData {
     /// Create serializable game state data from a GameState resource
     pub fn from_game_state(
         game_state: &GameState,
-        entity_to_index: &std::collections::HashMap<Entity, usize>,
+        entity_to_index: &HashMap<Entity, usize>,
         players: Vec<PlayerData>,
     ) -> Self {
         // Transform GameState to serializable GameStateData
@@ -257,7 +287,7 @@ impl GameSaveData {
         let lands_played = game_state
             .lands_played
             .iter()
-            .filter_map(|(e, count)| entity_to_index.get(e).map(|i| (*i, *count)))
+            .filter_map(|(e, count)| Some((entity_to_index.get(e)?.clone(), *count)))
             .collect();
 
         let drawn_this_turn = game_state
@@ -286,23 +316,31 @@ impl GameSaveData {
             starting_life: game_state.starting_life,
         };
 
-        // Create empty zone and commander data (they will be filled in by the systems if available)
-        let zone_data = ZoneData::default();
-        let commander_data = CommanderData::default();
-
+        // Build a basic save data object
         Self {
             game_state: game_state_data,
             players,
-            zones: zone_data,
-            commanders: commander_data,
+            zones: ZoneData::default(),
+            commanders: CommanderData::default(),
             save_version: env!("CARGO_PKG_VERSION").to_string(),
+            game_id: String::new(),
+            turn_number: game_state.turn_number,
+            phase: String::new(), // Would be filled in by the current phase
+            active_player: Some(active_player_index),
+            priority_player: Some(priority_holder_index),
+            replay_history: Vec::new(),
+            board_snapshot: None,
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs(),
         }
     }
 
     /// Extract zone data from ZoneManager and convert entity references to indices
     pub fn from_zone_manager(
         zone_manager: &crate::game_engine::zones::ZoneManager,
-        entity_to_index: &std::collections::HashMap<Entity, usize>,
+        entity_to_index: &HashMap<Entity, usize>,
     ) -> ZoneData {
         let mut zone_data = ZoneData::default();
 
@@ -373,7 +411,7 @@ impl GameSaveData {
     /// Extract commander data from CommandZoneManager and convert entity references to indices
     pub fn from_commander_manager(
         commander_manager: &crate::game_engine::commander::CommandZoneManager,
-        entity_to_index: &std::collections::HashMap<Entity, usize>,
+        entity_to_index: &HashMap<Entity, usize>,
     ) -> CommanderData {
         let mut commander_data = CommanderData::default();
 
@@ -546,28 +584,95 @@ impl GameSaveData {
                         }
                     })
                     .collect();
-                commander_manager
-                    .player_commanders
-                    .insert(player, commanders_vec);
+                commander_manager.player_commanders.insert(player, commanders_vec);
             }
         }
 
         // Restore commander zone status
-        for (card_idx, zone) in &self.commanders.commander_zone_status {
-            if *card_idx < index_to_entity.len() {
-                let card = index_to_entity[*card_idx];
-                commander_manager.commander_zone_status.insert(card, *zone);
+        for (commander_idx, zone) in &self.commanders.commander_zone_status {
+            if *commander_idx < index_to_entity.len() {
+                let commander = index_to_entity[*commander_idx];
+                commander_manager.commander_zone_status.insert(commander, *zone);
             }
         }
 
         // Restore zone transition count
-        for (card_idx, count) in &self.commanders.zone_transition_count {
-            if *card_idx < index_to_entity.len() {
-                let card = index_to_entity[*card_idx];
-                commander_manager.zone_transition_count.insert(card, *count);
+        for (commander_idx, count) in &self.commanders.zone_transition_count {
+            if *commander_idx < index_to_entity.len() {
+                let commander = index_to_entity[*commander_idx];
+                commander_manager
+                    .zone_transition_count
+                    .insert(commander, *count);
             }
         }
 
         commander_manager
     }
+}
+
+/// Convert entity to index in a serializable format
+pub fn convert_entity_to_index(
+    entities: Vec<Entity>,
+    world: &World,
+) -> (HashMap<Entity, usize>, Vec<PlayerData>) {
+    let mut entity_to_index = HashMap::new();
+    let mut players = Vec::new();
+
+    // Create mapping from Entity to usize index
+    for (i, entity) in entities.iter().enumerate() {
+        entity_to_index.insert(*entity, i);
+
+        // If entity has a Player component, extract player data
+        if let Some(player) = world.get::<crate::player::Player>(*entity) {
+            let player_data = PlayerData {
+                id: i,
+                name: player.name.clone(),
+                life: player.life,
+                mana_pool: player.mana_pool.clone(),
+                player_index: player.player_index,
+            };
+            players.push(player_data);
+        }
+    }
+
+    (entity_to_index, players)
+}
+
+/// Convert indices back to entities
+pub fn convert_index_to_entity(save_data: &GameSaveData, world: &mut World) -> Vec<Entity> {
+    let mut index_to_entity = Vec::new();
+
+    // First we restore player entities
+    for player_data in &save_data.players {
+        // Spawn a new entity for this player
+        let entity = world
+            .spawn(crate::player::Player {
+                name: player_data.name.clone(),
+                life: player_data.life,
+                mana_pool: player_data.mana_pool.clone(),
+                player_index: player_data.player_index,
+            })
+            .id();
+
+        // Make sure our index_to_entity vector is large enough
+        // This handles the case where indices might not be sequential
+        if player_data.id >= index_to_entity.len() {
+            index_to_entity.resize(player_data.id + 1, Entity::from_raw(0));
+        }
+
+        // Store the entity at the correct index
+        index_to_entity[player_data.id] = entity;
+    }
+
+    index_to_entity
+}
+
+/// Information about a single save file
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SaveInfo {
+    pub slot_name: String,
+    pub timestamp: u64,
+    pub description: String,
+    pub turn_number: u32,
+    pub player_count: usize,
 }

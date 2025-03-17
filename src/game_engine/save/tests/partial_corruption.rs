@@ -25,34 +25,34 @@ fn test_partial_corruption() {
     let slot_name = "partial_corruption";
     let save_path = test_dir.join(format!("{}.bin", slot_name));
 
-    // Create valid players but corrupted game state
-    let save_data = GameSaveData {
-        game_state: GameStateData {
-            turn_number: 999999999,         // Potentially suspicious value
-            active_player_index: 0,         // Valid index
-            priority_holder_index: 0,       // Valid index
-            turn_order_indices: vec![0, 1], // Valid indices
-            ..Default::default()
-        },
-        players: vec![
-            PlayerData {
-                id: 0,
-                name: "Valid Player 1".to_string(),
-                life: 40,
-                mana_pool: Default::default(),
-                player_index: 0,
-            },
-            PlayerData {
-                id: 1,
-                name: "Valid Player 2".to_string(),
-                life: -999999, // Invalid negative life
-                mana_pool: Default::default(),
-                player_index: 1,
-            },
-        ],
-        save_version: "corrupted".to_string(), // Invalid version
-        ..Default::default()
-    };
+    // Create valid players but corrupted game state using the builder pattern
+    let save_data = GameSaveData::builder()
+        .game_state(
+            GameStateData::builder()
+                .turn_number(999999999) // Potentially suspicious value
+                .active_player_index(0) // Valid index
+                .priority_holder_index(0) // Valid index
+                .turn_order_indices(vec![0, 1]) // Valid indices
+                .build(),
+        )
+        .players(vec![
+            PlayerData::builder()
+                .id(0)
+                .name("Valid Player 1".to_string())
+                .life(40)
+                .mana_pool(Default::default())
+                .player_index(0)
+                .build(),
+            PlayerData::builder()
+                .id(1)
+                .name("Valid Player 2".to_string())
+                .life(-999999) // Invalid negative life
+                .mana_pool(Default::default())
+                .player_index(1)
+                .build(),
+        ])
+        .save_version("corrupted".to_string()) // Invalid version
+        .build();
 
     // Create a persistent resource and set its value to our save data
     let mut persistent_save = Persistent::<GameSaveData>::builder()

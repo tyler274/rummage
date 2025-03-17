@@ -24,6 +24,7 @@ impl Plugin for SaveLoadTestPlugin {
             .add_event::<StartReplayEvent>()
             .add_event::<StepReplayEvent>()
             .add_event::<StopReplayEvent>()
+            .add_event::<crate::snapshot::SnapshotEvent>()
             .add_systems(Startup, setup_save_system_for_tests)
             .add_systems(
                 Update,
@@ -49,8 +50,10 @@ pub fn setup_save_system_for_tests(mut commands: Commands) {
 
     let config = SaveConfig {
         save_directory: test_dir.to_path_buf(),
-        auto_save_enabled: true,
-        auto_save_frequency: 2,
+        auto_save_enabled: false,
+        auto_save_frequency: 999, // Set very high to prevent auto-saving during tests
+        checkpoint_frequency: 5,
+        history_size: 50,
     };
 
     commands.insert_resource(config);
@@ -136,13 +139,18 @@ pub fn setup_test_environment(app: &mut App) -> Vec<Entity> {
     // Set up SaveConfig for tests
     let config = SaveConfig {
         save_directory: test_dir,
-        auto_save_enabled: true,
-        auto_save_frequency: 2,
+        auto_save_enabled: false,
+        auto_save_frequency: 999, // Set very high to prevent auto-saving during tests
+        checkpoint_frequency: 5,
+        history_size: 50,
     };
     app.insert_resource(config);
     app.insert_resource(AutoSaveTracker::default());
     app.insert_resource(ReplayState::default());
     app.insert_resource(SaveMetadata::default());
+
+    // Register SnapshotEvent for testing
+    app.add_event::<crate::snapshot::SnapshotEvent>();
 
     // Create test players
     let player1 = app
@@ -242,36 +250,42 @@ pub fn handle_save_game_for_tests(
 
         let save_path = Path::new("target/test_saves").join(format!("{}.bin", event.slot_name));
 
-        // Create test save data
-        let save_data = GameSaveData {
-            game_state: crate::game_engine::save::GameStateData {
-                turn_number: game_state.turn_number,
-                active_player_index: 0,
-                priority_holder_index: 0,
-                turn_order_indices: vec![0, 1],
-                lands_played: vec![(0, 1), (1, 1)],
-                main_phase_action_taken: true,
-                drawn_this_turn: vec![0, 1],
-                eliminated_players: vec![],
-                use_commander_damage: true,
-                commander_damage_threshold: 21,
-                starting_life: 40,
-            },
-            players: query_players
-                .iter()
-                .enumerate()
-                .map(|(idx, (_, player))| PlayerData {
-                    id: idx,
-                    name: player.name.clone(),
-                    life: player.life,
-                    mana_pool: player.mana_pool.clone(),
-                    player_index: idx,
-                })
-                .collect(),
-            save_version: "1.0".to_string(),
-            zones: Default::default(),
-            commanders: Default::default(),
-        };
+        // Create test save data using the builder pattern
+        let save_data = GameSaveData::builder()
+            .game_state(
+                crate::game_engine::save::GameStateData::builder()
+                    .turn_number(game_state.turn_number)
+                    .active_player_index(0)
+                    .priority_holder_index(0)
+                    .turn_order_indices(vec![0, 1])
+                    .lands_played(vec![(0, 1), (1, 1)])
+                    .main_phase_action_taken(true)
+                    .drawn_this_turn(vec![0, 1])
+                    .eliminated_players(vec![])
+                    .use_commander_damage(true)
+                    .commander_damage_threshold(21)
+                    .starting_life(40)
+                    .build(),
+            )
+            .players(
+                query_players
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, (_, player))| {
+                        PlayerData::builder()
+                            .id(idx)
+                            .name(player.name.clone())
+                            .life(player.life)
+                            .mana_pool(player.mana_pool.clone())
+                            .player_index(idx)
+                            .build()
+                    })
+                    .collect(),
+            )
+            .save_version("1.0".to_string())
+            .zones(Default::default())
+            .commanders(Default::default())
+            .build();
 
         // Create persistent resource for this save
         let persistent_save = Persistent::builder()
@@ -320,4 +334,19 @@ pub fn handle_load_game_for_tests(
             // the save data back to player entities
         }
     }
+}
+
+// Helper function to add a game camera for tests
+pub fn add_test_game_camera(app: &mut App) -> Entity {
+    let camera_entity = app
+        .world_mut()
+        .spawn((
+            Camera2d::default(),
+            crate::camera::components::GameCamera,
+            Name::new("Test Game Camera"),
+        ))
+        .id();
+
+    info!("Added test game camera: {:?}", camera_entity);
+    camera_entity
 }
