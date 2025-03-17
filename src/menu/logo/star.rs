@@ -172,7 +172,6 @@ pub fn create_star_of_david() -> impl Bundle {
             margin: UiRect::bottom(Val::Px(40.0)),
             ..default()
         },
-        GlobalZIndex(50), // High z-index for visibility
         StarOfDavid,
         AppLayer::Menu.layer(), // Only visible on menu layer
         Name::new("Star of David UI Component"),
