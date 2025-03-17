@@ -1,14 +1,18 @@
 use bevy::prelude::*;
-use bevy::utils::Duration;
-use std::collections::VecDeque;
-use std::path::Path;
+use std::collections::HashMap;
+
+use crate::game_engine::save::events::*;
+use crate::game_engine::save::{AutoSaveTracker, SaveConfig};
 
 use crate::game_engine::save::{
-    AutoSaveTracker, CheckStateBasedActionsEvent, LoadGameEvent, SaveConfig, SaveGameEvent,
-    SaveLoadPlugin, SaveMetadata,
+    // Remove duplicated imports that cause shadowing
+    // AutoSaveTracker, // Shadowed by utils::*
+    CheckStateBasedActionsEvent,
+    LoadGameEvent,
+    // SaveConfig, // Shadowed by utils::*
+    SaveGameEvent,
+    SaveLoadPlugin,
 };
-use crate::game_engine::state::GameState;
-use crate::player::Player;
 
 mod auto_save;
 mod complex_game_state_serialization;
@@ -24,6 +28,14 @@ mod utils;
 // Re-export test utilities
 pub use utils::*;
 
+/// Resource to track which events were registered for testing
+#[derive(Resource, Default)]
+pub struct EventVerification {
+    pub save_verified: bool,
+    pub load_verified: bool,
+    pub sba_verified: bool,
+}
+
 // Keep the original basic tests for plugin registration
 #[test]
 fn test_save_load_plugin_registers_systems() {
@@ -31,10 +43,58 @@ fn test_save_load_plugin_registers_systems() {
     let mut app = App::new();
     app.add_plugins(SaveLoadPlugin);
 
-    // Verify systems were registered by checking for the event types
-    assert!(app.is_event_added::<SaveGameEvent>());
-    assert!(app.is_event_added::<LoadGameEvent>());
-    assert!(app.is_event_added::<CheckStateBasedActionsEvent>());
+    // Create resources to store verification state
+    app.insert_resource(EventVerification {
+        save_verified: false,
+        load_verified: false,
+        sba_verified: false,
+    });
+
+    // Add system to track events
+    app.add_systems(
+        Update,
+        |mut save_events: EventReader<SaveGameEvent>,
+         mut load_events: EventReader<LoadGameEvent>,
+         mut sba_events: EventReader<CheckStateBasedActionsEvent>,
+         mut verification: ResMut<EventVerification>| {
+            if !save_events.read().collect::<Vec<_>>().is_empty() {
+                verification.save_verified = true;
+            }
+            if !load_events.read().collect::<Vec<_>>().is_empty() {
+                verification.load_verified = true;
+            }
+            if !sba_events.read().collect::<Vec<_>>().is_empty() {
+                verification.sba_verified = true;
+            }
+        },
+    );
+
+    // Send test events
+    app.world_mut().send_event(SaveGameEvent {
+        slot_name: "test".to_string(),
+    });
+    app.world_mut().send_event(LoadGameEvent {
+        slot_name: "test".to_string(),
+    });
+    app.world_mut().send_event(CheckStateBasedActionsEvent);
+
+    // Run the systems
+    app.update();
+
+    // Verify events were registered
+    let verification = app.world().resource::<EventVerification>();
+    assert!(
+        verification.save_verified,
+        "SaveGameEvent was not properly registered"
+    );
+    assert!(
+        verification.load_verified,
+        "LoadGameEvent was not properly registered"
+    );
+    assert!(
+        verification.sba_verified,
+        "CheckStateBasedActionsEvent was not properly registered"
+    );
 }
 
 // Basic test for auto-save triggers
@@ -44,9 +104,19 @@ fn test_auto_save_triggers() {
     let mut app = App::new();
     app.add_plugins(SaveLoadPlugin);
 
-    // Verify default configuration
-    assert!(app.world.contains_resource::<SaveConfig>());
-    assert!(app.world.contains_resource::<AutoSaveTracker>());
+    // Since SaveLoadPlugin adds SaveConfig in its setup_save_system startup system,
+    // we need to run the app once for the resource to be added
+    app.update();
+
+    // Verify the resource was added by the plugin's setup system
+    assert!(
+        app.world().contains_resource::<SaveConfig>(),
+        "SaveConfig resource should be added by the SaveLoadPlugin"
+    );
+    assert!(
+        app.world().contains_resource::<AutoSaveTracker>(),
+        "AutoSaveTracker resource should be added by the SaveLoadPlugin"
+    );
 
     // Set auto-save to trigger on every check
     app.insert_resource(SaveConfig {
@@ -62,7 +132,7 @@ fn test_auto_save_triggers() {
     app.add_systems(Update, assert_save_event_triggered);
 
     // Trigger the state-based action check
-    app.world.send_event(CheckStateBasedActionsEvent);
+    app.world_mut().send_event(CheckStateBasedActionsEvent);
 
     // Run the systems
     app.update();
@@ -75,10 +145,14 @@ fn assert_save_event_triggered(mut reader: EventReader<SaveGameEvent>) {
 }
 
 // This test must be run with --test-threads=1 because it modifies the file system
-#[cfg(feature = "integration_tests")]
 #[test]
+#[ignore = "This test modifies the file system and should be run with --test-threads=1"]
 fn test_save_load_integration() {
+    use crate::game_engine::state::GameState;
+    use crate::player::Player;
+    use std::collections::VecDeque;
     use std::fs;
+    use std::path::Path;
 
     // Create a test app
     let mut app = App::new();
@@ -99,18 +173,22 @@ fn test_save_load_integration() {
 
     // Create fake game state and players
     let player1 = app
-        .world
+        .world_mut()
         .spawn(Player {
             name: "Test Player 1".to_string(),
             life: 40,
+            mana_pool: crate::mana::ManaPool::default(),
+            player_index: 0,
         })
         .id();
 
     let player2 = app
-        .world
+        .world_mut()
         .spawn(Player {
             name: "Test Player 2".to_string(),
             life: 35,
+            mana_pool: crate::mana::ManaPool::default(),
+            player_index: 1,
         })
         .id();
 
@@ -136,7 +214,7 @@ fn test_save_load_integration() {
     app.insert_resource(game_state);
 
     // Trigger a save
-    app.world.send_event(SaveGameEvent {
+    app.world_mut().send_event(SaveGameEvent {
         slot_name: "test_save".to_string(),
     });
 
@@ -147,12 +225,14 @@ fn test_save_load_integration() {
     assert!(Path::new(&format!("{}/test_save.bin", test_save_dir)).exists());
 
     // Now modify the game state (turn number and active player)
-    let mut game_state = app.world.resource_mut::<GameState>();
-    game_state.turn_number = 10;
-    game_state.active_player = player2;
+    {
+        let mut game_state = app.world_mut().resource_mut::<GameState>();
+        game_state.turn_number = 10;
+        game_state.active_player = player2;
+    }
 
     // Trigger a load
-    app.world.send_event(LoadGameEvent {
+    app.world_mut().send_event(LoadGameEvent {
         slot_name: "test_save".to_string(),
     });
 
@@ -160,7 +240,7 @@ fn test_save_load_integration() {
     app.update();
 
     // Verify the game state was restored
-    let game_state = app.world.resource::<GameState>();
+    let game_state = app.world().resource::<GameState>();
     assert_eq!(game_state.turn_number, 5);
 
     // Clean up

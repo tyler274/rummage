@@ -11,18 +11,16 @@ debug = ["bevy-persistent/pretty"]
 
 [dependencies]
 async-trait = "0.1.88"
-bevy = { version = "0.15.3", features = ["dynamic_linking", "wayland", "jpeg"] }
+bevy = "0.15.3"
 bevy-persistent = { version = "0.7.0", features = ["bincode"] }
 # bevy_prng = { git = "https://github.com/Bluefinger/bevy_rand", branch = "main", features = [
 #     "wyrand",
 # ] }
 # bevy_rand = { git = "https://github.com/Bluefinger/bevy_rand", branch = "main", features = [
 #     "wyrand",
-#     "experimental",
 # ] }
 # Commenting out bevy_replicon - repository URL issues
-bevy_replicon = "0.31.0"
-bevy_replicon_renet = "0.8.0"
+bevy_replicon = "0.31.1"
 bincode = { version = "2.0.1", features = ["serde"] }
 bitflags = "2.9.0"
 bzip2 = "0.5.2"
@@ -48,6 +46,7 @@ tokio = { version = "1.44.0", features = ["time"] }
 uuid = { version = "1.12.1", features = ["v4"] }
 
 [dev-dependencies]
+tempfile = "3.19.0"
 tokio = { version = "1.44.0", features = ["full"] }
 tokio-test = "0.4"
 

@@ -1,5 +1,6 @@
 use crate::mana::Color;
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 /// Component that marks a card as a Commander
@@ -44,7 +45,7 @@ impl Default for Commander {
 }
 
 /// Enum indicating where a commander is currently located
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CommanderZoneLocation {
     CommandZone,
     Battlefield,
@@ -56,7 +57,7 @@ pub enum CommanderZoneLocation {
 }
 
 /// Reason why a player was eliminated from the game
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum EliminationReason {
     /// Player lost due to having 0 or less life
     LifeLoss,

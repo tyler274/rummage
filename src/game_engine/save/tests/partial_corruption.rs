@@ -1,8 +1,9 @@
 use bevy::prelude::*;
-use bincode;
+use bevy_persistent::prelude::*;
 use std::collections::VecDeque;
 use std::path::Path;
 
+use crate::game_engine::save::data::PlayerData;
 use crate::game_engine::save::events::LoadGameEvent;
 use crate::game_engine::save::{GameSaveData, GameStateData, SaveLoadPlugin};
 use crate::game_engine::state::GameState;
@@ -34,16 +35,18 @@ fn test_partial_corruption() {
             ..Default::default()
         },
         players: vec![
-            super::utils::PlayerData {
+            PlayerData {
                 id: 0,
                 name: "Valid Player 1".to_string(),
                 life: 40,
+                mana_pool: Default::default(),
                 player_index: 0,
             },
-            super::utils::PlayerData {
+            PlayerData {
                 id: 1,
                 name: "Valid Player 2".to_string(),
                 life: -999999, // Invalid negative life
+                mana_pool: Default::default(),
                 player_index: 1,
             },
         ],
@@ -51,9 +54,20 @@ fn test_partial_corruption() {
         ..Default::default()
     };
 
-    // Serialize and write to file
-    let serialized = bincode::serialize(&save_data).expect("Failed to serialize save data");
-    std::fs::write(&save_path, serialized).unwrap();
+    // Create a persistent resource and set its value to our save data
+    let mut persistent_save = Persistent::<GameSaveData>::builder()
+        .name("test_partial_corruption")
+        .format(StorageFormat::Bincode)
+        .path(save_path.clone())
+        .default(GameSaveData::default())
+        .build()
+        .expect("Failed to create persistent resource");
+
+    // Handle the Result return
+    let _ = persistent_save.set(save_data);
+    persistent_save
+        .persist()
+        .expect("Failed to save persistent data");
 
     // Create initial game state
     let mut turn_order = VecDeque::new();
@@ -82,7 +96,7 @@ fn test_partial_corruption() {
     app.insert_resource(initial_game_state);
 
     // Trigger load game event for the corrupted save
-    app.world().send_event(LoadGameEvent {
+    app.world_mut().send_event(LoadGameEvent {
         slot_name: slot_name.to_string(),
     });
 
@@ -100,8 +114,8 @@ fn test_partial_corruption() {
     );
 
     // Verify player data was loaded with reasonable fallbacks
-    let player_query = app.world().query::<&Player>();
-    let players: Vec<&Player> = player_query.iter(app.world()).collect();
+    let mut player_query = app.world_mut().query::<&Player>();
+    let players: Vec<&Player> = player_query.iter(app.world_mut()).collect();
 
     assert!(
         players.len() >= 2,

@@ -1,13 +1,13 @@
 use bevy::prelude::*;
-use bevy_persistent::prelude::*;
 use std::collections::VecDeque;
 use std::path::Path;
+use tempfile::tempdir;
 
-use crate::game_engine::commander::CommandZoneManager;
-use crate::game_engine::save::SaveLoadPlugin;
-use crate::game_engine::save::events::{LoadGameEvent, SaveGameEvent};
+use crate::game_engine::commander::resources::CommandZoneManager;
+use crate::game_engine::save::{LoadGameEvent, SaveGameEvent, SaveLoadPlugin};
 use crate::game_engine::state::GameState;
-use crate::game_engine::zones::{Zone, ZoneManager};
+use crate::game_engine::zones::ZoneManager;
+use crate::mana::ManaPool;
 use crate::player::Player;
 
 use super::utils::*;
@@ -29,38 +29,42 @@ fn test_complex_game_state_serialization() {
     // Set up a complex game state
     // 1. Create multiple players with different stats
     let player1 = app
-        .world()
+        .world_mut()
         .spawn(Player {
             name: "Player 1".to_string(),
             life: 37,
-            ..Default::default()
+            mana_pool: ManaPool::default(),
+            player_index: 0,
         })
         .id();
 
     let player2 = app
-        .world()
+        .world_mut()
         .spawn(Player {
             name: "Player 2".to_string(),
             life: 40,
-            ..Default::default()
+            mana_pool: ManaPool::default(),
+            player_index: 1,
         })
         .id();
 
     let player3 = app
-        .world()
+        .world_mut()
         .spawn(Player {
             name: "Player 3".to_string(),
             life: 25,
-            ..Default::default()
+            mana_pool: ManaPool::default(),
+            player_index: 2,
         })
         .id();
 
     let player4 = app
-        .world()
+        .world_mut()
         .spawn(Player {
             name: "Player 4".to_string(),
             life: 31,
-            ..Default::default()
+            mana_pool: ManaPool::default(),
+            player_index: 3,
         })
         .id();
 
@@ -81,80 +85,83 @@ fn test_complex_game_state_serialization() {
     app.insert_resource(game_state);
 
     // 3. Set up complex zone structure
-    let mut zone_manager = app.world_mut().resource_mut::<ZoneManager>();
+    {
+        // Create card entities first to avoid multiple mutable borrows
+        let mut card_entities = Vec::new();
 
-    // Create library zones for each player
-    let library1 = zone_manager.create_zone(Zone::Library);
-    zone_manager.set_zone_owner(library1, player1);
+        // Create cards for player 1 and 2 hands (5 each)
+        for _ in 0..5 {
+            let card1 = app.world_mut().spawn_empty().id();
+            let card2 = app.world_mut().spawn_empty().id();
+            card_entities.push((player1, card1));
+            card_entities.push((player2, card2));
+        }
 
-    let library2 = zone_manager.create_zone(Zone::Library);
-    zone_manager.set_zone_owner(library2, player2);
+        // Create cards for player 3 and 4 hands (3 each)
+        for _ in 0..3 {
+            let card3 = app.world_mut().spawn_empty().id();
+            let card4 = app.world_mut().spawn_empty().id();
+            card_entities.push((player3, card3));
+            card_entities.push((player4, card4));
+        }
 
-    let library3 = zone_manager.create_zone(Zone::Library);
-    zone_manager.set_zone_owner(library3, player3);
+        // Create cards for player 1 graveyard
+        for _ in 0..2 {
+            let card = app.world_mut().spawn_empty().id();
+            card_entities.push((player1, card));
+        }
 
-    let library4 = zone_manager.create_zone(Zone::Library);
-    zone_manager.set_zone_owner(library4, player4);
+        // Now get the zone manager and add the cards
+        let mut zone_manager = app.world_mut().resource_mut::<ZoneManager>();
 
-    // Create hand zones for each player
-    let hand1 = zone_manager.create_zone(Zone::Hand);
-    zone_manager.set_zone_owner(hand1, player1);
+        // Initialize zones for each player
+        zone_manager.init_player_zones(player1);
+        zone_manager.init_player_zones(player2);
+        zone_manager.init_player_zones(player3);
+        zone_manager.init_player_zones(player4);
 
-    let hand2 = zone_manager.create_zone(Zone::Hand);
-    zone_manager.set_zone_owner(hand2, player2);
-
-    let hand3 = zone_manager.create_zone(Zone::Hand);
-    zone_manager.set_zone_owner(hand3, player3);
-
-    let hand4 = zone_manager.create_zone(Zone::Hand);
-    zone_manager.set_zone_owner(hand4, player4);
-
-    // Add cards to the hands (just entities with a zone marker)
-    for i in 0..5 {
-        // Player 1's hand
-        let card = app.world_mut().spawn_empty().id();
-        zone_manager.add_to_zone(hand1, card);
-
-        // Player 2's hand
-        let card = app.world_mut().spawn_empty().id();
-        zone_manager.add_to_zone(hand2, card);
-    }
-
-    for i in 0..3 {
-        // Player 3's hand
-        let card = app.world_mut().spawn_empty().id();
-        zone_manager.add_to_zone(hand3, card);
-
-        // Player 4's hand
-        let card = app.world_mut().spawn_empty().id();
-        zone_manager.add_to_zone(hand4, card);
-    }
-
-    // Create graveyard zones
-    let graveyard1 = zone_manager.create_zone(Zone::Graveyard);
-    zone_manager.set_zone_owner(graveyard1, player1);
-
-    let graveyard2 = zone_manager.create_zone(Zone::Graveyard);
-    zone_manager.set_zone_owner(graveyard2, player2);
-
-    let graveyard3 = zone_manager.create_zone(Zone::Graveyard);
-    zone_manager.set_zone_owner(graveyard3, player3);
-
-    let graveyard4 = zone_manager.create_zone(Zone::Graveyard);
-    zone_manager.set_zone_owner(graveyard4, player4);
-
-    // Add cards to graveyards
-    for i in 0..2 {
-        let card = app.world_mut().spawn_empty().id();
-        zone_manager.add_to_zone(graveyard1, card);
+        // Add cards to the appropriate zones
+        for (i, (_player, card)) in card_entities.iter().enumerate() {
+            if i < 10 {
+                // First 10 cards go to player 1 and 2 hands (5 each)
+                if i < 5 {
+                    zone_manager.add_to_hand(player1, *card);
+                } else {
+                    zone_manager.add_to_hand(player2, *card);
+                }
+            } else if i < 16 {
+                // Next 6 cards go to player 3 and 4 hands (3 each)
+                if i < 13 {
+                    zone_manager.add_to_hand(player3, *card);
+                } else {
+                    zone_manager.add_to_hand(player4, *card);
+                }
+            } else {
+                // Last 2 cards go to player 1's graveyard
+                zone_manager.add_to_graveyard(player1, *card);
+            }
+        }
     }
 
     // Set up command zone
-    let mut command_zone = app.world_mut().resource_mut::<CommandZoneManager>();
-    command_zone.add_commander(player1, app.world_mut().spawn_empty().id());
-    command_zone.add_commander(player2, app.world_mut().spawn_empty().id());
-    command_zone.add_commander(player3, app.world_mut().spawn_empty().id());
-    command_zone.add_commander(player4, app.world_mut().spawn_empty().id());
+    {
+        // Create commander entities first
+        let commander1 = app.world_mut().spawn_empty().id();
+        let commander2 = app.world_mut().spawn_empty().id();
+        let commander3 = app.world_mut().spawn_empty().id();
+        let commander4 = app.world_mut().spawn_empty().id();
+
+        let mut command_zone_builder = CommandZoneManager::builder();
+
+        command_zone_builder = command_zone_builder
+            .add_commander(player1, commander1)
+            .add_commander(player2, commander2)
+            .add_commander(player3, commander3)
+            .add_commander(player4, commander4);
+
+        // Set the command zone manager with the built data
+        *app.world_mut().resource_mut::<CommandZoneManager>() = command_zone_builder.build();
+    }
 
     // Save the complex state
     app.world_mut().send_event(SaveGameEvent {
@@ -171,17 +178,48 @@ fn test_complex_game_state_serialization() {
 
     // Modify the state
     {
-        // Add more cards to various zones
-        let mut zone_manager = app.world_mut().resource_mut::<ZoneManager>();
+        // Create card entities first
+        let mut new_cards = Vec::new();
         for _ in 0..3 {
             let card = app.world_mut().spawn_empty().id();
-            zone_manager.add_to_zone(hand1, card);
+            new_cards.push(card);
         }
 
-        // Add more commanders
-        let mut command_zone = app.world_mut().resource_mut::<CommandZoneManager>();
-        command_zone.add_commander(player1, app.world_mut().spawn_empty().id());
-        command_zone.add_commander(player2, app.world_mut().spawn_empty().id());
+        // Create commander entities
+        let commander5 = app.world_mut().spawn_empty().id();
+        let commander6 = app.world_mut().spawn_empty().id();
+
+        // Add more cards to zones
+        let mut zone_manager = app.world_mut().resource_mut::<ZoneManager>();
+        for card in new_cards {
+            zone_manager.add_to_hand(player1, card);
+        }
+
+        // Get existing commanders
+        let command_zone_manager = app.world().resource::<CommandZoneManager>();
+        let mut existing_commanders = Vec::new();
+
+        for player in [player1, player2, player3, player4] {
+            for &commander in &command_zone_manager.get_player_commanders(player) {
+                existing_commanders.push((player, commander));
+            }
+        }
+
+        // Create and update command zone with both existing and new commanders
+        let mut builder = CommandZoneManager::builder();
+
+        // Add existing commanders
+        for (player, commander) in existing_commanders {
+            builder = builder.add_commander(player, commander);
+        }
+
+        // Add new commanders
+        builder = builder
+            .add_commander(player1, commander5)
+            .add_commander(player2, commander6);
+
+        // Update the manager
+        *app.world_mut().resource_mut::<CommandZoneManager>() = builder.build();
 
         // Add more entities
         for _ in 0..5 {
@@ -189,7 +227,7 @@ fn test_complex_game_state_serialization() {
         }
 
         // Verify we added entities
-        let player_query = app.world().query::<&Player>();
+        let mut player_query = app.world_mut().query::<&Player>();
         info!(
             "Players after modification: {}",
             player_query.iter(app.world()).count()
@@ -197,7 +235,7 @@ fn test_complex_game_state_serialization() {
 
         // Check zone content
         let zone_manager = app.world().resource::<ZoneManager>();
-        let hand1_count = zone_manager.get_zone_contents(hand1).len();
+        let hand1_count = zone_manager.hands.get(&player1).unwrap().len();
         info!("Hand 1 cards after modification: {}", hand1_count);
         assert!(
             hand1_count > 5,
@@ -221,7 +259,7 @@ fn test_complex_game_state_serialization() {
         );
 
         // Check restored player count
-        let player_query = app.world().query::<&Player>();
+        let mut player_query = app.world_mut().query::<&Player>();
         assert_eq!(
             player_query.iter(app.world()).count(),
             4,
@@ -233,44 +271,44 @@ fn test_complex_game_state_serialization() {
 
         // Verify hand card counts
         assert_eq!(
-            zone_manager.get_zone_contents(hand1).len(),
+            zone_manager.hands.get(&player1).unwrap().len(),
             5,
             "Hand 1 card count not restored correctly"
         );
         assert_eq!(
-            zone_manager.get_zone_contents(hand2).len(),
+            zone_manager.hands.get(&player2).unwrap().len(),
             5,
             "Hand 2 card count not restored correctly"
         );
         assert_eq!(
-            zone_manager.get_zone_contents(hand3).len(),
+            zone_manager.hands.get(&player3).unwrap().len(),
             3,
             "Hand 3 card count not restored correctly"
         );
         assert_eq!(
-            zone_manager.get_zone_contents(hand4).len(),
+            zone_manager.hands.get(&player4).unwrap().len(),
             3,
             "Hand 4 card count not restored correctly"
         );
 
-        // Verify graveyard card count
+        // Verify graveyard counts
         assert_eq!(
-            zone_manager.get_zone_contents(graveyard1).len(),
+            zone_manager.graveyards.get(&player1).unwrap().len(),
             2,
             "Graveyard 1 card count not restored correctly"
         );
 
-        // Verify command zone
+        // Verify commander counts
         let command_zone = app.world().resource::<CommandZoneManager>();
         assert_eq!(
-            command_zone.get_commanders(player1).len(),
+            command_zone.get_player_commanders(player1).len(),
             1,
-            "Commander count for player 1 not restored correctly"
+            "Commander count for player1 not restored correctly"
         );
         assert_eq!(
-            command_zone.get_commanders(player2).len(),
+            command_zone.get_player_commanders(player2).len(),
             1,
-            "Commander count for player 2 not restored correctly"
+            "Commander count for player2 not restored correctly"
         );
     }
 

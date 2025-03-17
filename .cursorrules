@@ -1,7 +1,7 @@
-Using Bevy 0.15.x APIs that aren't deprecated, we are implementing a robust end to end
-tested Magic the Gathering Commander format game engine.
-Text2dBundle, SpriteBundle, NodeBundle, etc are deprecated for Text2d, Sprite, and Node respectively.
-Always check for and fix any compiler warnings and errors.
-After a code change check if there are no compiler warnings and errors.
-Stage all the changed files determined using "git status" with a descriptive commit
-message using repeated "-m" flags for proper multiline commits in a single command invocation. 
+1. Using Bevy 0.15.x APIs that aren't deprecated, we are implementing a robust unit and integrated end to end tested Magic the Gathering Commander format game engine.
+2. Text2dBundle, SpriteBundle, NodeBundle, Camera2dBundle etc are deprecated for Text2d, Sprite, Node, and Camera2d respectively.
+3. Use bevy_persistent for all persistent data operations.
+4. Use bevy_replicon for networking. 
+5. Always check for and fix any compiler warnings and errors when changing code.
+6. Always keep documentation in sync with the implementation. 
+7. Stage all the changed files determined using "git status" with a descriptive commit message using repeated "-m" flags for proper multiline commits in a single command invocation. 

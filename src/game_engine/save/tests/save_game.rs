@@ -2,9 +2,7 @@ use bevy::prelude::*;
 use bevy_persistent::prelude::*;
 use std::path::Path;
 
-use crate::game_engine::save::SaveLoadPlugin;
-use crate::game_engine::save::events::SaveGameEvent;
-use crate::game_engine::state::GameState;
+use crate::game_engine::save::{SaveConfig, SaveGameEvent, SaveLoadPlugin};
 
 use super::utils::*;
 
@@ -15,17 +13,23 @@ fn test_save_game() {
     app.add_plugins(SaveLoadPlugin);
 
     // Set up test environment with real players and game state
-    let player_entities = setup_test_environment(&mut app);
+    let _player_entities = setup_test_environment(&mut app);
 
-    // Get the save directory from config
-    let config = app
-        .world()
-        .resource::<crate::game_engine::save::SaveConfig>();
-    let save_dir = config.save_directory.clone();
+    // Create save directory
+    let test_dir = Path::new("target/test_saves");
+    if !test_dir.exists() {
+        std::fs::create_dir_all(test_dir).unwrap();
+    }
+
+    // Update the save directory in the config
+    {
+        let mut config = app.world_mut().resource_mut::<SaveConfig>();
+        config.save_directory = test_dir.to_path_buf();
+    }
 
     // Set up a specific save slot name
     let slot_name = "test_save";
-    let save_path = save_dir.join(format!("{}.bin", slot_name));
+    let save_path = test_dir.join(format!("{}.bin", slot_name));
 
     // Remove any existing save file to ensure clean test
     if save_path.exists() {
@@ -33,12 +37,13 @@ fn test_save_game() {
     }
 
     // Trigger save game event
-    app.world().send_event(SaveGameEvent {
+    app.world_mut().send_event(SaveGameEvent {
         slot_name: slot_name.to_string(),
     });
 
     // Run systems to process the event
     app.update();
+    app.update(); // Run another update to ensure save completes
 
     // Verify the save file was created
     assert!(

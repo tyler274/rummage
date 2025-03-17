@@ -1,6 +1,4 @@
 use bevy::prelude::*;
-use bevy_persistent::prelude::*;
-use std::path::Path;
 
 use crate::game_engine::save::SaveLoadPlugin;
 use crate::game_engine::save::events::{LoadGameEvent, SaveGameEvent};
@@ -22,7 +20,7 @@ fn test_load_game() {
     let slot_name = "test_load";
 
     // Trigger save game event
-    app.world().send_event(SaveGameEvent {
+    app.world_mut().send_event(SaveGameEvent {
         slot_name: slot_name.to_string(),
     });
 
@@ -42,36 +40,45 @@ fn test_load_game() {
     }
 
     // Trigger load game event
-    app.world().send_event(LoadGameEvent {
+    app.world_mut().send_event(LoadGameEvent {
         slot_name: slot_name.to_string(),
     });
 
     // Run systems to process the load event
     app.update();
+    app.update(); // One more update to ensure load completes
 
     // Verify game state was restored
     let game_state = app.world().resource::<GameState>();
+
+    // The save data has turn_number = 3, so after loading we expect the game_state to have turn_number = 3
     assert_eq!(
         game_state.turn_number, 3,
         "Game state turn number was not properly restored"
     );
 
-    // Verify player data was restored
-    let player_query = app.world().query::<&Player>();
-    let players: Vec<&Player> = player_query.iter(app.world()).collect();
+    // Collect and verify player life totals were restored
+    let mut player_life_values = Vec::new();
 
-    assert!(
-        players.len() >= 2,
-        "Expected at least 2 players after loading"
-    );
+    // Get player life values using app.world()
+    {
+        let mut world = app.world_mut();
+        let mut player_query = world.query::<&Player>();
 
-    // Verify that player life totals were restored
-    for player in players {
-        assert!(
-            player.life == 40 || player.life == 35,
-            "Player life total was not properly restored"
-        );
+        for player in player_query.iter(&world) {
+            player_life_values.push(player.life);
+        }
     }
+
+    // Sort to make comparison reliable
+    player_life_values.sort();
+
+    // The save had players with life 40 and 35
+    assert_eq!(
+        player_life_values,
+        vec![35, 40],
+        "Player life totals were not properly restored"
+    );
 
     // Clean up
     cleanup_test_environment();

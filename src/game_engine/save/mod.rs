@@ -1,13 +1,20 @@
 // Internal modules
-mod data;
-mod events;
-mod plugin;
-mod resources;
-mod systems;
+pub mod data;
+pub mod events;
+pub mod plugin;
+pub mod resources;
+pub mod systems;
+
+#[cfg(test)]
+pub mod tests;
 
 // Re-export public API
 pub use events::*;
 pub use plugin::SaveLoadPlugin;
+pub use resources::*;
 
-// Re-export specific systems if needed elsewhere
-// pub use systems::*;
+// Re-export data types
+pub use data::*;
+
+// Re-export specific systems needed elsewhere
+pub use systems::setup_save_system;

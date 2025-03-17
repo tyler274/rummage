@@ -1,6 +1,6 @@
 # Save/Load System
 
-The save/load system provides functionality to persist and restore game state in the MTG Commander game engine. This system uses binary serialization via `bincode` for efficient and compact save files.
+The save/load system provides functionality to persist and restore game state in the MTG Commander game engine. This system uses `bevy_persistent` for efficient and reliable persistence of game state.
 
 ## Components
 
@@ -94,71 +94,62 @@ Since Bevy entities are not stable across game sessions, the save system:
 
 ### Save File Format
 
-Save files are stored as binary files with the `.bin` extension using the `bincode` serialization library. This format is:
-- Space-efficient
-- Fast to serialize/deserialize
-- Not human-readable (unlike JSON)
-
-The save metadata is also stored in binary format at `saves/metadata.bin`.
+Save files are stored using `bevy_persistent` with the `Bincode` format. This provides:
+- Space-efficient storage
+- Fast serialization/deserialization
+- Automatic handling of save/load operations
 
 ## Usage Examples
 
 ### Manual Save
 
 ```rust
-fn save_button_system(
-    mut interaction_query: Query<&Interaction, (Changed<Interaction>, With<SaveButton>)>,
-    mut save_event: EventWriter<SaveGameEvent>,
-) {
-    for interaction in &mut interaction_query {
-        if *interaction == Interaction::Pressed {
-            save_event.send(SaveGameEvent {
-                slot_name: "manual_save".to_string(),
-            });
-        }
+// Trigger a manual save
+world.send_event(SaveGameEvent {
+    slot_name: "my_checkpoint".to_string(),
+});
+```
+
+### Loading a Game
+
+```rust
+// Load from a saved slot
+world.send_event(LoadGameEvent {
+    slot_name: "my_checkpoint".to_string(),
+});
+```
+
+### Accessing Save Metadata
+
+```rust
+// Display available saves
+fn display_saves(save_metadata: Res<Persistent<SaveMetadata>>) {
+    for save in &save_metadata.saves {
+        info!(
+            "Save: {}, Turn: {}, Players: {}",
+            save.slot_name, save.turn_number, save.player_count
+        );
     }
 }
 ```
 
-### Loading a Save
+### Creating and Using Snapshots
 
 ```rust
-fn load_button_system(
-    mut interaction_query: Query<(&Interaction, &SaveSlot), (Changed<Interaction>, With<LoadButton>)>,
-    mut load_event: EventWriter<LoadGameEvent>,
-) {
-    for (interaction, save_slot) in &mut interaction_query {
-        if *interaction == Interaction::Pressed {
-            load_event.send(LoadGameEvent {
-                slot_name: save_slot.name.clone(),
-            });
-        }
-    }
-}
-```
-
-### Displaying Save Metadata
-
-```rust
-fn display_saves_system(
-    save_metadata: Res<Persistent<SaveMetadata>>,
-    mut query: Query<&mut Text, With<SaveListText>>,
-) {
-    for mut text in &mut query {
-        let mut save_text = String::new();
-        
-        for save in &save_metadata.saves {
-            let time = chrono::DateTime::<chrono::Utc>::from_timestamp(save.timestamp as i64, 0)
-                .unwrap()
-                .format("%Y-%m-%d %H:%M:%S");
-                
-            save_text.push_str(&format!(
-                "Save: {}\nTime: {}\nTurn: {}\nPlayers: {}\n\n",
-                save.slot_name, time, save.turn_number, save.player_count
-            ));
-        }
-        
-        text.sections[0].value = save_text;
+// Creating a snapshot of the current state
+fn create_game_snapshot(mut commands: Commands, game_state: Res<GameState>) {
+    let snapshot = Persistent::<GameSaveData>::builder()
+        .name("snapshot")
+        .format(StorageFormat::Bincode)
+        .path("user://snapshots/latest.save")
+        .default(GameSaveData::default())
+        .build()
+        .expect("Failed to create snapshot");
+    
+    // Set snapshot data from current state and persist
+    // actual implementation would convert game state to save data
+    if let Err(e) = snapshot.persist() {
+        error!("Failed to save snapshot: {}", e);
     }
 }
 ``` 

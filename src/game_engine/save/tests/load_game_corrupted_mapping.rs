@@ -1,13 +1,12 @@
 use bevy::prelude::*;
-use bincode::{Decode, Encode, config};
+use bevy_persistent::prelude::*;
 use std::collections::VecDeque;
 use std::path::Path;
 
-use crate::game_engine::save::data::PlayerData;
+use crate::game_engine::save::SaveLoadPlugin;
+use crate::game_engine::save::data::{GameSaveData, GameStateData, PlayerData};
 use crate::game_engine::save::events::LoadGameEvent;
-use crate::game_engine::save::{GameSaveData, GameStateData, SaveLoadPlugin};
 use crate::game_engine::state::GameState;
-use crate::player::Player;
 
 use super::utils::*;
 
@@ -32,7 +31,13 @@ fn test_load_game_corrupted_mapping() {
             active_player_index: 999,                  // Invalid index
             priority_holder_index: 999,                // Invalid index
             turn_order_indices: vec![999, 1000, 1001], // Invalid indices
-            ..Default::default()
+            lands_played: Vec::new(),
+            main_phase_action_taken: false,
+            drawn_this_turn: Vec::new(),
+            eliminated_players: Vec::new(),
+            use_commander_damage: true,
+            commander_damage_threshold: 21,
+            starting_life: 40,
         },
         players: vec![PlayerData {
             id: 999,
@@ -42,13 +47,26 @@ fn test_load_game_corrupted_mapping() {
             player_index: 999,
         }],
         save_version: "1.0".to_string(),
-        ..Default::default()
+        zones: Default::default(),
+        commanders: Default::default(),
     };
 
-    // Serialize and write to file
-    let serialized = bincode::encode_to_vec(&save_data, config::standard())
-        .expect("Failed to serialize save data");
-    std::fs::write(&save_path, serialized).unwrap();
+    // Create a persistent resource and set its value to our save data
+    let mut persistent_save = Persistent::<GameSaveData>::builder()
+        .name("test_corrupted_mapping")
+        .format(StorageFormat::Bincode)
+        .path(save_path.clone())
+        .default(GameSaveData::default())
+        .build()
+        .expect("Failed to create persistent resource");
+
+    // Handle the Result return
+    let _ = persistent_save.set(save_data);
+
+    // Set the value and save it to disk
+    persistent_save
+        .persist()
+        .expect("Failed to save persistent data");
 
     // Create initial game state
     let mut turn_order = VecDeque::new();
@@ -66,7 +84,7 @@ fn test_load_game_corrupted_mapping() {
     app.insert_resource(initial_game_state);
 
     // Trigger load game event
-    app.world().send_event(LoadGameEvent {
+    app.world_mut().send_event(LoadGameEvent {
         slot_name: slot_name.to_string(),
     });
 
@@ -79,18 +97,18 @@ fn test_load_game_corrupted_mapping() {
     // The load system should have maintained valid entity references
     for entity in &game_state.turn_order {
         assert!(
-            app.world().get_entity(*entity).is_some(),
+            app.world().get_entity(*entity).is_ok(),
             "Invalid entity in turn order"
         );
     }
 
     assert!(
-        app.world().get_entity(game_state.active_player).is_some(),
+        app.world().get_entity(game_state.active_player).is_ok(),
         "Invalid active player entity"
     );
 
     assert!(
-        app.world().get_entity(game_state.priority_holder).is_some(),
+        app.world().get_entity(game_state.priority_holder).is_ok(),
         "Invalid priority holder entity"
     );
 

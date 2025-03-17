@@ -1,11 +1,14 @@
 use bevy::prelude::*;
 use bevy_persistent::prelude::*;
-use bincode::{Decode, Encode, config};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::path::Path;
 
 use crate::game_engine::save::events::*;
+use crate::game_engine::save::{
+    AutoSaveTracker, GameSaveData, PlayerData, ReplayAction, ReplayState, SaveConfig, SaveInfo,
+    SaveMetadata,
+};
 use crate::game_engine::state::GameState;
 use crate::player::Player;
 
@@ -64,20 +67,16 @@ pub fn handle_auto_save_for_tests(
     mut auto_save_tracker: ResMut<AutoSaveTracker>,
     config: Res<SaveConfig>,
 ) {
-    if !config.auto_save_enabled {
-        return;
-    }
-
-    // Only increment counter when state-based actions are checked
     for _ in event_reader.read() {
         auto_save_tracker.counter += 1;
 
-        // Check if it's time to auto-save
-        if auto_save_tracker.counter >= config.auto_save_frequency {
-            info!("Auto-saving game...");
+        if config.auto_save_enabled && auto_save_tracker.counter >= config.auto_save_frequency {
+            // Trigger a save event
             event_writer.send(SaveGameEvent {
                 slot_name: "auto_save".to_string(),
             });
+
+            // Reset counter
             auto_save_tracker.counter = 0;
         }
     }
@@ -115,70 +114,56 @@ pub fn handle_stop_replay(
     }
 }
 
-// Helper function to create a test environment with players and game state
+// Common test environment setup for save/load tests
 pub fn setup_test_environment(app: &mut App) -> Vec<Entity> {
-    // Set up test directory
+    // Create test save directory if it doesn't exist
     let test_dir = Path::new("target/test_saves");
-    std::fs::create_dir_all(test_dir).unwrap();
+    std::fs::create_dir_all(test_dir).unwrap_or_else(|e| {
+        error!("Failed to create test save directory: {}", e);
+    });
 
-    // Remove any existing metadata file to prevent deserialization errors
-    let metadata_path = test_dir.join("metadata.bin");
-    if metadata_path.exists() {
-        std::fs::remove_file(&metadata_path).unwrap();
-    }
-
-    // Clear old save files from test directory
-    for entry in std::fs::read_dir(test_dir).unwrap() {
-        if let Ok(entry) = entry {
-            std::fs::remove_file(entry.path()).unwrap_or_else(|_| {});
-        }
-    }
-
-    // Override save config to use test directory
-    let save_config = SaveConfig {
+    // Set up SaveConfig for tests
+    let config = SaveConfig {
         save_directory: test_dir.to_path_buf(),
         auto_save_enabled: true,
         auto_save_frequency: 2,
     };
-    app.insert_resource(save_config);
-
-    // Insert other required resources
+    app.insert_resource(config);
     app.insert_resource(AutoSaveTracker::default());
     app.insert_resource(ReplayState::default());
     app.insert_resource(SaveMetadata::default());
 
     // Create test players
     let player1 = app
-        .world()
+        .world_mut()
         .spawn(Player {
-            name: "Test Player 1".to_string(),
+            name: "Player 1".to_string(),
             life: 40,
-            ..Default::default()
+            mana_pool: crate::mana::ManaPool::default(),
+            player_index: 0,
         })
         .id();
 
     let player2 = app
-        .world()
+        .world_mut()
         .spawn(Player {
-            name: "Test Player 2".to_string(),
+            name: "Player 2".to_string(),
             life: 35,
-            ..Default::default()
+            mana_pool: crate::mana::ManaPool::default(),
+            player_index: 1,
         })
         .id();
 
-    // Set up game state using the builder pattern
+    // Create turn order
     let mut turn_order = VecDeque::new();
     turn_order.push_back(player1);
     turn_order.push_back(player2);
 
-    let mut lands_played = Vec::new();
-    lands_played.push((player1, 3));
-    lands_played.push((player2, 2));
+    // Create initial game state data
+    let lands_played = vec![(player1, 1), (player2, 1)];
+    let drawn_this_turn = vec![player1, player2];
 
-    let mut drawn_this_turn = Vec::new();
-    drawn_this_turn.push(player1);
-
-    // Use the builder pattern to create game state
+    // GameState using builder pattern
     let game_state = GameState::builder()
         .turn_number(3)
         .active_player(player1)
@@ -206,62 +191,13 @@ pub fn cleanup_test_environment() {
     let _ = std::fs::remove_dir_all(test_dir);
 }
 
-// Local SaveConfig struct for testing
-#[derive(Resource)]
-pub struct SaveConfig {
-    pub save_directory: std::path::PathBuf,
-    pub auto_save_enabled: bool,
-    pub auto_save_frequency: usize,
-}
-
-impl Default for SaveConfig {
-    fn default() -> Self {
-        Self {
-            save_directory: std::path::PathBuf::from("target/test_saves"),
-            auto_save_enabled: true,
-            auto_save_frequency: 2,
-        }
-    }
-}
-
-// Local AutoSaveTracker struct for testing
-#[derive(Resource)]
-pub struct AutoSaveTracker {
-    pub counter: usize,
-}
-
-impl Default for AutoSaveTracker {
-    fn default() -> Self {
-        Self { counter: 0 }
-    }
-}
-
-// Local ReplayState struct for testing
-#[derive(Resource)]
-pub struct ReplayState {
-    pub active: bool,
-}
-
-impl Default for ReplayState {
-    fn default() -> Self {
-        Self { active: false }
-    }
-}
-
-// Local SaveInfo struct for testing
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub struct SaveInfo {
-    pub slot_name: String,
-    pub timestamp: u64,
-    pub description: String,
+// Mock game save data structures for testing
+#[derive(Debug, Serialize, Deserialize, Default, Clone, Resource)]
+pub struct GameStateData {
     pub turn_number: u32,
-    pub player_count: usize,
-}
-
-// Local SaveMetadata struct for testing
-#[derive(Resource, Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
-pub struct SaveMetadata {
-    pub saves: Vec<SaveInfo>,
+    pub active_player_index: usize,
+    pub priority_holder_index: usize,
+    pub turn_order_indices: Vec<usize>,
 }
 
 // Mock save handler for tests using bevy_persistent
@@ -269,7 +205,7 @@ pub fn handle_save_game_for_tests(
     mut event_reader: EventReader<SaveGameEvent>,
     game_state: Res<GameState>,
     query_players: Query<(Entity, &Player)>,
-    mut commands: Commands,
+    _commands: Commands,
 ) {
     for event in event_reader.read() {
         info!("Saving game to slot: {}", event.slot_name);
@@ -278,11 +214,18 @@ pub fn handle_save_game_for_tests(
 
         // Create test save data
         let save_data = GameSaveData {
-            game_state: GameStateData {
+            game_state: crate::game_engine::save::GameStateData {
                 turn_number: game_state.turn_number,
                 active_player_index: 0,
                 priority_holder_index: 0,
                 turn_order_indices: vec![0, 1],
+                lands_played: vec![(0, 1), (1, 1)],
+                main_phase_action_taken: true,
+                drawn_this_turn: vec![0, 1],
+                eliminated_players: vec![],
+                use_commander_damage: true,
+                commander_damage_threshold: 21,
+                starting_life: 40,
             },
             players: query_players
                 .iter()
@@ -291,10 +234,13 @@ pub fn handle_save_game_for_tests(
                     id: idx,
                     name: player.name.clone(),
                     life: player.life,
+                    mana_pool: player.mana_pool.clone(),
                     player_index: idx,
                 })
                 .collect(),
             save_version: "1.0".to_string(),
+            zones: Default::default(),
+            commanders: Default::default(),
         };
 
         // Create persistent resource for this save
@@ -317,7 +263,7 @@ pub fn handle_save_game_for_tests(
 pub fn handle_load_game_for_tests(
     mut event_reader: EventReader<LoadGameEvent>,
     mut game_state: Option<ResMut<GameState>>,
-    query_players: Query<(Entity, &mut Player)>,
+    _query_players: Query<(Entity, &mut Player)>,
 ) {
     for event in event_reader.read() {
         info!("Loading game from slot: {}", event.slot_name);
@@ -336,70 +282,12 @@ pub fn handle_load_game_for_tests(
 
             let save_data = persistent_save.clone();
 
-            if let Some(mut game_state) = game_state.as_mut() {
+            if let Some(game_state) = game_state.as_mut() {
                 game_state.turn_number = save_data.game_state.turn_number;
             }
 
-            // Update players
-            for player_data in save_data.players {
-                for (_, mut player) in query_players.iter() {
-                    if player.name == player_data.name {
-                        // In a real implementation, we would update player state here
-                    }
-                }
-            }
+            // Update players - in a real implementation, we would convert
+            // the save data back to player entities
         }
-    }
-}
-
-// Mock game save data structures
-#[derive(Debug, Serialize, Deserialize, Default, Clone, Encode, Decode)]
-pub struct GameSaveData {
-    pub game_state: GameStateData,
-    pub players: Vec<PlayerData>,
-    pub save_version: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Default, Clone, Encode, Decode)]
-pub struct GameStateData {
-    pub turn_number: u32,
-    pub active_player_index: usize,
-    pub priority_holder_index: usize,
-    pub turn_order_indices: Vec<usize>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Encode, Decode)]
-pub struct PlayerData {
-    pub id: usize,
-    pub name: String,
-    pub life: i32,
-    pub player_index: usize,
-}
-
-impl GameSaveData {
-    // Convert saved data back to game state
-    pub fn to_game_state(&self, entities: &[Entity]) -> GameState {
-        let mut turn_order = VecDeque::new();
-
-        for &idx in &self.game_state.turn_order_indices {
-            if idx < entities.len() {
-                turn_order.push_back(entities[idx]);
-            }
-        }
-
-        GameState::builder()
-            .turn_number(self.game_state.turn_number)
-            .active_player(if self.game_state.active_player_index < entities.len() {
-                entities[self.game_state.active_player_index]
-            } else {
-                Entity::PLACEHOLDER
-            })
-            .priority_holder(if self.game_state.priority_holder_index < entities.len() {
-                entities[self.game_state.priority_holder_index]
-            } else {
-                Entity::PLACEHOLDER
-            })
-            .turn_order(turn_order)
-            .build()
     }
 }

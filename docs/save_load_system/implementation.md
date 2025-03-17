@@ -1,0 +1,195 @@
+# Save/Load System Implementation
+
+This document provides technical details about the save/load system implementation in Rummage.
+
+## Architecture
+
+The save/load system consists of several interconnected components:
+
+1. **Plugin**: `SaveLoadPlugin` handles registration of all events, resources, and systems.
+2. **Events**: Events like `SaveGameEvent` and `LoadGameEvent` trigger save and load operations.
+3. **Resources**: Configuration and state tracking resources like `SaveConfig` and `ReplayState`.
+4. **Data Structures**: Serializable data representations in the `data.rs` module.
+5. **Systems**: Bevy systems for handling operations defined in `systems.rs`.
+
+## Data Model
+
+The save/load system uses a comprehensive data model to capture the game state:
+
+### GameSaveData
+
+The main structure that holds all serialized game data:
+
+```rust
+pub struct GameSaveData {
+    pub game_state: GameStateData,
+    pub players: Vec<PlayerData>,
+    pub zones: ZoneData,
+    pub commanders: CommanderData,
+    pub save_version: String,
+}
+```
+
+### GameStateData
+
+Core game state information:
+
+```rust
+pub struct GameStateData {
+    pub turn_number: u32,
+    pub active_player_index: usize,
+    pub priority_holder_index: usize,
+    pub turn_order_indices: Vec<usize>,
+    pub lands_played: Vec<(usize, u32)>,
+    pub main_phase_action_taken: bool,
+    pub drawn_this_turn: Vec<usize>,
+    pub eliminated_players: Vec<usize>,
+    pub use_commander_damage: bool,
+    pub commander_damage_threshold: u32,
+    pub starting_life: i32,
+}
+```
+
+### PlayerData
+
+Player-specific information:
+
+```rust
+pub struct PlayerData {
+    pub id: usize,
+    pub name: String,
+    pub life: i32,
+    pub mana_pool: ManaPool,
+    pub player_index: usize,
+}
+```
+
+### ZoneData
+
+Information about card zones and contents:
+
+```rust
+pub struct ZoneData {
+    // Maps player indices to their libraries
+    pub libraries: std::collections::HashMap<usize, Vec<usize>>,
+    // Maps player indices to their hands
+    pub hands: std::collections::HashMap<usize, Vec<usize>>,
+    // Shared battlefield
+    pub battlefield: Vec<usize>,
+    // Maps player indices to their graveyards
+    pub graveyards: std::collections::HashMap<usize, Vec<usize>>,
+    // Shared exile zone
+    pub exile: Vec<usize>,
+    // Command zone
+    pub command_zone: Vec<usize>,
+    // Maps card indices to their current zone
+    pub card_zone_map: std::collections::HashMap<usize, Zone>,
+}
+```
+
+### CommanderData
+
+Commander-specific data:
+
+```rust
+pub struct CommanderData {
+    // Maps player indices to their commander indices
+    pub player_commanders: std::collections::HashMap<usize, Vec<usize>>,
+    // Maps commander indices to their current zone
+    pub commander_zone_status: std::collections::HashMap<usize, CommanderZoneLocation>,
+    // Tracks how many times a commander has moved zones
+    pub zone_transition_count: std::collections::HashMap<usize, u32>,
+}
+```
+
+## bevy_persistent Integration
+
+The save/load system uses `bevy_persistent` for robust persistence. This implementation provides:
+
+1. **Format Selection**: Currently uses `Bincode` for efficient binary serialization.
+2. **Path Selection**: Appropriate paths based on platform (native or web).
+3. **Error Handling**: Robust handling of failures during save/load operations.
+4. **Resource Management**: Automatic resource persistence and loading.
+
+Example integration from the `setup_save_system` function:
+
+```rust
+let metadata_path = get_storage_path("metadata.bin");
+
+// Initialize persistent save metadata
+let save_metadata = Persistent::builder()
+    .name("save_metadata")
+    .format(StorageFormat::Bincode)
+    .path(metadata_path)
+    .default(SaveMetadata::default())
+    .build()
+    .expect("Failed to create persistent save metadata");
+
+commands.insert_resource(save_metadata);
+```
+
+## Entity Mapping
+
+One of the challenges in serializing Bevy's ECS is handling entity references. The save/load system solves this by:
+
+1. **During Save**: Converting entity references to indices using a mapping
+2. **During Load**: Recreating entities and building a reverse mapping
+3. **After Load**: Reconstructing relationships using the new entity handles
+
+This approach ensures entity references remain valid across save/load cycles, even though the actual entity IDs change.
+
+## Replay System
+
+The replay system extends save/load functionality by:
+
+1. Loading a saved game state
+2. Recording actions in a `ReplayAction` queue
+3. Allowing step-by-step playback of recorded actions
+4. Providing controls to start, step through, and stop replays
+
+## Error Handling
+
+The save/load system employs several error handling strategies:
+
+1. **Corrupted Data**: Graceful handling of corrupted saves with fallbacks
+2. **Missing Entities**: Safe handling when mapped entities don't exist
+3. **Version Compatibility**: Checking save version compatibility
+4. **File System Errors**: Robust handling of IO and persistence errors
+
+## Testing
+
+The save/load system includes comprehensive tests:
+
+1. **Unit Tests**: Testing individual components and functions
+2. **Integration Tests**: Testing full save/load cycles
+3. **Edge Cases**: Testing corrupted saves, empty data, etc.
+4. **Platform-Specific Tests**: Special considerations for WebAssembly
+
+## WebAssembly Support
+
+For web builds, the save/load system:
+
+1. Uses browser local storage instead of the file system
+2. Handles storage limitations and permissions
+3. Uses appropriate path prefixes for the storage backend
+
+See [WebAssembly Local Storage](web_storage.md) for more details.
+
+## Performance Considerations
+
+The save/load system is designed with performance in mind:
+
+1. Uses efficient binary serialization (Bincode)
+2. Avoids unnecessary re-serialization of unchanged data
+3. Performs heavy operations outside of critical game loops
+4. Uses compact data representations where possible
+
+## Future Improvements
+
+Potential future enhancements:
+
+1. **Incremental Saves**: Only saving changes since the last save
+2. **Save Compression**: Optional compression for large save files
+3. **Save Verification**: Checksums or other validation of save integrity
+4. **Multiple Save Formats**: Support for JSON or other human-readable formats
+5. **Cloud Integration**: Syncing saves to cloud storage 

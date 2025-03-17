@@ -25,7 +25,9 @@ target/
 
 # Ignore generated book files
 docs/book/
-settings/
 
 # Ignore all files in the save directory
-saves/
+saves/*
+
+# Ignore all files in the settings directory
+settings/*

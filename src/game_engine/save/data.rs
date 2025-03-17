@@ -286,15 +286,9 @@ impl GameSaveData {
             starting_life: game_state.starting_life,
         };
 
-        // TODO: Extract and serialize zone data
-        let zone_data = ZoneData {
-            // Implement based on your ZoneManager structure
-        };
-
-        // TODO: Extract and serialize commander data
-        let commander_data = CommanderData {
-            // Implement based on your CommandZoneManager structure  
-        };
+        // Create empty zone and commander data (they will be filled in by the systems if available)
+        let zone_data = ZoneData::default();
+        let commander_data = CommanderData::default();
 
         Self {
             game_state: game_state_data,

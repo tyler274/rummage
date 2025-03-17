@@ -1,13 +1,12 @@
 use bevy::prelude::*;
-use bincode::{Decode, Encode, config};
+use bevy_persistent::prelude::*;
 use std::collections::VecDeque;
 use std::path::Path;
 
-use crate::game_engine::save::data::PlayerData;
+use crate::game_engine::save::SaveLoadPlugin;
 use crate::game_engine::save::events::LoadGameEvent;
-use crate::game_engine::save::{GameSaveData, GameStateData, SaveLoadPlugin};
+use crate::game_engine::save::{GameSaveData, GameStateData, PlayerData, SaveConfig, SaveMetadata};
 use crate::game_engine::state::GameState;
-use crate::player::Player;
 
 use super::utils::*;
 
@@ -18,7 +17,7 @@ fn test_load_game_empty_turn_order() {
     app.add_plugins(SaveLoadPlugin);
 
     // Set up test environment with players and game state
-    let player_entities = setup_test_environment(&mut app);
+    let _player_entities = setup_test_environment(&mut app);
 
     // Create a save file with empty turn order
     let test_dir = Path::new("target/test_saves");
@@ -32,7 +31,13 @@ fn test_load_game_empty_turn_order() {
             active_player_index: 0,
             priority_holder_index: 0,
             turn_order_indices: Vec::new(), // Empty turn order
-            ..Default::default()
+            lands_played: Vec::new(),
+            main_phase_action_taken: false,
+            drawn_this_turn: Vec::new(),
+            eliminated_players: Vec::new(),
+            use_commander_damage: true,
+            commander_damage_threshold: 21,
+            starting_life: 40,
         },
         players: vec![
             PlayerData {
@@ -51,47 +56,51 @@ fn test_load_game_empty_turn_order() {
             },
         ],
         save_version: "1.0".to_string(),
-        ..Default::default()
+        zones: Default::default(),
+        commanders: Default::default(),
     };
 
-    // Serialize and write to file
-    let serialized = bincode::encode_to_vec(&save_data, config::standard())
-        .expect("Failed to serialize save data");
-    std::fs::write(&save_path, serialized).unwrap();
+    // Create a persistent resource and save it
+    let persistent_save = Persistent::<GameSaveData>::builder()
+        .name("test_empty_turn_order")
+        .format(StorageFormat::Bincode)
+        .path(save_path.clone())
+        .default(save_data.clone())
+        .build()
+        .expect("Failed to create persistent resource");
 
-    // Create initial game state with valid turn order using the builder
-    let mut turn_order = VecDeque::new();
-    turn_order.push_back(player_entities[0]);
-    turn_order.push_back(player_entities[1]);
+    persistent_save
+        .persist()
+        .expect("Failed to persist save data");
 
-    let initial_game_state = GameState::builder()
-        .turn_number(1)
-        .active_player(player_entities[0])
-        .priority_holder(player_entities[0])
-        .turn_order(turn_order)
-        .build();
-
-    app.insert_resource(initial_game_state);
+    // Now change the game state
+    {
+        let mut game_state = app.world_mut().resource_mut::<GameState>();
+        game_state.turn_number = 1; // Different from what we saved
+    }
 
     // Trigger load game event
-    app.world().send_event(LoadGameEvent {
+    app.world_mut().send_event(LoadGameEvent {
         slot_name: slot_name.to_string(),
     });
 
     // Run systems to process the load event
     app.update();
+    app.update(); // One more update to make sure the load completes
 
-    // Verify game state was loaded despite empty turn order
+    // Verify game state was loaded, despite empty turn order
     let game_state = app.world().resource::<GameState>();
+
+    // Since the save contains turn_number = 6, we expect to see that value after loading
     assert_eq!(
         game_state.turn_number, 6,
         "Turn number was not loaded from empty turn order save"
     );
 
-    // The load system should reconstruct a turn order from available players
+    // Verify turn order was reconstructed from player entities
     assert!(
         !game_state.turn_order.is_empty(),
-        "Turn order should be reconstructed"
+        "Turn order should have been reconstructed"
     );
 
     // Clean up
