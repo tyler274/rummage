@@ -13,7 +13,7 @@ use crate::{
         deck::DeckManagerPlugin,
         logo::{StarOfDavidPlugin, render_star_of_david},
         main::MainMenuPlugin,
-        main_menu::{menu_action, set_menu_camera_zoom, setup_main_menu},
+        main_menu::{menu_action, set_menu_camera_zoom, setup_main_menu, MenuBackground},
         pause_menu::{handle_pause_input, pause_menu_action, setup_pause_menu},
         settings::{SettingsMenuState, SettingsPlugin},
         state::{GameMenuState, StateTransitionContext},
@@ -85,7 +85,7 @@ impl Plugin for MenuPlugin {
             )
             .add_systems(
                 Update,
-                (menu_action, render_star_of_david, debug_menu_visibility)
+                (menu_action, render_star_of_david, debug_menu_visibility, update_menu_background)
                     .run_if(in_state(GameMenuState::MainMenu)),
             )
             // Loading state systems
@@ -494,4 +494,27 @@ fn debug_menu_visibility(
 #[allow(dead_code)]
 fn handle_game_cleanup(_commands: Commands, _cards: Query<Entity, With<Card>>) {
     // ... existing code ...
+}
+
+/// System to update the menu background image size based on window dimensions
+fn update_menu_background(
+    windows: Query<&Window>,
+    mut backgrounds: Query<&mut Node, With<MenuBackground>>,
+) {
+    // Get the primary window
+    if let Ok(window) = windows.get_single() {
+        // Get all background image nodes and update their size
+        for mut node in &mut backgrounds {
+            // Set the UI node size to match the window size exactly
+            node.width = Val::Px(window.width());
+            node.height = Val::Px(window.height());
+            
+            // Log window size changes at debug level to avoid log spam
+            debug!(
+                "Window size: {}x{}, updating menu background size",
+                window.width(),
+                window.height()
+            );
+        }
+    }
 }

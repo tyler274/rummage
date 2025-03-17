@@ -11,12 +11,12 @@ use crate::menu::{
 use bevy::audio::{AudioPlayer, PlaybackMode, PlaybackSettings, Volume};
 use bevy::prelude::*;
 use bevy::text::JustifyText;
-use bevy::ui::{AlignItems, FlexDirection, JustifyContent, PositionType, UiRect, Val};
+use bevy::ui::{AlignItems, FlexDirection, JustifyContent, PositionType, UiRect, Val, ZIndex};
 
 /// Component to mark background image for easier access
 #[derive(Component)]
 #[allow(dead_code)]
-struct MenuBackground;
+pub struct MenuBackground;
 
 /// Component to mark the main menu music entity
 #[derive(Component)]
@@ -54,16 +54,27 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     let background_image: Handle<Image> = asset_server.load("images/menu_background.jpeg");
     info!("Loading menu background image: images/menu_background.jpeg");
 
-    // Create the background image using a simpler approach
-    // In Bevy 0.15, we'll use Sprite::from_image for the correct association
-    let mut sprite = Sprite::from_image(background_image);
-    sprite.custom_size = Some(Vec2::new(1920.0, 1080.0)); // Match window size
-
+    // Create the background as a UI image node instead of a sprite
     commands.spawn((
-        sprite,
-        // Position in world space behind UI (negative z ensures it's behind UI)
-        Transform::from_xyz(0.0, 0.0, -10.0),
-        // Marker component
+        // Use an Image component (from prelude, not ui)
+        UiImage::from_handle(background_image),
+        // UI node properties with 100% width and height to cover the entire window
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            // Absolute positioning to ensure it covers the entire window
+            position_type: PositionType::Absolute,
+            // Use "cover" style background sizing
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            overflow: bevy::ui::Overflow::Hidden,
+            ..default()
+        },
+        // Style that maintains aspect ratio but ensures coverage
+        ImageScaling::Cover,
+        // Add z-index to ensure it stays behind other UI elements
+        ZIndex::Local(-10),
+        // Marker component for dynamic resizing system
         MenuBackground,
         // Add MenuItem component for proper cleanup
         MenuItem,
@@ -71,7 +82,7 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
         Visibility::Visible,
         InheritedVisibility::default(),
         ViewVisibility::default(),
-        // Add proper layer for menu camera to render it
+        // Explicitly add AppLayer::Menu layer
         AppLayer::Menu.layer(),
         // Name for debugging
         Name::new("Menu Background Image"),
@@ -101,30 +112,6 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
             ViewVisibility::default(),
         ))
         .with_children(|parent| {
-            // Add gradient top overlay (lighter at top, creates a gradient effect)
-            parent.spawn((
-                Node {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(70.0),
-                    position_type: PositionType::Absolute,
-                    top: Val::Px(0.0),
-                    ..default()
-                },
-                BackgroundColor(Color::srgba(0.4, 0.3, 0.1, 0.3)),
-            ));
-
-            // Add bottom vignette (darker at bottom)
-            parent.spawn((
-                Node {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(50.0),
-                    position_type: PositionType::Absolute,
-                    bottom: Val::Px(0.0),
-                    ..default()
-                },
-                BackgroundColor(Color::srgba(0.05, 0.03, 0.01, 0.6)),
-            ));
-
             // Add decorative horizontal line at top
             parent.spawn((
                 Node {
