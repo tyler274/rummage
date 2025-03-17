@@ -1,0 +1,63 @@
+# Bevy 0.15 UI Image Component Changes
+
+## Deprecated Components
+- `SpriteBundle` - Deprecated in favor of using `Sprite` component directly
+- `Text2dBundle`, `NodeBundle`, `Camera2dBundle`, `SpatialBundle` - All deprecated in favor of direct component usage
+- `UiImage` - Renamed to `ImageNode`
+
+## Migration Guide
+
+### World Space Images (formerly `SpriteBundle`)
+```rust
+// OLD (deprecated)
+commands.spawn(SpriteBundle {
+    sprite: Sprite {
+        custom_size: Some(Vec2::new(100.0, 100.0)),
+        ..default()
+    },
+    transform: Transform::from_xyz(0.0, 0.0, 0.0),
+    image: asset_server.load("image.png"),
+    ..default()
+});
+
+// NEW
+commands.spawn((
+    Sprite {
+        custom_size: Some(Vec2::new(100.0, 100.0)),
+        ..default()
+    },
+    Transform::from_xyz(0.0, 0.0, 0.0),
+    asset_server.load::<Image>("image.png"),
+));
+```
+
+### UI Images (formerly using `UiImage`)
+```rust
+// OLD (deprecated)
+commands.spawn((
+    Node {
+        width: Val::Px(100.0),
+        height: Val::Px(100.0),
+        ..default()
+    },
+    UiImage::new(asset_server.load("image.png")),
+));
+
+// NEW
+commands.spawn((
+    Node {
+        width: Val::Px(100.0),
+        height: Val::Px(100.0),
+        ..default()
+    },
+    ImageNode {
+        image: asset_server.load("image.png"),
+        ..default()
+    },
+));
+```
+
+## Important Notes
+- When using `Sprite` directly, it automatically adds `Transform` and `Visibility` components
+- `ImageNode` field names have changed - use `image` instead of `texture` 
+- Required Components are now the preferred Bevy approach over Bundles 

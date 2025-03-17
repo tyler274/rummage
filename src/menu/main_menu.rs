@@ -58,20 +58,23 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     let background_image: Handle<Image> = asset_server.load("images/menu_background.jpeg");
     info!("Loading menu background image: images/menu_background.jpeg");
 
-    // Create a background using a sprite in world space
+    // Create a background using a UI Node
     let background_entity = commands
-        .spawn_empty()
-        // Add each component individually
-        .insert(Sprite {
-            custom_size: Some(Vec2::new(1920.0, 1080.0)),
-            ..default()
-        })
-        .insert(SpriteTexture(background_image)) // Wrap the image handle in a proper component
-        .insert(Transform::from_xyz(0.0, 0.0, -10.0))
-        .insert(MenuBackground)
-        .insert(MenuItem)
-        .insert(AppLayer::Menu.layer())
-        .insert(Name::new("Menu Background Image"))
+        .spawn((
+            Node {
+                width: Val::Px(1920.0),
+                height: Val::Px(1080.0),
+                ..default()
+            },
+            ImageNode {
+                image: background_image,
+                ..default()
+            },
+            MenuBackground,
+            MenuItem,
+            AppLayer::Menu.layer(),
+            Name::new("Menu Background Image"),
+        ))
         .id();
 
     info!("Spawned menu background: {:?}", background_entity);
