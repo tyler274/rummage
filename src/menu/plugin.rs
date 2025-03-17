@@ -280,7 +280,6 @@ fn setup_pause_star(
                     create_logo(),
                     Name::new("Pause Logo Group"),
                     MenuDecorativeElement,
-                    GlobalZIndex(50), // High z-index for the entire logo group
                 ))
                 .with_children(|logo_parent| {
                     // Spawn the Star of David with the logo container as parent
@@ -310,7 +309,6 @@ fn setup_pause_star(
                 create_logo(),
                 Name::new("Pause Logo Group"),
                 MenuDecorativeElement,
-                GlobalZIndex(50), // High z-index for the entire logo group
             ))
             .with_children(|logo_parent| {
                 // Spawn the Star of David with the logo container as parent
@@ -674,7 +672,6 @@ fn setup_main_menu_star(
                     create_logo(),
                     Name::new("Main Menu Logo Group"),
                     MenuDecorativeElement,
-                    GlobalZIndex(50), // High z-index for the entire logo group
                 ))
                 .with_children(|logo_parent| {
                     // Spawn the Star of David with the logo container as parent
@@ -705,7 +702,6 @@ fn setup_main_menu_star(
                 create_logo(),
                 Name::new("Main Menu Logo Group"),
                 MenuDecorativeElement,
-                GlobalZIndex(50), // High z-index for the entire logo group
             ))
             .with_children(|logo_parent| {
                 // Spawn the Star of David with the logo container as parent
