@@ -174,6 +174,6 @@ pub fn create_star_of_david() -> impl Bundle {
         },
         StarOfDavid,
         AppLayer::Menu.layer(), // Only visible on menu layer
-        Name::new("Star of David UI Component"),
+                                // Name::new("Star of David UI Component"), // Removed to prevent duplicate Name component
     )
 }
