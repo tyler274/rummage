@@ -222,14 +222,35 @@ pub fn handle_save_game(
                     .iter_mut()
                     .find(|s| s.slot_name == event.slot_name)
                 {
-                    *existing = save_info;
+                    *existing = save_info.clone();
                 } else {
-                    save_metadata.saves.push(save_info);
+                    save_metadata.saves.push(save_info.clone());
                 }
 
-                // Save metadata
-                if let Err(e) = save_metadata.persist() {
-                    error!("Failed to update save metadata: {}", e);
+                // Save metadata - ensure persistence happens before continuing
+                match save_metadata.persist() {
+                    Ok(_) => {
+                        info!("Save metadata updated for slot: {}", event.slot_name);
+                    }
+                    Err(e) => {
+                        error!("Failed to update save metadata: {}", e);
+                        // Even on error, we'll proceed as the game save itself succeeded
+                    }
+                }
+
+                // Verify metadata entry was added
+                if !save_metadata
+                    .saves
+                    .iter()
+                    .any(|s| s.slot_name == event.slot_name)
+                {
+                    error!(
+                        "Failed to verify save metadata entry for slot: {}",
+                        event.slot_name
+                    );
+                    // Add it again as a last resort
+                    save_metadata.saves.push(save_info);
+                    let _ = save_metadata.persist(); // Try once more
                 }
             }
             Err(e) => {

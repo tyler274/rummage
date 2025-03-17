@@ -130,7 +130,7 @@ fn test_save_game() {
         // Verify metadata was updated
         let metadata = app
             .world()
-            .resource::<crate::game_engine::save::SaveMetadata>();
+            .resource::<Persistent<crate::game_engine::save::SaveMetadata>>();
         assert!(
             metadata.saves.iter().any(|s| s.slot_name == slot_name),
             "Save metadata entry not found for slot: {}",
