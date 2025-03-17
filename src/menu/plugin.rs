@@ -28,6 +28,13 @@ pub struct PreviousWindowSize {
     pub height: f32,
 }
 
+/// Resource to track menu visibility state
+#[derive(Resource, Default)]
+pub struct MenuVisibilityState {
+    pub item_count: usize,
+    pub visible_count: usize,
+}
+
 /// Resource to control logging frequency for menu visibility
 #[derive(Resource)]
 struct MenuVisibilityLogState {
@@ -61,6 +68,7 @@ impl Plugin for MenuPlugin {
             .insert_resource(GameMenuState::MainMenu)
             .insert_resource(StateTransitionContext::default())
             .init_resource::<MenuVisibilityLogState>()
+            .init_resource::<MenuVisibilityState>()
             .add_plugins((
                 StarOfDavidPlugin,
                 SettingsPlugin,
@@ -96,6 +104,7 @@ impl Plugin for MenuPlugin {
                 (
                     menu_action,
                     render_star_of_david,
+                    update_menu_visibility_state,
                     debug_menu_visibility,
                     update_menu_background,
                 )
@@ -448,58 +457,66 @@ fn manage_pause_camera_visibility(
     }
 }
 
-/// Debug system to check visibility of menu elements
-fn debug_menu_visibility(
-    menu_cameras: Query<(Entity, &Visibility), With<MenuCamera>>,
-    menu_items: Query<(Entity, &Visibility), With<MenuItem>>,
-    time: Res<Time>,
-    mut log_state: ResMut<MenuVisibilityLogState>,
+/// Update menu visibility state resource
+fn update_menu_visibility_state(
+    menu_items: Query<&Visibility, With<MenuItem>>,
+    mut menu_state: ResMut<MenuVisibilityState>,
 ) {
-    // Count cameras and menu items
-    let camera_count = menu_cameras.iter().count();
-    let menu_item_count = menu_items.iter().count();
+    let total_items = menu_items.iter().count();
     let visible_items = menu_items
         .iter()
-        .filter(|(_, visibility)| matches!(visibility, Visibility::Visible))
+        .filter(|visibility| matches!(visibility, Visibility::Visible))
         .count();
 
-    // Collect current camera states
-    let mut current_camera_states = std::collections::HashMap::new();
-    for (entity, visibility) in menu_cameras.iter() {
-        current_camera_states.insert(entity, *visibility);
+    // Only update if changed
+    if menu_state.item_count != total_items || menu_state.visible_count != visible_items {
+        menu_state.item_count = total_items;
+        menu_state.visible_count = visible_items;
+    }
+}
+
+/// Debug system to check visibility of menu elements
+fn debug_menu_visibility(
+    menu_cameras: Query<(Entity, &Visibility), (With<MenuCamera>, Changed<Visibility>)>,
+    menu_items: Query<(Entity, &Visibility), (With<MenuItem>, Changed<Visibility>)>,
+    mut log_state: ResMut<MenuVisibilityLogState>,
+    menu_state: Res<MenuVisibilityState>,
+) {
+    // Count cameras and menu items with changed visibility
+    let camera_count = menu_cameras.iter().count();
+    let menu_item_count = menu_items.iter().count();
+
+    // Only proceed if any component actually changed
+    if camera_count == 0 && menu_item_count == 0 {
+        return;
     }
 
-    // Check if camera states have changed
-    let camera_state_changed = camera_count != log_state.last_camera_count
-        || current_camera_states != log_state.camera_states;
+    // Get total counts (not just changed)
+    let total_cameras = log_state.camera_states.len();
+    let total_items = log_state.last_item_count;
 
-    // Check if menu items have changed
-    let menu_items_changed = menu_item_count != log_state.last_item_count
-        || visible_items != log_state.last_visible_items;
+    // Collect current camera states for changed cameras
+    for (entity, visibility) in menu_cameras.iter() {
+        log_state.camera_states.insert(entity, *visibility);
+        debug!(
+            "Menu camera {:?} visibility changed to: {:?}",
+            entity, visibility
+        );
+    }
 
-    // Determine if there's been any meaningful change worth logging
-    let state_changed = camera_state_changed || menu_items_changed;
+    // Count visible items
+    if menu_item_count > 0 {
+        // We need to query all items to get the total count when visibility changes
+        let all_items = menu_state.item_count;
+        let visible_items = menu_state.visible_count;
 
-    // Check if we should log based on time interval or state changes
-    let current_time = time.elapsed_secs();
-    let force_log_by_time = current_time - log_state.last_log_time > log_state.log_interval;
-    let should_log = force_log_by_time || state_changed;
-
-    // If we need to log, update state and output logs
-    if should_log {
-        log_state.last_log_time = current_time;
-        log_state.last_camera_count = camera_count;
-        log_state.last_item_count = menu_item_count;
-        log_state.last_visible_items = visible_items;
-        log_state.camera_states = current_camera_states;
-
-        // Log camera visibility (at debug level to reduce spam)
-        for (entity, visibility) in menu_cameras.iter() {
-            debug!("Menu camera {:?} visibility: {:?}", entity, visibility);
+        // Only log if visibility actually changed
+        if visible_items != log_state.last_visible_items {
+            log_state.last_item_count = all_items;
+            log_state.last_visible_items = visible_items;
+            debug!("Total menu items: {}", all_items);
+            debug!("Visible menu items: {}/{}", visible_items, all_items);
         }
-
-        debug!("Total menu items: {}", menu_item_count);
-        debug!("Visible menu items: {}/{}", visible_items, menu_item_count);
     }
 }
 

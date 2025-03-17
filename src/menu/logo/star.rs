@@ -39,15 +39,19 @@ pub struct StarOfDavidPlugin;
 
 impl Plugin for StarOfDavidPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<StarOfDavidLogState>().add_systems(
-            Update,
-            render_star_of_david.run_if(|state: Res<State<GameMenuState>>| {
-                matches!(
-                    state.get(),
-                    GameMenuState::MainMenu | GameMenuState::PausedGame
-                )
-            }),
-        );
+        app.init_resource::<StarOfDavidLogState>()
+            // Split into two systems: one for monitoring changes and one for rendering
+            .add_systems(
+                Update,
+                (monitor_star_of_david_changes, render_star_of_david).run_if(
+                    |state: Res<State<GameMenuState>>| {
+                        matches!(
+                            state.get(),
+                            GameMenuState::MainMenu | GameMenuState::PausedGame
+                        )
+                    },
+                ),
+            );
     }
 
     fn finish(&self, _app: &mut App) {
@@ -55,103 +59,101 @@ impl Plugin for StarOfDavidPlugin {
     }
 }
 
+/// System to monitor changes in StarOfDavid entities and log when necessary
+fn monitor_star_of_david_changes(
+    query: Query<Entity, (With<StarOfDavid>, Changed<Children>)>,
+    children_query: Query<&Children>,
+    mut log_state: ResMut<StarOfDavidLogState>,
+    star_count_query: Query<Entity, With<StarOfDavid>>,
+) {
+    // Check for entities with changed Children component
+    let changed_entities = query.iter().count();
+
+    // Only process if changes or if star count has changed
+    let current_star_count = star_count_query.iter().count();
+    let count_changed = current_star_count != log_state.last_star_count;
+
+    if changed_entities > 0 || count_changed {
+        let mut current_children_state = std::collections::HashMap::new();
+        let mut children_changed = false;
+
+        // Check all entities to build a complete children state map
+        for entity in star_count_query.iter() {
+            let has_children = children_query
+                .get(entity)
+                .map(|children| !children.is_empty())
+                .unwrap_or(false);
+
+            // Record current state
+            current_children_state.insert(entity, has_children);
+
+            // Check if this entity's state has changed
+            if log_state.last_children_state.get(&entity) != Some(&has_children) {
+                children_changed = true;
+            }
+        }
+
+        // Log changes if detected
+        if count_changed || children_changed {
+            debug!("StarOfDavid entities found: {}", current_star_count);
+
+            // Only log individual entities if there was a change
+            if count_changed || children_changed {
+                for (entity, has_children) in &current_children_state {
+                    debug!(
+                        "StarOfDavid entity {:?} has children: {}",
+                        entity, has_children
+                    );
+                }
+            }
+
+            // Update the log state
+            log_state.last_star_count = current_star_count;
+            log_state.last_children_state = current_children_state;
+        }
+    }
+}
+
 /// System to create and render the Star of David
 pub fn render_star_of_david(
     mut commands: Commands,
-    query: Query<Entity, With<StarOfDavid>>,
-    children_query: Query<&Children>,
+    query: Query<Entity, (With<StarOfDavid>, Without<Children>)>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    time: Res<Time>,
-    mut log_state: ResMut<StarOfDavidLogState>,
 ) {
-    // Count stars
-    let star_count = query.iter().count();
-
-    // Check for changes in entity count
-    let count_changed = star_count != log_state.last_star_count;
-
-    // Track changes in children states
-    let mut children_changed = false;
-    let mut current_children_state = std::collections::HashMap::new();
-
+    // Only process entities that don't have children yet
     for entity in &query {
-        let has_children = children_query
-            .get(entity)
-            .map(|children| !children.is_empty())
-            .unwrap_or(false);
+        // Create the material once - gold color
+        let material = materials.add(Color::srgb(1.0, 0.84, 0.0));
 
-        // Record current state
-        current_children_state.insert(entity, has_children);
+        // Create a triangle mesh
+        let triangle_mesh = meshes.add(create_equilateral_triangle_mesh(150.0));
 
-        // Check if this entity's state has changed
-        if log_state.last_children_state.get(&entity) != Some(&has_children) {
-            children_changed = true;
-        }
+        // Spawn the child entities for the two triangles
+        commands.entity(entity).with_children(|parent| {
+            // First triangle (pointing up)
+            parent.spawn((
+                Mesh2d::from(triangle_mesh.clone()),
+                MeshMaterial2d(material.clone()),
+                Transform::from_xyz(0.0, 20.0, 901.0),
+                GlobalTransform::default(),
+                Visibility::default(),
+                InheritedVisibility::default(),
+                ViewVisibility::default(),
+            ));
 
-        // Only spawn children if it doesn't have children yet
-        if !has_children {
-            // Track that we made changes for next frame's logging
-            log_state.changes_made = true;
-
-            // Create the material once - gold color
-            let material = materials.add(Color::srgb(1.0, 0.84, 0.0));
-
-            // Create a triangle mesh
-            let triangle_mesh = meshes.add(create_equilateral_triangle_mesh(150.0));
-
-            // Spawn the child entities for the two triangles
-            commands.entity(entity).with_children(|parent| {
-                // First triangle (pointing up)
-                parent.spawn((
-                    Mesh2d::from(triangle_mesh.clone()),
-                    MeshMaterial2d(material.clone()),
-                    Transform::from_xyz(0.0, 20.0, 901.0),
-                    GlobalTransform::default(),
-                    Visibility::default(),
-                    InheritedVisibility::default(),
-                    ViewVisibility::default(),
-                ));
-
-                // Second triangle (pointing down)
-                parent.spawn((
-                    Mesh2d::from(triangle_mesh),
-                    MeshMaterial2d(material),
-                    Transform::from_xyz(0.0, -20.0, 901.0)
-                        .with_rotation(Quat::from_rotation_z(std::f32::consts::PI)),
-                    GlobalTransform::default(),
-                    Visibility::default(),
-                    InheritedVisibility::default(),
-                    ViewVisibility::default(),
-                ));
-            });
-        }
-    }
-
-    // Determine if we should log based on changes or forced time interval
-    let current_time = time.elapsed_secs();
-    let force_log_by_time = current_time - log_state.last_log_time > log_state.log_interval;
-    let should_log =
-        force_log_by_time || count_changed || children_changed || log_state.changes_made;
-
-    // Only log if we have changes or it's been a long time
-    if should_log {
-        log_state.last_log_time = current_time;
-        log_state.last_star_count = star_count;
-        log_state.last_children_state = current_children_state;
-        log_state.changes_made = false;
-
-        debug!("StarOfDavid entities found: {}", star_count);
-
-        // Only log individual entities if there was a change
-        if count_changed || children_changed {
-            for (entity, has_children) in &log_state.last_children_state {
-                debug!(
-                    "StarOfDavid entity {:?} has children: {}",
-                    entity, has_children
-                );
-            }
-        }
+            // Second triangle (pointing down)
+            parent.spawn((
+                Mesh2d::from(triangle_mesh),
+                MeshMaterial2d(material),
+                Transform::from_xyz(0.0, -20.0, 901.0)
+                    .with_rotation(Quat::from_rotation_z(std::f32::consts::PI)),
+                GlobalTransform::default(),
+                Visibility::default(),
+                InheritedVisibility::default(),
+                ViewVisibility::default(),
+            ));
+        });
     }
 }
 
