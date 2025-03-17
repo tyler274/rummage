@@ -263,38 +263,29 @@ fn setup_pause_star(
         create_english_text, create_hebrew_text, create_logo, create_star_of_david,
     };
 
-    info!("Setting up Star of David as standalone entity for pause menu");
-
-    // Spawn the Star of David as a top-level entity
-    let star_entity = commands
-        .spawn((
-            create_star_of_david(),
-            Name::new("Star of David - Pause Menu"),
-        ))
-        .id();
-
-    info!(
-        "Spawned Star of David as standalone entity for pause menu: {:?}",
-        star_entity
-    );
+    info!("Setting up Star of David for pause menu");
 
     // Find the menu camera for text elements
     if let Some(camera_entity) = menu_cameras.iter().next() {
         info!(
-            "Attaching text elements to pause menu camera: {:?}",
+            "Attaching Star of David and text to pause menu camera: {:?}",
             camera_entity
         );
 
-        // Spawn the logo group as a child of the menu camera for the text elements only
+        // Create a complete entity hierarchy using a single commands operation
         commands.entity(camera_entity).with_children(|parent| {
-            // Create a parent entity that will contain the text elements
+            // Create a parent entity that will contain the star and text elements
             parent
                 .spawn((
                     create_logo(),
                     Name::new("Pause Logo Group"),
                     MenuDecorativeElement,
+                    GlobalZIndex(50), // High z-index for the entire logo group
                 ))
                 .with_children(|logo_parent| {
+                    // Spawn the Star of David with the logo container as parent
+                    logo_parent.spawn((create_star_of_david(), Name::new("Pause Star of David")));
+
                     // Spawn the Hebrew text below the star
                     logo_parent.spawn((
                         create_hebrew_text(&asset_server),
@@ -308,17 +299,23 @@ fn setup_pause_star(
                     ));
                 });
         });
-    } else {
-        warn!("No menu camera found for text elements attachment in pause menu");
 
-        // If no camera is found, still spawn the text elements
+        info!("Created pause menu logo container with Star of David and text elements");
+    } else {
+        warn!("No menu camera found for pause menu Star of David and text");
+
+        // If no camera is found, create a standalone UI node hierarchy
         commands
             .spawn((
                 create_logo(),
                 Name::new("Pause Logo Group"),
                 MenuDecorativeElement,
+                GlobalZIndex(50), // High z-index for the entire logo group
             ))
             .with_children(|logo_parent| {
+                // Spawn the Star of David with the logo container as parent
+                logo_parent.spawn((create_star_of_david(), Name::new("Pause Star of David")));
+
                 // Spawn the Hebrew text below the star
                 logo_parent.spawn((
                     create_hebrew_text(&asset_server),
@@ -331,6 +328,8 @@ fn setup_pause_star(
                     Name::new("Pause English Logo Text"),
                 ));
             });
+
+        info!("Created standalone pause menu logo container with Star of David and text elements");
     }
 }
 
@@ -658,73 +657,73 @@ fn setup_main_menu_star(
         create_english_text, create_hebrew_text, create_logo, create_star_of_david,
     };
 
-    info!("Setting up Star of David as standalone entity");
-
-    // Spawn the Star of David as a top-level entity
-    let star_entity = commands
-        .spawn((
-            create_star_of_david(),
-            Name::new("Star of David - Main Menu"),
-        ))
-        .id();
-
-    info!(
-        "Spawned Star of David as standalone entity: {:?}",
-        star_entity
-    );
+    info!("Setting up Star of David for main menu");
 
     // Find the menu camera for text elements
     if let Some(camera_entity) = menu_cameras.iter().next() {
         info!(
-            "Attaching text elements to menu camera: {:?}",
+            "Attaching Star of David and text to main menu camera: {:?}",
             camera_entity
         );
 
-        // Spawn the logo group as a child of the menu camera for the text elements only
+        // Create a complete entity hierarchy using a single commands operation
         commands.entity(camera_entity).with_children(|parent| {
-            // Create a parent entity that will contain the text elements
+            // Create a parent entity that will contain the star and text elements
             parent
                 .spawn((
                     create_logo(),
-                    Name::new("Logo Group"),
+                    Name::new("Main Menu Logo Group"),
                     MenuDecorativeElement,
+                    GlobalZIndex(50), // High z-index for the entire logo group
                 ))
                 .with_children(|logo_parent| {
+                    // Spawn the Star of David with the logo container as parent
+                    logo_parent
+                        .spawn((create_star_of_david(), Name::new("Main Menu Star of David")));
+
                     // Spawn the Hebrew text below the star
                     logo_parent.spawn((
                         create_hebrew_text(&asset_server),
-                        Name::new("Hebrew Logo Text"),
+                        Name::new("Main Menu Hebrew Logo Text"),
                     ));
 
                     // Spawn the English text below the Hebrew text
                     logo_parent.spawn((
                         create_english_text(&asset_server),
-                        Name::new("English Logo Text"),
+                        Name::new("Main Menu English Logo Text"),
                     ));
                 });
         });
-    } else {
-        warn!("No menu camera found for text elements attachment");
 
-        // If no camera is found, still spawn the text elements
+        info!("Created main menu logo container with Star of David and text elements");
+    } else {
+        warn!("No menu camera found for main menu Star of David and text");
+
+        // If no camera is found, create a standalone UI node hierarchy
         commands
             .spawn((
                 create_logo(),
-                Name::new("Logo Group"),
+                Name::new("Main Menu Logo Group"),
                 MenuDecorativeElement,
+                GlobalZIndex(50), // High z-index for the entire logo group
             ))
             .with_children(|logo_parent| {
+                // Spawn the Star of David with the logo container as parent
+                logo_parent.spawn((create_star_of_david(), Name::new("Main Menu Star of David")));
+
                 // Spawn the Hebrew text below the star
                 logo_parent.spawn((
                     create_hebrew_text(&asset_server),
-                    Name::new("Hebrew Logo Text"),
+                    Name::new("Main Menu Hebrew Logo Text"),
                 ));
 
                 // Spawn the English text below the Hebrew text
                 logo_parent.spawn((
                     create_english_text(&asset_server),
-                    Name::new("English Logo Text"),
+                    Name::new("Main Menu English Logo Text"),
                 ));
             });
+
+        info!("Created standalone main menu logo container with Star of David and text elements");
     }
 }
