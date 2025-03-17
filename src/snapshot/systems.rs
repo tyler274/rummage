@@ -388,7 +388,7 @@ pub fn take_save_game_snapshot(
     }
 }
 
-/// System to capture snapshots at specific points when replaying a saved game
+/// System for taking snapshots during replay, improved for visual differential testing
 pub fn take_replay_snapshot(
     mut commands: Commands,
     mut snapshot_events: EventWriter<SnapshotEvent>,
@@ -397,59 +397,171 @@ pub fn take_replay_snapshot(
     game_state: Option<Res<crate::game_engine::state::GameState>>,
     game_cameras: Query<Entity, With<GameCamera>>,
 ) {
-    // Skip if we don't have replay or game state
-    let (replay_state, game_state) = match (replay_state, game_state) {
-        (Some(replay), Some(game)) => (replay, game),
-        _ => return,
+    // Skip if no replay state is active
+    let replay_state = match replay_state {
+        Some(state) => state,
+        None => return,
     };
 
-    // Get the first game camera
-    let camera = match game_cameras.iter().next() {
-        Some(camera) => camera,
+    if !replay_state.active {
+        return;
+    }
+
+    // Skip if no step events
+    if step_events.read().next().is_none() {
+        return;
+    }
+
+    // Get current game state for metadata
+    let game_state = match game_state {
+        Some(state) => state,
         None => {
-            error!("No game camera found for replay snapshot - snapshot cannot be taken");
+            warn!("Trying to take replay snapshot but no game state is available");
             return;
         }
     };
 
-    for _event in step_events.read() {
-        // We want to take a snapshot after stepping through the replay
-        let turn_number = game_state.turn_number;
-        // Since GameSaveData doesn't have slot_name directly, we'll use a default value
-        // A better solution would be to store the slot_name in the ReplayState
-        let slot_name = "replay".to_string();
-        let replay_step = replay_state.current_step;
+    // Get primary camera for snapshot
+    let camera = match game_cameras.iter().next() {
+        Some(camera) => camera,
+        None => {
+            warn!("No game camera found for replay snapshot");
+            return;
+        }
+    };
 
-        info!(
-            "Taking snapshot of replay: {}, turn: {}, step: {}",
-            slot_name, turn_number, replay_step
-        );
+    // Create snapshot filename based on replay information
+    let replay_turn = game_state.turn_number;
+    let replay_step = replay_state.current_step;
+    let _active_player = game_state.active_player;
 
-        let timestamp = chrono::Local::now().timestamp();
-        let filename = format!(
-            "replay_{}_turn_{}_step_{}_t{}.png",
-            slot_name, turn_number, replay_step, timestamp
-        );
+    // Use a default slot name since we don't have direct access to it
+    let slot_name = "replay".to_string();
 
-        // Send the snapshot event
-        let snapshot = SnapshotEvent::new()
-            .with_camera(camera)
-            .with_filename(filename)
-            .with_description(format!(
-                "Replay: {}, Turn: {}, Step: {}",
-                slot_name, turn_number, replay_step
-            ))
-            .with_debug(true);
+    let filename = format!(
+        "replay_{}_turn_{}_step_{}.png",
+        slot_name, replay_turn, replay_step
+    );
 
-        snapshot_events.send(snapshot);
+    let description = format!(
+        "Replay of {} at turn {} step {}",
+        slot_name, replay_turn, replay_step
+    );
 
-        // Create the SaveGameSnapshot component on the camera
-        commands.entity(camera).insert(
-            SaveGameSnapshot::new(slot_name.clone(), turn_number)
-                .with_timestamp(timestamp)
-                .with_description(format!("Replay step: {}", replay_step)),
-        );
+    // Create a SaveGameSnapshot component to link this snapshot to the save game
+    let save_snapshot = SaveGameSnapshot::new(&slot_name, replay_turn)
+        .with_description(description.clone())
+        .with_timestamp(chrono::Local::now().timestamp());
 
-        debug!("Sent snapshot event for replay step");
+    // Attach the SaveGameSnapshot component to the camera
+    commands.entity(camera).insert(save_snapshot);
+
+    // Send snapshot event
+    let snapshot_event = SnapshotEvent::new()
+        .with_camera(camera)
+        .with_filename(filename)
+        .with_description(description)
+        .with_debug(true);
+
+    info!(
+        "Taking replay snapshot at turn {} step {}",
+        replay_turn, replay_step
+    );
+    snapshot_events.send(snapshot_event);
+}
+
+/// System for capturing snapshots at specific points in a replay for visual testing
+pub fn capture_replay_at_point(
+    mut commands: Commands,
+    mut snapshot_events: EventWriter<SnapshotEvent>,
+    game_state: Option<Res<crate::game_engine::state::GameState>>,
+    replay_state: Option<Res<crate::game_engine::save::ReplayState>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    game_cameras: Query<Entity, With<GameCamera>>,
+) {
+    // Only trigger on key press (F10)
+    if !keyboard_input.just_pressed(KeyCode::F10) {
+        return;
     }
+
+    // Skip if no replay state is active
+    let replay_state = match replay_state {
+        Some(state) => {
+            if !state.active {
+                info!("No active replay for differential testing snapshot");
+                return;
+            }
+            state
+        }
+        None => {
+            info!("No replay state available for differential testing snapshot");
+            return;
+        }
+    };
+
+    // Get current game state for metadata
+    let game_state = match game_state {
+        Some(state) => state,
+        None => {
+            warn!("Trying to take differential test snapshot but no game state is available");
+            return;
+        }
+    };
+
+    // Get primary camera for snapshot
+    let camera = match game_cameras.iter().next() {
+        Some(camera) => camera,
+        None => {
+            warn!("No game camera found for differential test snapshot");
+            return;
+        }
+    };
+
+    // Create a unique identifier for this test point
+    let turn = game_state.turn_number;
+    let step = replay_state.current_step;
+    let active_player_index = match game_state
+        .turn_order
+        .iter()
+        .position(|&e| e == game_state.active_player)
+    {
+        Some(idx) => idx,
+        None => 0,
+    };
+
+    // Use a default slot name since we don't have direct access to it
+    let slot_name = "visual_test".to_string();
+
+    let timestamp = chrono::Local::now().timestamp();
+
+    let filename = format!(
+        "visual_test_{}_turn_{}_step_{}_player_{}.png",
+        slot_name, turn, step, active_player_index
+    );
+
+    let description = format!(
+        "Visual test of {} at turn {} step {} (player {})",
+        slot_name, turn, step, active_player_index
+    );
+
+    // Create a SaveGameSnapshot component with detailed information
+    let save_snapshot = SaveGameSnapshot::new(&slot_name, turn)
+        .with_description(description.clone())
+        .with_timestamp(timestamp);
+
+    // Attach the SaveGameSnapshot component to the camera
+    commands.entity(camera).insert(save_snapshot);
+
+    // Send snapshot event
+    let snapshot_event = SnapshotEvent::new()
+        .with_camera(camera)
+        .with_filename(filename)
+        .with_description(description)
+        .with_debug(true);
+
+    info!(
+        "Taking visual differential test snapshot at turn {} step {}",
+        turn, step
+    );
+    snapshot_events.send(snapshot_event);
 }

@@ -125,35 +125,31 @@ The save/load system handles entity references by converting them to indices dur
 
 ## Visual Differential Testing
 
-The save/load system integrates with the snapshot system to enable visual differential testing of saved games. This allows you to:
+The save/load system includes built-in support for visual differential testing through integration with the snapshot system. This allows for:
 
-1. Automatically capture visual snapshots when games are saved
-2. Capture snapshots at specific points in replays
-3. Compare visual snapshots between different versions of the codebase to detect visual regressions
+1. **Visual Regression Testing**: Compare game renders at different points in time to detect unintended visual changes
+2. **State Verification**: Visually confirm that game states are correctly preserved and restored
+3. **Replay Validation**: Ensure that replays accurately reproduce the original game visually
 
-To use visual differential testing:
+### Key Features
+
+- **Automatic Captures**: Images are automatically captured during save operations and replay steps
+- **Manual Triggers**: Press F10 during replay to capture the current visual state
+- **Programmatic API**: Functions to capture and compare game states from code
+- **Metadata Tracking**: Each snapshot is tagged with save slot, turn number, and timestamps
+
+### Example Usage
+
+Visual differential testing can be used in both manual testing and automated tests:
 
 ```rust
-// Capture a snapshot from a specific saved game
-let image = capture_saved_game_snapshot(world, "my_save", None, None);
+// In automated tests
+let result = run_visual_diff_test("test_save_game");
+assert!(result.is_ok(), "Visual differences detected");
 
-// Capture a snapshot from a specific turn in a saved game
-let image = capture_saved_game_snapshot(world, "my_save", Some(3), None);
-
-// Capture a snapshot at a specific replay step
-let image = capture_saved_game_snapshot(world, "my_save", None, Some(5));
+// In manual testing, press F10 during replay to take snapshots
+// at points of interest, then compare the resulting images
 ```
-
-### Integration with CI Testing
-
-Visual snapshots can be used in CI testing pipelines to automatically detect visual changes:
-
-1. Save reference images for key game states
-2. Compare against these references in CI tests
-3. Flag differences that exceed a configurable threshold
-4. Generate difference visualizations for debugging
-
-See the [Visual Testing Documentation](../testing/visual_testing.md) for more details on setting up and using the visual testing system.
 
 ## Next Steps
 

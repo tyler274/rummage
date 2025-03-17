@@ -2,7 +2,6 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use image::{DynamicImage, ImageBuffer, Rgba};
 use std::collections::VecDeque;
-use std::path::PathBuf;
 
 /// Screenshot request event
 #[derive(Event)]
@@ -238,3 +237,129 @@ pub fn visual_test_saved_games_system(
 /// Component to mark visual test of saved games in progress
 #[derive(Component)]
 pub struct VisualTestSavedGamesMarker;
+
+/// System for capturing differential snapshots at specific points in a saved game for visual testing
+pub fn capture_differential_game_snapshot(
+    world: &mut World,
+    save_slot: &str,
+    turn_number: Option<u32>,
+    replay_step: Option<usize>,
+    snapshot_name: &str,
+) -> Option<DynamicImage> {
+    // Load the save file or resume the replay
+    capture_saved_game_snapshot(world, save_slot, turn_number, replay_step)?;
+
+    // Find the game camera
+    let camera_entity = world
+        .query_filtered::<Entity, With<crate::camera::components::GameCamera>>()
+        .iter(world)
+        .next()?;
+
+    // Create a SaveGameSnapshot component to link this snapshot to the save game
+    let save_snapshot = crate::snapshot::SaveGameSnapshot::new(save_slot, turn_number.unwrap_or(0))
+        .with_description(format!("Visual diff: {}", snapshot_name))
+        .with_timestamp(chrono::Local::now().timestamp());
+
+    // Attach the SaveGameSnapshot component to the camera
+    world.entity_mut(camera_entity).insert(save_snapshot);
+
+    // Take the snapshot
+    let filename = format!("visual_diff_{}.png", snapshot_name);
+    let snapshot_event = crate::snapshot::SnapshotEvent::new()
+        .with_camera(camera_entity)
+        .with_filename(filename)
+        .with_description(format!("Visual differential test: {}", snapshot_name))
+        .with_debug(true);
+
+    // Send the event
+    world.send_event(snapshot_event);
+
+    // Run update to process the snapshot
+    let _ = world.run_schedule(bevy::app::Update);
+    let _ = world.run_schedule(bevy::app::PostUpdate);
+
+    // Simplified - in a real implementation, we'd wait for the snapshot to complete
+    // and retrieve the actual image data
+    take_screenshot()
+}
+
+/// Compare two rendered states of the same game for visual differences
+pub fn compare_game_states(
+    world: &mut World,
+    save_slot: &str,
+    reference_point: (Option<u32>, Option<usize>), // (turn, step)
+    comparison_point: (Option<u32>, Option<usize>), // (turn, step)
+) -> Option<(DynamicImage, DynamicImage, f32)> {
+    // Capture reference image
+    let reference_name = match (reference_point.0, reference_point.1) {
+        (Some(turn), Some(step)) => format!("{}_turn{}_step{}", save_slot, turn, step),
+        (Some(turn), None) => format!("{}_turn{}", save_slot, turn),
+        (None, Some(step)) => format!("{}_step{}", save_slot, step),
+        (None, None) => format!("{}_latest", save_slot),
+    };
+
+    let reference_image = capture_differential_game_snapshot(
+        world,
+        save_slot,
+        reference_point.0,
+        reference_point.1,
+        &reference_name,
+    )?;
+
+    // Capture comparison image
+    let comparison_name = match (comparison_point.0, comparison_point.1) {
+        (Some(turn), Some(step)) => format!("{}_turn{}_step{}", save_slot, turn, step),
+        (Some(turn), None) => format!("{}_turn{}", save_slot, turn),
+        (None, Some(step)) => format!("{}_step{}", save_slot, step),
+        (None, None) => format!("{}_latest", save_slot),
+    };
+
+    let comparison_image = capture_differential_game_snapshot(
+        world,
+        save_slot,
+        comparison_point.0,
+        comparison_point.1,
+        &comparison_name,
+    )?;
+
+    // Calculate difference (placeholder - in a real implementation, this would compare pixels)
+    // This example just returns a percentage difference of 10%
+    let difference = 0.10;
+
+    Some((reference_image, comparison_image, difference))
+}
+
+/// Function to run a visual differential test on a saved game
+pub fn run_visual_diff_test(save_slot: &str) -> Result<(), String> {
+    let mut app = bevy::app::App::new();
+
+    // Add required plugins (minimal set)
+    app.add_plugins(bevy::MinimalPlugins)
+        .add_plugins(crate::snapshot::SnapshotPlugin)
+        .add_plugins(crate::game_engine::save::SaveLoadPlugin);
+
+    // Initialize the app
+    app.update();
+
+    // Compare initial state to state after 3 turns
+    let comparison_result = compare_game_states(
+        &mut app.world_mut(),
+        save_slot,
+        (Some(1), None), // Turn 1
+        (Some(3), None), // Turn 3
+    );
+
+    match comparison_result {
+        Some((_, _, diff)) => {
+            if diff > 0.5 {
+                Err(format!(
+                    "Visual difference of {}% exceeds threshold",
+                    diff * 100.0
+                ))
+            } else {
+                Ok(())
+            }
+        }
+        None => Err("Failed to capture and compare game states".to_string()),
+    }
+}

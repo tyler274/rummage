@@ -5,8 +5,8 @@ use crate::snapshot::resources::{
     SnapshotConfig, SnapshotDebugState, SnapshotDisabled, SnapshotEvent,
 };
 use crate::snapshot::systems::{
-    check_snapshot_key_input, handle_snapshot_events, process_pending_snapshots, snapshot_enabled,
-    take_replay_snapshot, take_save_game_snapshot,
+    capture_replay_at_point, check_snapshot_key_input, handle_snapshot_events,
+    process_pending_snapshots, snapshot_enabled, take_replay_snapshot, take_save_game_snapshot,
 };
 
 // Note: We keep the ScheduleLabel for testing purposes, but don't use it in production code
@@ -53,6 +53,7 @@ impl Plugin for SnapshotPlugin {
                 (
                     take_save_game_snapshot.run_if(snapshot_enabled),
                     take_replay_snapshot.run_if(snapshot_enabled),
+                    capture_replay_at_point.run_if(snapshot_enabled),
                 ),
             );
             debug!("Added save/load integration systems to Update schedule");

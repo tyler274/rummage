@@ -294,61 +294,76 @@ Potential future enhancements:
 4. **Multiple Save Formats**: Support for JSON or other human-readable formats
 5. **Cloud Integration**: Syncing saves to cloud storage
 
-## Snapshot Integration
+## Integration with Snapshot System
 
-The save/load system has been integrated with the snapshot system to enable visual differential testing of game states. This integration consists of several components:
-
-### Save Game Snapshots
-
-When a game is saved, the system automatically takes a snapshot of the current game state:
-
-1. The `take_save_game_snapshot` system responds to `SaveGameEvent` events
-2. It captures the visual state using the game camera
-3. It attaches a `SaveGameSnapshot` component to the camera with metadata:
-   - Slot name
-   - Turn number
-   - Timestamp
-
-```rust
-pub fn take_save_game_snapshot(
-    mut commands: Commands,
-    mut snapshot_events: EventWriter<SnapshotEvent>,
-    mut save_events: EventReader<SaveGameEvent>,
-    game_state: Option<Res<GameState>>,
-    game_cameras: Query<Entity, With<GameCamera>>,
-) {
-    // Implementation details...
-}
-```
-
-### Replay Snapshots
-
-During replay, the system takes snapshots at each step:
-
-1. The `take_replay_snapshot` system responds to `StepReplayEvent` events
-2. For each step in the replay, it captures the visual state
-3. It creates timestamped and labeled snapshots to track the replay progression
-
-```rust
-pub fn take_replay_snapshot(
-    mut commands: Commands,
-    mut snapshot_events: EventWriter<SnapshotEvent>,
-    mut step_events: EventReader<StepReplayEvent>,
-    replay_state: Option<Res<ReplayState>>,
-    game_state: Option<Res<GameState>>,
-    game_cameras: Query<Entity, With<GameCamera>>,
-) {
-    // Implementation details...
-}
-```
+The save/load system is integrated with the snapshot system to enable visual differential testing of game states at different points in time or different steps in a replay.
 
 ### Visual Differential Testing
 
-This integration enables visual differential testing workflows:
+Visual differential testing allows capturing renderings of a game state at specific points in a saved game or replay. These images can be compared to detect visual differences, regressions, or unexpected changes in the game's rendering.
 
-1. **Reference Captures**: Save specific game states as visual references
-2. **Regression Testing**: Detect unintended visual changes in game rendering
-3. **State Comparison**: Compare different points in game history
-4. **Bug Reproduction**: Capture visual evidence of bugs for easier debugging
+#### Automatic Snapshots
 
-The integration is especially valuable for CI/CD pipelines, allowing automated visual testing of game mechanics and UI components. 
+The snapshot system automatically captures screenshots when:
+- A game is saved (via `take_save_game_snapshot` system)
+- During replay, when steps are taken (via `take_replay_snapshot` system)
+
+#### Manual Differential Testing
+
+For more controlled testing, you can:
+1. Start a replay of a save file
+2. Press F10 at any point to capture the current state (via `capture_replay_at_point` system)
+3. Continue stepping through the replay
+4. Press F10 again to capture another state for comparison
+
+#### Programmatic Differential Testing
+
+The `capture_differential_game_snapshot` and `compare_game_states` functions provide a programmatic way to perform visual differential testing:
+
+```rust
+// Compare turn 1 to turn 3 of a saved game
+let result = compare_game_states(
+    &mut world,
+    "my_save_game",
+    (Some(1), None),  // Turn 1
+    (Some(3), None),  // Turn 3
+);
+
+match result {
+    Some((reference_image, comparison_image, difference)) => {
+        // Compare the images or save them for later comparison
+        if difference > THRESHOLD {
+            println!("Visual difference detected: {}%", difference * 100.0);
+        }
+    },
+    None => println!("Failed to capture comparison"),
+}
+```
+
+### SaveGameSnapshot Component
+
+The integration uses the `SaveGameSnapshot` component to link snapshots to specific saved games:
+
+```rust
+pub struct SaveGameSnapshot {
+    /// The save slot name this snapshot is associated with
+    pub slot_name: String,
+
+    /// The turn number in the saved game
+    pub turn_number: u32,
+
+    /// Optional timestamp of when the snapshot was taken
+    pub timestamp: Option<i64>,
+
+    /// Optional description of the game state
+    pub description: Option<String>,
+}
+```
+
+### Test Systems
+
+The integration includes:
+
+- Integration tests that verify snapshot events are triggered during save/load operations
+- Functions to capture snapshots at specific points in a replay
+- Comparison functions to detect visual differences between game states 

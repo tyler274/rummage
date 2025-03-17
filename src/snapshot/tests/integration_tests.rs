@@ -1,9 +1,20 @@
-use crate::camera::components::GameCamera;
-use crate::snapshot::components::{CameraSnapshot, SnapshotSettings};
-use crate::snapshot::plugin::SnapshotPlugin;
-use crate::snapshot::resources::{SnapshotConfig, SnapshotDisabled, SnapshotEvent};
 use crate::snapshot::systems::{handle_snapshot_events, process_pending_snapshots};
 use bevy::prelude::*;
+use std::path::PathBuf;
+
+use crate::camera::components::GameCamera;
+use crate::game_engine::save::{
+    SaveConfig, SaveGameEvent, SaveLoadPlugin, StartReplayEvent, StepReplayEvent,
+};
+use crate::game_engine::state::GameState;
+use crate::player::Player;
+use crate::snapshot::plugin::SnapshotPlugin;
+use crate::snapshot::{
+    CameraSnapshot, SaveGameSnapshot, SnapshotConfig, SnapshotDisabled, SnapshotEvent,
+    SnapshotSettings,
+};
+
+use std::collections::VecDeque;
 
 #[test]
 fn test_exported_types() {
@@ -343,5 +354,244 @@ mod save_load_integration_tests {
                 panic!("Description should be set");
             }
         }
+    }
+}
+
+#[test]
+fn test_save_game_snapshot_integration() {
+    // Create a test app with both plugins
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, SaveLoadPlugin, SnapshotPlugin));
+
+    // Add required resources for the snapshot plugin
+    app.insert_resource(Time::<Real>::default());
+    app.insert_resource(ButtonInput::<KeyCode>::default());
+
+    // Configure save system with test directory
+    let save_dir = PathBuf::from("target/test_save_snapshot_integration");
+    app.insert_resource(SaveConfig {
+        save_directory: save_dir.clone(),
+        auto_save_enabled: false,
+        auto_save_frequency: 999, // Disable auto-save
+    });
+
+    // Configure snapshot system
+    app.insert_resource(
+        SnapshotConfig::new()
+            .with_output_dir("target/test_snapshots")
+            .with_debug_visualization(true),
+    );
+
+    // Create game camera with snapshot capability
+    let camera_entity = app
+        .world_mut()
+        .spawn((
+            Camera2d,
+            GameCamera,
+            CameraSnapshot::new(),
+            SnapshotSettings::new("test_snapshot.png"),
+        ))
+        .id();
+
+    // Verify the camera was created correctly
+    assert!(
+        app.world().entity(camera_entity).contains::<GameCamera>(),
+        "Camera should have GameCamera component"
+    );
+
+    // Create player entities
+    let player1 = app
+        .world_mut()
+        .spawn(Player {
+            name: "Test Player 1".to_string(),
+            life: 40,
+            mana_pool: crate::mana::ManaPool::default(),
+            player_index: 0,
+        })
+        .id();
+
+    let player2 = app
+        .world_mut()
+        .spawn(Player {
+            name: "Test Player 2".to_string(),
+            life: 35,
+            mana_pool: crate::mana::ManaPool::default(),
+            player_index: 1,
+        })
+        .id();
+
+    // Create game state
+    let mut turn_order = VecDeque::new();
+    turn_order.push_back(player1);
+    turn_order.push_back(player2);
+
+    let game_state = GameState {
+        turn_number: 3,
+        active_player: player1,
+        priority_holder: player1,
+        turn_order,
+        lands_played: vec![(player1, 2), (player2, 1)],
+        main_phase_action_taken: true,
+        drawn_this_turn: vec![player1, player2],
+        state_based_actions_performed: false,
+        eliminated_players: vec![],
+        use_commander_damage: true,
+        commander_damage_threshold: 21,
+        starting_life: 40,
+    };
+
+    app.insert_resource(game_state);
+
+    // Add tracker for snapshot events
+    #[derive(Resource, Default)]
+    struct SnapshotTracker {
+        events_received: usize,
+    }
+
+    app.insert_resource(SnapshotTracker::default());
+
+    // Add system to track snapshot events
+    app.add_systems(
+        Update,
+        |mut events: EventReader<SnapshotEvent>, mut tracker: ResMut<SnapshotTracker>| {
+            for event in events.read() {
+                println!("Snapshot event received: {:?}", event.filename);
+                tracker.events_received += 1;
+            }
+        },
+    );
+
+    // Run the app update once to initialize systems
+    app.update();
+
+    // Trigger a save with expected snapshot
+    app.world_mut().send_event(SaveGameEvent {
+        slot_name: "test_snapshot_save".to_string(),
+    });
+
+    // Run updates to process events
+    for _ in 0..5 {
+        app.update();
+    }
+
+    // Verify that at least one snapshot event was triggered
+    let tracker = app.world().resource::<SnapshotTracker>();
+    assert!(
+        tracker.events_received > 0,
+        "Expected at least one snapshot event to be triggered"
+    );
+
+    // Now test the replay functionality
+    app.world_mut().send_event(StartReplayEvent {
+        slot_name: "test_snapshot_save".to_string(),
+    });
+
+    // Run updates to process replay start
+    for _ in 0..3 {
+        app.update();
+    }
+
+    // Reset the tracker
+    app.insert_resource(SnapshotTracker::default());
+
+    // Step through the replay
+    app.world_mut().send_event(StepReplayEvent { steps: 2 });
+
+    // Run updates to process replay step
+    for _ in 0..3 {
+        app.update();
+    }
+
+    // Verify that at least one snapshot event was triggered during replay
+    let tracker = app.world().resource::<SnapshotTracker>();
+    assert!(
+        tracker.events_received > 0,
+        "Expected at least one snapshot event during replay steps"
+    );
+}
+
+#[test]
+fn test_visual_differential_testing() {
+    // Create a test app with both plugins
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, SaveLoadPlugin, SnapshotPlugin));
+
+    // Add required resources for the snapshot plugin
+    app.insert_resource(Time::<Real>::default());
+    app.insert_resource(ButtonInput::<KeyCode>::default());
+
+    // Configure save system with test directory
+    let save_dir = PathBuf::from("target/test_visual_diff");
+    app.insert_resource(SaveConfig {
+        save_directory: save_dir.clone(),
+        auto_save_enabled: false,
+        auto_save_frequency: 999, // Disable auto-save
+    });
+
+    // Configure snapshot system
+    app.insert_resource(
+        SnapshotConfig::new()
+            .with_output_dir("target/test_visual_diffs")
+            .with_debug_visualization(true),
+    );
+
+    // Create game camera with snapshot capability and SaveGameSnapshot component
+    let camera_entity = app
+        .world_mut()
+        .spawn((
+            Camera2d,
+            GameCamera,
+            CameraSnapshot::new(),
+            SnapshotSettings::new("visual_diff_test.png"),
+        ))
+        .id();
+
+    // Add the SaveGameSnapshot component separately
+    app.world_mut().entity_mut(camera_entity).insert(
+        SaveGameSnapshot::new("reference_save", 1).with_description("Reference game state"),
+    );
+
+    // Set up minimal game state
+    let player = app
+        .world_mut()
+        .spawn(Player {
+            name: "Test Player".to_string(),
+            life: 40,
+            mana_pool: crate::mana::ManaPool::default(),
+            player_index: 0,
+        })
+        .id();
+
+    let mut turn_order = VecDeque::new();
+    turn_order.push_back(player);
+
+    app.insert_resource(GameState {
+        turn_number: 1,
+        active_player: player,
+        priority_holder: player,
+        turn_order,
+        lands_played: vec![],
+        main_phase_action_taken: false,
+        drawn_this_turn: vec![],
+        state_based_actions_performed: false,
+        eliminated_players: vec![],
+        use_commander_damage: true,
+        commander_damage_threshold: 21,
+        starting_life: 40,
+    });
+
+    // Run updates to initialize
+    app.update();
+
+    // Take manual snapshot
+    app.world_mut().send_event(
+        SnapshotEvent::new()
+            .with_camera(camera_entity)
+            .with_filename("baseline_snapshot.png"),
+    );
+
+    // Run updates to process snapshot
+    for _ in 0..3 {
+        app.update();
     }
 }
