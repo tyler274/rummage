@@ -238,15 +238,13 @@ fn test_snapshot_plugin() {
     assert!(!disabled.0, "Snapshots should be enabled by default");
 }
 
-#[cfg(test)]
 mod save_load_integration_tests {
     use super::*;
     use crate::camera::components::GameCamera;
-    use crate::game_engine::save::{LoadGameEvent, SaveConfig, SaveGameEvent};
+    use crate::game_engine::save::{LoadGameEvent, SaveConfig, SaveGameEvent, StepReplayEvent};
     use crate::game_engine::state::GameState;
     use crate::snapshot::components::SaveGameSnapshot;
     use bevy::app::Update;
-    use bevy::prelude::*;
     use std::path::PathBuf;
 
     #[test]
@@ -258,12 +256,16 @@ mod save_load_integration_tests {
         app.add_plugins(MinimalPlugins)
             .add_plugins(crate::snapshot::plugin::SnapshotPlugin);
 
+        // Add required resources for the snapshot plugin
+        app.insert_resource(ButtonInput::<KeyCode>::default());
+
         // Add systems to test
         app.add_systems(Update, crate::snapshot::systems::take_save_game_snapshot);
 
         // Add events for save/load
         app.add_event::<SaveGameEvent>()
-            .add_event::<LoadGameEvent>();
+            .add_event::<LoadGameEvent>()
+            .add_event::<StepReplayEvent>();
 
         // Create a mock game state
         let game_state = GameState {
@@ -314,11 +316,11 @@ mod save_load_integration_tests {
         }
 
         // Check if a snapshot event was sent
-        let mut snapshot_events = app
-            .world_mut()
-            .resource_mut::<Events<crate::snapshot::resources::SnapshotEvent>>();
-        let reader = snapshot_events.get_reader();
-        let events: Vec<_> = reader.read(&snapshot_events).collect();
+        let snapshot_events = app
+            .world()
+            .resource::<Events<crate::snapshot::resources::SnapshotEvent>>();
+        let mut cursor = snapshot_events.get_cursor();
+        let events: Vec<_> = cursor.read(snapshot_events).collect();
 
         assert!(!events.is_empty(), "A snapshot event should have been sent");
 

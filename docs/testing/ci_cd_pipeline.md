@@ -49,75 +49,102 @@ The pipeline is implemented using GitHub Actions with the following key workflow
 Triggered on every PR to the main branch:
 
 ```yaml
-name: PR Validation
+name: All Tests
 
 on:
+  push:
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
 jobs:
-  validate:
+  build-and-test:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          components: rustfmt, clippy
-      
-      - name: Check formatting
-        run: cargo fmt -- --check
-      
-      - name: Run Clippy
-        run: cargo clippy -- -D warnings
-      
-      - name: Run unit tests
-        run: cargo test --lib --bins
+          components: clippy, rustfmt
+
+      - name: Build and test
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --all-targets --all-features -- -D warnings
+          cargo build --all-features
+          cargo test --all-features -- --nocapture
 ```
 
-### Main Branch Integration
+This workflow performs:
+- Code formatting check
+- Static analysis with Clippy
+- Full build with all features
+- Comprehensive test suite execution
 
-Triggered on merges to the main branch:
+### Visual Testing
+
+We have a dedicated workflow for visual regression testing:
 
 ```yaml
-name: Main Integration
+name: Visual Testing
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  visual-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Setup steps...
+      
+      - name: Run visual tests with Xvfb
+        run: |
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" \
+          cargo nextest run --package rummage --lib "tests::visual_testing::" -- \
+          --test-threads=1 \
+          --no-capture
+```
+
+This workflow:
+- Runs in a headless environment using Xvfb
+- Captures screenshots of game states
+- Compares against reference images
+- Uploads difference artifacts for visual inspection
+
+### Documentation Deployment
+
+Automatically builds and deploys documentation:
+
+```yaml
+name: Documentation Deployment
 
 on:
   push:
     branches: [ main ]
 
 jobs:
-  test:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      
-      - name: Run all tests
-        run: cargo test
-      
-      - name: Run benchmarks
-        run: cargo bench
-  
-  build:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      
-      - name: Build release
-        run: cargo build --release
-      
-      - name: Upload build artifacts
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build documentation
+        run: cargo doc --no-deps --document-private-items
+
+      - name: Deploy documentation
         uses: actions/upload-artifact@v3
         with:
-          name: rummage-build
-          path: target/release/rummage
+          name: rummage-docs
+          path: target/doc
 ```
 
 ## Local Development Integration

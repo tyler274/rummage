@@ -459,4 +459,64 @@ app.insert_resource(VisualTestConfig {
     similarity_threshold: 0.95,
     generate_references: false,
 });
-``` 
+```
+
+## Save/Load Integration for Visual Differential Testing
+
+The Rummage visual testing system integrates with the save/load/replay systems to enable visual differential testing of specific game states. This allows developers to:
+
+1. **Capture Game State Snapshots**: Automatically take screenshots when games are saved
+2. **Replay Visual Validation**: Capture visuals during replay for regression testing
+3. **Time-Travel Debugging**: Compare visuals at different points in game history
+
+### Using Save Game Snapshots
+
+Snapshots are automatically captured when a game is saved:
+
+```rust
+// Save a game, which triggers a snapshot
+world.send_event(SaveGameEvent {
+    slot_name: "test_save".to_string(),
+});
+```
+
+### Using Replay Snapshots
+
+Snapshots are taken at each step during replay:
+
+```rust
+// Step through a replay, capturing visuals at each step
+world.send_event(StepReplayEvent);
+```
+
+### Testing Game State Evolution
+
+You can use this system to test how the game state evolves visually:
+
+```rust
+#[test]
+fn test_visual_game_progression() {
+    // Setup game and save initial state
+    setup_game();
+    world.send_event(SaveGameEvent { slot_name: "initial".to_string() });
+    
+    // Make game progress
+    play_turn();
+    
+    // Save and capture the state after progression
+    world.send_event(SaveGameEvent { slot_name: "after_turn".to_string() });
+    
+    // Compare the visuals between states
+    assert_visual_difference("initial", "after_turn", 0.2);
+}
+```
+
+### Implementation
+
+The integration between save/load and visual systems is handled by:
+
+1. The `SaveGameSnapshot` component attached to cameras during save/load operations
+2. `take_save_game_snapshot` and `take_replay_snapshot` systems that respond to game events
+3. The visual testing framework that can compare snapshot images
+
+This integration enables automated visual regression testing against saved game states, providing a powerful tool for validating game behavior. 

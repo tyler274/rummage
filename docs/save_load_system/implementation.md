@@ -292,4 +292,63 @@ Potential future enhancements:
 2. **Save Compression**: Optional compression for large save files
 3. **Save Verification**: Checksums or other validation of save integrity
 4. **Multiple Save Formats**: Support for JSON or other human-readable formats
-5. **Cloud Integration**: Syncing saves to cloud storage 
+5. **Cloud Integration**: Syncing saves to cloud storage
+
+## Snapshot Integration
+
+The save/load system has been integrated with the snapshot system to enable visual differential testing of game states. This integration consists of several components:
+
+### Save Game Snapshots
+
+When a game is saved, the system automatically takes a snapshot of the current game state:
+
+1. The `take_save_game_snapshot` system responds to `SaveGameEvent` events
+2. It captures the visual state using the game camera
+3. It attaches a `SaveGameSnapshot` component to the camera with metadata:
+   - Slot name
+   - Turn number
+   - Timestamp
+
+```rust
+pub fn take_save_game_snapshot(
+    mut commands: Commands,
+    mut snapshot_events: EventWriter<SnapshotEvent>,
+    mut save_events: EventReader<SaveGameEvent>,
+    game_state: Option<Res<GameState>>,
+    game_cameras: Query<Entity, With<GameCamera>>,
+) {
+    // Implementation details...
+}
+```
+
+### Replay Snapshots
+
+During replay, the system takes snapshots at each step:
+
+1. The `take_replay_snapshot` system responds to `StepReplayEvent` events
+2. For each step in the replay, it captures the visual state
+3. It creates timestamped and labeled snapshots to track the replay progression
+
+```rust
+pub fn take_replay_snapshot(
+    mut commands: Commands,
+    mut snapshot_events: EventWriter<SnapshotEvent>,
+    mut step_events: EventReader<StepReplayEvent>,
+    replay_state: Option<Res<ReplayState>>,
+    game_state: Option<Res<GameState>>,
+    game_cameras: Query<Entity, With<GameCamera>>,
+) {
+    // Implementation details...
+}
+```
+
+### Visual Differential Testing
+
+This integration enables visual differential testing workflows:
+
+1. **Reference Captures**: Save specific game states as visual references
+2. **Regression Testing**: Detect unintended visual changes in game rendering
+3. **State Comparison**: Compare different points in game history
+4. **Bug Reproduction**: Capture visual evidence of bugs for easier debugging
+
+The integration is especially valuable for CI/CD pipelines, allowing automated visual testing of game mechanics and UI components. 
