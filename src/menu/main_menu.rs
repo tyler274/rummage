@@ -5,6 +5,7 @@ use crate::menu::{
         create_decorative_elements, create_english_text, create_hebrew_text, create_logo,
         create_star_of_david,
     },
+    plugin::PreviousWindowSize,
     state::GameMenuState,
     styles::*,
 };
@@ -21,10 +22,6 @@ pub struct MenuBackground;
 /// Component to mark the main menu music entity
 #[derive(Component)]
 pub struct MainMenuMusic;
-
-/// Component to wrap an image handle for sprites
-#[derive(Component)]
-pub struct SpriteTexture(#[allow(dead_code)] pub Handle<Image>);
 
 /// Sets up the main menu interface with buttons and layout
 pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -74,6 +71,10 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
             MenuItem,
             AppLayer::Menu.layer(),
             Name::new("Menu Background Image"),
+            PreviousWindowSize {
+                width: 1920.0,
+                height: 1080.0,
+            },
         ))
         .id();
 

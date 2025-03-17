@@ -1,3 +1,4 @@
+use bevy::utils::HashMap;
 use bevy::{ecs::system::ParamSet, prelude::*};
 
 use crate::{
@@ -19,6 +20,13 @@ use crate::{
         state::{GameMenuState, StateTransitionContext},
     },
 };
+
+/// Tracks the previous window size to detect changes
+#[derive(Component)]
+pub struct PreviousWindowSize {
+    pub width: f32,
+    pub height: f32,
+}
 
 /// Resource to control logging frequency for menu visibility
 #[derive(Resource)]
@@ -504,21 +512,53 @@ fn handle_game_cleanup(_commands: Commands, _cards: Query<Entity, With<Card>>) {
 /// System to update the menu background image size based on window dimensions
 fn update_menu_background(
     windows: Query<&Window>,
-    mut backgrounds: Query<&mut Node, With<MenuBackground>>,
+    mut backgrounds: Query<(&mut Node, &mut PreviousWindowSize), With<MenuBackground>>,
+    mut missing_size_backgrounds: Query<
+        (Entity, &mut Node),
+        (With<MenuBackground>, Without<PreviousWindowSize>),
+    >,
+    mut commands: Commands,
 ) {
     // Get the primary window
     if let Ok(window) = windows.get_single() {
-        // Get all background image nodes and update their size
-        for mut node in &mut backgrounds {
-            // Set the UI node size to match the window size exactly
-            node.width = Val::Px(window.width());
-            node.height = Val::Px(window.height());
+        let current_width = window.width();
+        let current_height = window.height();
 
-            // Log window size changes at debug level to avoid log spam
+        // Get all background image nodes and update their size
+        for (mut node, mut prev_size) in &mut backgrounds {
+            // Check if window size has changed
+            if prev_size.width != current_width || prev_size.height != current_height {
+                // Update the UI node size to match the window size exactly
+                node.width = Val::Px(current_width);
+                node.height = Val::Px(current_height);
+
+                // Update the previous size
+                prev_size.width = current_width;
+                prev_size.height = current_height;
+
+                // Log window size changes at debug level
+                debug!(
+                    "Window size changed: {}x{}, updating menu background size",
+                    current_width, current_height
+                );
+            }
+        }
+
+        // Add PreviousWindowSize component to any background nodes that don't have it
+        for (entity, mut node) in missing_size_backgrounds.iter_mut() {
+            // Update the node size
+            node.width = Val::Px(current_width);
+            node.height = Val::Px(current_height);
+
+            // Add the PreviousWindowSize component
+            commands.entity(entity).insert(PreviousWindowSize {
+                width: current_width,
+                height: current_height,
+            });
+
             debug!(
-                "Window size: {}x{}, updating menu background size",
-                window.width(),
-                window.height()
+                "Added PreviousWindowSize component to menu background. Window size: {}x{}",
+                current_width, current_height
             );
         }
     }
