@@ -16,7 +16,7 @@ pub fn create_logo() -> impl Bundle {
         },
         BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.0)),
         Interaction::None,
-        GlobalZIndex(2),
+        GlobalZIndex(8),
     )
 }
 

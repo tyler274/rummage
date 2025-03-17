@@ -114,17 +114,23 @@ pub fn render_star_of_david(
 ) {
     // Only process entities that don't have children yet
     for entity in &query {
-        // Create the material once - gold color
-        let material = materials.add(Color::srgb(1.0, 0.84, 0.0));
+        // Create the material once - brighter gold color with higher saturation
+        let material = materials.add(Color::srgb(1.0, 0.9, 0.2));
 
-        // Create a triangle mesh
-        let triangle_mesh = meshes.add(create_equilateral_triangle_mesh(150.0 * 2.0));
+        // Log the star creation
+        info!(
+            "Rendering Star of David for entity {:?} at z-position 10.0",
+            entity
+        );
+
+        // Create a triangle mesh - increased size for better visibility
+        let triangle_mesh = meshes.add(create_equilateral_triangle_mesh(200.0 * 2.0));
 
         // Z-coordinate ensures it's visible above the background but behind the text
-        let z_position = 5.0;
+        let z_position = 10.0; // Increased further for better visibility
 
         // Triangle offset to create the star shape
-        let triangle_offset = 40.0;
+        let triangle_offset = 50.0; // Slightly increased offset
 
         // Spawn the child entities for the two triangles
         commands.entity(entity).with_children(|parent| {
@@ -184,8 +190,8 @@ fn create_equilateral_triangle_mesh(size: f32) -> Mesh {
 
 /// Create a Star of David bundle for spawning
 pub fn create_star_of_david() -> impl Bundle {
-    // Use debug level to reduce log spam
-    debug!("Creating StarOfDavid bundle");
+    // Use info level for better visibility in logs
+    info!("Creating StarOfDavid bundle with GlobalZIndex(10)");
     (
         // Use a UI-oriented position that works with the menu camera
         // Z-index places it behind UI elements but still visible
@@ -197,6 +203,6 @@ pub fn create_star_of_david() -> impl Bundle {
         StarOfDavid,
         AppLayer::Menu.layer(), // Only visible on menu layer
         // Add a GlobalZIndex to ensure proper z-ordering with other UI elements
-        GlobalZIndex(5), // Increased from 1 to 5 to ensure visibility above background
+        GlobalZIndex(10), // Increased from 5 to 10 to ensure visibility above all other elements
     )
 }
