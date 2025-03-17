@@ -1,11 +1,10 @@
 use bevy::prelude::*;
 use bevy_persistent::prelude::*;
-use std::collections::VecDeque;
 use std::path::Path;
 
 use crate::game_engine::save::SaveLoadPlugin;
 use crate::game_engine::save::events::LoadGameEvent;
-use crate::game_engine::save::{GameSaveData, GameStateData, PlayerData, SaveConfig, SaveMetadata};
+use crate::game_engine::save::{GameSaveData, GameStateData, PlayerData, SaveConfig};
 use crate::game_engine::state::GameState;
 
 use super::utils::*;
@@ -16,11 +15,21 @@ fn test_load_game_empty_turn_order() {
     let mut app = App::new();
     app.add_plugins(SaveLoadPlugin);
 
+    // Run once to initialize resources
+    app.update();
+
     // Set up test environment with players and game state
     let _player_entities = setup_test_environment(&mut app);
 
     // Create a save file with empty turn order
     let test_dir = Path::new("target/test_saves");
+
+    // Update the save directory in the config
+    {
+        let mut config = app.world_mut().resource_mut::<SaveConfig>();
+        config.save_directory = test_dir.to_path_buf();
+    }
+
     let slot_name = "empty_turn_order";
     let save_path = test_dir.join(format!("{}.bin", slot_name));
 

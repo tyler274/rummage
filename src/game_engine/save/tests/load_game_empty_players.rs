@@ -95,7 +95,7 @@ fn test_load_game_empty_players() {
     // should not generate any new players
     let player_count = {
         let mut world = app.world_mut();
-        let player_query = world.query::<&Player>();
+        let mut player_query = world.query::<&Player>();
         player_query.iter(&world).count()
     };
     assert_eq!(

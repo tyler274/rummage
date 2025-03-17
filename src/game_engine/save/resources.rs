@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use crate::game_engine::save::data::{GameSaveData, SaveInfo};
 
 /// Configuration for the save system
-#[derive(Resource)]
+#[derive(Resource, Clone, Debug)]
 pub struct SaveConfig {
     pub save_directory: PathBuf,
     pub auto_save_enabled: bool,

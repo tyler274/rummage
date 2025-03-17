@@ -23,12 +23,8 @@ pub fn setup_save_system(mut commands: Commands) {
         error!("Failed to create save directory: {}", e);
     });
 
-    commands.insert_resource(config);
-    commands.insert_resource(AutoSaveTracker::default());
-    commands.insert_resource(ReplayState::default());
-
     // Determine the appropriate base path for persistence based on platform
-    let metadata_path = get_storage_path("metadata.bin");
+    let metadata_path = get_storage_path(&config, "metadata.bin");
 
     // Initialize persistent save metadata
     let save_metadata = Persistent::builder()
@@ -39,11 +35,14 @@ pub fn setup_save_system(mut commands: Commands) {
         .build()
         .expect("Failed to create persistent save metadata");
 
+    commands.insert_resource(config.clone());
+    commands.insert_resource(AutoSaveTracker::default());
+    commands.insert_resource(ReplayState::default());
     commands.insert_resource(save_metadata);
 }
 
 /// Helper function to get the appropriate storage path based on platform
-fn get_storage_path(filename: &str) -> PathBuf {
+fn get_storage_path(config: &SaveConfig, filename: &str) -> PathBuf {
     #[cfg(target_arch = "wasm32")]
     {
         // For WebAssembly, use local storage with a prefix
@@ -52,8 +51,8 @@ fn get_storage_path(filename: &str) -> PathBuf {
 
     #[cfg(not(target_arch = "wasm32"))]
     {
-        // For native platforms, use the filesystem
-        Path::new("saves").join(filename)
+        // For native platforms, use the filesystem from config
+        config.save_directory.join(filename)
     }
 }
 
@@ -103,7 +102,7 @@ pub fn handle_save_game(
                 GameSaveData::from_commander_manager(commander_manager, &entity_to_index);
         }
 
-        let save_path = get_storage_path(&format!("{}.bin", event.slot_name));
+        let save_path = get_storage_path(&_config, &format!("{}.bin", event.slot_name));
 
         // Insert as a resource first, then create persistent
         commands.insert_resource(save_data.clone());
@@ -176,7 +175,7 @@ pub fn handle_load_game(
     for event in event_reader.read() {
         info!("Loading game from slot: {}", event.slot_name);
 
-        let save_path = get_storage_path(&format!("{}.bin", event.slot_name));
+        let save_path = get_storage_path(&_config, &format!("{}.bin", event.slot_name));
 
         // Create a persistent resource to load the save
         let persistent_save = Persistent::<GameSaveData>::builder()
@@ -310,7 +309,7 @@ pub fn handle_start_replay(
     for event in event_reader.read() {
         info!("Starting replay from save slot: {}", event.slot_name);
 
-        let save_path = get_storage_path(&format!("{}.bin", event.slot_name));
+        let save_path = get_storage_path(&_config, &format!("{}.bin", event.slot_name));
 
         // Create a persistent resource to load the save
         let persistent_save = Persistent::<GameSaveData>::builder()

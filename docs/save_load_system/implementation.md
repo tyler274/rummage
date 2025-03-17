@@ -107,14 +107,18 @@ pub struct CommanderData {
 The save/load system uses `bevy_persistent` for robust persistence. This implementation provides:
 
 1. **Format Selection**: Currently uses `Bincode` for efficient binary serialization.
-2. **Path Selection**: Appropriate paths based on platform (native or web).
+2. **Path Selection**: Appropriate paths based on platform (native or web) and user configuration.
 3. **Error Handling**: Robust handling of failures during save/load operations.
 4. **Resource Management**: Automatic resource persistence and loading.
 
 Example integration from the `setup_save_system` function:
 
 ```rust
-let metadata_path = get_storage_path("metadata.bin");
+// Create save directory if it doesn't exist
+let config = SaveConfig::default();
+
+// Determine the appropriate base path for persistence based on platform
+let metadata_path = get_storage_path(&config, "metadata.bin");
 
 // Initialize persistent save metadata
 let save_metadata = Persistent::builder()
@@ -125,8 +129,27 @@ let save_metadata = Persistent::builder()
     .build()
     .expect("Failed to create persistent save metadata");
 
+commands.insert_resource(config.clone());
 commands.insert_resource(save_metadata);
 ```
+
+## Configuration
+
+The save system is configured through the `SaveConfig` resource:
+
+```rust
+#[derive(Resource, Clone, Debug)]
+pub struct SaveConfig {
+    pub save_directory: PathBuf,
+    pub auto_save_enabled: bool,
+    pub auto_save_frequency: usize,
+}
+```
+
+This resource allows customizing:
+- The directory where save files are stored
+- Whether auto-saving is enabled
+- How frequently auto-saves occur
 
 ## Entity Mapping
 
