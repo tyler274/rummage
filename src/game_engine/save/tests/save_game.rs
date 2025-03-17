@@ -1,0 +1,98 @@
+use bevy::prelude::*;
+use bevy_persistent::prelude::*;
+use std::path::Path;
+
+use crate::game_engine::save::SaveLoadPlugin;
+use crate::game_engine::save::events::SaveGameEvent;
+use crate::game_engine::state::GameState;
+
+use super::utils::*;
+
+#[test]
+fn test_save_game() {
+    // Set up app with the actual SaveLoadPlugin instead of the test plugin
+    let mut app = App::new();
+    app.add_plugins(SaveLoadPlugin);
+
+    // Set up test environment with real players and game state
+    let player_entities = setup_test_environment(&mut app);
+
+    // Get the save directory from config
+    let config = app
+        .world()
+        .resource::<crate::game_engine::save::SaveConfig>();
+    let save_dir = config.save_directory.clone();
+
+    // Set up a specific save slot name
+    let slot_name = "test_save";
+    let save_path = save_dir.join(format!("{}.bin", slot_name));
+
+    // Remove any existing save file to ensure clean test
+    if save_path.exists() {
+        std::fs::remove_file(&save_path).unwrap();
+    }
+
+    // Trigger save game event
+    app.world().send_event(SaveGameEvent {
+        slot_name: slot_name.to_string(),
+    });
+
+    // Run systems to process the event
+    app.update();
+
+    // Verify the save file was created
+    assert!(
+        save_path.exists(),
+        "Save file was not created at: {:?}",
+        save_path
+    );
+
+    // Read the file to verify it's not empty
+    let save_data = match std::fs::read(&save_path) {
+        Ok(data) => data,
+        Err(e) => {
+            panic!("Failed to read save file: {}", e);
+        }
+    };
+
+    assert!(!save_data.is_empty(), "Save file is empty");
+
+    // Create a persistent resource to load and verify the data
+    let persistent_save = Persistent::<crate::game_engine::save::GameSaveData>::builder()
+        .name("test_load_verification")
+        .format(StorageFormat::Bincode)
+        .path(save_path)
+        .default(crate::game_engine::save::GameSaveData::default())
+        .build()
+        .expect("Failed to create persistent resource for verification");
+
+    // Get the loaded data
+    let save_game_data = persistent_save.clone();
+
+    // Verify game state was saved correctly
+    assert_eq!(
+        save_game_data.game_state.turn_number, 3,
+        "Turn number was not saved correctly"
+    );
+
+    // Verify players were saved
+    assert!(!save_game_data.players.is_empty(), "No players were saved");
+    assert_eq!(
+        save_game_data.players.len(),
+        2,
+        "Expected 2 players to be saved"
+    );
+
+    // Verify metadata was updated
+    let metadata = app
+        .world()
+        .resource::<crate::game_engine::save::SaveMetadata>();
+    assert!(
+        metadata.saves.iter().any(|s| s.slot_name == slot_name),
+        "Save metadata entry not found for slot: {}",
+        slot_name
+    );
+
+    // Clean up
+    cleanup_test_environment();
+}

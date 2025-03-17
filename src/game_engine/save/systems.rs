@@ -62,8 +62,8 @@ pub fn handle_save_game(
     mut event_reader: EventReader<SaveGameEvent>,
     game_state: Res<GameState>,
     query_players: Query<(Entity, &Player)>,
-    _zones: Option<Res<ZoneManager>>,
-    _commanders: Option<Res<CommandZoneManager>>,
+    zones: Option<Res<ZoneManager>>,
+    commanders: Option<Res<CommandZoneManager>>,
     mut save_metadata: ResMut<Persistent<SaveMetadata>>,
     _config: Res<SaveConfig>,
     mut commands: Commands,
@@ -89,7 +89,20 @@ pub fn handle_save_game(
         }
 
         // Create game save data using helper method
-        let save_data = GameSaveData::from_game_state(&game_state, &entity_to_index, player_data);
+        let mut save_data =
+            GameSaveData::from_game_state(&game_state, &entity_to_index, player_data);
+
+        // Add zone data if ZoneManager is available
+        if let Some(zone_manager) = zones.as_ref() {
+            save_data.zones = GameSaveData::from_zone_manager(zone_manager, &entity_to_index);
+        }
+
+        // Add commander data if CommandZoneManager is available
+        if let Some(commander_manager) = commanders.as_ref() {
+            save_data.commanders =
+                GameSaveData::from_commander_manager(commander_manager, &entity_to_index);
+        }
+
         let save_path = get_storage_path(&format!("{}.bin", event.slot_name));
 
         // Insert as a resource first, then create persistent
@@ -238,14 +251,16 @@ pub fn handle_load_game(
                     }
                 }
 
-                // TODO: Restore zone contents
-                if let Some(_zones) = &mut zones {
-                    // Implement zone restoration based on your ZoneManager
+                // Restore zone contents
+                if let Some(zone_manager) = &mut zones {
+                    // Use the GameSaveData method to restore ZoneManager
+                    **zone_manager = save_data.to_zone_manager(&index_to_entity);
                 }
 
-                // TODO: Restore commander zone contents
-                if let Some(_commanders) = &mut commanders {
-                    // Implement commander zone restoration based on your CommandZoneManager
+                // Restore commander zone contents
+                if let Some(commander_manager) = &mut commanders {
+                    // Use the GameSaveData method to restore CommandZoneManager
+                    **commander_manager = save_data.to_commander_manager(&index_to_entity);
                 }
 
                 info!("Game loaded successfully from slot {}", event.slot_name);

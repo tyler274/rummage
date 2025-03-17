@@ -10,6 +10,21 @@ use crate::game_engine::save::{
 use crate::game_engine::state::GameState;
 use crate::player::Player;
 
+mod auto_save;
+mod complex_game_state_serialization;
+mod load_game;
+mod load_game_corrupted_mapping;
+mod load_game_empty_players;
+mod load_game_empty_turn_order;
+mod partial_corruption;
+mod save_game;
+mod save_load_with_zones;
+mod utils;
+
+// Re-export test utilities
+pub use utils::*;
+
+// Keep the original basic tests for plugin registration
 #[test]
 fn test_save_load_plugin_registers_systems() {
     // Create a test app with the SaveLoadPlugin
@@ -22,6 +37,7 @@ fn test_save_load_plugin_registers_systems() {
     assert!(app.is_event_added::<CheckStateBasedActionsEvent>());
 }
 
+// Basic test for auto-save triggers
 #[test]
 fn test_auto_save_triggers() {
     // Create a test app with the SaveLoadPlugin

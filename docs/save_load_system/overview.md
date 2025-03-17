@@ -17,9 +17,10 @@ world.send_event(SaveGameEvent {
 
 The save system will:
 1. Collect all necessary game state information
-2. Serialize it to binary format using `bincode`
-3. Write it to the designated save file
-4. Update metadata with information about the save
+2. Serialize game zones, cards, and commanders
+3. Use `bevy_persistent` to persist the game state
+4. Write it to the designated save file
+5. Update metadata with information about the save
 
 ### Loading a Game
 
@@ -33,10 +34,11 @@ world.send_event(LoadGameEvent {
 ```
 
 The load system will:
-1. Read the save file
+1. Use `bevy_persistent` to load the saved game state
 2. Deserialize the game state data
 3. Recreate all necessary entities and resources
-4. Restore the game to the saved state
+4. Restore the game state, zone contents, and commander data
+5. Restore all entity relationships and card positions
 
 ### Automatic Saving
 
@@ -50,6 +52,16 @@ commands.insert_resource(SaveConfig {
     auto_save_frequency: 10, // Save every 10 state-based action checks
 });
 ```
+
+## Saved Data
+
+The save system captures and restores the following data:
+
+1. **Game State**: Turn number, active player, priority holder, turn order, etc.
+2. **Player Data**: Life totals, mana pools, and other player-specific information
+3. **Zone Data**: Contents of all game zones (libraries, hands, battlefield, graveyard, etc.)
+4. **Card Positions**: Where each card is located in the game state
+5. **Commander Information**: Commander assignments, cast counts, and zone locations
 
 ## Replay Functionality
 
@@ -76,7 +88,7 @@ During replay, the system:
 
 ## Save Metadata
 
-The system maintains metadata about all saves in the `SaveMetadata` resource:
+The system maintains metadata about all saves in the `SaveMetadata` resource using `bevy_persistent`:
 
 ```rust
 // Access save metadata
@@ -106,6 +118,10 @@ let config = SaveConfig {
     auto_save_frequency: 20,
 };
 ```
+
+## Entity Serialization
+
+The save/load system handles entity references by converting them to indices during serialization and rebuilding entities during deserialization. This preserves all relationships between entities despite the fact that entity IDs will change between sessions.
 
 ## Next Steps
 
