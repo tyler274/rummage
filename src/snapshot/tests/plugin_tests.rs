@@ -1,3 +1,6 @@
+use crate::game_engine::save::SaveGameEvent;
+use crate::game_engine::save::StepReplayEvent;
+use crate::snapshot::plugin::SnapshotPlugin;
 use crate::snapshot::systems::snapshot_enabled;
 use crate::snapshot::{SnapshotConfig, SnapshotDisabled, SnapshotEvent};
 use bevy::prelude::*;
@@ -8,11 +11,23 @@ fn test_snapshot_plugin() {
     // Create a test app with a minimal plugin set to avoid button input errors
     let mut app = App::new();
 
-    // Create a simplified version of the plugin's setup
-    // instead of app.add_plugins(SnapshotPlugin) that would require input modules
-    app.init_resource::<SnapshotConfig>()
-        .insert_resource(SnapshotDisabled::enabled())
-        .add_event::<SnapshotEvent>();
+    // Add necessary events and resources for the snapshot systems
+    app.add_event::<StepReplayEvent>();
+    app.add_event::<SaveGameEvent>();
+    app.init_resource::<ButtonInput<KeyCode>>();
+    app.init_resource::<Time>();
+
+    // Add the SnapshotPlugin with custom configuration
+    let plugin = SnapshotPlugin::new()
+        .with_snapshots_enabled(true)
+        .with_config(
+            SnapshotConfig::new()
+                .with_output_dir("test_output")
+                .with_debug_visualization(true),
+        );
+
+    // Add the plugin directly
+    app.add_plugins(plugin);
 
     // Check that the expected resources exist
     assert!(app.world().contains_resource::<SnapshotConfig>());
@@ -38,5 +53,26 @@ fn test_snapshot_plugin() {
     assert!(
         !*result.lock().unwrap(),
         "Snapshots should be disabled after setting SnapshotDisabled::disabled()"
+    );
+
+    // Test creating a plugin with snapshots initially disabled
+    let mut app2 = App::new();
+
+    // Add necessary events and resources for the snapshot systems
+    app2.add_event::<StepReplayEvent>();
+    app2.add_event::<SaveGameEvent>();
+    app2.init_resource::<ButtonInput<KeyCode>>();
+    app2.init_resource::<Time>();
+
+    let disabled_plugin = SnapshotPlugin::new().with_snapshots_enabled(false);
+
+    // Add the plugin directly
+    app2.add_plugins(disabled_plugin);
+
+    // Verify snapshots are disabled
+    let disabled = app2.world().resource::<SnapshotDisabled>();
+    assert!(
+        disabled.is_disabled(),
+        "Snapshots should be initially disabled"
     );
 }

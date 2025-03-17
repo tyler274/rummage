@@ -337,7 +337,13 @@ fn test_save_game_system() {
     // Create a test-specific directory to avoid conflicts
     let test_dir = PathBuf::from("target/test_save_game_system");
 
-    // Ensure test directory exists
+    // Ensure test directory exists and is clean
+    if test_dir.exists() {
+        std::fs::remove_dir_all(&test_dir).unwrap_or_else(|e| {
+            warn!("Failed to clean up test directory: {}", e);
+        });
+    }
+
     info!("Creating test directory at: {:?}", test_dir);
     std::fs::create_dir_all(&test_dir).unwrap_or_else(|e| {
         panic!("Failed to create test directory: {}", e);
