@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 use bevy_persistent::prelude::*;
-use std::path::Path;
+use std::path::PathBuf;
 
 use crate::game_engine::save::events::LoadGameEvent;
+use crate::game_engine::save::systems::get_storage_path;
 use crate::game_engine::save::{GameSaveData, GameStateData, SaveConfig, SaveLoadPlugin};
 use crate::game_engine::state::GameState;
 use crate::player::Player;
@@ -18,27 +19,46 @@ fn test_load_game_empty_players() {
     // Run once to initialize resources
     app.update();
 
-    // Set up basic resources
-    let test_dir = Path::new("target/test_saves");
+    // Set up basic resources - use unique directory for this test to avoid conflicts
+    let unique_id = std::process::id();
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+
+    let test_dir_name = format!("target/test_empty_players_{}_{}", unique_id, timestamp);
+    let test_dir = PathBuf::from(test_dir_name);
 
     // Ensure test directory exists and is clean
     if test_dir.exists() {
-        std::fs::remove_dir_all(test_dir).unwrap_or_else(|e| {
+        std::fs::remove_dir_all(&test_dir).unwrap_or_else(|e| {
             warn!("Failed to clean up test directory: {}", e);
         });
     }
 
-    std::fs::create_dir_all(test_dir).unwrap_or_else(|e| {
+    // Create test directory and any necessary parent directories
+    std::fs::create_dir_all(&test_dir).unwrap_or_else(|e| {
         panic!("Failed to create test directory: {}", e);
     });
 
     // Verify directory exists
     assert!(test_dir.exists(), "Test directory was not created properly");
 
-    // Update the save directory in the config
+    // Create and update the save directory in the config first
     {
         let mut config = app.world_mut().resource_mut::<SaveConfig>();
-        config.save_directory = test_dir.to_path_buf();
+        config.save_directory = test_dir.clone();
+
+        // Make sure the metadata storage path also exists
+        let metadata_path = get_storage_path(&config, "metadata.toml");
+        if let Some(parent) = metadata_path.parent() {
+            std::fs::create_dir_all(parent).unwrap_or_else(|e| {
+                panic!("Failed to create metadata directory: {}", e);
+            });
+        }
+
+        info!("Test saves will be stored at: {:?}", config.save_directory);
+        info!("Metadata will be stored at: {:?}", metadata_path);
     }
 
     // Create a save file with empty player list
@@ -100,6 +120,9 @@ fn test_load_game_empty_players() {
 
     app.insert_resource(game_state);
 
+    // Now make sure we have all necessary resources initialized
+    app.update();
+
     // Trigger load game event
     app.world_mut().send_event(LoadGameEvent {
         slot_name: slot_name.to_string(),
@@ -129,6 +152,12 @@ fn test_load_game_empty_players() {
         "There should be no players after loading an empty player save"
     );
 
-    // Clean up
+    // Clean up this specific test directory
+    if test_dir.exists() {
+        let _ = std::fs::remove_dir_all(&test_dir);
+        info!("Cleaned up test directory: {:?}", test_dir);
+    }
+
+    // Also clean up the default test directory for compatibility
     cleanup_test_environment_compat();
 }
