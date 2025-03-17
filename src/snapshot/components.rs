@@ -81,9 +81,11 @@ impl SnapshotSettings {
 #[derive(Component, Debug, Clone)]
 pub struct SaveGameSnapshot {
     /// The save slot name this snapshot is associated with
+    #[allow(dead_code)]
     pub slot_name: String,
 
     /// The turn number in the saved game
+    #[allow(dead_code)]
     pub turn_number: u32,
 
     /// Optional timestamp of when the snapshot was taken

@@ -11,7 +11,7 @@ use crate::menu::{
 use bevy::audio::{AudioPlayer, PlaybackMode, PlaybackSettings, Volume};
 use bevy::prelude::*;
 use bevy::text::JustifyText;
-use bevy::ui::{AlignItems, FlexDirection, JustifyContent, PositionType, UiRect, Val, ZIndex};
+use bevy::ui::{AlignItems, FlexDirection, JustifyContent, PositionType, UiRect, Val};
 
 /// Component to mark background image for easier access
 #[derive(Component)]
@@ -21,6 +21,10 @@ pub struct MenuBackground;
 /// Component to mark the main menu music entity
 #[derive(Component)]
 pub struct MainMenuMusic;
+
+/// Component to wrap an image handle for sprites
+#[derive(Component)]
+pub struct SpriteTexture(#[allow(dead_code)] pub Handle<Image>);
 
 /// Sets up the main menu interface with buttons and layout
 pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -54,39 +58,23 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     let background_image: Handle<Image> = asset_server.load("images/menu_background.jpeg");
     info!("Loading menu background image: images/menu_background.jpeg");
 
-    // Create the background as a UI image node instead of a sprite
-    commands.spawn((
-        // Use an Image component (from prelude, not ui)
-        UiImage::from_handle(background_image),
-        // UI node properties with 100% width and height to cover the entire window
-        Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            // Absolute positioning to ensure it covers the entire window
-            position_type: PositionType::Absolute,
-            // Use "cover" style background sizing
-            justify_content: JustifyContent::Center,
-            align_items: AlignItems::Center,
-            overflow: bevy::ui::Overflow::Hidden,
+    // Create a background using a sprite in world space
+    let background_entity = commands
+        .spawn_empty()
+        // Add each component individually
+        .insert(Sprite {
+            custom_size: Some(Vec2::new(1920.0, 1080.0)),
             ..default()
-        },
-        // Style that maintains aspect ratio but ensures coverage
-        ImageScaling::Cover,
-        // Add z-index to ensure it stays behind other UI elements
-        ZIndex::Local(-10),
-        // Marker component for dynamic resizing system
-        MenuBackground,
-        // Add MenuItem component for proper cleanup
-        MenuItem,
-        // Ensure visibility
-        Visibility::Visible,
-        InheritedVisibility::default(),
-        ViewVisibility::default(),
-        // Explicitly add AppLayer::Menu layer
-        AppLayer::Menu.layer(),
-        // Name for debugging
-        Name::new("Menu Background Image"),
-    ));
+        })
+        .insert(SpriteTexture(background_image)) // Wrap the image handle in a proper component
+        .insert(Transform::from_xyz(0.0, 0.0, -10.0))
+        .insert(MenuBackground)
+        .insert(MenuItem)
+        .insert(AppLayer::Menu.layer())
+        .insert(Name::new("Menu Background Image"))
+        .id();
+
+    info!("Spawned menu background: {:?}", background_entity);
 
     // Spawn Star of David in world space with proper z-index
     commands.spawn(create_star_of_david());

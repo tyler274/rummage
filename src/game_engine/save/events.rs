@@ -6,8 +6,10 @@ pub struct SaveGameEvent {
     /// Name of the save slot
     pub slot_name: String,
     /// Optional description
+    #[allow(dead_code)]
     pub description: Option<String>,
     /// If set to true, an associated snapshot will be created
+    #[allow(dead_code)]
     pub with_snapshot: bool,
 }
 

@@ -1,0 +1,11 @@
+---
+description: 
+globs: src/cards/mtgjson/**
+alwaysApply: false
+---
+The MTGJSON API importer for cards should include a build macro that actually imports and
+generates card definition rust module files for every card from every set into the src/cards/sets directory.
+
+
+The build macro should update the sets and card definitions if there are are any changes
+or new card/sets. The build macro should also use the cache we implemented to respect API rate limits. 

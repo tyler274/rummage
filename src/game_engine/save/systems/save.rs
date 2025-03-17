@@ -26,6 +26,7 @@ pub fn collect_save_events(
 }
 
 /// System that processes save game events
+#[allow(dead_code)]
 pub fn process_save_game(
     game_state: Option<Res<GameState>>,
     query_players: Query<(Entity, &Player)>,
@@ -70,14 +71,15 @@ pub fn process_save_game(
 }
 
 /// Process a single save game event
+#[allow(dead_code)]
 fn process_single_save(
     event: &SaveGameEvent,
-    game_state: &GameState,
+    game_state: &Res<GameState>,
     query_players: &Query<(Entity, &Player)>,
     zones: &Option<Res<ZoneManager>>,
     commanders: &Option<Res<CommandZoneManager>>,
     save_metadata: &mut ResMut<Persistent<SaveMetadata>>,
-    config: &SaveConfig,
+    config: &Res<SaveConfig>,
     commands: &mut Commands,
     snapshot_events: &mut Option<EventWriter<SnapshotEvent>>,
     game_camera_query: &Query<Entity, With<GameCamera>>,
@@ -281,6 +283,65 @@ fn process_single_save(
                 // Add it again as a last resort
                 save_metadata.saves.push(save_info);
                 let _ = save_metadata.persist(); // Try once more
+            }
+
+            // Handle snapshot if requested and snapshots are enabled
+            if event.with_snapshot && config.capture_snapshots {
+                if let Some(snapshot_events) = snapshot_events {
+                    // Format a unique name for the snapshot
+                    let timestamp = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_secs();
+
+                    let snapshot_name = format!(
+                        "save_test_snapshot_save_turn_{}_t{}.png",
+                        game_state.turn_number, timestamp
+                    );
+
+                    // Send a snapshot event
+                    if let Ok(camera) = game_camera_query.get_single() {
+                        snapshot_events.send(
+                            SnapshotEvent::new()
+                                .with_camera(camera)
+                                .with_filename(snapshot_name.clone()),
+                        );
+
+                        // Update the save data with the snapshot reference
+                        save_data.board_snapshot = Some(snapshot_name);
+                    }
+                }
+            }
+
+            // If max_save_slots is set, enforce the limit
+            if config.max_save_slots > 0 {
+                let save_info = &mut save_metadata.saves;
+                while save_info.len() > config.max_save_slots {
+                    // Remove oldest save (except the one we just added)
+                    if let Some(oldest_save) = save_info
+                        .iter()
+                        .filter(|s| s.slot_name != event.slot_name)
+                        .min_by_key(|s| s.timestamp)
+                        .cloned()
+                    {
+                        // Remove from list
+                        save_info.retain(|s| s.slot_name != oldest_save.slot_name);
+
+                        // Try to delete the file
+                        let oldest_path =
+                            get_storage_path(config, &format!("{}.bin", oldest_save.slot_name));
+                        match std::fs::remove_file(&oldest_path) {
+                            Ok(_) => debug!("Removed old save file: {:?}", oldest_path),
+                            Err(e) => warn!(
+                                "Failed to remove old save file: {:?} - {:?}",
+                                oldest_path, e
+                            ),
+                        }
+                    } else {
+                        // No more saves to remove
+                        break;
+                    }
+                }
             }
         }
         Err(e) => {

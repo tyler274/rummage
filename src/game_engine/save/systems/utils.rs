@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 
 use crate::game_engine::commander::CommandZoneManager;
 use crate::game_engine::save::data::*;
@@ -56,48 +56,43 @@ pub fn apply_game_state(
     }
 
     // Handle empty player list case gracefully
-    if save_data.players.is_empty() {
+    if save_data.players.is_empty() && index_to_entity.is_empty() {
         debug!("Loading a save with no players");
         // Add a placeholder to index_to_entity for GameState to reference safely
-        if index_to_entity.is_empty() {
-            index_to_entity.push(Entity::PLACEHOLDER);
-        }
+        index_to_entity.push(Entity::PLACEHOLDER);
     }
 
     // Restore game state
-    if let Some(game_state) = game_state.as_mut() {
-        // If there's a corrupted mapping, fall back to basic properties
+    if let Some(game_state) = game_state {
         if index_to_entity.is_empty() || index_to_entity.contains(&Entity::PLACEHOLDER) {
             // At minimum, restore basic properties not tied to player entities
             game_state.turn_number = save_data.game_state.turn_number;
-
-            // For empty player list, set reasonable defaults for player-related fields
-            if save_data.game_state.turn_order_indices.is_empty() {
-                // Create a fallback turn order
-                game_state.turn_order = VecDeque::new();
-            }
         } else {
             // Full restore with valid player entities
             **game_state = save_data.to_game_state(&index_to_entity);
         }
     } else {
-        if !index_to_entity.is_empty() {
-            commands.insert_resource(save_data.to_game_state(&index_to_entity));
+        if index_to_entity.is_empty() || index_to_entity.contains(&Entity::PLACEHOLDER) {
+            // Create a new game state with basic properties
+            let mut new_state = GameState::default();
+            new_state.turn_number = save_data.game_state.turn_number;
+            commands.insert_resource(new_state);
         } else {
-            commands.insert_resource(GameState::default());
-            warn!("No player entities found when loading game, using default state");
+            commands.insert_resource(save_data.to_game_state(&index_to_entity));
         }
     }
 
-    // Restore zone contents
-    if let Some(zone_manager) = &mut *zones {
-        // Use the GameSaveData method to restore ZoneManager
-        **zone_manager = save_data.to_zone_manager(&index_to_entity);
+    // Restore zone contents if a valid ZoneManager exists and we have player entities
+    if let Some(zone_manager) = zones {
+        if !index_to_entity.is_empty() && !index_to_entity.contains(&Entity::PLACEHOLDER) {
+            **zone_manager = save_data.to_zone_manager(&index_to_entity);
+        }
     }
 
-    // Restore commander zone contents
-    if let Some(commander_manager) = &mut *commanders {
-        // Use the GameSaveData method to restore CommandZoneManager
-        **commander_manager = save_data.to_commander_manager(&index_to_entity);
+    // Restore commander zone contents if a valid CommandZoneManager exists and we have player entities
+    if let Some(commander_manager) = commanders {
+        if !index_to_entity.is_empty() && !index_to_entity.contains(&Entity::PLACEHOLDER) {
+            **commander_manager = save_data.to_commander_manager(&index_to_entity);
+        }
     }
 }

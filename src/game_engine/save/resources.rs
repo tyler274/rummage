@@ -34,9 +34,11 @@ pub struct SaveConfig {
     pub auto_save_enabled: bool,
     /// Auto-save interval in seconds
     pub auto_save_interval_seconds: f32,
-    /// Maximum number of save slots to keep
+    /// Maximum number of save slots to keep (0 for unlimited)
+    #[allow(dead_code)]
     pub max_save_slots: usize,
     /// Whether to capture snapshots with saves
+    #[allow(dead_code)]
     pub capture_snapshots: bool,
 }
 
@@ -337,6 +339,7 @@ impl GameHistory {
     }
 
     /// Find available parent branches to return to
+    #[allow(dead_code)]
     pub fn available_parent_branches(&self) -> Vec<u64> {
         let mut result = Vec::new();
         if let Some(branch) = self.active_branch() {

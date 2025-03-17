@@ -1,8 +1,8 @@
 ---
-description: Bevy Deprecated APIs
-globs: 
+description: 
+globs: src/**
 alwaysApply: false
 ---
 # Bevy 0.15.x Deprecation Guidelines
 [deprecated_apis.md](mdc:docs/development/bevy_guide/deprecated_apis.md)
-
+Keep the docs in sync on new deprecated APIs that you try to use and we have to correct. 

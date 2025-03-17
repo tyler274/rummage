@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use crate::camera::components::GameCamera;
 use crate::game_engine::save::{
-    SaveConfig, SaveGameEvent, SaveLoadPlugin, StartReplayEvent, StepReplayEvent,
+    ReplayState, SaveConfig, SaveGameEvent, SaveLoadPlugin, StartReplayEvent, StepReplayEvent,
 };
 use crate::game_engine::state::GameState;
 use crate::player::Player;
@@ -289,7 +289,9 @@ mod save_load_integration_tests {
         let save_config = SaveConfig {
             save_directory: PathBuf::from("test_saves"),
             auto_save_enabled: true,
-            auto_save_frequency: 1,
+            auto_save_interval_seconds: 5.0,
+            max_save_slots: 50,
+            capture_snapshots: true,
         };
         app.insert_resource(save_config);
 
@@ -305,6 +307,8 @@ mod save_load_integration_tests {
         // Send a save game event
         app.world_mut().send_event(SaveGameEvent {
             slot_name: "test_save".to_string(),
+            description: Some("Snapshot test save".to_string()),
+            with_snapshot: true,
         });
 
         // Run the systems
@@ -371,8 +375,10 @@ fn test_save_game_snapshot_integration() {
     let save_dir = PathBuf::from("target/test_save_snapshot_integration");
     app.insert_resource(SaveConfig {
         save_directory: save_dir.clone(),
-        auto_save_enabled: false,
-        auto_save_frequency: 999, // Disable auto-save
+        auto_save_enabled: true,
+        auto_save_interval_seconds: 5.0,
+        max_save_slots: 50,
+        capture_snapshots: true,
     });
 
     // Configure snapshot system
@@ -467,6 +473,8 @@ fn test_save_game_snapshot_integration() {
     // Trigger a save with expected snapshot
     app.world_mut().send_event(SaveGameEvent {
         slot_name: "test_snapshot_save".to_string(),
+        description: Some("Snapshot test save".to_string()),
+        with_snapshot: true,
     });
 
     // Run updates to process events
@@ -486,6 +494,21 @@ fn test_save_game_snapshot_integration() {
         slot_name: "test_snapshot_save".to_string(),
     });
 
+    // Add a camera entity for the snapshot system to use
+    let _camera_entity = app
+        .world_mut()
+        .spawn((GameCamera, Camera2d::default()))
+        .id();
+
+    // Add a ReplayState resource to simulate an active replay
+    app.insert_resource(ReplayState {
+        active: true,
+        original_save: None,
+        current_game_state: None,
+        action_queue: VecDeque::new(),
+        current_step: 0,
+    });
+
     // Run updates to process replay start
     for _ in 0..3 {
         app.update();
@@ -498,7 +521,7 @@ fn test_save_game_snapshot_integration() {
     app.world_mut().send_event(StepReplayEvent { steps: 2 });
 
     // Run updates to process replay step
-    for _ in 0..3 {
+    for _ in 0..5 {
         app.update();
     }
 
@@ -524,8 +547,10 @@ fn test_visual_differential_testing() {
     let save_dir = PathBuf::from("target/test_visual_diff");
     app.insert_resource(SaveConfig {
         save_directory: save_dir.clone(),
-        auto_save_enabled: false,
-        auto_save_frequency: 999, // Disable auto-save
+        auto_save_enabled: true,
+        auto_save_interval_seconds: 5.0,
+        max_save_slots: 50,
+        capture_snapshots: true,
     });
 
     // Configure snapshot system

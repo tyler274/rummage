@@ -1,0 +1,8 @@
+---
+description: 
+globs: src/game_engine/save/**
+alwaysApply: false
+---
+The save/load/rewind/replay/rollback subsystem collection needs to be robustly tested. 
+
+We will use it for implementing the MTG card Shahrazad "Players play a Magic subgame, using their libraries as their decks. Each player who doesn't win the subgame loses half their life, rounded up."

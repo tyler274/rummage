@@ -100,13 +100,20 @@ pub fn handle_load_game(
                     // If there's a corrupted mapping, fall back to basic properties
                     if index_to_entity.is_empty() || index_to_entity.contains(&Entity::PLACEHOLDER)
                     {
-                        // At minimum, restore basic properties not tied to player entities
+                        // Always restore turn number first
                         game_state.turn_number = save_data.game_state.turn_number;
 
-                        // For empty player list, set reasonable defaults for player-related fields
+                        // Handle empty turn order case
                         if save_data.game_state.turn_order_indices.is_empty() {
-                            // Create a fallback turn order
-                            game_state.turn_order = VecDeque::new();
+                            debug!("Empty turn order detected, keeping turn order unchanged");
+                            // Keep the existing turn order
+                        } else {
+                            // Create a fallback turn order based on indices
+                            let mut turn_order = VecDeque::new();
+                            for &idx in &save_data.game_state.turn_order_indices {
+                                turn_order.push_back(Entity::from_raw(idx as u32));
+                            }
+                            game_state.turn_order = turn_order;
                         }
                     } else {
                         // Full restore with valid player entities
@@ -116,8 +123,22 @@ pub fn handle_load_game(
                     if !index_to_entity.is_empty() {
                         commands.insert_resource(save_data.to_game_state(&index_to_entity));
                     } else {
-                        commands.insert_resource(GameState::default());
-                        warn!("No player entities found when loading game, using default state");
+                        // Even with empty index, we should still restore basic properties
+                        let mut default_state = GameState::default();
+
+                        // Only update turn number if turn order is not empty
+                        if !save_data.game_state.turn_order_indices.is_empty() {
+                            default_state.turn_number = save_data.game_state.turn_number;
+                        } else {
+                            debug!(
+                                "Empty turn order detected when creating default state, keeping turn number unchanged"
+                            );
+                        }
+
+                        commands.insert_resource(default_state);
+                        warn!(
+                            "No player entities found when loading game, using modified default state"
+                        );
                     }
                 }
 

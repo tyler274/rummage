@@ -135,7 +135,9 @@ pub fn pause_menu_action(
                         // Send event to save the game to the default slot
                         info!("Saving game to default slot");
                         save_events.send(SaveGameEvent {
-                            slot_name: "default".to_string(),
+                            slot_name: format!("quicksave"),
+                            description: Some("Quick save from pause menu".to_string()),
+                            with_snapshot: true,
                         });
                     }
                     MenuButtonAction::LoadGame => {

@@ -65,6 +65,14 @@ fn test_partial_corruption() {
 
     // Handle the Result return
     let _ = persistent_save.set(save_data);
+
+    // Ensure directory exists
+    if let Some(parent) = save_path.parent() {
+        std::fs::create_dir_all(parent).unwrap_or_else(|e| {
+            panic!("Failed to create test directory: {}", e);
+        });
+    }
+
     persistent_save
         .persist()
         .expect("Failed to save persistent data");

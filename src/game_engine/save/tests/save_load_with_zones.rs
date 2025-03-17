@@ -26,9 +26,9 @@ fn test_save_load_with_zones() {
     app.insert_resource(SaveConfig {
         save_directory: save_dir.clone().into(), // Convert to PathBuf
         auto_save_enabled: true,
-        auto_save_frequency: 10,
-        checkpoint_frequency: 5,
-        history_size: 50,
+        auto_save_interval_seconds: 10.0,
+        max_save_slots: 50,
+        capture_snapshots: true,
     });
 
     // Create players first
@@ -117,7 +117,9 @@ fn test_save_load_with_zones() {
 
     // Save game
     app.world_mut().send_event(SaveGameEvent {
-        slot_name: "test_zones".to_string(),
+        slot_name: "zone_test".to_string(),
+        description: Some("Zone test save".to_string()),
+        with_snapshot: false,
     });
     app.update();
 

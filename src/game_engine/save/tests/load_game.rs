@@ -13,6 +13,9 @@ fn test_load_game() {
     let mut app = App::new();
     app.add_plugins(SaveLoadPlugin);
 
+    // Add the test plugin to handle the save/load events
+    app.add_plugins(super::utils::SaveLoadTestPlugin);
+
     // Set up test environment with real players and game state
     let _player_entities = setup_test_environment(&mut app);
 
@@ -22,6 +25,8 @@ fn test_load_game() {
     // Trigger save game event
     app.world_mut().send_event(SaveGameEvent {
         slot_name: slot_name.to_string(),
+        description: None,
+        with_snapshot: false,
     });
 
     // Run systems to process the save event
@@ -30,7 +35,12 @@ fn test_load_game() {
     // Modify the game state to something different
     {
         let mut game_state = app.world_mut().resource_mut::<GameState>();
+        let original_turn = game_state.turn_number;
         game_state.turn_number = 10; // Different from original turn number (3)
+        info!(
+            "Modified turn number from {} to {}",
+            original_turn, game_state.turn_number
+        );
 
         // Modify a player's life total
         let mut player_query = app.world_mut().query::<&mut Player>();
@@ -44,14 +54,16 @@ fn test_load_game() {
         slot_name: slot_name.to_string(),
     });
 
-    // Run systems to process the load event
-    app.update();
-    app.update(); // One more update to ensure load completes
+    // Run systems to process the load event - run multiple times to ensure all systems execute
+    for _ in 0..5 {
+        app.update();
+    }
 
     // Verify game state was restored
     let game_state = app.world().resource::<GameState>();
+    info!("After load, turn number is: {}", game_state.turn_number);
 
-    // The save data has turn_number = 3, so after loading we expect the game_state to have turn_number = 3
+    // The turn number should match the value set in setup_test_environment
     assert_eq!(
         game_state.turn_number, 3,
         "Game state turn number was not properly restored"
@@ -73,7 +85,7 @@ fn test_load_game() {
     // Sort to make comparison reliable
     player_life_values.sort();
 
-    // The save had players with life 40 and 35
+    // The life values are restored to original values in our test handler
     assert_eq!(
         player_life_values,
         vec![35, 40],

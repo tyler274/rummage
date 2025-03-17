@@ -5,6 +5,7 @@ use crate::game_engine::save::{SaveConfig, SaveGameEvent, SaveLoadPlugin};
 
 use super::utils::*;
 
+/// Tests that a game can be saved to disk.
 #[test]
 fn test_save_game() {
     // Set up app with the actual SaveLoadPlugin instead of the test plugin
@@ -41,6 +42,8 @@ fn test_save_game() {
     // Trigger save game event
     app.world_mut().send_event(SaveGameEvent {
         slot_name: slot_name.to_string(),
+        description: Some("Test save description".to_string()),
+        with_snapshot: false,
     });
 
     // Run systems to process the event - run multiple times to ensure all systems execute

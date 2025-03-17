@@ -366,6 +366,14 @@ pub fn take_save_game_snapshot(
             event.slot_name, turn_number, timestamp
         );
 
+        // Create a SaveGameSnapshot component to link this snapshot to the save game
+        let save_snapshot = SaveGameSnapshot::new(event.slot_name.clone(), turn_number)
+            .with_description(format!("Save game snapshot, Turn: {}", turn_number))
+            .with_timestamp(timestamp);
+
+        // Attach the SaveGameSnapshot component to the camera
+        commands.entity(camera).insert(save_snapshot);
+
         // Save game snapshot with proper metadata
         let snapshot = SnapshotEvent::new()
             .with_camera(camera)
@@ -379,12 +387,10 @@ pub fn take_save_game_snapshot(
         // Send the snapshot event
         snapshot_events.send(snapshot);
 
-        // Create the SaveGameSnapshot component on the camera
-        commands.entity(camera).insert(
-            SaveGameSnapshot::new(event.slot_name.clone(), turn_number).with_timestamp(timestamp),
+        info!(
+            "SaveGameSnapshot component attached to camera entity: {:?}",
+            camera
         );
-
-        debug!("Sent snapshot event for saved game: {}", event.slot_name);
     }
 }
 
@@ -397,6 +403,17 @@ pub fn take_replay_snapshot(
     game_state: Option<Res<crate::game_engine::state::GameState>>,
     game_cameras: Query<Entity, With<GameCamera>>,
 ) {
+    // Process all step events
+    let mut steps_taken = 0;
+    for step_event in step_events.read() {
+        steps_taken += step_event.steps;
+    }
+
+    // Skip if no step events
+    if steps_taken == 0 {
+        return;
+    }
+
     // Skip if no replay state is active
     let replay_state = match replay_state {
         Some(state) => state,
@@ -404,11 +421,6 @@ pub fn take_replay_snapshot(
     };
 
     if !replay_state.active {
-        return;
-    }
-
-    // Skip if no step events
-    if step_events.read().next().is_none() {
         return;
     }
 
@@ -467,6 +479,8 @@ pub fn take_replay_snapshot(
         "Taking replay snapshot at turn {} step {}",
         replay_turn, replay_step
     );
+
+    // Actually send the event
     snapshot_events.send(snapshot_event);
 }
 

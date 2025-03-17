@@ -20,7 +20,9 @@ fn test_load_game_empty_players() {
 
     // Set up basic resources
     let test_dir = Path::new("target/test_saves");
-    std::fs::create_dir_all(test_dir).unwrap();
+    std::fs::create_dir_all(test_dir).unwrap_or_else(|e| {
+        panic!("Failed to create test directory: {}", e);
+    });
 
     // Update the save directory in the config
     {
