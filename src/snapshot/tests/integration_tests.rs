@@ -282,7 +282,7 @@ mod save_load_integration_tests {
 
         // Create a camera with game camera component
         let camera_entity = app
-            .world
+            .world_mut()
             .spawn((
                 GameCamera, // Minimal components to make a camera
                 Camera2d,
@@ -290,7 +290,7 @@ mod save_load_integration_tests {
             .id();
 
         // Send a save game event
-        app.world.send_event(SaveGameEvent {
+        app.world_mut().send_event(SaveGameEvent {
             slot_name: "test_save".to_string(),
         });
 
@@ -298,7 +298,7 @@ mod save_load_integration_tests {
         app.update();
 
         // Check if the camera has a SaveGameSnapshot component
-        let snapshot = app.world.entity(camera_entity).get::<SaveGameSnapshot>();
+        let snapshot = app.world().entity(camera_entity).get::<SaveGameSnapshot>();
         assert!(
             snapshot.is_some(),
             "Camera should have a SaveGameSnapshot component"
@@ -315,7 +315,7 @@ mod save_load_integration_tests {
 
         // Check if a snapshot event was sent
         let mut snapshot_events = app
-            .world
+            .world_mut()
             .resource_mut::<Events<crate::snapshot::resources::SnapshotEvent>>();
         let reader = snapshot_events.get_reader();
         let events: Vec<_> = reader.read(&snapshot_events).collect();

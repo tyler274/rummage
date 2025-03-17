@@ -415,7 +415,11 @@ pub fn take_replay_snapshot(
     for event in step_events.read() {
         // We want to take a snapshot after stepping through the replay
         let turn_number = game_state.turn_number;
-        let slot_name = &replay_state.slot_name;
+        // Get the slot name from the original save data
+        let slot_name = match &replay_state.original_save {
+            Some(save_data) => save_data.slot_name.clone(),
+            None => "unknown".to_string(),
+        };
         let replay_step = replay_state.current_step;
 
         info!(
