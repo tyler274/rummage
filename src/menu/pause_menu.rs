@@ -119,8 +119,10 @@ pub fn pause_menu_action(
     mut next_state: ResMut<NextState<GameMenuState>>,
     mut context: ResMut<StateTransitionContext>,
     mut exit: EventWriter<bevy::app::AppExit>,
-    mut save_events: EventWriter<SaveGameEvent>,
-    mut load_events: EventWriter<LoadGameEvent>,
+    _save_events: EventWriter<SaveGameEvent>,
+    _load_events: EventWriter<LoadGameEvent>,
+    mut save_load_state: ResMut<NextState<crate::menu::save_load::SaveLoadUiState>>,
+    mut save_load_context: ResMut<crate::menu::save_load::SaveLoadUiContext>,
 ) {
     for (interaction, action, mut color) in &mut interaction_query {
         match *interaction {
@@ -133,20 +135,16 @@ pub fn pause_menu_action(
                         next_state.set(GameMenuState::InGame);
                     }
                     MenuButtonAction::SaveGame => {
-                        // Send event to save the game to the default slot
-                        info!("Saving game to default slot");
-                        save_events.send(SaveGameEvent {
-                            slot_name: format!("quicksave"),
-                            description: Some("Quick save from pause menu".to_string()),
-                            with_snapshot: true,
-                        });
+                        info!("Opening save game dialog");
+                        // Set the context flag to indicate we're coming from the pause menu
+                        save_load_context.from_pause_menu = true;
+                        save_load_state.set(crate::menu::save_load::SaveLoadUiState::SaveGame);
                     }
                     MenuButtonAction::LoadGame => {
-                        // Send event to load the game from the default slot
-                        info!("Loading game from default slot");
-                        load_events.send(LoadGameEvent {
-                            slot_name: "default".to_string(),
-                        });
+                        info!("Opening load game dialog");
+                        // Set the context flag to indicate we're coming from the pause menu
+                        save_load_context.from_pause_menu = true;
+                        save_load_state.set(crate::menu::save_load::SaveLoadUiState::LoadGame);
                     }
                     MenuButtonAction::Restart => {
                         // Reset the context flag since we want a full restart

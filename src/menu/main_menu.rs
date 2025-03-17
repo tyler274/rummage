@@ -291,6 +291,8 @@ pub fn menu_action(
     >,
     mut next_state: ResMut<NextState<GameMenuState>>,
     mut exit: EventWriter<bevy::app::AppExit>,
+    mut save_load_state: ResMut<NextState<crate::menu::save_load::SaveLoadUiState>>,
+    mut save_load_context: ResMut<crate::menu::save_load::SaveLoadUiContext>,
 ) {
     for (interaction, action, mut color) in &mut interaction_query {
         match *interaction {
@@ -305,8 +307,10 @@ pub fn menu_action(
                         next_state.set(GameMenuState::Loading);
                     }
                     MenuButtonAction::LoadGame => {
-                        info!("Load Game button pressed - not implemented yet");
-                        // TODO: Implement save/load game functionality
+                        info!("Load Game button pressed - showing load game UI");
+                        // Set the context flag to indicate we're coming from the main menu
+                        save_load_context.from_pause_menu = false;
+                        save_load_state.set(crate::menu::save_load::SaveLoadUiState::LoadGame);
                     }
                     MenuButtonAction::Multiplayer => {
                         info!("Multiplayer button pressed - not implemented yet");

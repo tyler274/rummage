@@ -15,6 +15,7 @@ use crate::{
         main::MainMenuPlugin,
         main_menu::{MenuBackground, menu_action, set_menu_camera_zoom, setup_main_menu},
         pause_menu::{handle_pause_input, pause_menu_action, setup_pause_menu},
+        save_load::SaveLoadUiPlugin,
         settings::{SettingsMenuState, SettingsPlugin},
         state::{GameMenuState, StateTransitionContext},
     },
@@ -68,6 +69,7 @@ impl Plugin for MenuPlugin {
                 MainMenuPlugin,
                 CreditsPlugin,
                 DeckManagerPlugin,
+                SaveLoadUiPlugin,
             ))
             // Main Menu state
             .add_systems(
@@ -75,7 +77,6 @@ impl Plugin for MenuPlugin {
                 (
                     cleanup_game,
                     cleanup_menu_camera,
-                    cleanup_star_of_david_thoroughly,
                     setup_main_menu,
                     setup_menu_camera,
                     set_menu_camera_zoom,
@@ -86,12 +87,7 @@ impl Plugin for MenuPlugin {
             )
             .add_systems(
                 OnExit(GameMenuState::MainMenu),
-                (
-                    cleanup_main_menu,
-                    cleanup_menu_camera,
-                    cleanup_star_of_david_thoroughly,
-                )
-                    .chain(),
+                (cleanup_main_menu, cleanup_menu_camera).chain(),
             )
             .add_systems(
                 Update,
@@ -107,12 +103,7 @@ impl Plugin for MenuPlugin {
             // Loading state systems
             .add_systems(
                 OnEnter(GameMenuState::Loading),
-                (
-                    cleanup_game,
-                    cleanup_menu_camera,
-                    cleanup_star_of_david_thoroughly,
-                )
-                    .chain(),
+                (cleanup_game, cleanup_menu_camera).chain(),
             )
             .add_systems(
                 Update,
@@ -124,7 +115,6 @@ impl Plugin for MenuPlugin {
                 OnEnter(GameMenuState::PausedGame),
                 (
                     cleanup_menu_camera,
-                    cleanup_star_of_david_thoroughly,
                     setup_pause_menu,
                     setup_menu_camera,
                     ensure_single_menu_camera,
@@ -134,7 +124,7 @@ impl Plugin for MenuPlugin {
             )
             .add_systems(
                 OnExit(GameMenuState::PausedGame),
-                (cleanup_pause_menu, cleanup_star_of_david_thoroughly).chain(),
+                (cleanup_pause_menu).chain(),
             )
             .add_systems(
                 Update,
