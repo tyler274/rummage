@@ -12,6 +12,7 @@ pub struct PlayerData {
 }
 
 /// Builder for PlayerData
+#[allow(dead_code)]
 #[derive(Default)]
 pub struct PlayerDataBuilder {
     id: usize,
@@ -21,6 +22,7 @@ pub struct PlayerDataBuilder {
     player_index: usize,
 }
 
+#[allow(dead_code)]
 impl PlayerDataBuilder {
     /// Create a new builder with default values
     pub fn new() -> Self {
@@ -77,6 +79,7 @@ impl PlayerDataBuilder {
 
 impl PlayerData {
     /// Create a new builder for PlayerData
+    #[allow(dead_code)]
     pub fn builder() -> PlayerDataBuilder {
         PlayerDataBuilder::new()
     }

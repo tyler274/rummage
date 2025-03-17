@@ -35,6 +35,7 @@ impl Default for GameStateData {
 }
 
 /// Builder for GameStateData
+#[allow(dead_code)]
 #[derive(Default)]
 pub struct GameStateDataBuilder {
     turn_number: u32,
@@ -50,6 +51,7 @@ pub struct GameStateDataBuilder {
     starting_life: i32,
 }
 
+#[allow(dead_code)]
 impl GameStateDataBuilder {
     /// Create a new builder with default values
     pub fn new() -> Self {
@@ -154,6 +156,7 @@ impl GameStateDataBuilder {
 
 impl GameStateData {
     /// Create a new builder for GameStateData
+    #[allow(dead_code)]
     pub fn builder() -> GameStateDataBuilder {
         GameStateDataBuilder::new()
     }

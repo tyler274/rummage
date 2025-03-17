@@ -45,6 +45,7 @@ impl Default for GameSaveData {
 }
 
 /// Builder for GameSaveData
+#[allow(dead_code)]
 #[derive(Default)]
 pub struct GameSaveDataBuilder {
     game_state: GameStateData,
@@ -62,6 +63,7 @@ pub struct GameSaveDataBuilder {
     timestamp: u64,
 }
 
+#[allow(dead_code)]
 impl GameSaveDataBuilder {
     /// Create a new builder with default values
     pub fn new() -> Self {
@@ -103,48 +105,56 @@ impl GameSaveDataBuilder {
     }
 
     /// Set the game ID
+    #[allow(dead_code)]
     pub fn game_id(mut self, game_id: String) -> Self {
         self.game_id = game_id;
         self
     }
 
     /// Set the turn number
+    #[allow(dead_code)]
     pub fn turn_number(mut self, turn_number: u32) -> Self {
         self.turn_number = turn_number;
         self
     }
 
     /// Set the current phase
+    #[allow(dead_code)]
     pub fn phase(mut self, phase: String) -> Self {
         self.phase = phase;
         self
     }
 
     /// Set the active player
+    #[allow(dead_code)]
     pub fn active_player(mut self, active_player: Option<usize>) -> Self {
         self.active_player = active_player;
         self
     }
 
     /// Set the priority player
+    #[allow(dead_code)]
     pub fn priority_player(mut self, priority_player: Option<usize>) -> Self {
         self.priority_player = priority_player;
         self
     }
 
     /// Set the replay history
+    #[allow(dead_code)]
     pub fn replay_history(mut self, replay_history: Vec<ReplayAction>) -> Self {
         self.replay_history = replay_history;
         self
     }
 
     /// Set the board snapshot
+    #[allow(dead_code)]
     pub fn board_snapshot(mut self, board_snapshot: Option<String>) -> Self {
         self.board_snapshot = board_snapshot;
         self
     }
 
     /// Set the timestamp
+    #[allow(dead_code)]
     pub fn timestamp(mut self, timestamp: u64) -> Self {
         self.timestamp = timestamp;
         self
@@ -172,6 +182,7 @@ impl GameSaveDataBuilder {
 
 impl GameSaveData {
     /// Create a new builder for GameSaveData
+    #[allow(dead_code)]
     pub fn builder() -> GameSaveDataBuilder {
         GameSaveDataBuilder::new()
     }
@@ -456,6 +467,28 @@ impl GameSaveData {
     ) -> crate::game_engine::zones::ZoneManager {
         let mut zone_manager = crate::game_engine::zones::ZoneManager::default();
 
+        // Initialize player zones first
+        for (player_idx, _) in &self.zones.hands {
+            if *player_idx < index_to_entity.len() {
+                let player = index_to_entity[*player_idx];
+                zone_manager.init_player_zones(player);
+            }
+        }
+
+        for (player_idx, _) in &self.zones.libraries {
+            if *player_idx < index_to_entity.len() {
+                let player = index_to_entity[*player_idx];
+                zone_manager.init_player_zones(player);
+            }
+        }
+
+        for (player_idx, _) in &self.zones.graveyards {
+            if *player_idx < index_to_entity.len() {
+                let player = index_to_entity[*player_idx];
+                zone_manager.init_player_zones(player);
+            }
+        }
+
         // Restore libraries
         for (player_idx, cards) in &self.zones.libraries {
             if *player_idx < index_to_entity.len() {
@@ -488,6 +521,7 @@ impl GameSaveData {
                         }
                     })
                     .collect();
+                // Use clear_hand first to ensure there are no stale cards
                 zone_manager.hands.insert(player, cards_vec);
             }
         }
@@ -584,7 +618,9 @@ impl GameSaveData {
                         }
                     })
                     .collect();
-                commander_manager.player_commanders.insert(player, commanders_vec);
+                commander_manager
+                    .player_commanders
+                    .insert(player, commanders_vec);
             }
         }
 
@@ -592,7 +628,9 @@ impl GameSaveData {
         for (commander_idx, zone) in &self.commanders.commander_zone_status {
             if *commander_idx < index_to_entity.len() {
                 let commander = index_to_entity[*commander_idx];
-                commander_manager.commander_zone_status.insert(commander, *zone);
+                commander_manager
+                    .commander_zone_status
+                    .insert(commander, *zone);
             }
         }
 
@@ -611,6 +649,7 @@ impl GameSaveData {
 }
 
 /// Convert entity to index in a serializable format
+#[allow(dead_code)]
 pub fn convert_entity_to_index(
     entities: Vec<Entity>,
     world: &World,
@@ -639,6 +678,7 @@ pub fn convert_entity_to_index(
 }
 
 /// Convert indices back to entities
+#[allow(dead_code)]
 pub fn convert_index_to_entity(save_data: &GameSaveData, world: &mut World) -> Vec<Entity> {
     let mut index_to_entity = Vec::new();
 
