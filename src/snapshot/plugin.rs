@@ -33,12 +33,14 @@ impl SnapshotPlugin {
     }
 
     /// Set whether snapshots are initially enabled
+    #[allow(dead_code)]
     pub fn with_snapshots_enabled(mut self, enabled: bool) -> Self {
         self.initially_enabled = enabled;
         self
     }
 
     /// Set custom snapshot configuration
+    #[allow(dead_code)]
     pub fn with_config(mut self, config: SnapshotConfig) -> Self {
         self.config = Some(config);
         self
