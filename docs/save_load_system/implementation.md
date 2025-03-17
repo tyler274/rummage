@@ -199,8 +199,9 @@ The save/load system employs several error handling strategies:
 3. **Empty Player Lists**: Special handling for saves with no players, preserving game state data
 4. **Version Compatibility**: Checking save version compatibility
 5. **File System Errors**: Robust handling of IO and persistence errors with appropriate error messages
-6. **Directory Creation**: Automatic creation of save directories with error handling
-7. **Save Verification**: Verification that save files were actually created
+6. **Directory Creation**: Automatic creation of save directories with error handling and verification
+7. **Save Verification**: Verification that save files were actually created with appropriate delays
+8. **Filesystem Synchronization**: Added delays to ensure filesystem operations complete before verification
 
 Example of handling corrupted entity mappings:
 
@@ -218,6 +219,40 @@ if index_to_entity.is_empty() || index_to_entity.contains(&Entity::PLACEHOLDER) 
 } else {
     // Full restore with valid player entities
     **game_state = save_data.to_game_state(&index_to_entity);
+}
+```
+
+Example of improved directory creation and save verification:
+
+```rust
+// Ensure save directory exists for native platforms
+#[cfg(not(target_arch = "wasm32"))]
+{
+    if !config.save_directory.exists() {
+        match std::fs::create_dir_all(&config.save_directory) {
+            Ok(_) => info!("Created save directory: {:?}", config.save_directory),
+            Err(e) => {
+                error!("Failed to create save directory: {}", e);
+                continue; // Skip this save attempt
+            }
+        }
+    }
+}
+
+// ... saving process ...
+
+// Verify save file was created for native platforms
+#[cfg(not(target_arch = "wasm32"))]
+{
+    // Wait a short time to ensure filesystem operations complete
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    
+    if !save_path.exists() {
+        error!("Save file was not created at: {:?}", save_path);
+        continue;
+    } else {
+        info!("Verified save file exists at: {:?}", save_path);
+    }
 }
 ```
 
