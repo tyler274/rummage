@@ -28,7 +28,7 @@ impl Plugin for CameraPlugin {
         app.init_resource::<CameraConfig>();
 
         #[cfg(feature = "snapshot")]
-        app.add_plugins(SnapshotPlugin);
+        app.add_plugins(SnapshotPlugin::new());
 
         app.add_systems(Startup, setup_camera)
             .add_systems(PostStartup, set_initial_zoom)

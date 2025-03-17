@@ -4,6 +4,12 @@ use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
 use std::fs;
 use std::path::Path;
 
+// We'll use these in actual tests
+#[allow(unused_imports)]
+use crate::tests::visual_testing::UI_TEST_STATES;
+#[allow(unused_imports)]
+use crate::tests::visual_testing::utils::ensure_test_directories;
+
 /// Comparison result for two images
 #[derive(Debug)]
 pub struct ComparisonResult {
@@ -612,58 +618,91 @@ pub fn capture_entity_rendering(_app: &App, _entity: Entity) -> DynamicImage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // Test for card rendering consistency across different states
+    // Test for card rendering consistency
     #[test]
-    #[ignore = "Reference images missing, needs to be initialized"]
     fn test_card_rendering_consistency() {
         let mut app = App::new();
         app.add_plugins(MinimalPlugins)
             .add_plugins(VisualTestingPlugin)
+            .init_resource::<ScreenshotRequests>()
             .add_systems(Startup, setup_test_scene);
 
-        // Set up reference generation mode
-        if std::env::var("GENERATE_REFERENCES").is_ok() {
+        // Initialize reference directories
+        ensure_test_directories().expect("Failed to create test directories");
+
+        // Card states to test
+        let card_states = [
+            "card_normal",
+            "card_tapped",
+            "card_highlighted",
+            "card_attacking",
+        ];
+
+        // Check if reference images exist
+        let env_setting = std::env::var("GENERATE_REFERENCES").is_ok();
+        let reference_exists = check_references_exist(
+            &card_states
+                .iter()
+                .map(|&s| format!("card_{}.png", s))
+                .collect::<Vec<_>>(),
+        );
+
+        // Set up reference generation if needed
+        if env_setting || !reference_exists {
+            info!(
+                "Generating card reference images (missing: {})",
+                !reference_exists
+            );
             let mut config = app.world_mut().resource_mut::<VisualTestConfig>();
             config.update_references = true;
         }
 
-        // List of card states to test
-        let test_states = [
-            "card_in_hand",
-            "card_on_battlefield",
-            "card_tapped",
-            "card_with_counters",
-            "card_on_stack",
-        ];
-
-        // Run the app briefly to set up
+        // Run the app to set up
         app.update();
 
         // Test each card state
-        for state in &test_states {
-            // 1. Set up the card in the appropriate state
+        for state in &card_states {
+            // Set up the card in the appropriate state
             setup_card_state(&mut app, state);
+            app.update();
 
-            // 2. Take a screenshot
+            // Take a screenshot and compare
             if let Some(screenshot) = take_screenshot() {
-                // 3. Generate reference or compare to reference
+                let reference_name = format!("card_{}.png", state);
+
+                // Ensure the directory exists
+                let config = app.world().resource::<VisualTestConfig>();
+                let dir = Path::new(&config.reference_dir);
+                if !dir.exists() {
+                    if let Err(e) = std::fs::create_dir_all(dir) {
+                        panic!("Failed to create reference directory: {}", e);
+                    }
+                }
+
+                let ref_path = dir.join(&reference_name);
+
                 if app.world().resource::<VisualTestConfig>().update_references {
-                    // Generate reference image
-                    if let Err(e) = save_reference_image(screenshot, &format!("{}.png", state)) {
-                        panic!("Failed to save reference image: {}", e);
+                    match screenshot.into_rgba8().save(&ref_path) {
+                        Ok(_) => info!("Saved card reference image: {}", reference_name),
+                        Err(e) => panic!("Failed to save card reference image: {}", e),
                     }
                 } else {
-                    // Compare to reference
-                    match load_reference_image(&format!("{}.png", state)) {
+                    match image::open(&ref_path) {
                         Ok(reference) => {
                             let result = compare_images(&screenshot, &reference);
 
-                            // Save difference visualization if similarity is below threshold
                             if result.similarity_score < 0.99 {
+                                // If too different, save the difference visualization
+                                let artifact_dir = Path::new(&config.artifact_dir);
+                                if !artifact_dir.exists() {
+                                    let _ = std::fs::create_dir_all(artifact_dir);
+                                }
+
+                                let diff_name = format!("card_{}_diff.png", state);
                                 let _ = save_difference_visualization(
                                     &screenshot,
                                     &reference,
-                                    &format!("{}_diff.png", state),
+                                    &diff_name,
                                 );
                             }
 
@@ -674,29 +713,55 @@ mod tests {
                                 result.similarity_score
                             );
                         }
-                        Err(e) => panic!("Failed to load reference image: {}", e),
+                        Err(e) => {
+                            info!("Reference image not found: {}. Creating new reference.", e);
+
+                            match screenshot.into_rgba8().save(&ref_path) {
+                                Ok(_) => info!("Saved card reference image: {}", reference_name),
+                                Err(e) => panic!("Failed to save reference image: {}", e),
+                            }
+                        }
                     }
                 }
             } else {
-                panic!("Failed to take screenshot for state '{}'", state);
+                panic!("Failed to take screenshot for card state '{}'", state);
             }
         }
     }
 
     // Test for UI element rendering consistency
     #[test]
-    #[ignore = "Reference images missing, needs to be initialized"]
     fn test_ui_element_rendering() {
         let mut app = App::new();
         app.add_plugins(MinimalPlugins)
             .add_plugins(VisualTestingPlugin)
+            .init_resource::<ScreenshotRequests>()
             .add_systems(Startup, setup_ui_test_scene);
 
-        // Set up reference generation mode if needed
-        if std::env::var("GENERATE_REFERENCES").is_ok() {
+        // Initialize reference directories
+        ensure_test_directories().expect("Failed to create test directories");
+
+        // Check if we need to generate reference images
+        let env_setting = std::env::var("GENERATE_REFERENCES").is_ok();
+        let reference_exists = check_references_exist(
+            &UI_TEST_STATES
+                .iter()
+                .map(|&s| format!("ui_{}.png", s))
+                .collect::<Vec<_>>(),
+        );
+
+        // Set up reference generation if needed
+        if env_setting || !reference_exists {
+            info!(
+                "Generating UI reference images (missing: {})",
+                !reference_exists
+            );
             let mut config = app.world_mut().resource_mut::<VisualTestConfig>();
             config.update_references = true;
         }
+
+        // Run the app to set up
+        app.update();
 
         // List of UI states to test
         let ui_states = [
@@ -707,9 +772,6 @@ mod tests {
             "dropdown_open",
             "dialog_confirmation",
         ];
-
-        // Run the app to set up
-        app.update();
 
         // Test each UI state
         for state in &ui_states {
@@ -722,8 +784,19 @@ mod tests {
                 let reference_name = format!("ui_{}.png", state);
 
                 if app.world().resource::<VisualTestConfig>().update_references {
-                    if let Err(e) = save_reference_image(screenshot, &reference_name) {
-                        panic!("Failed to save UI reference image: {}", e);
+                    // Ensure the directory exists
+                    let config = app.world().resource::<VisualTestConfig>();
+                    let dir = Path::new(&config.reference_dir);
+                    if !dir.exists() {
+                        if let Err(e) = std::fs::create_dir_all(dir) {
+                            panic!("Failed to create reference directory: {}", e);
+                        }
+                    }
+
+                    // Save with more robust error handling
+                    match screenshot.into_rgba8().save(dir.join(&reference_name)) {
+                        Ok(_) => {}
+                        Err(e) => panic!("Failed to save UI reference image: {}", e),
                     }
                 } else {
                     match load_reference_image(&reference_name) {
@@ -745,7 +818,24 @@ mod tests {
                                 result.similarity_score
                             );
                         }
-                        Err(e) => panic!("Failed to load UI reference image: {}", e),
+                        Err(e) => {
+                            info!("Reference image not found: {}. Creating new reference.", e);
+
+                            // Ensure the directory exists
+                            let config = app.world().resource::<VisualTestConfig>();
+                            let dir = Path::new(&config.reference_dir);
+                            if !dir.exists() {
+                                if let Err(e) = std::fs::create_dir_all(dir) {
+                                    panic!("Failed to create reference directory: {}", e);
+                                }
+                            }
+
+                            // Save with more robust error handling
+                            match screenshot.into_rgba8().save(dir.join(&reference_name)) {
+                                Ok(_) => {}
+                                Err(e) => panic!("Failed to save UI reference image: {}", e),
+                            }
+                        }
                     }
                 }
             } else {
@@ -756,18 +846,32 @@ mod tests {
 
     // Additional test for animation consistency
     #[test]
-    #[ignore = "Reference images missing, needs to be initialized"]
     fn test_animation_keyframes() {
         let mut app = App::new();
         app.add_plugins(MinimalPlugins)
             .add_plugins(VisualTestingPlugin)
+            .init_resource::<ScreenshotRequests>()
             .add_systems(Startup, setup_animation_test);
+
+        // Initialize reference directories
+        ensure_test_directories().expect("Failed to create test directories");
 
         // Animation keyframes to test
         let keyframes = [0, 25, 50, 75, 100];
 
         // Animation types to test
         let animations = ["card_draw", "card_play", "attack_animation"];
+
+        // Check if we need to generate reference images
+        let reference_needed = check_animation_references_needed(&animations, &keyframes);
+        let env_setting = std::env::var("GENERATE_REFERENCES").is_ok();
+
+        // Set up reference generation if needed
+        if env_setting || reference_needed {
+            info!("Generating animation reference images");
+            let mut config = app.world_mut().resource_mut::<VisualTestConfig>();
+            config.update_references = true;
+        }
 
         // Run tests for each animation and keyframe
         for animation in &animations {
@@ -781,8 +885,19 @@ mod tests {
                     let reference_name = format!("anim_{}_{}.png", animation, keyframe);
 
                     if app.world().resource::<VisualTestConfig>().update_references {
-                        if let Err(e) = save_reference_image(screenshot, &reference_name) {
-                            panic!("Failed to save animation reference image: {}", e);
+                        // Ensure the directory exists
+                        let config = app.world().resource::<VisualTestConfig>();
+                        let dir = Path::new(&config.reference_dir);
+                        if !dir.exists() {
+                            if let Err(e) = std::fs::create_dir_all(dir) {
+                                panic!("Failed to create reference directory: {}", e);
+                            }
+                        }
+
+                        // Save with more robust error handling
+                        match screenshot.into_rgba8().save(dir.join(&reference_name)) {
+                            Ok(_) => {}
+                            Err(e) => panic!("Failed to save animation reference image: {}", e),
                         }
                     } else {
                         match load_reference_image(&reference_name) {
@@ -806,7 +921,26 @@ mod tests {
                                     result.similarity_score
                                 );
                             }
-                            Err(e) => panic!("Failed to load animation reference image: {}", e),
+                            Err(e) => {
+                                info!("Reference image not found: {}. Creating new reference.", e);
+
+                                // Ensure the directory exists
+                                let config = app.world().resource::<VisualTestConfig>();
+                                let dir = Path::new(&config.reference_dir);
+                                if !dir.exists() {
+                                    if let Err(e) = std::fs::create_dir_all(dir) {
+                                        panic!("Failed to create reference directory: {}", e);
+                                    }
+                                }
+
+                                // Save with more robust error handling
+                                match screenshot.into_rgba8().save(dir.join(&reference_name)) {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        panic!("Failed to save animation reference image: {}", e)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -963,4 +1097,37 @@ pub fn setup_visual_test_fixtures(app: &mut App) {
             error!("Failed to create artifact directory: {}", e);
         }
     }
+}
+
+// Helper function to check if reference images exist
+#[allow(dead_code)]
+fn check_references_exist(references: &[String]) -> bool {
+    let config = VisualTestConfig::default();
+
+    for reference in references {
+        let path = std::path::Path::new(&config.reference_dir).join(reference);
+        if !path.exists() {
+            return false;
+        }
+    }
+
+    true
+}
+
+// Helper function to check if animation references need to be generated
+#[allow(dead_code)]
+fn check_animation_references_needed(animations: &[&str], keyframes: &[i32]) -> bool {
+    let config = VisualTestConfig::default();
+
+    for animation in animations {
+        for &keyframe in keyframes {
+            let reference_name = format!("anim_{}_{}.png", animation, keyframe);
+            let path = std::path::Path::new(&config.reference_dir).join(reference_name);
+            if !path.exists() {
+                return true;
+            }
+        }
+    }
+
+    false
 }

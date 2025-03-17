@@ -120,7 +120,8 @@ impl Plugin for ScreenshotCapturePlugin {
                     capture_on_command_system,
                     visual_test_saved_games_system,
                 ),
-            );
+            )
+            .add_plugins(crate::snapshot::SnapshotPlugin::new());
     }
 }
 
@@ -335,7 +336,7 @@ pub fn run_visual_diff_test(save_slot: &str) -> Result<(), String> {
 
     // Add required plugins (minimal set)
     app.add_plugins(bevy::MinimalPlugins)
-        .add_plugins(crate::snapshot::SnapshotPlugin)
+        .add_plugins(crate::snapshot::plugin::SnapshotPlugin::new())
         .add_plugins(crate::game_engine::save::SaveLoadPlugin);
 
     // Initialize the app

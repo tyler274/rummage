@@ -14,7 +14,7 @@ pub fn snapshot_example_usage() {
     let mut app = App::new();
 
     // Add the snapshot plugin
-    app.add_plugins(SnapshotPlugin);
+    app.add_plugins(SnapshotPlugin::new());
 
     // Configure snapshot settings
     app.insert_resource(

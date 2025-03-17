@@ -1,3 +1,4 @@
+use bevy::app::Plugin as BevyPlugin;
 use bevy::ecs::schedule::ScheduleLabel;
 use bevy::prelude::*;
 
@@ -14,14 +15,55 @@ use crate::snapshot::systems::{
 pub struct SnapshotExclusiveSet;
 
 /// Plugin for camera snapshot functionality
-pub struct SnapshotPlugin;
+#[derive(Default, Clone)]
+pub struct SnapshotPlugin {
+    /// Whether snapshots are initially enabled
+    pub initially_enabled: bool,
+    /// Additional configuration options
+    pub config: Option<SnapshotConfig>,
+}
 
-impl Plugin for SnapshotPlugin {
+impl SnapshotPlugin {
+    /// Create a new snapshot plugin with snapshots enabled
+    pub fn new() -> Self {
+        Self {
+            initially_enabled: true,
+            config: None,
+        }
+    }
+
+    /// Set whether snapshots are initially enabled
+    pub fn with_snapshots_enabled(mut self, enabled: bool) -> Self {
+        self.initially_enabled = enabled;
+        self
+    }
+
+    /// Set custom snapshot configuration
+    pub fn with_config(mut self, config: SnapshotConfig) -> Self {
+        self.config = Some(config);
+        self
+    }
+}
+
+// Implement Plugin for SnapshotPlugin
+impl BevyPlugin for SnapshotPlugin {
     fn build(&self, app: &mut App) {
         info!("Initializing SnapshotPlugin");
-        app.init_resource::<SnapshotConfig>()
-            .init_resource::<SnapshotDebugState>()
-            .insert_resource(SnapshotDisabled::enabled())
+
+        // Initialize resources with custom config if provided
+        if let Some(config) = &self.config {
+            app.insert_resource(config.clone());
+        } else {
+            app.init_resource::<SnapshotConfig>();
+        }
+
+        // Initialize other resources
+        app.init_resource::<SnapshotDebugState>()
+            .insert_resource(if self.initially_enabled {
+                SnapshotDisabled::enabled()
+            } else {
+                SnapshotDisabled::disabled()
+            })
             .add_event::<SnapshotEvent>();
 
         #[cfg(feature = "snapshot")]

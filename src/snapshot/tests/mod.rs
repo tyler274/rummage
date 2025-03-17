@@ -1,4 +1,5 @@
 mod components_tests;
+mod fixtures;
 mod integration_tests;
 mod plugin_tests;
 mod resources_tests;
@@ -48,7 +49,7 @@ mod usage_tests {
         let event = SnapshotEvent::new().with_filename("event.png");
         assert_eq!(event.filename, Some("event.png".to_string()));
 
-        // Use SnapshotPlugin (just create it, not adding to app)
-        let _plugin = SnapshotPlugin;
+        // Use SnapshotPlugin
+        let _plugin = SnapshotPlugin::default();
     }
 }
