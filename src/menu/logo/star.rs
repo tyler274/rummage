@@ -1,7 +1,7 @@
 use crate::camera::components::AppLayer;
 use crate::menu::state::GameMenuState;
 use bevy::prelude::*;
-use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
+use bevy::ui::{AlignItems, FlexDirection, JustifyContent, PositionType, UiRect, Val};
 
 /// Component for the Star of David shape
 #[derive(Component)]
@@ -103,56 +103,69 @@ pub fn render_star_of_david(
             parent
                 .spawn((
                     Node {
-                        width: Val::Px(200.0),
-                        height: Val::Px(200.0),
-                        position_type: PositionType::Absolute,
-                        left: Val::Percent(50.0),
-                        top: Val::Px(50.0),
+                        width: Val::Px(100.0),
+                        height: Val::Px(100.0),
+                        position_type: PositionType::Relative,
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
                         ..default()
                     },
+                    GlobalZIndex(100), // Add high z-index to ensure visibility
+                    BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.0)), // Transparent background
                     Name::new("Star Container"),
+                    Visibility::Visible,
+                    InheritedVisibility::default(),
+                    ViewVisibility::default(),
                 ))
                 .with_children(|star_parent| {
                     // First triangle (pointing up)
                     star_parent.spawn((
                         Node {
-                            width: Val::Percent(100.0),
-                            height: Val::Percent(100.0),
-                            position_type: PositionType::Absolute,
+                            width: Val::Px(60.0),
+                            height: Val::Px(60.0),
+                            position_type: PositionType::Relative,
                             left: Val::Px(0.0),
                             top: Val::Px(0.0),
                             ..default()
                         },
-                        BackgroundColor(Color::srgb(1.0, 1.0, 0.0)),
+                        BackgroundColor(Color::srgb(1.0, 0.8, 0.0)), // Brighter yellow color
                         BorderRadius::all(Val::Percent(50.0)),
                         Outline {
                             width: Val::Px(2.0),
-                            color: Color::srgb(1.0, 1.0, 0.0),
+                            color: Color::srgb(0.8, 0.6, 0.0), // Darker gold outline
                             offset: Val::Px(0.0),
                         },
+                        GlobalZIndex(101), // Even higher z-index for the triangle
                         Name::new("Star Triangle Up"),
+                        Visibility::Visible,
+                        InheritedVisibility::default(),
+                        ViewVisibility::default(),
                     ));
 
                     // Second triangle (pointing down)
                     star_parent.spawn((
                         Node {
-                            width: Val::Percent(100.0),
-                            height: Val::Percent(100.0),
-                            position_type: PositionType::Absolute,
-                            left: Val::Px(0.0),
-                            top: Val::Px(0.0),
+                            width: Val::Px(60.0),
+                            height: Val::Px(60.0),
+                            position_type: PositionType::Absolute, // Absolute to overlay
+                            left: Val::Px(20.0),                   // Center within parent
+                            top: Val::Px(20.0),                    // Center within parent
                             ..default()
                         },
                         // Use Transform component for rotation instead of TransformOrigin
-                        BackgroundColor(Color::srgb(1.0, 1.0, 0.0)),
-                        Transform::from_rotation(Quat::from_rotation_z(std::f32::consts::PI)),
+                        BackgroundColor(Color::srgb(1.0, 0.8, 0.0)),
+                        Transform::from_rotation(Quat::from_rotation_z(std::f32::consts::PI / 2.0)), // Rotate 90 degrees
                         BorderRadius::all(Val::Percent(50.0)),
                         Outline {
                             width: Val::Px(2.0),
-                            color: Color::srgb(1.0, 1.0, 0.0),
+                            color: Color::srgb(0.8, 0.6, 0.0),
                             offset: Val::Px(0.0),
                         },
+                        GlobalZIndex(102), // Highest z-index for the rotated triangle
                         Name::new("Star Triangle Down"),
+                        Visibility::Visible,
+                        InheritedVisibility::default(),
+                        ViewVisibility::default(),
                     ));
                 });
         });
@@ -169,11 +182,16 @@ pub fn create_star_of_david() -> impl Bundle {
             height: Val::Px(100.0),
             justify_content: JustifyContent::Center,
             align_items: AlignItems::Center,
-            margin: UiRect::bottom(Val::Px(40.0)),
+            position_type: PositionType::Relative,
+            flex_direction: FlexDirection::Column,
+            margin: UiRect::all(Val::Px(10.0)),
             ..default()
         },
+        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.0)), // Transparent background
         StarOfDavid,
         AppLayer::Menu.layer(), // Only visible on menu layer
-                                // Name::new("Star of David UI Component"), // Removed to prevent duplicate Name component
+        Visibility::Visible,
+        InheritedVisibility::default(),
+        ViewVisibility::default(),
     )
 }
