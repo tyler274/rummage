@@ -93,7 +93,7 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ..default()
             },
             // Semi-transparent background for better text readability - using srgba instead of rgba
-            BackgroundColor(Color::srgba(0.22, 0.15, 0.05, 0.7)),
+            // BackgroundColor(Color::srgba(0.22, 0.15, 0.05, 0.7)),
             MenuItem,
             AppLayer::Menu.layer(),
             Visibility::Visible,
@@ -124,21 +124,6 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 },
                 BackgroundColor(Color::srgba(0.05, 0.03, 0.01, 0.6)),
             ));
-
-            // // Add a center highlight (subtle radial effect)
-            // parent.spawn((
-            //     Node {
-            //         width: Val::Percent(70.0),
-            //         height: Val::Percent(70.0),
-            //         position_type: PositionType::Absolute,
-            //         top: Val::Percent(15.0),
-            //         left: Val::Percent(15.0),
-            //         ..default()
-            //     },
-            //     BackgroundColor(Color::srgba(0.5, 0.4, 0.15, 0.15)),
-            //     // Add rounded corners to create a soft radial effect
-            //     BorderRadius::all(Val::Percent(50.0)),
-            // ));
 
             // Add decorative horizontal line at top
             parent.spawn((

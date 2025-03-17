@@ -98,7 +98,7 @@ pub fn render_star_of_david(
             let material = materials.add(Color::srgb(1.0, 0.84, 0.0));
 
             // Create a triangle mesh
-            let triangle_mesh = meshes.add(create_equilateral_triangle_mesh(75.0));
+            let triangle_mesh = meshes.add(create_equilateral_triangle_mesh(150.0));
 
             // Spawn the child entities for the two triangles
             commands.entity(entity).with_children(|parent| {
@@ -106,7 +106,7 @@ pub fn render_star_of_david(
                 parent.spawn((
                     Mesh2d::from(triangle_mesh.clone()),
                     MeshMaterial2d(material.clone()),
-                    Transform::from_xyz(0.0, 0.0, 901.0),
+                    Transform::from_xyz(0.0, 20.0, 901.0),
                     GlobalTransform::default(),
                     Visibility::default(),
                     InheritedVisibility::default(),
@@ -117,7 +117,7 @@ pub fn render_star_of_david(
                 parent.spawn((
                     Mesh2d::from(triangle_mesh),
                     MeshMaterial2d(material),
-                    Transform::from_xyz(0.0, 0.0, 901.0)
+                    Transform::from_xyz(0.0, -20.0, 901.0)
                         .with_rotation(Quat::from_rotation_z(std::f32::consts::PI)),
                     GlobalTransform::default(),
                     Visibility::default(),
