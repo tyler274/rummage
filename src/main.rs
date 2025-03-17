@@ -3,16 +3,17 @@
 mod camera;
 mod cards;
 mod deck;
-mod drag;
 mod game_engine;
 mod mana;
 mod menu;
+mod networking;
 mod player;
 mod plugins;
 mod snapshot;
 mod text;
 mod tracing;
 mod utils;
+mod wsl2;
 
 use bevy::DefaultPlugins;
 use bevy::audio::AudioPlugin;

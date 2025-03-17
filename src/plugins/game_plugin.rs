@@ -16,7 +16,7 @@ pub struct RummagePlugin;
 
 impl Plugin for RummagePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(crate::drag::DragPlugin)
+        app.add_plugins(crate::cards::drag::DragPlugin)
             .add_plugins(crate::cards::CardPlugin)
             .add_plugins(crate::deck::DeckPlugin)
             .add_plugins(crate::game_engine::GameEnginePlugin)

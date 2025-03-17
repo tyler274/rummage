@@ -8,6 +8,7 @@ pub mod card;
 pub mod components;
 pub mod counters;
 pub mod details;
+pub mod drag;
 pub mod keywords;
 pub mod plugin;
 pub mod rarity;
