@@ -35,6 +35,6 @@ pub mod tests;
 /// }
 /// ```
 // Re-export key types for convenience
-pub use components::{CameraSnapshot, SnapshotSettings};
+pub use components::{CameraSnapshot, SaveGameSnapshot, SnapshotSettings};
 pub use plugin::SnapshotPlugin;
 pub use resources::{SnapshotConfig, SnapshotDisabled, SnapshotEvent};

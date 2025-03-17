@@ -123,6 +123,38 @@ let config = SaveConfig {
 
 The save/load system handles entity references by converting them to indices during serialization and rebuilding entities during deserialization. This preserves all relationships between entities despite the fact that entity IDs will change between sessions.
 
+## Visual Differential Testing
+
+The save/load system integrates with the snapshot system to enable visual differential testing of saved games. This allows you to:
+
+1. Automatically capture visual snapshots when games are saved
+2. Capture snapshots at specific points in replays
+3. Compare visual snapshots between different versions of the codebase to detect visual regressions
+
+To use visual differential testing:
+
+```rust
+// Capture a snapshot from a specific saved game
+let image = capture_saved_game_snapshot(world, "my_save", None, None);
+
+// Capture a snapshot from a specific turn in a saved game
+let image = capture_saved_game_snapshot(world, "my_save", Some(3), None);
+
+// Capture a snapshot at a specific replay step
+let image = capture_saved_game_snapshot(world, "my_save", None, Some(5));
+```
+
+### Integration with CI Testing
+
+Visual snapshots can be used in CI testing pipelines to automatically detect visual changes:
+
+1. Save reference images for key game states
+2. Compare against these references in CI tests
+3. Flag differences that exceed a configurable threshold
+4. Generate difference visualizations for debugging
+
+See the [Visual Testing Documentation](../testing/visual_testing.md) for more details on setting up and using the visual testing system.
+
 ## Next Steps
 
 - See [Implementation](implementation.md) for technical details

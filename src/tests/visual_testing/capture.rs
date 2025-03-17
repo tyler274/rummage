@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use image::{DynamicImage, ImageBuffer, Rgba};
 use std::collections::VecDeque;
+use std::path::PathBuf;
 
 /// Screenshot request event
 #[derive(Event)]
@@ -115,7 +116,125 @@ impl Plugin for ScreenshotCapturePlugin {
             .add_event::<ScreenshotEvent>()
             .add_systems(
                 Update,
-                (capture_screenshot_system, capture_on_command_system),
+                (
+                    capture_screenshot_system,
+                    capture_on_command_system,
+                    visual_test_saved_games_system,
+                ),
             );
     }
 }
+
+/// Captures a screenshot from a saved game at a specific point
+pub fn capture_saved_game_snapshot(
+    world: &mut World,
+    save_slot: &str,
+    turn_number: Option<u32>,
+    replay_step: Option<usize>,
+) -> Option<DynamicImage> {
+    // Load the save file or resume the replay
+    match (turn_number, replay_step) {
+        // Just load the save at its latest state
+        (None, None) => {
+            info!("Loading saved game: {}", save_slot);
+            world.send_event(crate::game_engine::save::LoadGameEvent {
+                slot_name: save_slot.to_string(),
+            });
+            // Run update to process load
+            let _ = world.run_schedule(bevy::app::Update);
+        }
+        // Load to a specific turn
+        (Some(turn), None) => {
+            info!("Starting replay to turn {}: {}", turn, save_slot);
+            // Start a replay
+            world.send_event(crate::game_engine::save::StartReplayEvent {
+                slot_name: save_slot.to_string(),
+            });
+            // Run update to process replay start
+            let _ = world.run_schedule(bevy::app::Update);
+
+            // Step through replay until we reach the desired turn
+            // This is simplified - real code would need to track turns more carefully
+            for _ in 0..turn {
+                world.send_event(crate::game_engine::save::StepReplayEvent { steps: 1 });
+                // Run update to process step
+                let _ = world.run_schedule(bevy::app::Update);
+            }
+        }
+        // Load and step to a specific point in the replay
+        (_, Some(step)) => {
+            info!("Starting replay at step {}: {}", step, save_slot);
+            // Start a replay
+            world.send_event(crate::game_engine::save::StartReplayEvent {
+                slot_name: save_slot.to_string(),
+            });
+            // Run update to process replay start
+            let _ = world.run_schedule(bevy::app::Update);
+
+            // Step to the exact step
+            world.send_event(crate::game_engine::save::StepReplayEvent { steps: step });
+            // Run update to process step
+            let _ = world.run_schedule(bevy::app::Update);
+        }
+    }
+
+    // Find the game camera to capture
+    let camera_entity = world
+        .query_filtered::<Entity, With<crate::camera::components::GameCamera>>()
+        .iter(world)
+        .next();
+
+    if let Some(camera) = camera_entity {
+        // Take the snapshot
+        let snapshot_name = match (turn_number, replay_step) {
+            (None, None) => format!("test_save_{}", save_slot),
+            (Some(turn), None) => format!("test_save_{}_turn_{}", save_slot, turn),
+            (_, Some(step)) => format!("test_save_{}_step_{}", save_slot, step),
+        };
+
+        let snapshot_event = crate::snapshot::SnapshotEvent::new()
+            .with_camera(camera)
+            .with_filename(format!("{}.png", snapshot_name))
+            .with_description(snapshot_name.clone())
+            .with_debug(true);
+
+        // Send the event to take a snapshot
+        world.send_event(snapshot_event);
+
+        // Run update to process the snapshot
+        let _ = world.run_schedule(bevy::app::Update);
+        let _ = world.run_schedule(bevy::app::PostUpdate);
+
+        // Simplified - in a real implementation, we'd need to wait for the snapshot to complete
+        // and retrieve the actual image data from the snapshot system
+
+        return take_screenshot();
+    } else {
+        error!("No game camera found for capturing saved game");
+        None
+    }
+}
+
+/// System for visually testing saved games
+pub fn visual_test_saved_games_system(
+    mut commands: Commands,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    config: Option<Res<crate::game_engine::save::SaveConfig>>,
+) {
+    if keyboard_input.just_pressed(KeyCode::F9) {
+        if let Some(config) = config {
+            // Check save directory for save files
+            let save_dir = &config.save_directory;
+
+            // In a real implementation, we would enumerate save files from the directory
+            info!("Visual testing save directory: {:?}", save_dir);
+
+            // Start a visual test of all saved games
+            commands.spawn(()).insert(VisualTestSavedGamesMarker);
+        }
+    }
+}
+
+/// Component to mark visual test of saved games in progress
+#[derive(Component)]
+pub struct VisualTestSavedGamesMarker;

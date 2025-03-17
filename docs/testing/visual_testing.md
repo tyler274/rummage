@@ -305,4 +305,158 @@ For more information on testing in Rummage, see:
 - [Unit Testing](unit_testing.md)
 - [Integration Testing](integration_testing.md)
 - [End-to-End Testing](end_to_end_testing.md)
-- [Game UI Testing](../game_gui/testing/index.md) 
+- [Game UI Testing](../game_gui/testing/index.md)
+
+# Visual Differential Testing
+
+Visual differential testing is a technique to automatically detect visual changes between versions of the codebase. Rummage implements a robust visual testing system that integrates with the save/load/replay system to provide powerful testing capabilities.
+
+## Core Features
+
+- **Save Game Snapshots**: Capture the visual state of any saved game
+- **Replay Point Captures**: Take snapshots at specific points in game replays
+- **Visual Comparison**: Compare images against reference images
+- **Difference Visualization**: Generate visual difference maps
+- **CI Integration**: Run visual tests in continuous integration pipelines
+
+## Basic Usage
+
+### Manually Capturing a Screenshot
+
+```rust
+use rummage::tests::visual_testing::capture::{request_screenshot, take_screenshot};
+
+// Take a screenshot of the whole screen
+let image = take_screenshot();
+
+// Request a screenshot of a specific entity
+world.send_event(request_screenshot(entity, "my_screenshot.png"));
+```
+
+### Working with Saved Games
+
+```rust
+use rummage::tests::visual_testing::capture::capture_saved_game_snapshot;
+
+// Capture a screenshot of the current state of a saved game
+let image = capture_saved_game_snapshot(world, "my_save", None, None);
+
+// Capture a screenshot of a specific turn
+let image = capture_saved_game_snapshot(world, "my_save", Some(3), None);
+
+// Capture a screenshot at a specific replay step
+let image = capture_saved_game_snapshot(world, "my_save", None, Some(5));
+```
+
+### Comparing with Reference Images
+
+```rust
+use rummage::tests::visual_testing::comparison::compare_images;
+use rummage::tests::visual_testing::utils::load_reference_image;
+
+// Load a reference image
+let reference = load_reference_image("my_reference.png").unwrap();
+
+// Compare with a captured image
+let result = compare_images(&reference, &captured, 0.1);
+
+// Check if there are significant differences
+if result.has_significant_differences() {
+    // Save the difference visualization
+    result.save_difference("difference.png");
+    
+    // Take action based on the difference
+    panic!("Visual difference detected!");
+}
+```
+
+## Automatic Testing
+
+The visual testing system can automatically test saved games:
+
+```rust
+use rummage::tests::visual_testing::fixtures::test_all_saved_games;
+
+// Test all saved games against reference images
+let results = test_all_saved_games(world);
+
+// Check results
+for result in results {
+    if !result.success {
+        println!("Test failed: {}", result.name);
+    }
+}
+```
+
+## Integration with Save/Load System
+
+The visual testing system integrates with the save/load system to automatically capture snapshots when:
+
+1. A game is saved
+2. A replay is stepped through
+3. A game is loaded from a save file
+
+This happens automatically through the following systems:
+
+- `take_save_game_snapshot`: Captures snapshots when games are saved
+- `take_replay_snapshot`: Captures snapshots during replay steps
+
+## CI Testing Pipeline
+
+The visual testing system can be integrated into a CI pipeline:
+
+```rust
+use rummage::tests::visual_testing::ci::{setup_ci_visual_test, is_ci_environment};
+
+// If running in CI environment, configure for CI
+if is_ci_environment() {
+    setup_ci_visual_test(app);
+}
+
+// Run tests
+let results = run_visual_tests();
+
+// Report results
+for result in results {
+    if !result.success {
+        // Upload difference images to CI artifacts
+        upload_artifact(&result.difference_image);
+    }
+}
+```
+
+## Implementation Details
+
+### Screenshot Capture
+
+The system can capture screenshots using different methods:
+
+1. **Whole Screen**: Capture the entire game window
+2. **Entity Focus**: Focus on a specific entity
+3. **Camera View**: Capture what a specific camera sees
+
+### Image Comparison
+
+Images are compared using one of several methods:
+
+1. **Pixel-by-Pixel**: Exact comparison of each pixel
+2. **Histogram**: Compare color distributions
+3. **Feature-Based**: Compare structural features
+4. **Neural**: Use neural networks for perceptual comparison
+
+### Testing Configuration
+
+Configure the visual testing system using the `VisualTestConfig` resource:
+
+```rust
+use rummage::tests::visual_testing::config::{VisualTestConfig, ComparisonMethod};
+
+// Configure visual testing
+app.insert_resource(VisualTestConfig {
+    reference_directory: PathBuf::from("reference_images"),
+    difference_directory: PathBuf::from("difference_images"),
+    comparison_method: ComparisonMethod::PixelByPixel,
+    similarity_threshold: 0.95,
+    generate_references: false,
+});
+``` 

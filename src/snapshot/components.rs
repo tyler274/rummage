@@ -76,3 +76,43 @@ impl SnapshotSettings {
         self
     }
 }
+
+/// Component to link a snapshot to a specific saved game
+#[derive(Component, Debug, Clone)]
+pub struct SaveGameSnapshot {
+    /// The save slot name this snapshot is associated with
+    pub slot_name: String,
+
+    /// The turn number in the saved game
+    pub turn_number: u32,
+
+    /// Optional timestamp of when the snapshot was taken
+    pub timestamp: Option<i64>,
+
+    /// Optional description of the game state
+    pub description: Option<String>,
+}
+
+impl SaveGameSnapshot {
+    /// Create a new SaveGameSnapshot linked to a specific save slot
+    pub fn new(slot_name: impl Into<String>, turn_number: u32) -> Self {
+        Self {
+            slot_name: slot_name.into(),
+            turn_number,
+            timestamp: None,
+            description: None,
+        }
+    }
+
+    /// Add a description to the snapshot
+    pub fn with_description(mut self, description: impl Into<String>) -> Self {
+        self.description = Some(description.into());
+        self
+    }
+
+    /// Set the timestamp for the snapshot
+    pub fn with_timestamp(mut self, timestamp: i64) -> Self {
+        self.timestamp = Some(timestamp);
+        self
+    }
+}

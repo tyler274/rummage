@@ -237,3 +237,109 @@ fn test_snapshot_plugin() {
     let disabled = app.world().resource::<SnapshotDisabled>();
     assert!(!disabled.0, "Snapshots should be enabled by default");
 }
+
+#[cfg(test)]
+mod save_load_integration_tests {
+    use super::*;
+    use crate::camera::components::GameCamera;
+    use crate::game_engine::save::{LoadGameEvent, SaveConfig, SaveGameEvent};
+    use crate::game_engine::state::GameState;
+    use crate::snapshot::components::SaveGameSnapshot;
+    use bevy::app::Update;
+    use bevy::prelude::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_snapshot_taken_when_game_saved() {
+        // Setup the test app
+        let mut app = App::new();
+
+        // Add test plugins
+        app.add_plugins(MinimalPlugins)
+            .add_plugins(crate::snapshot::plugin::SnapshotPlugin);
+
+        // Add systems to test
+        app.add_systems(Update, crate::snapshot::systems::take_save_game_snapshot);
+
+        // Add events for save/load
+        app.add_event::<SaveGameEvent>()
+            .add_event::<LoadGameEvent>();
+
+        // Create a mock game state
+        let game_state = GameState {
+            turn_number: 5,
+            ..Default::default()
+        };
+        app.insert_resource(game_state);
+
+        // Create a save config
+        let save_config = SaveConfig {
+            save_directory: PathBuf::from("test_saves"),
+            auto_save_enabled: true,
+            auto_save_frequency: 1,
+        };
+        app.insert_resource(save_config);
+
+        // Create a camera with game camera component
+        let camera_entity = app
+            .world
+            .spawn((
+                GameCamera, // Minimal components to make a camera
+                Camera2d,
+            ))
+            .id();
+
+        // Send a save game event
+        app.world.send_event(SaveGameEvent {
+            slot_name: "test_save".to_string(),
+        });
+
+        // Run the systems
+        app.update();
+
+        // Check if the camera has a SaveGameSnapshot component
+        let snapshot = app.world.entity(camera_entity).get::<SaveGameSnapshot>();
+        assert!(
+            snapshot.is_some(),
+            "Camera should have a SaveGameSnapshot component"
+        );
+
+        if let Some(snapshot) = snapshot {
+            assert_eq!(
+                snapshot.slot_name, "test_save",
+                "Save slot name should match"
+            );
+            assert_eq!(snapshot.turn_number, 5, "Turn number should match");
+            assert!(snapshot.timestamp.is_some(), "Timestamp should be set");
+        }
+
+        // Check if a snapshot event was sent
+        let mut snapshot_events = app
+            .world
+            .resource_mut::<Events<crate::snapshot::resources::SnapshotEvent>>();
+        let reader = snapshot_events.get_reader();
+        let events: Vec<_> = reader.read(&snapshot_events).collect();
+
+        assert!(!events.is_empty(), "A snapshot event should have been sent");
+
+        // Verify event contents
+        if let Some(event) = events.first() {
+            assert_eq!(
+                event.camera_entity,
+                Some(camera_entity),
+                "Camera entity should match"
+            );
+
+            // Check filename and description
+            if let Some(desc) = &event.description {
+                assert!(
+                    desc.contains("test_save"),
+                    "Description should contain save slot name"
+                );
+                assert!(desc.contains("5"), "Description should contain turn number");
+            } else {
+                panic!("Description should be set");
+            }
+        }
+    }
+}
