@@ -1,7 +1,7 @@
-use crate::cards::{Card, CardDetails};
-use crate::text::components::CardNameText;
 use crate::cards::types::CardTypes;
+use crate::cards::{Card, CardDetails};
 use crate::mana::Mana;
+use crate::text::components::CardNameText;
 use bevy::prelude::*;
 
 /// Test that demonstrates how to use the process_name_text_components function

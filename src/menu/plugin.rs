@@ -13,7 +13,7 @@ use crate::{
         deck::DeckManagerPlugin,
         logo::{StarOfDavidPlugin, render_star_of_david},
         main::MainMenuPlugin,
-        main_menu::{menu_action, set_menu_camera_zoom, setup_main_menu, MenuBackground},
+        main_menu::{MenuBackground, menu_action, set_menu_camera_zoom, setup_main_menu},
         pause_menu::{handle_pause_input, pause_menu_action, setup_pause_menu},
         settings::{SettingsMenuState, SettingsPlugin},
         state::{GameMenuState, StateTransitionContext},
@@ -85,7 +85,12 @@ impl Plugin for MenuPlugin {
             )
             .add_systems(
                 Update,
-                (menu_action, render_star_of_david, debug_menu_visibility, update_menu_background)
+                (
+                    menu_action,
+                    render_star_of_david,
+                    debug_menu_visibility,
+                    update_menu_background,
+                )
                     .run_if(in_state(GameMenuState::MainMenu)),
             )
             // Loading state systems
@@ -508,7 +513,7 @@ fn update_menu_background(
             // Set the UI node size to match the window size exactly
             node.width = Val::Px(window.width());
             node.height = Val::Px(window.height());
-            
+
             // Log window size changes at debug level to avoid log spam
             debug!(
                 "Window size: {}x{}, updating menu background size",

@@ -14,7 +14,7 @@ impl Plugin for SettingsPlugin {
     fn build(&self, app: &mut App) {
         // Initialize the VolumeSettings resource first
         app.init_resource::<VolumeSettings>();
-        
+
         // Set up persistent volume settings
         match Persistent::<VolumeSettings>::builder()
             .name("volume_settings")
@@ -95,16 +95,16 @@ impl Plugin for SettingsPlugin {
 
 /// Apply saved volume settings on startup
 fn apply_volume_settings(
-    persistent_volume: Option<Res<Persistent<VolumeSettings>>>, 
+    persistent_volume: Option<Res<Persistent<VolumeSettings>>>,
     mut volume_settings: ResMut<VolumeSettings>,
-    mut global_volume: ResMut<bevy::prelude::GlobalVolume>
+    mut global_volume: ResMut<bevy::prelude::GlobalVolume>,
 ) {
     if let Some(persistent) = persistent_volume {
         info!("Applying saved volume settings: {:?}", *persistent);
-        
-        // Update the actual settings resource 
+
+        // Update the actual settings resource
         *volume_settings = (*persistent).clone();
-        
+
         // Apply to global volume
         global_volume.volume = bevy::audio::Volume::new(volume_settings.master);
     } else {
@@ -116,7 +116,7 @@ fn apply_volume_settings(
 /// Save volume settings when leaving the audio settings menu
 fn save_volume_settings(
     persistent_volume: Option<ResMut<Persistent<VolumeSettings>>>,
-    volume_settings: Res<VolumeSettings>
+    volume_settings: Res<VolumeSettings>,
 ) {
     if let Some(mut persistent) = persistent_volume {
         info!("Saving volume settings: {:?}", *volume_settings);

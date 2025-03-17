@@ -1,5 +1,3 @@
-use bevy::prelude::*;
-
 /// Represents rendering options for mana symbols
 #[derive(Clone, Debug)]
 pub struct ManaSymbolOptions {

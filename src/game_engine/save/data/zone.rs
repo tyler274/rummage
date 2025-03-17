@@ -69,4 +69,4 @@ impl Default for CardData {
             counters: HashMap::new(),
         }
     }
-} 
+}

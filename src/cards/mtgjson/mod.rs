@@ -1,23 +1,25 @@
 //! MTGJSON Integration Module
-//! 
+//!
 //! This module provides integration with the MTGJSON API (https://mtgjson.com/), allowing the application
 //! to fetch and process Magic: The Gathering card data. It includes functionality for:
-//! 
+//!
 //! - Fetching card sets and individual cards
 //! - Rate-limited API access
 //! - Local caching of downloaded data
 //! - Conversion between MTGJSON and internal card representations
 //! - Mock client support for testing
-//! 
+//!
 //! The module implements proper rate limiting to respect MTGJSON's API guidelines and includes
 //! robust error handling and data validation.
 
 use crate::cards::{
-    Card, CardDetails, CardTypes, CreatureCard, CreatureType,
-    CardCost, CardDetailsComponent, CardKeywords, CardName, CardRulesText, CardTypeInfo,
+    Card, CardCost, CardDetails, CardDetailsComponent, CardKeywords, CardName, CardRulesText,
+    CardTypeInfo, CardTypes, CreatureCard, CreatureType,
 };
-use crate::mana::{ManaColor, Mana};
+use crate::mana::{Mana, ManaColor};
 use async_trait::async_trait;
+use lazy_static::lazy_static;
+use regex;
 use reqwest;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -26,10 +28,9 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
-use tokio::sync::Mutex as TokioMutex;
-use tokio::time::{sleep, Duration};
 use std::time::Instant;
-use lazy_static::lazy_static;
+use tokio::sync::Mutex as TokioMutex;
+use tokio::time::{Duration, sleep};
 
 pub mod test_utils;
 
@@ -348,20 +349,20 @@ pub enum MTGClientType {
 
 impl MTGClientType {
     /// Fetches a set from MTGJSON by its set code
-    /// 
+    ///
     /// This method handles both live HTTP requests and mock responses for testing.
     /// For HTTP requests, it implements rate limiting to respect API guidelines.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `set_code` - The code of the set to fetch (e.g., "M21" for Core Set 2021)
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// Returns a Result containing either the fetched set data or an error
-    /// 
+    ///
     /// # Rate Limiting
-    /// 
+    ///
     /// HTTP requests are limited to 10 requests per second using a global rate limiter
     pub async fn fetch_set(
         &self,
@@ -377,7 +378,7 @@ impl MTGClientType {
                     sleep(RATE_LIMIT_DURATION - elapsed).await;
                 }
                 *last_request = Instant::now();
-                
+
                 let url = format!("https://mtgjson.com/api/v5/{}.json.bz2", set_code);
                 let response = client.get(&url).send().await?;
                 if !response.status().is_success() {
@@ -396,7 +397,7 @@ impl MTGClientType {
 }
 
 /// Service for interacting with MTGJSON data
-/// 
+///
 /// This service handles fetching and caching of MTG card data,
 /// including versioning and data validation.
 #[allow(dead_code)]
@@ -443,7 +444,7 @@ impl MTGService {
     }
 
     /// Fetches metadata about the current MTGJSON version
-    /// 
+    ///
     /// This includes the current version number and update date.
     /// Results are cached to avoid unnecessary API calls.
 
@@ -468,7 +469,7 @@ impl MTGService {
     }
 
     /// Verifies the integrity of a cached set file
-    /// 
+    ///
     /// Checks both the version and checksum of the file against
     /// the current MTGJSON version.
 
@@ -501,7 +502,7 @@ impl MTGService {
     }
 
     /// Saves a set's data to the disk cache
-    /// 
+    ///
     /// Stores the compressed data along with its checksum and version
     /// information for future validation.
     #[allow(dead_code)]
@@ -533,12 +534,12 @@ impl MTGService {
     }
 
     /// Fetches a set by its code, using caching when possible
-    /// 
+    ///
     /// This method implements a multi-level caching strategy:
     /// 1. First checks the in-memory cache
     /// 2. Then checks the disk cache
     /// 3. Finally falls back to fetching from the API
-    /// 
+    ///
     /// Cache validation includes both version checking and checksum verification.
     #[allow(dead_code)]
     pub async fn fetch_set(&self, set_code: &str) -> Result<Vec<Card>, Box<dyn std::error::Error>> {
@@ -618,7 +619,7 @@ impl MTGService {
     }
 
     /// Fetches multiple sets in sequence
-    /// 
+    ///
     /// Returns a combined vector of all cards from the specified sets.
     #[allow(dead_code)]
     pub async fn fetch_multiple_sets(
@@ -634,12 +635,12 @@ impl MTGService {
     }
 
     /// Fetches the list of all available sets
-    /// 
+    ///
     /// Filters the sets based on various criteria:
     /// - Only includes main sets, expansions, and special sets
     /// - Excludes unreleased sets
     /// - Excludes empty sets
-    /// 
+    ///
     /// Returns a vector of set codes sorted by release date (newest first)
     #[allow(dead_code)]
     pub async fn fetch_set_list(&self) -> Result<Vec<String>, Error> {
@@ -701,10 +702,7 @@ pub fn convert_mtgjson_to_card(
     CardKeywords,
 )> {
     // Parse the mana cost
-    let mana_cost = match &mtg_card.mana_cost {
-        Some(cost) => parse_mana_cost(cost),
-        None => Mana::default(),
-    };
+    let mana_cost = parse_mana_cost(&mtg_card.mana_cost.unwrap());
 
     // Get the card types
     let types = determine_card_type(
@@ -716,7 +714,12 @@ pub fn convert_mtgjson_to_card(
     // Process card details based on type
     let card_details = if types.contains(CardTypes::CREATURE) {
         CardDetails::Creature(CreatureCard {
-            power: mtg_card.power.as_deref().unwrap_or("0").parse().unwrap_or(0),
+            power: mtg_card
+                .power
+                .as_deref()
+                .unwrap_or("0")
+                .parse()
+                .unwrap_or(0),
             toughness: mtg_card
                 .toughness
                 .as_deref()
@@ -735,27 +738,21 @@ pub fn convert_mtgjson_to_card(
 
     let rules_text = mtg_card.text.unwrap_or_default();
     let name = mtg_card.name;
-    
+
     // Create the card and return it with its components
-    let card = Card::new(
-        &name,
-        mana_cost,
-        types,
-        card_details,
-        &rules_text,
-    );
-    
+    let card = Card::new(&name, mana_cost, types, card_details, &rules_text);
+
     // Return the card and its individual components
     Some(card.get_components())
 }
 
 /// Determines the card types from type strings
-/// 
+///
 /// Processes three levels of type information:
 /// - Basic types (Creature, Instant, etc.)
 /// - Supertypes (Legendary, Basic, etc.)
 /// - Subtypes (Equipment, Saga, etc.)
-/// 
+///
 /// Returns None if no valid types are found
 pub fn determine_card_type(
     types: &[String],
@@ -829,12 +826,12 @@ pub fn determine_card_type(
 }
 
 /// Determines creature types from subtypes and card text
-/// 
+///
 /// This function processes multiple sources of type information:
 /// - Explicit subtypes from the card
 /// - Types inferred from the card name
 /// - Types inferred from rules text
-/// 
+///
 /// Returns a CreatureType bitflag with all applicable types
 pub fn determine_creature_types(subtypes: &[String], name: &str, text: &str) -> CreatureType {
     let mut creature_types = CreatureType::NONE;
@@ -918,80 +915,58 @@ pub fn determine_creature_types(subtypes: &[String], name: &str, text: &str) -> 
     creature_types
 }
 
-/// Parses a mana cost string into a Mana struct
-/// 
-/// Handles both generic and colored mana symbols in the standard MTG format:
-/// - {1}, {2}, etc. for generic mana
-/// - {W}, {U}, {B}, {R}, {G} for colored mana
-/// 
-/// Example: "{2}{W}{W}" becomes Mana with colorless=2, white=2
-pub fn parse_mana_cost(cost: &str) -> Mana {
-    let mut mana = Mana::default();
-    
-    // Handle empty string case
-    if cost.is_empty() {
-        mana.color = Color::COLORLESS;
-        return mana;
-    }
+/// Parse a mana cost string into a Mana struct
+fn parse_mana_cost(mana_cost: &str) -> Mana {
+    let mut result = Mana::default();
+    let mut generic_mana = 0;
 
-    let mut in_brace = false;
-    let mut current_number = String::new();
-
-    for c in cost.chars() {
-        match c {
-            '{' => in_brace = true,
-            '}' => {
-                in_brace = false;
-                if !current_number.is_empty() {
-                    if let Ok(n) = current_number.parse::<u64>() {
-                        mana.colorless = n;
-                    }
-                    current_number.clear();
-                }
+    // Extract all mana symbols from the string
+    let re = regex::Regex::new(r"\{([^}]+)\}").unwrap();
+    for cap in re.captures_iter(mana_cost) {
+        let symbol = cap.get(1).unwrap().as_str();
+        match symbol {
+            "W" => result.white += 1,
+            "U" => result.blue += 1,
+            "B" => result.black += 1,
+            "R" => result.red += 1,
+            "G" => result.green += 1,
+            "C" => result.colorless += 1,
+            // Handle generic mana (numbers)
+            s if s.parse::<u64>().is_ok() => {
+                generic_mana += s.parse::<u64>().unwrap();
             }
-            'W' => {
-                if in_brace {
-                    mana.white += 1;
-                    mana.color |= Color::WHITE;
-                }
-            }
-            'U' => {
-                if in_brace {
-                    mana.blue += 1;
-                    mana.color |= Color::BLUE;
-                }
-            }
-            'B' => {
-                if in_brace {
-                    mana.black += 1;
-                    mana.color |= Color::BLACK;
-                }
-            }
-            'R' => {
-                if in_brace {
-                    mana.red += 1;
-                    mana.color |= Color::RED;
-                }
-            }
-            'G' => {
-                if in_brace {
-                    mana.green += 1;
-                    mana.color |= Color::GREEN;
-                }
-            }
-            n if n.is_ascii_digit() && in_brace => {
-                current_number.push(n);
-            }
+            // Ignore other symbols for now (hybrid, phyrexian, etc.)
             _ => {}
         }
     }
 
-    // Set colorless flag if only colorless mana
-    if !mana.has_color() && mana.colorless > 0 {
-        mana.color = Color::COLORLESS;
-    }
+    // Set generic mana
+    result.colorless = generic_mana;
 
-    mana
+    // Set color flags
+    let mut color = ManaColor::NONE;
+    if result.white > 0 {
+        color |= ManaColor::WHITE;
+    }
+    if result.blue > 0 {
+        color |= ManaColor::BLUE;
+    }
+    if result.black > 0 {
+        color |= ManaColor::BLACK;
+    }
+    if result.red > 0 {
+        color |= ManaColor::RED;
+    }
+    if result.green > 0 {
+        color |= ManaColor::GREEN;
+    }
+    if result.colorless > 0 {
+        color |= ManaColor::COLORLESS;
+    }
+    result.color = color;
+    result.reflectable_color = color.into();
+
+    result
 }
 
 /// Default language for cards (English)
