@@ -21,7 +21,7 @@ impl Plugin for ZonesPlugin {
             .add_event::<events::ZoneChangeEvent>()
             .add_event::<events::EntersBattlefieldEvent>();
 
-        // Add systems for managing zones
-        app.add_systems(Update, systems::process_zone_changes);
+        // Add systems for managing zones - moved to FixedUpdate for better performance
+        app.add_systems(FixedUpdate, systems::process_zone_changes);
     }
 }

@@ -51,12 +51,12 @@ impl Plugin for MainRummagePlugin {
             .add_systems(OnEnter(GameMenuState::InGame), setup_game)
             // Add system to create game camera when entering game state
             .add_systems(OnEnter(GameMenuState::InGame), setup_game_camera)
-            // System to connect cards to zones after they're spawned
-            .add_systems(Update, connect_cards_to_zones)
+            // System to connect cards to zones after they're spawned - moved to FixedUpdate
+            .add_systems(FixedUpdate, connect_cards_to_zones)
             // Add a system to ensure game camera is visible in InGame state
             .add_systems(OnEnter(GameMenuState::InGame), ensure_game_camera_visible)
-            // Add a diagnostic system to check card status
-            .add_systems(Update, check_card_status);
+            // Add a diagnostic system to check card status - moved to FixedUpdate
+            .add_systems(FixedUpdate, check_card_status);
     }
 }
 

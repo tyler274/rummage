@@ -19,6 +19,6 @@ impl Plugin for PermanentPlugin {
             .register_type::<PermanentController>()
             .register_type::<PermanentOwner>()
             .register_type::<PermanentState>()
-            .add_systems(Update, update_permanent_state);
+            .add_systems(FixedUpdate, update_permanent_state);
     }
 }

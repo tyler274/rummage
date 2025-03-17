@@ -96,5 +96,5 @@ fn main() {
     #[cfg(feature = "snapshot")]
     app.insert_resource(SnapshotDisabled::enabled()); // Enable snapshots
 
-    app.add_systems(Update, utils::handle_exit).run();
+    app.add_systems(FixedUpdate, utils::handle_exit).run();
 }

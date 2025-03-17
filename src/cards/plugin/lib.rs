@@ -51,7 +51,9 @@ impl Plugin for CardPlugin {
             .register_type::<ReflectableColor>()
             .register_type::<std::collections::HashSet<KeywordAbility>>()
             .register_type::<std::collections::HashMap<KeywordAbility, String>>()
+            // Keep input handling in Update
             .add_systems(Update, handle_card_dragging)
-            .add_systems(Update, debug_render_text_positions);
+            // Move debug rendering to FixedUpdate
+            .add_systems(FixedUpdate, debug_render_text_positions);
     }
 }

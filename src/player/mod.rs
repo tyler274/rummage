@@ -20,7 +20,7 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PlayerConfig>()
             .init_resource::<PlayerPositionTracker>()
-            .add_systems(Update, debug_draw_player_positions)
+            .add_systems(FixedUpdate, debug_draw_player_positions)
             .add_plugins(PlayerPlaymatPlugin);
     }
 }
