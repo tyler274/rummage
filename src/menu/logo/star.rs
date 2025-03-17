@@ -111,16 +111,21 @@ pub fn render_star_of_david(
     query: Query<Entity, (With<StarOfDavid>, Without<Children>)>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    windows: Query<&Window>,
 ) {
+    // Get window dimensions for proper positioning
+    let window_width = windows.iter().next().map(|w| w.width()).unwrap_or(1920.0);
+    let window_height = windows.iter().next().map(|w| w.height()).unwrap_or(1080.0);
+
     // Only process entities that don't have children yet
     for entity in &query {
         // Create the material once - brighter gold color with higher saturation
         let material = materials.add(Color::srgb(1.0, 1.0, 0.0));
 
-        // Log the star creation
+        // Log the star creation with window dimensions
         info!(
-            "Rendering Star of David for entity {:?} at z-position 100.0",
-            entity
+            "Rendering Star of David for entity {:?} at z-position 100.0, window: {}x{}",
+            entity, window_width, window_height
         );
 
         // Create a triangle mesh - increased size for better visibility
@@ -131,6 +136,13 @@ pub fn render_star_of_david(
 
         // Triangle offset to create the star shape
         let triangle_offset = 60.0; // Increased offset for better shape
+
+        // Update position based on window dimensions
+        commands.entity(entity).insert(Transform::from_xyz(
+            0.0,                  // Centered horizontally
+            window_height * 0.15, // Positioned near the top (15% from top)
+            z_position,
+        ));
 
         // Spawn the child entities for the two triangles
         commands.entity(entity).with_children(|parent| {
@@ -197,7 +209,7 @@ pub fn create_star_of_david() -> impl Bundle {
     (
         // Use a UI-oriented position that works with the menu camera
         // Z-index places it behind UI elements but still visible
-        Transform::from_xyz(0.0, 0.0, 100.0), // Position in center with high z value
+        Transform::from_xyz(0.0, 200.0, 100.0), // Position in center top area of screen with high z value
         GlobalTransform::default(),
         Visibility::default(),
         InheritedVisibility::default(),

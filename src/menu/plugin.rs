@@ -263,16 +263,31 @@ fn setup_pause_star(
         create_english_text, create_hebrew_text, create_logo, create_star_of_david,
     };
 
-    // Find the menu camera
+    info!("Setting up Star of David as standalone entity for pause menu");
+
+    // Spawn the Star of David as a top-level entity
+    let star_entity = commands
+        .spawn((
+            create_star_of_david(),
+            Name::new("Star of David - Pause Menu"),
+        ))
+        .id();
+
+    info!(
+        "Spawned Star of David as standalone entity for pause menu: {:?}",
+        star_entity
+    );
+
+    // Find the menu camera for text elements
     if let Some(camera_entity) = menu_cameras.iter().next() {
         info!(
-            "Attaching Star of David and text to pause menu camera: {:?}",
+            "Attaching text elements to pause menu camera: {:?}",
             camera_entity
         );
 
-        // Spawn the logo group as a child of the menu camera
+        // Spawn the logo group as a child of the menu camera for the text elements only
         commands.entity(camera_entity).with_children(|parent| {
-            // Create a parent entity that will contain the star and text elements
+            // Create a parent entity that will contain the text elements
             parent
                 .spawn((
                     create_logo(),
@@ -280,9 +295,6 @@ fn setup_pause_star(
                     MenuDecorativeElement,
                 ))
                 .with_children(|logo_parent| {
-                    // Spawn the Star of David
-                    logo_parent.spawn((create_star_of_david(), Name::new("Pause Star of David")));
-
                     // Spawn the Hebrew text below the star
                     logo_parent.spawn((
                         create_hebrew_text(&asset_server),
@@ -297,9 +309,9 @@ fn setup_pause_star(
                 });
         });
     } else {
-        warn!("No menu camera found for Star of David and text attachment");
+        warn!("No menu camera found for text elements attachment in pause menu");
 
-        // If no camera is found, still spawn the logo group
+        // If no camera is found, still spawn the text elements
         commands
             .spawn((
                 create_logo(),
@@ -307,9 +319,6 @@ fn setup_pause_star(
                 MenuDecorativeElement,
             ))
             .with_children(|logo_parent| {
-                // Spawn the Star of David
-                logo_parent.spawn((create_star_of_david(), Name::new("Pause Star of David")));
-
                 // Spawn the Hebrew text below the star
                 logo_parent.spawn((
                     create_hebrew_text(&asset_server),
