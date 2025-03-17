@@ -9,6 +9,7 @@ use crate::menu::{
 use bevy::audio::{AudioPlayer, PlaybackMode, PlaybackSettings, Volume};
 use bevy::prelude::*;
 use bevy::text::JustifyText;
+#[allow(unused_imports)]
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, PositionType, UiRect, Val};
 
 /// Component to mark background image for easier access
@@ -101,66 +102,6 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
             ViewVisibility::default(),
         ))
         .with_children(|parent| {
-            // Add decorative horizontal line at top
-            parent.spawn((
-                Node {
-                    width: Val::Percent(80.0),
-                    height: Val::Px(2.0),
-                    position_type: PositionType::Absolute,
-                    top: Val::Percent(10.0),
-                    ..default()
-                },
-                BackgroundColor(Color::srgba(0.7, 0.6, 0.2, 0.6)),
-                MenuItem,
-                MenuDecorativeElement,
-            ));
-
-            // Add decorative horizontal line at bottom
-            parent.spawn((
-                Node {
-                    width: Val::Percent(80.0),
-                    height: Val::Px(2.0),
-                    position_type: PositionType::Absolute,
-                    bottom: Val::Percent(10.0),
-                    ..default()
-                },
-                BackgroundColor(Color::srgba(0.7, 0.6, 0.2, 0.6)),
-                MenuItem,
-                MenuDecorativeElement,
-            ));
-
-            // Add left decorative vertical element
-            parent.spawn((
-                Node {
-                    width: Val::Px(8.0),
-                    height: Val::Percent(60.0),
-                    position_type: PositionType::Absolute,
-                    left: Val::Percent(5.0),
-                    top: Val::Percent(20.0),
-                    ..default()
-                },
-                BackgroundColor(Color::srgba(0.7, 0.6, 0.2, 0.3)),
-                BorderRadius::all(Val::Px(4.0)),
-                MenuItem,
-                MenuDecorativeElement,
-            ));
-
-            // Add right decorative vertical element
-            parent.spawn((
-                Node {
-                    width: Val::Px(8.0),
-                    height: Val::Percent(60.0),
-                    position_type: PositionType::Absolute,
-                    right: Val::Percent(5.0),
-                    top: Val::Percent(20.0),
-                    ..default()
-                },
-                BackgroundColor(Color::srgba(0.7, 0.6, 0.2, 0.3)),
-                BorderRadius::all(Val::Px(4.0)),
-                MenuItem,
-                MenuDecorativeElement,
-            ));
-
             // Add the logo
             parent
                 .spawn((
