@@ -106,7 +106,13 @@ pub fn connect_cards_to_zones(
     query: Query<(Entity, &InitializeCardsEvent)>,
     card_query: Query<(Entity, &CardZone)>,
     mut zone_manager: ResMut<ZoneManager>,
+    game_state: Res<State<GameMenuState>>,
 ) {
+    // Only run when the game state is InGame
+    if *game_state.get() != GameMenuState::InGame {
+        return;
+    }
+
     for (entity, _) in query.iter() {
         info!("Connecting cards to zones...");
 
@@ -259,7 +265,13 @@ fn check_card_status(
     game_camera_query: Query<Entity, With<GameCamera>>,
     zone_manager: Res<ZoneManager>,
     mut has_run: Local<bool>,
+    game_state: Res<State<GameMenuState>>,
 ) {
+    // Only run when the game state is InGame
+    if *game_state.get() != GameMenuState::InGame {
+        return;
+    }
+
     // Only run once
     if *has_run {
         return;

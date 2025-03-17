@@ -3,7 +3,7 @@ use crate::menu::state::GameMenuState;
 use bevy::prelude::*;
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, PositionType, UiRect, Val};
 
-/// Component for the Star of David shape
+/// Component for the Star of David image
 #[derive(Component)]
 pub struct StarOfDavid;
 
@@ -12,16 +12,11 @@ pub struct StarOfDavid;
 pub struct StarOfDavidLogState {
     /// Last recorded number of stars
     last_star_count: usize,
-    /// Last recorded state of stars having children
-    last_children_state: std::collections::HashMap<Entity, bool>,
 }
 
 impl Default for StarOfDavidLogState {
     fn default() -> Self {
-        Self {
-            last_star_count: 0,
-            last_children_state: std::collections::HashMap::new(),
-        }
+        Self { last_star_count: 0 }
     }
 }
 
@@ -80,94 +75,38 @@ fn monitor_star_of_david_changes(
     }
 }
 
-/// System to create and render the Star of David using UI components
+/// System to create and render the Star of David using UI image
 pub fn render_star_of_david(
     mut commands: Commands,
     query: Query<Entity, (With<StarOfDavid>, Without<Children>)>,
-    windows: Query<&Window>,
+    asset_server: Res<AssetServer>,
 ) {
-    // Get window dimensions for proper positioning
-    let window_width = windows.iter().next().map(|w| w.width()).unwrap_or(1920.0);
-    let window_height = windows.iter().next().map(|w| w.height()).unwrap_or(1080.0);
-
     // Only process entities that don't have children yet
     for entity in &query {
         info!(
-            "Rendering Star of David as UI element for entity {:?}, window: {}x{}",
-            entity, window_width, window_height
+            "Rendering Star of David as UI image for entity {:?}",
+            entity
         );
 
-        // Create two triangles as UI elements with borders
+        // Use ImageNode to display the star image
         commands.entity(entity).with_children(|parent| {
-            // Container for the star
-            parent
-                .spawn((
-                    Node {
-                        width: Val::Px(100.0),
-                        height: Val::Px(100.0),
-                        position_type: PositionType::Relative,
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        ..default()
-                    },
-                    GlobalZIndex(100), // Add high z-index to ensure visibility
-                    BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.0)), // Transparent background
-                    Name::new("Star Container"),
-                    Visibility::Visible,
-                    InheritedVisibility::default(),
-                    ViewVisibility::default(),
-                ))
-                .with_children(|star_parent| {
-                    // First triangle (pointing up)
-                    star_parent.spawn((
-                        Node {
-                            width: Val::Px(60.0),
-                            height: Val::Px(60.0),
-                            position_type: PositionType::Relative,
-                            left: Val::Px(0.0),
-                            top: Val::Px(0.0),
-                            ..default()
-                        },
-                        BackgroundColor(Color::srgb(1.0, 0.8, 0.0)), // Brighter yellow color
-                        BorderRadius::all(Val::Percent(50.0)),
-                        Outline {
-                            width: Val::Px(2.0),
-                            color: Color::srgb(0.8, 0.6, 0.0), // Darker gold outline
-                            offset: Val::Px(0.0),
-                        },
-                        GlobalZIndex(101), // Even higher z-index for the triangle
-                        Name::new("Star Triangle Up"),
-                        Visibility::Visible,
-                        InheritedVisibility::default(),
-                        ViewVisibility::default(),
-                    ));
-
-                    // Second triangle (pointing down)
-                    star_parent.spawn((
-                        Node {
-                            width: Val::Px(60.0),
-                            height: Val::Px(60.0),
-                            position_type: PositionType::Absolute, // Absolute to overlay
-                            left: Val::Px(20.0),                   // Center within parent
-                            top: Val::Px(20.0),                    // Center within parent
-                            ..default()
-                        },
-                        // Use Transform component for rotation instead of TransformOrigin
-                        BackgroundColor(Color::srgb(1.0, 0.8, 0.0)),
-                        Transform::from_rotation(Quat::from_rotation_z(std::f32::consts::PI / 2.0)), // Rotate 90 degrees
-                        BorderRadius::all(Val::Percent(50.0)),
-                        Outline {
-                            width: Val::Px(2.0),
-                            color: Color::srgb(0.8, 0.6, 0.0),
-                            offset: Val::Px(0.0),
-                        },
-                        GlobalZIndex(102), // Highest z-index for the rotated triangle
-                        Name::new("Star Triangle Down"),
-                        Visibility::Visible,
-                        InheritedVisibility::default(),
-                        ViewVisibility::default(),
-                    ));
-                });
+            // Create a UI image node for the star
+            parent.spawn((
+                ImageNode::new(asset_server.load("textures/star.png")),
+                Node {
+                    width: Val::Px(120.0),
+                    height: Val::Px(120.0),
+                    position_type: PositionType::Relative,
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                GlobalZIndex(100), // Add high z-index to ensure visibility
+                Name::new("Star Image"),
+                Visibility::Visible,
+                InheritedVisibility::default(),
+                ViewVisibility::default(),
+            ));
         });
     }
 }
@@ -178,8 +117,8 @@ pub fn create_star_of_david() -> impl Bundle {
     (
         // Use UI-oriented components
         Node {
-            width: Val::Px(100.0),
-            height: Val::Px(100.0),
+            width: Val::Px(120.0),
+            height: Val::Px(120.0),
             justify_content: JustifyContent::Center,
             align_items: AlignItems::Center,
             position_type: PositionType::Relative,
@@ -187,7 +126,7 @@ pub fn create_star_of_david() -> impl Bundle {
             margin: UiRect::all(Val::Px(10.0)),
             ..default()
         },
-        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.0)), // Transparent background
+        BackgroundColor(Color::NONE), // Transparent background
         StarOfDavid,
         AppLayer::Menu.layer(), // Only visible on menu layer
         Visibility::Visible,
