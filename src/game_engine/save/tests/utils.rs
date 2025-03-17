@@ -211,10 +211,10 @@ pub fn cleanup_default_test_environment() {
     info!("Cleaned up default test directory: {:?}", test_dir);
 }
 
-// Provides a shared function for backward compatibility to get the default test dir
-pub fn get_default_test_dir() -> &'static Path {
-    Path::new("target/test_saves")
-}
+// // Provides a shared function for backward compatibility to get the default test dir
+// pub fn get_default_test_dir() -> &'static Path {
+//     Path::new("target/test_saves")
+// }
 
 // Alias for the old cleanup function signature to handle existing tests
 pub fn cleanup_test_environment_compat() {
