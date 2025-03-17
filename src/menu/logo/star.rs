@@ -120,8 +120,8 @@ pub fn render_star_of_david(
         // Create a triangle mesh
         let triangle_mesh = meshes.add(create_equilateral_triangle_mesh(150.0 * 2.0));
 
-        // Z-coordinate ensures it's behind UI but still visible in menu camera
-        let z_position = 901.0;
+        // Z-coordinate ensures it's visible above the background but behind the text
+        let z_position = 0.5;
 
         // Triangle offset to create the star shape
         let triangle_offset = 40.0;
@@ -196,5 +196,7 @@ pub fn create_star_of_david() -> impl Bundle {
         ViewVisibility::default(),
         StarOfDavid,
         AppLayer::Menu.layer(), // Only visible on menu layer
+        // Add a GlobalZIndex to ensure proper z-ordering with other UI elements
+        GlobalZIndex(1),
     )
 }

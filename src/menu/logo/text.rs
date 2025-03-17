@@ -14,9 +14,9 @@ pub fn create_logo() -> impl Bundle {
             margin: UiRect::bottom(Val::Px(40.0)),
             ..default()
         },
-        BackgroundColor(Color::NONE),
+        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.0)),
         Interaction::None,
-        ZIndex(5),
+        GlobalZIndex(2),
     )
 }
 
