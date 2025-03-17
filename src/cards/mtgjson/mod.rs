@@ -674,7 +674,7 @@ impl MTGService {
                         | "from_the_vault"
                         | "spellbook"
                         | "masterpiece"
-                ) && 
+                ) &&
                 // Filter out future sets and empty sets
                 set.release_date <= current_date &&
                 !set.is_partial_preview &&

@@ -42,7 +42,7 @@ impl Plugin for SettingsPlugin {
             .insert_resource(GraphicsQuality::default())
             // Settings state - Main screen
             .add_systems(
-                OnEnter(SettingsMenuState::Main), 
+                OnEnter(SettingsMenuState::Main),
                 (
                     setup_main_settings,
                     |state: Res<State<SettingsMenuState>>, game_state: Res<State<GameMenuState>>| {
@@ -53,12 +53,12 @@ impl Plugin for SettingsPlugin {
             )
             // Settings state - Video settings
             .add_systems(
-                OnEnter(SettingsMenuState::Video), 
+                OnEnter(SettingsMenuState::Video),
                 setup_video_settings.run_if(in_state(GameMenuState::Settings))
             )
             // Settings state - Audio settings
             .add_systems(
-                OnEnter(SettingsMenuState::Audio), 
+                OnEnter(SettingsMenuState::Audio),
                 setup_audio_settings.run_if(in_state(GameMenuState::Settings))
             )
             // Settings state - Gameplay settings

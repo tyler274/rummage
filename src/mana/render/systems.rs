@@ -314,6 +314,7 @@ pub fn mana_cost_text_system(
 /// Directly replace mana symbols in text with their Unicode equivalents
 /// This is a simpler alternative to the more complex inline mana symbol rendering
 /// that can be used for plain text displays or debugging purposes.
+#[allow(dead_code)]
 pub fn replace_mana_symbols_with_unicode(text: &str) -> String {
     use crate::mana::MANA_SYMBOLS;
 

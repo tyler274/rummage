@@ -34,6 +34,7 @@ impl Plugin for WSL2CompatibilityPlugin {
 ///
 /// This function returns standard window settings regardless of WSL2 detection.
 /// The WSL2-specific handling is now done only in the drag resizing system.
+#[allow(dead_code)]
 pub fn get_wsl2_window_settings() -> WindowPlugin {
     WindowPlugin {
         primary_window: Some(Window {

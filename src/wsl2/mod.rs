@@ -8,6 +8,9 @@ mod plugin;
 mod systems;
 mod utils;
 
-pub use plugin::WSL2CompatibilityPlugin;
-pub use plugin::get_wsl2_window_settings;
-pub use utils::detect_wsl2;
+// Re-exports from the WSL2 compatibility module
+
+// The following imports are unused, so let's comment them out
+// pub use plugin::WSL2CompatibilityPlugin;
+// pub use plugin::get_wsl2_window_settings;
+// pub use utils::detect_wsl2;

@@ -1,9 +1,6 @@
 use crate::text::components::CardTextType;
 use bevy::prelude::*;
 
-// Re-export from mana module
-pub use crate::mana::render::colors::get_mana_symbol_color;
-
 // Re-export CardTextLayout and utility functions from layout module
 pub use crate::text::layout::{
     CardTextLayout, calculate_text_size, get_adaptive_font_size, get_card_layout,

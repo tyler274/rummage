@@ -75,6 +75,7 @@ impl Mana {
     }
 
     /// Returns true if this mana cost contains any colored mana.
+    #[allow(dead_code)]
     pub fn has_color(&self) -> bool {
         self.white > 0 || self.blue > 0 || self.black > 0 || self.red > 0 || self.green > 0
     }
@@ -161,6 +162,7 @@ impl Mana {
     }
 
     /// Returns a string representation of all colored mana symbols and a count
+    #[allow(dead_code)]
     fn colored_symbols(&self) -> (String, u64) {
         let mut symbols = String::new();
         let mut count = 0;

@@ -10,7 +10,7 @@
 pub mod components;
 pub mod layout;
 pub mod mana_circles;
-pub mod mana_symbols;
+// Note: mana_symbols module has been moved to src/mana/render
 pub mod systems;
 pub mod utils;
 

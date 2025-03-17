@@ -26,6 +26,7 @@ impl Default for ManaSymbolOptions {
 }
 
 /// Calculates the appropriate width of a mana symbol for layout purposes
+#[allow(dead_code)]
 pub fn get_mana_symbol_width(font_size: f32) -> f32 {
     font_size * 0.7 // Slightly narrower than square for better text integration
 }
