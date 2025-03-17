@@ -27,6 +27,14 @@ fn test_load_game_empty_turn_order() {
     // Create a save file with empty turn order
     let test_dir = Path::new("target/test_saves");
 
+    // Create the test directory if it doesn't exist - IMPORTANT
+    std::fs::create_dir_all(test_dir).unwrap_or_else(|e| {
+        panic!("Failed to create test directory: {}", e);
+    });
+
+    // Verify the directory exists
+    assert!(test_dir.exists(), "Test directory was not created properly");
+
     // Update the save directory in the config
     {
         let mut config = app.world_mut().resource_mut::<SaveConfig>();

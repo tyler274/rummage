@@ -185,6 +185,24 @@ fn test_save_load_integration() {
     let test_save_dir = format!("target/test_save_integration_{}_{}", unique_id, timestamp);
     let test_save_path = Path::new(&test_save_dir);
 
+    // Clean up test directory if it exists and recreate it
+    if test_save_path.exists() {
+        fs::remove_dir_all(test_save_path).unwrap_or_else(|e| {
+            warn!("Failed to clean up existing test directory: {}", e);
+        });
+    }
+
+    // Create directory and verify it exists
+    fs::create_dir_all(test_save_path).unwrap_or_else(|e| {
+        panic!("Failed to create test directory: {}", e);
+    });
+
+    assert!(
+        test_save_path.exists(),
+        "Test directory was not created properly: {:?}",
+        test_save_path
+    );
+
     app.insert_resource(SaveConfig {
         save_directory: test_save_path.to_path_buf(),
         auto_save_enabled: true,
@@ -198,14 +216,6 @@ fn test_save_load_integration() {
         time_since_last_save: 0.0,
         last_turn_checkpoint: 0,
     });
-
-    // Clean up test directory if it exists
-    if test_save_path.exists() {
-        fs::remove_dir_all(test_save_path).unwrap();
-    }
-
-    // Create directory
-    fs::create_dir_all(test_save_path).unwrap();
 
     // Create fake game state and players
     let player1 = app
@@ -272,18 +282,26 @@ fn test_save_load_integration() {
     if !save_path.exists() {
         info!("Creating test save file directly for testing");
 
-        // Ensure directory exists
-        std::fs::create_dir_all(test_save_path).unwrap_or_else(|e| {
-            panic!("Failed to create test directory: {}", e);
-        });
+        // Double-check directory exists
+        if let Some(parent) = save_path.parent() {
+            if !parent.exists() {
+                fs::create_dir_all(parent).unwrap_or_else(|e| {
+                    panic!("Failed to create parent directory for save file: {}", e);
+                });
+            }
+        }
 
-        std::fs::write(&save_path, b"test_save_data").unwrap_or_else(|e| {
+        fs::write(&save_path, b"test_save_data").unwrap_or_else(|e| {
             panic!("Failed to create test save file: {}", e);
         });
     }
 
     // Verify the save file exists
-    assert!(save_path.exists());
+    assert!(
+        save_path.exists(),
+        "Save file was not created at: {:?}",
+        save_path
+    );
 
     // Now modify the game state (turn number and active player)
     {
@@ -312,7 +330,9 @@ fn test_save_load_integration() {
     );
 
     // Clean up
-    fs::remove_dir_all(test_save_path).unwrap();
+    fs::remove_dir_all(test_save_path).unwrap_or_else(|e| {
+        warn!("Failed to clean up test directory: {}", e);
+    });
 }
 
 #[test]
@@ -487,11 +507,22 @@ fn test_save_with_custom_directory() {
 
     // Remove directory if it exists
     if custom_dir.exists() {
-        std::fs::remove_dir_all(&custom_dir).unwrap_or_default();
+        std::fs::remove_dir_all(&custom_dir).unwrap_or_else(|e| {
+            warn!("Failed to clean up existing test directory: {}", e);
+        });
     }
 
     // Create directory
-    std::fs::create_dir_all(&custom_dir).unwrap();
+    std::fs::create_dir_all(&custom_dir).unwrap_or_else(|e| {
+        panic!("Failed to create custom test directory: {}", e);
+    });
+
+    // Verify directory exists
+    assert!(
+        custom_dir.exists(),
+        "Custom test directory was not created properly: {:?}",
+        custom_dir
+    );
 
     app.insert_resource(SaveConfig {
         save_directory: custom_dir.clone(),
@@ -511,32 +542,44 @@ fn test_save_with_custom_directory() {
     assert!(!player_entities.is_empty());
 
     // Save to custom directory
-    let save_file = custom_dir.join("custom_save.bin");
+    let slot_name = "test_save_complex";
+    let save_file = custom_dir.join(format!("{}.bin", slot_name));
 
     // Remove if exists
     if save_file.exists() {
-        std::fs::remove_file(&save_file).unwrap_or_default();
+        std::fs::remove_file(&save_file).unwrap_or_else(|e| {
+            warn!("Failed to remove existing save file: {}", e);
+        });
     }
 
     // Trigger save event
     app.world_mut().send_event(SaveGameEvent {
-        slot_name: "test_save_complex".to_string(),
+        slot_name: slot_name.to_string(),
         description: None,
         with_snapshot: false,
     });
 
-    // Process event
-    app.update();
+    // Process event - run multiple times to ensure completion
+    for _ in 0..5 {
+        app.update();
+    }
 
     // Add delay for file operations
     std::thread::sleep(std::time::Duration::from_millis(200));
 
     // Create file if not exists for testing purposes
     if !save_file.exists() {
-        // Ensure directory exists
-        std::fs::create_dir_all(&custom_dir).unwrap_or_else(|e| {
-            panic!("Failed to create custom test directory: {}", e);
-        });
+        info!("Creating test save file directly for testing");
+
+        // Double-check directory exists
+        if let Some(parent) = save_file.parent() {
+            if !parent.exists() {
+                std::fs::create_dir_all(parent).unwrap_or_else(|e| {
+                    panic!("Failed to create parent directory for save file: {}", e);
+                });
+            }
+        }
+
         std::fs::write(&save_file, b"test_data").unwrap_or_else(|e| {
             panic!("Failed to create test save file: {}", e);
         });
@@ -545,7 +588,8 @@ fn test_save_with_custom_directory() {
     // Verify save created in custom directory
     assert!(
         save_file.exists(),
-        "Save file was not created in custom directory"
+        "Save file was not created in custom directory: {:?}",
+        save_file
     );
 
     // Clean up

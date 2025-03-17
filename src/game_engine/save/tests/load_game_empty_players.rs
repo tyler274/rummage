@@ -20,9 +20,20 @@ fn test_load_game_empty_players() {
 
     // Set up basic resources
     let test_dir = Path::new("target/test_saves");
+
+    // Ensure test directory exists and is clean
+    if test_dir.exists() {
+        std::fs::remove_dir_all(test_dir).unwrap_or_else(|e| {
+            warn!("Failed to clean up test directory: {}", e);
+        });
+    }
+
     std::fs::create_dir_all(test_dir).unwrap_or_else(|e| {
         panic!("Failed to create test directory: {}", e);
     });
+
+    // Verify directory exists
+    assert!(test_dir.exists(), "Test directory was not created properly");
 
     // Update the save directory in the config
     {
@@ -33,6 +44,13 @@ fn test_load_game_empty_players() {
     // Create a save file with empty player list
     let slot_name = "empty_players";
     let save_path = test_dir.join(format!("{}.bin", slot_name));
+
+    // Ensure parent directory exists
+    if let Some(parent) = save_path.parent() {
+        std::fs::create_dir_all(parent).unwrap_or_else(|e| {
+            panic!("Failed to create parent directory: {}", e);
+        });
+    }
 
     // Create empty save data using the builder pattern
     let save_data = GameSaveData::builder()
@@ -69,6 +87,13 @@ fn test_load_game_empty_players() {
     persistent_save
         .persist()
         .expect("Failed to persist save data");
+
+    // Verify the save file was created
+    assert!(
+        save_path.exists(),
+        "Save file was not created: {:?}",
+        save_path
+    );
 
     // Create a simple game state
     let game_state = GameState::builder().turn_number(1).build();
