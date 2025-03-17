@@ -1,10 +1,7 @@
 use crate::camera::components::{AppLayer, MenuCamera};
 use crate::menu::{
     components::*,
-    logo::{
-        create_decorative_elements, create_english_text, create_hebrew_text, create_logo,
-        create_star_of_david,
-    },
+    logo::{create_decorative_elements, create_english_text, create_hebrew_text, create_logo},
     plugin::PreviousWindowSize,
     state::GameMenuState,
     styles::*,
@@ -70,6 +67,7 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
             MenuBackground,
             MenuItem,
             AppLayer::Menu.layer(),
+            GlobalZIndex(-10),
             Name::new("Menu Background Image"),
             PreviousWindowSize {
                 width: 1920.0,

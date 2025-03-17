@@ -24,6 +24,7 @@ pub fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) 
             BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.5)),
             MenuItem,
             AppLayer::Menu.layer(),
+            GlobalZIndex(-5),
         ))
         .with_children(|parent| {
             // Pause menu container
