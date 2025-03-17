@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::game_engine::save::events::CheckStateBasedActionsEvent;
 use crate::game_engine::save::{AutoSaveTracker, SaveConfig, SaveLoadPlugin};
@@ -19,18 +20,14 @@ fn test_auto_save() {
     // Set up test environment with game state
     let _player_entities = setup_test_environment(&mut app);
 
-    // The auto-save file path
-    let test_dir = Path::new("target/test_saves");
-    if !test_dir.exists() {
-        std::fs::create_dir_all(test_dir).unwrap();
-    }
+    // Get the configured test directory from setup_test_environment
+    let test_dir = app.world().resource::<SaveConfig>().save_directory.clone();
 
     // Configure auto-save to trigger frequently for testing
     {
         let mut config = app.world_mut().resource_mut::<SaveConfig>();
         config.auto_save_enabled = true;
         config.auto_save_frequency = 1; // Trigger auto-save on every SBA check
-        config.save_directory = test_dir.to_path_buf();
     }
 
     // Reset auto-save counter
@@ -64,7 +61,7 @@ fn test_auto_save() {
     if !auto_save_path.exists() {
         info!("Creating auto-save file directly for testing");
         // Ensure directory exists
-        std::fs::create_dir_all(test_dir).unwrap_or_else(|e| {
+        std::fs::create_dir_all(&test_dir).unwrap_or_else(|e| {
             panic!("Failed to create test directory: {}", e);
         });
 
@@ -113,6 +110,6 @@ fn test_auto_save() {
         "Updated auto-save file is empty"
     );
 
-    // Clean up
-    cleanup_test_environment();
+    // Clean up with the specific test directory
+    cleanup_test_environment(&test_dir);
 }

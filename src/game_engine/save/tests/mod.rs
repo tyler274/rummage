@@ -145,32 +145,43 @@ fn assert_save_event_triggered(mut reader: EventReader<SaveGameEvent>) {
     }
 }
 
-// This test must be run with --test-threads=1 because it modifies the file system
+// This test is now made safe for parallel execution with unique directories
 #[test]
-#[ignore = "This test modifies the file system and should be run with --test-threads=1"]
 fn test_save_load_integration() {
     use crate::game_engine::state::GameState;
     use crate::player::Player;
     use std::collections::VecDeque;
     use std::fs;
     use std::path::Path;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     // Create a test app
     let mut app = App::new();
     app.add_plugins(SaveLoadPlugin);
 
-    // Set save directory for tests
-    let test_save_dir = "test_save_integration";
+    // Create a unique test directory name
+    let unique_id = std::process::id();
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+
+    let test_save_dir = format!("target/test_save_integration_{}_{}", unique_id, timestamp);
+    let test_save_path = Path::new(&test_save_dir);
+
     app.insert_resource(SaveConfig {
-        save_directory: test_save_dir.into(),
+        save_directory: test_save_path.to_path_buf(),
         auto_save_enabled: false,
         auto_save_frequency: 999, // Disable auto-save
     });
 
     // Clean up test directory if it exists
-    if Path::new(test_save_dir).exists() {
-        fs::remove_dir_all(test_save_dir).unwrap();
+    if test_save_path.exists() {
+        fs::remove_dir_all(test_save_path).unwrap();
     }
+
+    // Create directory
+    fs::create_dir_all(test_save_path).unwrap();
 
     // Create fake game state and players
     let player1 = app
@@ -231,12 +242,12 @@ fn test_save_load_integration() {
     std::thread::sleep(std::time::Duration::from_millis(100));
 
     // Create the file directly if it doesn't exist (for test stability)
-    let save_path = Path::new(&format!("{}/test_save.bin", test_save_dir)).to_path_buf();
+    let save_path = test_save_path.join("test_save.bin");
     if !save_path.exists() {
         info!("Creating test save file directly for testing");
 
         // Ensure directory exists
-        std::fs::create_dir_all(test_save_dir).unwrap_or_else(|e| {
+        std::fs::create_dir_all(test_save_path).unwrap_or_else(|e| {
             panic!("Failed to create test directory: {}", e);
         });
 
@@ -268,5 +279,5 @@ fn test_save_load_integration() {
     assert_eq!(game_state.turn_number, 3);
 
     // Clean up
-    fs::remove_dir_all(test_save_dir).unwrap();
+    fs::remove_dir_all(test_save_path).unwrap();
 }

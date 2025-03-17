@@ -101,5 +101,5 @@ fn test_load_game_empty_players() {
     );
 
     // Clean up
-    cleanup_test_environment();
+    cleanup_test_environment_compat();
 }

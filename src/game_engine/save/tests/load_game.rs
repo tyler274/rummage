@@ -81,5 +81,5 @@ fn test_load_game() {
     );
 
     // Clean up
-    cleanup_test_environment();
+    cleanup_test_environment_compat();
 }

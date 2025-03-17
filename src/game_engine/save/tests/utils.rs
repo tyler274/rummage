@@ -3,6 +3,8 @@ use bevy_persistent::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::path::Path;
+use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::game_engine::save::events::*;
 use crate::game_engine::save::{
@@ -115,15 +117,25 @@ pub fn handle_stop_replay(
 
 // Common test environment setup for save/load tests
 pub fn setup_test_environment(app: &mut App) -> Vec<Entity> {
-    // Create test save directory if it doesn't exist
-    let test_dir = Path::new("target/test_saves");
-    std::fs::create_dir_all(test_dir).unwrap_or_else(|e| {
+    // Create a unique test directory name using process ID and timestamp
+    // This ensures each test run (even in parallel) gets its own directory
+    let unique_id = std::process::id();
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+
+    // Create a PathBuf directly instead of using Path::new on a temporary string
+    let test_dir_name = format!("target/test_saves_{}_{}", unique_id, timestamp);
+    let test_dir = PathBuf::from(test_dir_name);
+
+    std::fs::create_dir_all(&test_dir).unwrap_or_else(|e| {
         error!("Failed to create test save directory: {}", e);
     });
 
     // Set up SaveConfig for tests
     let config = SaveConfig {
-        save_directory: test_dir.to_path_buf(),
+        save_directory: test_dir,
         auto_save_enabled: true,
         auto_save_frequency: 2,
     };
@@ -184,10 +196,29 @@ pub fn setup_test_environment(app: &mut App) -> Vec<Entity> {
     vec![player1, player2]
 }
 
-// Helper function to clean up test environment
-pub fn cleanup_test_environment() {
+// Helper function to clean up test environment with the specific directory
+pub fn cleanup_test_environment(test_dir: &Path) {
+    if test_dir.exists() {
+        let _ = std::fs::remove_dir_all(test_dir);
+        info!("Cleaned up test directory: {:?}", test_dir);
+    }
+}
+
+// Legacy version for backward compatibility with existing tests
+pub fn cleanup_default_test_environment() {
     let test_dir = Path::new("target/test_saves");
     let _ = std::fs::remove_dir_all(test_dir);
+    info!("Cleaned up default test directory: {:?}", test_dir);
+}
+
+// Provides a shared function for backward compatibility to get the default test dir
+pub fn get_default_test_dir() -> &'static Path {
+    Path::new("target/test_saves")
+}
+
+// Alias for the old cleanup function signature to handle existing tests
+pub fn cleanup_test_environment_compat() {
+    cleanup_default_test_environment();
 }
 
 // Mock game save data structures for testing

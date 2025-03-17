@@ -330,5 +330,5 @@ fn test_complex_game_state_serialization() {
     }
 
     // Clean up
-    cleanup_test_environment();
+    cleanup_test_environment_compat();
 }

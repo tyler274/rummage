@@ -18,17 +18,8 @@ fn test_save_game() {
     // Set up test environment with real players and game state
     let _player_entities = setup_test_environment(&mut app);
 
-    // Create save directory
-    let test_dir = Path::new("target/test_saves");
-    if !test_dir.exists() {
-        std::fs::create_dir_all(test_dir).unwrap();
-    }
-
-    // Update the save directory in the config
-    {
-        let mut config = app.world_mut().resource_mut::<SaveConfig>();
-        config.save_directory = test_dir.to_path_buf();
-    }
+    // Get the configured save directory
+    let test_dir = app.world().resource::<SaveConfig>().save_directory.clone();
 
     // Set up a specific save slot name
     let slot_name = "test_save";
@@ -59,7 +50,7 @@ fn test_save_game() {
     if !save_path.exists() {
         info!("Creating test save file directly for testing");
         // Ensure directory exists
-        std::fs::create_dir_all(test_dir).unwrap_or_else(|e| {
+        std::fs::create_dir_all(&test_dir).unwrap_or_else(|e| {
             panic!("Failed to create test directory: {}", e);
         });
 
@@ -105,7 +96,7 @@ fn test_save_game() {
                 );
                 info!("This is expected if using test data");
                 // Skip the rest of the verification
-                cleanup_test_environment();
+                cleanup_test_environment(&test_dir);
                 return;
             }
         };
@@ -138,6 +129,6 @@ fn test_save_game() {
         );
     }
 
-    // Clean up
-    cleanup_test_environment();
+    // Clean up specific test directory
+    cleanup_test_environment(&test_dir);
 }

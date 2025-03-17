@@ -113,5 +113,5 @@ fn test_load_game_corrupted_mapping() {
     );
 
     // Clean up
-    cleanup_test_environment();
+    cleanup_test_environment_compat();
 }

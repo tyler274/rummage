@@ -114,5 +114,5 @@ fn test_load_game_empty_turn_order() {
     info!("Turn order has {} entities", game_state.turn_order.len());
 
     // Clean up
-    cleanup_test_environment();
+    cleanup_test_environment_compat();
 }

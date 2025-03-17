@@ -131,5 +131,5 @@ fn test_partial_corruption() {
     }
 
     // Clean up
-    cleanup_test_environment();
+    cleanup_test_environment_compat();
 }
