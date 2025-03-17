@@ -16,7 +16,7 @@ use crate::cards::{
     Card, CardDetails, CardTypes, CreatureCard, CreatureType,
     CardCost, CardDetailsComponent, CardKeywords, CardName, CardRulesText, CardTypeInfo,
 };
-use crate::mana::{Color, Mana};
+use crate::mana::{ManaColor, Mana};
 use async_trait::async_trait;
 use reqwest;
 use serde::{Deserialize, Serialize};

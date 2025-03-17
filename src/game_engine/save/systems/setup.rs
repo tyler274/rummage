@@ -28,12 +28,12 @@ pub fn setup_save_system(mut commands: Commands) {
     }
 
     // Determine the appropriate base path for persistence based on platform
-    let metadata_path = get_storage_path(&config, "metadata.bin");
+    let metadata_path = get_storage_path(&config, "metadata.toml");
 
     // Initialize persistent save metadata
     let save_metadata = match Persistent::builder()
         .name("save_metadata")
-        .format(StorageFormat::Bincode)
+        .format(StorageFormat::Toml)
         .path(metadata_path)
         .default(SaveMetadata::default())
         .build()
@@ -44,8 +44,8 @@ pub fn setup_save_system(mut commands: Commands) {
             // Create a new in-memory metadata resource instead
             Persistent::builder()
                 .name("save_metadata")
-                .format(StorageFormat::Bincode)
-                .path(PathBuf::from("metadata.bin")) // Fallback path
+                .format(StorageFormat::Toml)
+                .path(PathBuf::from("metadata.toml")) // Fallback path
                 .default(SaveMetadata::default())
                 .build()
                 .unwrap_or_else(|_| {
@@ -53,8 +53,8 @@ pub fn setup_save_system(mut commands: Commands) {
                     let metadata = SaveMetadata::default();
                     Persistent::builder()
                         .name("save_metadata")
-                        .format(StorageFormat::Bincode)
-                        .path(PathBuf::from("metadata.bin"))
+                        .format(StorageFormat::Toml)
+                        .path(PathBuf::from("metadata.toml"))
                         .default(metadata)
                         .build()
                         .expect("Failed to create even basic metadata")

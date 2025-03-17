@@ -1,0 +1,12 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+The ultimate mobile friendly UI format. A set of nested circular bands.
+
+All player's playmats are positioned in the outermost band.
+
+The current player whose turn it is in the 2nd from the outside band. 
+
+The player who currently has priority is the innermost band. 

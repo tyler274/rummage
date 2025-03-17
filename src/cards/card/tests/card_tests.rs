@@ -2,7 +2,7 @@ use crate::cards::card::Card;
 use crate::cards::details::CardDetails;
 use crate::cards::keywords::KeywordAbility;
 use crate::cards::types::CardTypes;
-use crate::mana::{Color, Mana};
+use crate::mana::{Mana, ManaColor};
 
 /// Test that demonstrates using the various Card accessor methods
 #[test]
@@ -22,7 +22,7 @@ fn test_card_accessors() {
     // Test get_cost
     let cost = Card::get_cost(&card);
     assert_eq!(cost.converted_mana_cost(), 1);
-    assert_eq!(cost.colored_mana_cost(Color::COLORLESS), 1);
+    assert_eq!(cost.colored_mana_cost(ManaColor::COLORLESS), 1);
 
     // Test get_types
     let types = Card::get_types(&card);

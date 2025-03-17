@@ -1,38 +1,12 @@
-// This file has been deprecated and moved to src/mana/render modules
-// Please use the new module structure in src/mana/render instead
-// This file is kept temporarily to avoid import errors during transition
-// and will be removed in a future cleanup
-
-use crate::mana::mana_symbol_to_char;
-use crate::text::utils::get_mana_symbol_color;
 use bevy::prelude::*;
 
-/// Represents rendering options for mana symbols
-#[derive(Clone, Debug)]
-pub struct ManaSymbolOptions {
-    /// Font size for the mana symbol
-    pub font_size: f32,
-    /// Vertical alignment offset to align with text baseline
-    pub vertical_alignment_offset: f32,
-    /// Z-index for the mana symbol rendering
-    pub z_index: f32,
-    /// Whether to render with drop shadow
-    pub with_shadow: bool,
-    /// Whether to render with colored circle background (MTG style)
-    pub with_colored_background: bool,
-}
-
-impl Default for ManaSymbolOptions {
-    fn default() -> Self {
-        Self {
-            font_size: 16.0,
-            vertical_alignment_offset: 0.0,
-            z_index: 0.1,
-            with_shadow: true,
-            with_colored_background: false,
-        }
-    }
-}
+use crate::cards::Card;
+use crate::mana::render::colors::{get_mana_symbol_color, is_dark_background};
+use crate::mana::render::components::CardManaCostText;
+use crate::mana::render::styles::ManaSymbolOptions;
+use crate::mana::symbols::mana_symbol_to_char;
+use crate::text::components::CardTextType;
+use crate::text::layout::{get_adaptive_font_size, get_card_layout};
 
 /// Renders a mana symbol with appropriate styling and shadow
 pub fn render_mana_symbol(
@@ -200,71 +174,155 @@ pub fn render_mana_symbol(
         .set_parent(parent_entity);
 }
 
-/// Calculates the appropriate width of a mana symbol for layout purposes
-#[allow(dead_code)]
-pub fn get_mana_symbol_width(font_size: f32) -> f32 {
-    font_size * 0.7 // Slightly narrower than square for better text integration
-}
+/// Spawn mana cost text for a card
+pub fn spawn_mana_cost_text(
+    commands: &mut Commands,
+    mana_cost_component: &CardManaCostText,
+    _card_pos: Vec2,
+    card_size: Vec2,
+    asset_server: &AssetServer,
+) -> Entity {
+    let layout = get_card_layout();
 
-/// Checks if a string is a valid mana symbol
-#[allow(dead_code)]
-pub fn is_valid_mana_symbol(symbol: &str) -> bool {
-    if symbol.len() < 3 || !symbol.starts_with('{') || !symbol.ends_with('}') {
-        return false;
-    }
+    // Calculate position - on the right side of the card top
+    let mana_position = Vec2::new(
+        layout.mana_cost_x_offset * card_size.x,
+        layout.mana_cost_y_offset * card_size.y,
+    );
 
-    // Use our constant mapping to validate symbols
-    use crate::mana::MANA_SYMBOLS;
-    for (key, _) in MANA_SYMBOLS {
-        if *key == symbol {
-            return true;
-        }
-    }
+    // Calculate available width for the mana cost
+    let available_width = card_size.x * 0.15; // Use 15% of card width for mana cost
 
-    // Generic check for numbers that may not be in our map
-    let inner = &symbol[1..symbol.len() - 1];
-    if inner.parse::<u32>().is_ok() {
-        return true;
-    }
+    // Use adaptive font sizing based on mana cost complexity
+    let font_size = get_adaptive_font_size(
+        card_size,
+        14.0, // Base size for mana cost
+        &mana_cost_component.mana_cost,
+        available_width,
+        10.0, // Minimum size
+    );
 
-    false
-}
+    // Create parent entity for all mana symbols
+    let parent_entity = commands
+        .spawn((
+            // Use separate components instead of SpatialBundle
+            Transform::from_translation(Vec3::new(mana_position.x, mana_position.y, 0.1)),
+            // GlobalTransform is automatically added
+            Visibility::default(),
+            CardTextType::ManaCost,
+            TextLayout::new_with_justify(JustifyText::Right),
+            Name::new(format!("Mana Cost: {}", mana_cost_component.mana_cost)),
+        ))
+        .id();
 
-/// Helper function to determine if a background color is dark and needs white text
-fn is_dark_background(symbol: &str, _color: &Color) -> bool {
-    // Standard dark mana backgrounds that should have white text
-    if symbol == "{B}" || symbol == "{G}" || symbol == "{U}" {
-        return true;
-    }
+    // Load the specialized mana font
+    let mana_font = asset_server.load("fonts/Mana.ttf");
 
-    // Check for symbols with Phyrexian mana (contains "P")
-    if symbol.contains("P")
-        && (symbol.contains("B") || symbol.contains("G") || symbol.contains("U"))
-    {
-        return true;
-    }
+    // Parse the mana cost string and create individual symbols
+    let mana_string = &mana_cost_component.mana_cost;
 
-    // Check for tap symbol and other special symbols that use dark backgrounds
-    if symbol == "{T}" {
-        return true;
-    }
+    // Look for patterns like {W}, {U}, {B}, {R}, {G}, {1}, etc.
+    let symbol_spacing = font_size * 0.8;
 
-    // For all other symbols, check based on the symbol itself since we know our color mapping
-    match symbol.trim() {
-        // Dark background symbols that need white text
-        "{B}" | "{U}" | "{G}" | "{T}" => true,
-        // Light background symbols that need black text
-        "{W}" | "{R}" | "{C}" => false,
-        // For generic mana symbols, check if they're the type that needs white text
-        s if s.len() >= 3 && s.starts_with('{') && s.ends_with('}') => {
-            let inner = &s[1..s.len() - 1];
-            // Set any other dark backgrounds that need white text here
-            match inner {
-                // Add specific cases here
-                _ => false, // Default to black text
+    // Count symbols to center properly (right-aligned)
+    let mut symbols = Vec::new();
+    let mut current_symbol = String::new();
+    let mut in_symbol = false;
+
+    for c in mana_string.chars() {
+        match c {
+            '{' => {
+                in_symbol = true;
+                current_symbol.push('{');
+            }
+            '}' => {
+                if in_symbol {
+                    current_symbol.push('}');
+                    symbols.push(current_symbol.clone());
+                    current_symbol.clear();
+                    in_symbol = false;
+                }
+            }
+            _ => {
+                if in_symbol {
+                    current_symbol.push(c);
+                }
             }
         }
-        // Default to black text for any other case
-        _ => false,
     }
+
+    // Calculate total width for right alignment
+    let total_width = symbols.len() as f32 * symbol_spacing;
+
+    // Render each symbol
+    for (i, symbol) in symbols.iter().enumerate() {
+        // Position for this symbol (right-aligned)
+        let pos_x = -total_width / 2.0 + i as f32 * symbol_spacing;
+
+        // Render the mana symbol with the appropriate styling
+        render_mana_symbol(
+            commands,
+            symbol,
+            Vec2::new(pos_x, 0.0), // Local position relative to parent
+            mana_font.clone(),
+            ManaSymbolOptions {
+                font_size,
+                with_colored_background: true,
+                ..default()
+            },
+            parent_entity,
+        );
+    }
+
+    parent_entity
+}
+
+/// System implementation that finds cards and creates mana cost text for them
+pub fn mana_cost_text_system(
+    mut commands: Commands,
+    query: Query<(Entity, &Transform, &Card)>,
+    asset_server: Res<AssetServer>,
+) {
+    for (entity, transform, card) in query.iter() {
+        // Skip cards with no mana cost
+        if card.cost.cost.is_empty() {
+            continue;
+        }
+
+        // Convert Mana struct to display string
+        let mana_cost_string = card.cost.cost.to_string();
+
+        // Get card position and size
+        let card_pos = Vec2::new(transform.translation.x, transform.translation.y);
+        let layout = get_card_layout();
+        let card_size = Vec2::new(layout.card_width, layout.card_height);
+
+        // Create content for mana cost text
+        let content = CardManaCostText {
+            mana_cost: mana_cost_string,
+        };
+
+        // Create the mana cost text
+        let text_entity =
+            spawn_mana_cost_text(&mut commands, &content, card_pos, card_size, &asset_server);
+
+        // Add as child of the card entity
+        commands.entity(entity).add_child(text_entity);
+    }
+}
+
+/// Directly replace mana symbols in text with their Unicode equivalents
+/// This is a simpler alternative to the more complex inline mana symbol rendering
+/// that can be used for plain text displays or debugging purposes.
+pub fn replace_mana_symbols_with_unicode(text: &str) -> String {
+    use crate::mana::MANA_SYMBOLS;
+
+    let mut result = text.to_string();
+
+    // Replace all mana symbols with their Unicode equivalents
+    for (symbol, unicode) in MANA_SYMBOLS {
+        result = result.replace(symbol, &unicode.to_string());
+    }
+
+    result
 }

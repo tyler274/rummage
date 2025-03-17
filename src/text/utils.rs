@@ -1,43 +1,12 @@
 use crate::text::components::CardTextType;
 use bevy::prelude::*;
 
-/// Returns the appropriate color for a mana symbol
-pub fn get_mana_symbol_color(symbol: &str) -> Color {
-    // Make sure we're working with a clean symbol
-    let clean_symbol = symbol.trim();
-
-    let color = match clean_symbol {
-        "{W}" => Color::srgb(0.95, 0.95, 0.85), // White mana (off-white)
-        "{U}" => Color::srgb(0.0, 0.4, 0.8),    // Blue mana - more vibrant
-        "{B}" => Color::srgb(0.0, 0.0, 0.0),    // Black mana - true black
-        "{R}" => Color::srgb(0.9, 0.1, 0.1),    // Red mana - more vivid red
-        "{G}" => Color::srgb(0.0, 0.6, 0.0),    // Green mana - brighter green
-        "{C}" => Color::srgb(0.7, 0.7, 0.8),    // Colorless mana - slight blue tint
-        _ => {
-            // Generic/numeric mana or other symbols
-            if clean_symbol.starts_with("{") && clean_symbol.ends_with("}") {
-                let inner = &clean_symbol[1..clean_symbol.len() - 1];
-                if inner.parse::<u32>().is_ok() || inner == "X" {
-                    // Generic mana is light gray with a slight brown tint
-                    Color::srgb(0.75, 0.73, 0.71)
-                } else {
-                    // Other symbols like tap
-                    Color::srgb(0.3, 0.3, 0.3)
-                }
-            } else {
-                // Default to black for other text
-                Color::srgb(0.0, 0.0, 0.0)
-            }
-        }
-    };
-
-    color
-}
+// Re-export from mana module
+pub use crate::mana::render::colors::get_mana_symbol_color;
 
 // Re-export CardTextLayout and utility functions from layout module
 pub use crate::text::layout::{
-    CardTextLayout, calculate_text_size, get_adaptive_font_size,
-    get_card_layout,
+    CardTextLayout, calculate_text_size, get_adaptive_font_size, get_card_layout,
 };
 
 /// Spawn debug bounds visualization for text

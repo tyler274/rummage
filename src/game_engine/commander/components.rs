@@ -1,4 +1,4 @@
-use crate::mana::Color;
+use crate::mana::ManaColor;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -18,7 +18,7 @@ pub struct Commander {
 
     /// Commander's color identity (for deck validation)
     #[allow(dead_code)]
-    pub color_identity: HashSet<Color>,
+    pub color_identity: HashSet<ManaColor>,
 
     /// Commander-specific flags
     #[allow(dead_code)]
@@ -72,4 +72,12 @@ pub enum EliminationReason {
     /// Player lost due to a specific card effect
     #[allow(dead_code)]
     CardEffect(Entity), // The card that caused the elimination
+}
+
+/// Component for tracking a card's color identity in Commander
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
+#[reflect(Component, Serialize, Deserialize)]
+pub struct ColorIdentity {
+    /// The color identity as a bitflag
+    pub colors: ManaColor,
 }

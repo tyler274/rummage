@@ -1,5 +1,5 @@
 use crate::cards::{Card, details::CardDetails, types::CardTypes};
-use crate::mana::{Color, Mana};
+use crate::mana::{Mana, ManaColor};
 
 /// Test the basic functionality of the CardBuilder
 #[test]
@@ -20,8 +20,8 @@ fn test_builder_basic_functionality() {
 
     let cost = Card::get_cost(&card);
     assert_eq!(cost.converted_mana_cost(), 3);
-    assert_eq!(cost.colored_mana_cost(Color::COLORLESS), 2);
-    assert_eq!(cost.colored_mana_cost(Color::WHITE), 1);
+    assert_eq!(cost.colored_mana_cost(ManaColor::COLORLESS), 2);
+    assert_eq!(cost.colored_mana_cost(ManaColor::WHITE), 1);
 
     let types = Card::get_types(&card);
     assert!(types.is_creature());

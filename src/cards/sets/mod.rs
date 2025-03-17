@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use crate::cards::Card;
 use crate::cards::rarity::Rarity;
 use crate::cards::set::CardSet;
-use crate::mana::Color;
+use crate::mana::ManaColor;
 
 // Export set modules
 pub mod alliances;
@@ -32,7 +32,7 @@ pub struct CardSetRegistry {
     /// All card entities in this set
     pub cards: Vec<Entity>,
     /// Cards organized by color
-    pub by_color: HashMap<Color, Vec<Entity>>,
+    pub by_color: HashMap<ManaColor, Vec<Entity>>,
     /// Cards organized by rarity
     pub by_rarity: HashMap<Rarity, Vec<Entity>>,
     /// Cards organized by type
@@ -112,7 +112,7 @@ impl CardRegistry {
 
     /// Get cards of a specific color in a set
     #[allow(dead_code)]
-    pub fn get_set_cards_by_color(&self, set_code: &str, color: Color) -> Option<&Vec<Entity>> {
+    pub fn get_set_cards_by_color(&self, set_code: &str, color: ManaColor) -> Option<&Vec<Entity>> {
         self.sets
             .get(set_code)
             .and_then(|set| set.by_color.get(&color))
@@ -136,7 +136,7 @@ impl CardRegistry {
 
     /// Get all cards of a specific color across all sets
     #[allow(dead_code)]
-    pub fn get_cards_by_color(&self, color: Color) -> Vec<Entity> {
+    pub fn get_cards_by_color(&self, color: ManaColor) -> Vec<Entity> {
         let mut result = Vec::new();
         for set in self.sets.values() {
             if let Some(cards) = set.by_color.get(&color) {

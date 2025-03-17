@@ -1,6 +1,6 @@
 use super::components::Commander;
 use crate::cards::{CardCost, CardRulesText, CardTypeInfo, CardTypes};
-use crate::mana::Color;
+use crate::mana::ManaColor;
 use bevy::prelude::Entity;
 use std::collections::HashSet;
 
@@ -70,24 +70,24 @@ impl CommanderRules {
     /// A card's color identity consists of all colors in its mana cost,
     /// color indicator, and rules text.
     #[allow(dead_code)]
-    pub fn extract_color_identity(card_cost: &CardCost) -> HashSet<Color> {
+    pub fn extract_color_identity(card_cost: &CardCost) -> HashSet<ManaColor> {
         let mut colors = HashSet::new();
 
         // Add colors from mana cost
         if card_cost.cost.white > 0 {
-            colors.insert(Color::WHITE);
+            colors.insert(ManaColor::WHITE);
         }
         if card_cost.cost.blue > 0 {
-            colors.insert(Color::BLUE);
+            colors.insert(ManaColor::BLUE);
         }
         if card_cost.cost.black > 0 {
-            colors.insert(Color::BLACK);
+            colors.insert(ManaColor::BLACK);
         }
         if card_cost.cost.red > 0 {
-            colors.insert(Color::RED);
+            colors.insert(ManaColor::RED);
         }
         if card_cost.cost.green > 0 {
-            colors.insert(Color::GREEN);
+            colors.insert(ManaColor::GREEN);
         }
 
         // In a full implementation, we would also:

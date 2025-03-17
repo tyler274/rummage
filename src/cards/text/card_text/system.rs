@@ -11,9 +11,8 @@ use super::processors::{
     process_type_line_text_components,
 };
 use crate::cards::text::{
-    mana_cost_text::spawn_mana_cost_text, name_text::create_name_text,
-    power_toughness_text::spawn_power_toughness_text, rules_text::spawn_rules_text,
-    type_line_text::spawn_type_line_text,
+    name_text::create_name_text, power_toughness_text::spawn_power_toughness_text,
+    rules_text::spawn_rules_text, type_line_text::spawn_type_line_text,
 };
 
 /// System to spawn text for cards
@@ -108,13 +107,14 @@ pub fn spawn_card_text(
             );
 
             // Spawn mana cost text
-            let mana_cost_entity = spawn_mana_cost_text(
-                &mut commands,
-                &mana_cost_component,
-                card_pos,
-                card_size,
-                &asset_server,
-            );
+            let mana_cost_entity =
+                crate::cards::text::mana_cost_text::spawn_mana_cost_text_from_text(
+                    &mut commands,
+                    &mana_cost_component,
+                    card_pos,
+                    card_size,
+                    &asset_server,
+                );
 
             // Spawn type line text
             let type_line_entity = spawn_type_line_text(

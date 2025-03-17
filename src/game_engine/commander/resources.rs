@@ -1,5 +1,5 @@
 use super::components::CommanderZoneLocation;
-use crate::mana::Color;
+use crate::mana::ManaColor;
 use bevy::prelude::*;
 use std::collections::{HashMap, HashSet};
 
@@ -102,7 +102,7 @@ pub struct CommandZoneManager {
 
     /// Maps commander entities to their color identity
     #[allow(dead_code)]
-    pub commander_colors: HashMap<Entity, HashSet<Color>>,
+    pub commander_colors: HashMap<Entity, HashSet<ManaColor>>,
 }
 
 impl CommandZoneManager {
@@ -134,7 +134,7 @@ impl CommandZoneManager {
     pub fn set_commander_color_identity(
         &mut self,
         commander: Entity,
-        color_identity: HashSet<Color>,
+        color_identity: HashSet<ManaColor>,
     ) {
         self.commander_colors.insert(commander, color_identity);
     }
@@ -195,7 +195,7 @@ pub struct CommandZoneManagerBuilder {
     commander_zone_status: HashMap<Entity, CommanderZoneLocation>,
     zone_transition_count: HashMap<Entity, u32>,
     commander_partners: HashMap<Entity, Entity>,
-    commander_colors: HashMap<Entity, HashSet<Color>>,
+    commander_colors: HashMap<Entity, HashSet<ManaColor>>,
 }
 
 impl CommandZoneManagerBuilder {
@@ -266,7 +266,7 @@ impl CommandZoneManagerBuilder {
 
     /// Set the color identity for a commander
     #[allow(dead_code)]
-    pub fn set_color_identity(mut self, commander: Entity, colors: HashSet<Color>) -> Self {
+    pub fn set_color_identity(mut self, commander: Entity, colors: HashSet<ManaColor>) -> Self {
         self.commander_colors.insert(commander, colors);
         self
     }

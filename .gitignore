@@ -31,4 +31,4 @@ saves/*
 
 # Ignore all files in the settings directory
 settings/*
-metadata.bin
+metadata.toml

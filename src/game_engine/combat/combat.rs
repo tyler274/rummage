@@ -2,7 +2,7 @@ use crate::cards::CreatureType;
 use crate::game_engine::commander::CombatDamageEvent;
 use crate::game_engine::state::GameState;
 use crate::game_engine::turns::TurnManager;
-use crate::mana::Color;
+use crate::mana::ManaColor;
 use crate::player::Player;
 use bevy::prelude::*;
 use std::collections::{HashMap, HashSet};
@@ -113,7 +113,7 @@ pub enum BlockedStatus {
 #[allow(dead_code)]
 pub enum BlockRestriction {
     CreatureType(CreatureType),
-    Color(Color),
+    Color(ManaColor),
     Power(Comparison, i32),
     Toughness(Comparison, i32),
 }

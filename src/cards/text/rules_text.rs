@@ -3,26 +3,10 @@ use bevy::text::JustifyText;
 
 use crate::text::{
     components::{CardRulesText, CardTextType},
-    mana_symbols::is_valid_mana_symbol,
     utils::{calculate_text_size, get_adaptive_font_size, get_card_layout},
 };
 
-/// Directly replace mana symbols in text with their Unicode equivalents
-/// This is a simpler alternative to the more complex inline mana symbol rendering
-/// that can be used for plain text displays or debugging purposes.
-#[allow(dead_code)]
-pub fn replace_mana_symbols_with_unicode(text: &str) -> String {
-    use crate::mana::MANA_SYMBOLS;
-
-    let mut result = text.to_string();
-
-    // Replace all mana symbols with their Unicode equivalents
-    for (symbol, unicode) in MANA_SYMBOLS {
-        result = result.replace(symbol, &unicode.to_string());
-    }
-
-    result
-}
+use crate::mana::symbols::is_valid_mana_symbol;
 
 /// Spawn rules text for a card
 pub fn spawn_rules_text(
