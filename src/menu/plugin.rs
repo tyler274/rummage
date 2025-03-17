@@ -256,34 +256,72 @@ pub fn setup_menu_camera(
 fn setup_pause_star(
     mut commands: Commands,
     menu_cameras: Query<Entity, With<MenuCamera>>,
-    windows: Query<&Window>,
+    asset_server: Res<AssetServer>,
 ) {
-    use crate::menu::logo::create_star_of_david;
-
-    // Get window dimensions for reference
-    let window_height = windows.get_single().map(|w| w.height()).unwrap_or(1080.0);
+    use crate::menu::components::MenuDecorativeElement;
+    use crate::menu::logo::{
+        create_english_text, create_hebrew_text, create_logo, create_star_of_david,
+    };
 
     // Find the menu camera
     if let Some(camera_entity) = menu_cameras.iter().next() {
         info!(
-            "Attaching Star of David to menu camera: {:?}",
+            "Attaching Star of David and text to pause menu camera: {:?}",
             camera_entity
         );
 
-        // Spawn the star as a child of the menu camera
+        // Spawn the logo group as a child of the menu camera
         commands.entity(camera_entity).with_children(|parent| {
-            parent.spawn((
-                create_star_of_david(),
-                Name::new("Pause Menu Star of David"),
-            ));
+            // Create a parent entity that will contain the star and text elements
+            parent
+                .spawn((
+                    create_logo(),
+                    Name::new("Pause Logo Group"),
+                    MenuDecorativeElement,
+                ))
+                .with_children(|logo_parent| {
+                    // Spawn the Star of David
+                    logo_parent.spawn((create_star_of_david(), Name::new("Pause Star of David")));
+
+                    // Spawn the Hebrew text below the star
+                    logo_parent.spawn((
+                        create_hebrew_text(&asset_server),
+                        Name::new("Pause Hebrew Logo Text"),
+                    ));
+
+                    // Spawn the English text below the Hebrew text
+                    logo_parent.spawn((
+                        create_english_text(&asset_server),
+                        Name::new("Pause English Logo Text"),
+                    ));
+                });
         });
     } else {
-        // Fallback if no menu camera found
-        warn!("No menu camera found for Star of David attachment, spawning independently");
-        commands.spawn((
-            create_star_of_david(),
-            Name::new("Pause Menu Star of David"),
-        ));
+        warn!("No menu camera found for Star of David and text attachment");
+
+        // If no camera is found, still spawn the logo group
+        commands
+            .spawn((
+                create_logo(),
+                Name::new("Pause Logo Group"),
+                MenuDecorativeElement,
+            ))
+            .with_children(|logo_parent| {
+                // Spawn the Star of David
+                logo_parent.spawn((create_star_of_david(), Name::new("Pause Star of David")));
+
+                // Spawn the Hebrew text below the star
+                logo_parent.spawn((
+                    create_hebrew_text(&asset_server),
+                    Name::new("Pause Hebrew Logo Text"),
+                ));
+
+                // Spawn the English text below the Hebrew text
+                logo_parent.spawn((
+                    create_english_text(&asset_server),
+                    Name::new("Pause English Logo Text"),
+                ));
+            });
     }
 }
 
@@ -601,22 +639,74 @@ fn update_menu_background(
 }
 
 /// Sets up a Star of David for the main menu and attaches it to the menu camera
-fn setup_main_menu_star(mut commands: Commands, menu_cameras: Query<Entity, With<MenuCamera>>) {
-    use crate::menu::logo::create_star_of_david;
+fn setup_main_menu_star(
+    mut commands: Commands,
+    menu_cameras: Query<Entity, With<MenuCamera>>,
+    asset_server: Res<AssetServer>,
+) {
+    use crate::menu::components::MenuDecorativeElement;
+    use crate::menu::logo::{
+        create_english_text, create_hebrew_text, create_logo, create_star_of_david,
+    };
 
     // Find the menu camera
     if let Some(camera_entity) = menu_cameras.iter().next() {
         info!(
-            "Attaching Star of David to main menu camera: {:?}",
+            "Attaching Star of David and text to main menu camera: {:?}",
             camera_entity
         );
 
-        // Spawn the star as a child of the menu camera
+        // Spawn the logo group as a child of the menu camera
         commands.entity(camera_entity).with_children(|parent| {
-            parent.spawn((create_star_of_david(), Name::new("Main Menu Star of David")));
+            // Create a parent entity that will contain the star and text elements
+            parent
+                .spawn((
+                    create_logo(),
+                    Name::new("Logo Group"),
+                    MenuDecorativeElement,
+                ))
+                .with_children(|logo_parent| {
+                    // Spawn the Star of David
+                    logo_parent.spawn((create_star_of_david(), Name::new("Star of David")));
+
+                    // Spawn the Hebrew text below the star
+                    logo_parent.spawn((
+                        create_hebrew_text(&asset_server),
+                        Name::new("Hebrew Logo Text"),
+                    ));
+
+                    // Spawn the English text below the Hebrew text
+                    logo_parent.spawn((
+                        create_english_text(&asset_server),
+                        Name::new("English Logo Text"),
+                    ));
+                });
         });
     } else {
-        warn!("No menu camera found for Star of David attachment");
-        commands.spawn((create_star_of_david(), Name::new("Main Menu Star of David")));
+        warn!("No menu camera found for Star of David and text attachment");
+
+        // If no camera is found, still spawn the logo group
+        commands
+            .spawn((
+                create_logo(),
+                Name::new("Logo Group"),
+                MenuDecorativeElement,
+            ))
+            .with_children(|logo_parent| {
+                // Spawn the Star of David
+                logo_parent.spawn((create_star_of_david(), Name::new("Star of David")));
+
+                // Spawn the Hebrew text below the star
+                logo_parent.spawn((
+                    create_hebrew_text(&asset_server),
+                    Name::new("Hebrew Logo Text"),
+                ));
+
+                // Spawn the English text below the Hebrew text
+                logo_parent.spawn((
+                    create_english_text(&asset_server),
+                    Name::new("English Logo Text"),
+                ));
+            });
     }
 }

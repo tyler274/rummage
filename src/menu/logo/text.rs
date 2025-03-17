@@ -2,12 +2,12 @@ use bevy::prelude::*;
 use bevy::text::JustifyText;
 use bevy::ui::{AlignItems, JustifyContent, PositionType, UiRect, Val};
 
-/// Creates a vectorized Star of David with Hebrew text
+/// Creates a container for the logo group (Star of David + text)
 pub fn create_logo() -> impl Bundle {
     (
         Node {
-            width: Val::Px(200.0),
-            height: Val::Px(200.0),
+            width: Val::Px(300.0),
+            height: Val::Px(400.0),
             flex_direction: FlexDirection::Column,
             align_items: AlignItems::Center,
             justify_content: JustifyContent::Center,
@@ -23,7 +23,10 @@ pub fn create_logo() -> impl Bundle {
 pub fn create_hebrew_text(asset_server: &AssetServer) -> impl Bundle {
     (
         Node {
-            margin: UiRect::top(Val::Px(20.0)),
+            margin: UiRect {
+                top: Val::Px(150.0), // Position below the Star of David
+                ..default()
+            },
             ..default()
         },
         Text::new("רומאג'"),
@@ -43,13 +46,16 @@ pub fn create_hebrew_text(asset_server: &AssetServer) -> impl Bundle {
 pub fn create_english_text(asset_server: &AssetServer) -> impl Bundle {
     (
         Node {
-            margin: UiRect::top(Val::Px(10.0)),
+            margin: UiRect {
+                top: Val::Px(210.0), // Position below the Hebrew text
+                ..default()
+            },
             ..default()
         },
         Text::new("Rummage"),
         TextFont {
             font: asset_server.load("fonts/DejaVuSans.ttf"),
-            font_size: 24.0,
+            font_size: 28.0,
             ..default()
         },
         TextLayout::new_with_justify(JustifyText::Center),

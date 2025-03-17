@@ -111,11 +111,7 @@ pub fn render_star_of_david(
     query: Query<Entity, (With<StarOfDavid>, Without<Children>)>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    windows: Query<&Window>,
 ) {
-    // Get window dimensions for positioning
-    let window_height = windows.get_single().map(|w| w.height()).unwrap_or(1080.0);
-
     // Only process entities that don't have children yet
     for entity in &query {
         // Create the material once - gold color
@@ -124,9 +120,7 @@ pub fn render_star_of_david(
         // Create a triangle mesh
         let triangle_mesh = meshes.add(create_equilateral_triangle_mesh(150.0 * 2.0));
 
-        // Position the star at the top portion of the screen
         // Z-coordinate ensures it's behind UI but still visible in menu camera
-        let star_position_y = window_height * 0.25; // 25% down from the top
         let z_position = 901.0;
 
         // Triangle offset to create the star shape
@@ -138,7 +132,7 @@ pub fn render_star_of_david(
             parent.spawn((
                 Mesh2d::from(triangle_mesh.clone()),
                 MeshMaterial2d(material.clone()),
-                Transform::from_xyz(0.0, star_position_y + triangle_offset, z_position),
+                Transform::from_xyz(0.0, triangle_offset, z_position),
                 GlobalTransform::default(),
                 Visibility::default(),
                 InheritedVisibility::default(),
@@ -149,7 +143,7 @@ pub fn render_star_of_david(
             parent.spawn((
                 Mesh2d::from(triangle_mesh),
                 MeshMaterial2d(material),
-                Transform::from_xyz(0.0, star_position_y - triangle_offset, z_position)
+                Transform::from_xyz(0.0, -triangle_offset, z_position)
                     .with_rotation(Quat::from_rotation_z(std::f32::consts::PI)),
                 GlobalTransform::default(),
                 Visibility::default(),
