@@ -52,9 +52,10 @@ fn test_auto_save() {
     // Trigger state-based actions check to initiate auto-save
     app.world_mut().send_event(CheckStateBasedActionsEvent);
 
-    // Run systems to process events
-    app.update();
-    app.update(); // Run another update to ensure save completes
+    // Run systems to process events - run multiple times to ensure all systems execute
+    for _ in 0..5 {
+        app.update();
+    }
 
     // Verify auto-save file was created
     assert!(auto_save_path.exists(), "Auto-save file was not created");

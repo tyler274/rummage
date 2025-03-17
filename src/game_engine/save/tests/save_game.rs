@@ -12,6 +12,9 @@ fn test_save_game() {
     let mut app = App::new();
     app.add_plugins(SaveLoadPlugin);
 
+    // Run once to initialize resources
+    app.update();
+
     // Set up test environment with real players and game state
     let _player_entities = setup_test_environment(&mut app);
 
@@ -36,14 +39,18 @@ fn test_save_game() {
         std::fs::remove_file(&save_path).unwrap();
     }
 
+    // Verify the directory exists before saving
+    assert!(test_dir.exists(), "Test save directory does not exist");
+
     // Trigger save game event
     app.world_mut().send_event(SaveGameEvent {
         slot_name: slot_name.to_string(),
     });
 
-    // Run systems to process the event
-    app.update();
-    app.update(); // Run another update to ensure save completes
+    // Run systems to process the event - run multiple times to ensure all systems execute
+    for _ in 0..5 {
+        app.update();
+    }
 
     // Verify the save file was created
     assert!(

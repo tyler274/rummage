@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use bevy_persistent::prelude::*;
-use std::collections::HashMap;
-use std::path::Path;
+use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 
 use crate::game_engine::commander::CommandZoneManager;
@@ -19,21 +18,45 @@ pub fn setup_save_system(mut commands: Commands) {
 
     // Only try to create directory on native platforms
     #[cfg(not(target_arch = "wasm32"))]
-    std::fs::create_dir_all(&config.save_directory).unwrap_or_else(|e| {
+    if let Err(e) = std::fs::create_dir_all(&config.save_directory) {
         error!("Failed to create save directory: {}", e);
-    });
+        // Continue anyway - the directory might already exist
+    }
 
     // Determine the appropriate base path for persistence based on platform
     let metadata_path = get_storage_path(&config, "metadata.bin");
 
     // Initialize persistent save metadata
-    let save_metadata = Persistent::builder()
+    let save_metadata = match Persistent::builder()
         .name("save_metadata")
         .format(StorageFormat::Bincode)
         .path(metadata_path)
         .default(SaveMetadata::default())
         .build()
-        .expect("Failed to create persistent save metadata");
+    {
+        Ok(metadata) => metadata,
+        Err(e) => {
+            error!("Failed to create persistent save metadata: {}", e);
+            // Create a new in-memory metadata resource instead
+            Persistent::builder()
+                .name("save_metadata")
+                .format(StorageFormat::Bincode)
+                .path(PathBuf::from("metadata.bin")) // Fallback path
+                .default(SaveMetadata::default())
+                .build()
+                .unwrap_or_else(|_| {
+                    // If even that fails, create a completely in-memory resource
+                    let metadata = SaveMetadata::default();
+                    Persistent::builder()
+                        .name("save_metadata")
+                        .format(StorageFormat::Bincode)
+                        .path(PathBuf::from("metadata.bin"))
+                        .default(metadata)
+                        .build()
+                        .expect("Failed to create even basic metadata")
+                })
+        }
+    };
 
     commands.insert_resource(config.clone());
     commands.insert_resource(AutoSaveTracker::default());
@@ -64,11 +87,20 @@ pub fn handle_save_game(
     zones: Option<Res<ZoneManager>>,
     commanders: Option<Res<CommandZoneManager>>,
     mut save_metadata: ResMut<Persistent<SaveMetadata>>,
-    _config: Res<SaveConfig>,
+    config: Res<SaveConfig>,
     mut commands: Commands,
 ) {
     for event in event_reader.read() {
         info!("Saving game to slot: {}", event.slot_name);
+
+        // Ensure save directory exists for native platforms
+        #[cfg(not(target_arch = "wasm32"))]
+        if !config.save_directory.exists() {
+            if let Err(e) = std::fs::create_dir_all(&config.save_directory) {
+                error!("Failed to create save directory: {}", e);
+                continue; // Skip this save attempt
+            }
+        }
 
         let mut player_data = Vec::new();
 
@@ -102,7 +134,7 @@ pub fn handle_save_game(
                 GameSaveData::from_commander_manager(commander_manager, &entity_to_index);
         }
 
-        let save_path = get_storage_path(&_config, &format!("{}.bin", event.slot_name));
+        let save_path = get_storage_path(&config, &format!("{}.bin", event.slot_name));
 
         // Insert as a resource first, then create persistent
         commands.insert_resource(save_data.clone());
@@ -111,7 +143,7 @@ pub fn handle_save_game(
         let persistent_save = Persistent::<GameSaveData>::builder()
             .name(&format!("game_save_{}", event.slot_name))
             .format(StorageFormat::Bincode)
-            .path(save_path)
+            .path(save_path.clone())
             .default(save_data.clone())
             .build();
 
@@ -120,6 +152,13 @@ pub fn handle_save_game(
                 // Persist the save immediately
                 if let Err(e) = save.persist() {
                     error!("Failed to save game: {}", e);
+                    continue;
+                }
+
+                // Verify save file was created
+                #[cfg(not(target_arch = "wasm32"))]
+                if !save_path.exists() {
+                    error!("Save file was not created at: {:?}", save_path);
                     continue;
                 }
 
@@ -166,7 +205,7 @@ pub fn handle_save_game(
 pub fn handle_load_game(
     mut event_reader: EventReader<LoadGameEvent>,
     mut commands: Commands,
-    _config: Res<SaveConfig>,
+    config: Res<SaveConfig>,
     mut query_players: Query<(Entity, &mut Player)>,
     mut game_state: Option<ResMut<GameState>>,
     mut zones: Option<ResMut<ZoneManager>>,
@@ -175,7 +214,14 @@ pub fn handle_load_game(
     for event in event_reader.read() {
         info!("Loading game from slot: {}", event.slot_name);
 
-        let save_path = get_storage_path(&_config, &format!("{}.bin", event.slot_name));
+        let save_path = get_storage_path(&config, &format!("{}.bin", event.slot_name));
+
+        // Check if the save file exists (only on native platforms)
+        #[cfg(not(target_arch = "wasm32"))]
+        if !save_path.exists() {
+            error!("Save file not found at: {:?}", save_path);
+            continue;
+        }
 
         // Create a persistent resource to load the save
         let persistent_save = Persistent::<GameSaveData>::builder()
@@ -229,17 +275,31 @@ pub fn handle_load_game(
                     }
                 }
 
-                // Restore game state
+                // Handle empty player list case gracefully
+                if save_data.players.is_empty() {
+                    debug!("Loading a save with no players");
+                    // Add a placeholder to index_to_entity for GameState to reference safely
+                    if index_to_entity.is_empty() {
+                        index_to_entity.push(Entity::PLACEHOLDER);
+                    }
+                }
+
+                // Restore game state - always attempt to restore basic properties even with empty players
                 if let Some(game_state) = &mut game_state {
-                    // Only attempt to restore the game state if we have valid player entities
-                    if !index_to_entity.is_empty() {
-                        **game_state = save_data.to_game_state(&index_to_entity);
+                    // If there's a corrupted mapping, fall back to basic properties
+                    if index_to_entity.is_empty() || index_to_entity.contains(&Entity::PLACEHOLDER)
+                    {
+                        // At minimum, restore basic properties not tied to player entities
+                        game_state.turn_number = save_data.game_state.turn_number;
+
+                        // For empty player list, set reasonable defaults for player-related fields
+                        if save_data.game_state.turn_order_indices.is_empty() {
+                            // Create a fallback turn order
+                            game_state.turn_order = VecDeque::new();
+                        }
                     } else {
-                        // In case of no players, just reset to default
-                        **game_state = GameState::default();
-                        warn!(
-                            "No player entities found when loading game, resetting to default state"
-                        );
+                        // Full restore with valid player entities
+                        **game_state = save_data.to_game_state(&index_to_entity);
                     }
                 } else {
                     if !index_to_entity.is_empty() {

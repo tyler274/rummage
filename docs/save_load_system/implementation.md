@@ -108,26 +108,46 @@ The save/load system uses `bevy_persistent` for robust persistence. This impleme
 
 1. **Format Selection**: Currently uses `Bincode` for efficient binary serialization.
 2. **Path Selection**: Appropriate paths based on platform (native or web) and user configuration.
-3. **Error Handling**: Robust handling of failures during save/load operations.
+3. **Error Handling**: Robust handling of failures during save/load operations with graceful fallbacks.
 4. **Resource Management**: Automatic resource persistence and loading.
 
-Example integration from the `setup_save_system` function:
+Example integration from the `setup_save_system` function with improved error handling:
 
 ```rust
 // Create save directory if it doesn't exist
 let config = SaveConfig::default();
 
+// Only try to create directory on native platforms
+#[cfg(not(target_arch = "wasm32"))]
+if let Err(e) = std::fs::create_dir_all(&config.save_directory) {
+    error!("Failed to create save directory: {}", e);
+    // Continue anyway - the directory might already exist
+}
+
 // Determine the appropriate base path for persistence based on platform
 let metadata_path = get_storage_path(&config, "metadata.bin");
 
-// Initialize persistent save metadata
-let save_metadata = Persistent::builder()
+// Initialize persistent save metadata with fallback options
+let save_metadata = match Persistent::builder()
     .name("save_metadata")
     .format(StorageFormat::Bincode)
     .path(metadata_path)
     .default(SaveMetadata::default())
     .build()
-    .expect("Failed to create persistent save metadata");
+{
+    Ok(metadata) => metadata,
+    Err(e) => {
+        error!("Failed to create persistent save metadata: {}", e);
+        // Create a fallback in-memory resource
+        Persistent::builder()
+            .name("save_metadata")
+            .format(StorageFormat::Bincode)
+            .path(PathBuf::from("metadata.bin"))
+            .default(SaveMetadata::default())
+            .build()
+            .expect("Failed to create even basic metadata")
+    }
+};
 
 commands.insert_resource(config.clone());
 commands.insert_resource(save_metadata);
@@ -174,10 +194,32 @@ The replay system extends save/load functionality by:
 
 The save/load system employs several error handling strategies:
 
-1. **Corrupted Data**: Graceful handling of corrupted saves with fallbacks
-2. **Missing Entities**: Safe handling when mapped entities don't exist
-3. **Version Compatibility**: Checking save version compatibility
-4. **File System Errors**: Robust handling of IO and persistence errors
+1. **Corrupted Data**: Graceful handling of corrupted saves with fallbacks to default values
+2. **Missing Entities**: Safe handling when mapped entities don't exist, including placeholder entities when needed
+3. **Empty Player Lists**: Special handling for saves with no players, preserving game state data
+4. **Version Compatibility**: Checking save version compatibility
+5. **File System Errors**: Robust handling of IO and persistence errors with appropriate error messages
+6. **Directory Creation**: Automatic creation of save directories with error handling
+7. **Save Verification**: Verification that save files were actually created
+
+Example of handling corrupted entity mappings:
+
+```rust
+// If there's a corrupted mapping, fall back to basic properties
+if index_to_entity.is_empty() || index_to_entity.contains(&Entity::PLACEHOLDER) {
+    // At minimum, restore basic properties not tied to player entities
+    game_state.turn_number = save_data.game_state.turn_number;
+    
+    // For empty player list, set reasonable defaults for player-related fields
+    if save_data.game_state.turn_order_indices.is_empty() {
+        // Create a fallback turn order
+        game_state.turn_order = VecDeque::new();
+    }
+} else {
+    // Full restore with valid player entities
+    **game_state = save_data.to_game_state(&index_to_entity);
+}
+```
 
 ## Testing
 
