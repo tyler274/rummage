@@ -1,4 +1,3 @@
-use bevy::utils::HashMap;
 use bevy::{ecs::system::ParamSet, prelude::*};
 
 use crate::{
@@ -38,9 +37,6 @@ pub struct MenuVisibilityState {
 /// Resource to control logging frequency for menu visibility
 #[derive(Resource)]
 struct MenuVisibilityLogState {
-    last_log_time: f32,
-    log_interval: f32,
-    last_camera_count: usize,
     last_item_count: usize,
     last_visible_items: usize,
     camera_states: std::collections::HashMap<Entity, Visibility>,
@@ -49,9 +45,6 @@ struct MenuVisibilityLogState {
 impl Default for MenuVisibilityLogState {
     fn default() -> Self {
         Self {
-            last_log_time: 0.0,
-            log_interval: 30.0, // Log every 30 seconds at most
-            last_camera_count: 0,
             last_item_count: 0,
             last_visible_items: 0,
             camera_states: std::collections::HashMap::new(),
@@ -87,6 +80,7 @@ impl Plugin for MenuPlugin {
                     setup_menu_camera,
                     set_menu_camera_zoom,
                     ensure_single_menu_camera,
+                    setup_main_menu_star,
                 )
                     .chain(),
             )
@@ -259,9 +253,38 @@ pub fn setup_menu_camera(
 }
 
 /// Setup Star of David for pause menu
-fn setup_pause_star(mut commands: Commands) {
+fn setup_pause_star(
+    mut commands: Commands,
+    menu_cameras: Query<Entity, With<MenuCamera>>,
+    windows: Query<&Window>,
+) {
     use crate::menu::logo::create_star_of_david;
-    commands.spawn(create_star_of_david());
+
+    // Get window dimensions for reference
+    let window_height = windows.get_single().map(|w| w.height()).unwrap_or(1080.0);
+
+    // Find the menu camera
+    if let Some(camera_entity) = menu_cameras.iter().next() {
+        info!(
+            "Attaching Star of David to menu camera: {:?}",
+            camera_entity
+        );
+
+        // Spawn the star as a child of the menu camera
+        commands.entity(camera_entity).with_children(|parent| {
+            parent.spawn((
+                create_star_of_david(),
+                Name::new("Pause Menu Star of David"),
+            ));
+        });
+    } else {
+        // Fallback if no menu camera found
+        warn!("No menu camera found for Star of David attachment, spawning independently");
+        commands.spawn((
+            create_star_of_david(),
+            Name::new("Pause Menu Star of David"),
+        ));
+    }
 }
 
 /// Ensures only one menu camera exists
@@ -491,10 +514,6 @@ fn debug_menu_visibility(
         return;
     }
 
-    // Get total counts (not just changed)
-    let total_cameras = log_state.camera_states.len();
-    let total_items = log_state.last_item_count;
-
     // Collect current camera states for changed cameras
     for (entity, visibility) in menu_cameras.iter() {
         log_state.camera_states.insert(entity, *visibility);
@@ -578,5 +597,26 @@ fn update_menu_background(
                 current_width, current_height
             );
         }
+    }
+}
+
+/// Sets up a Star of David for the main menu and attaches it to the menu camera
+fn setup_main_menu_star(mut commands: Commands, menu_cameras: Query<Entity, With<MenuCamera>>) {
+    use crate::menu::logo::create_star_of_david;
+
+    // Find the menu camera
+    if let Some(camera_entity) = menu_cameras.iter().next() {
+        info!(
+            "Attaching Star of David to main menu camera: {:?}",
+            camera_entity
+        );
+
+        // Spawn the star as a child of the menu camera
+        commands.entity(camera_entity).with_children(|parent| {
+            parent.spawn((create_star_of_david(), Name::new("Main Menu Star of David")));
+        });
+    } else {
+        warn!("No menu camera found for Star of David attachment");
+        commands.spawn((create_star_of_david(), Name::new("Main Menu Star of David")));
     }
 }

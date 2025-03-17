@@ -80,8 +80,7 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     info!("Spawned menu background: {:?}", background_entity);
 
-    // Spawn Star of David in world space with proper z-index
-    commands.spawn(create_star_of_david());
+    // Star of David is now spawned in the setup_main_menu_star system in plugin.rs
 
     // Main menu container - now transparent to let the background image show through
     commands

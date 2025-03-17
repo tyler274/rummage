@@ -10,26 +10,17 @@ pub struct StarOfDavid;
 /// Resource to control logging frequency and track entity state
 #[derive(Resource)]
 pub struct StarOfDavidLogState {
-    /// When we last logged star debug info
-    last_log_time: f32,
-    /// Minimum time between logs in seconds
-    log_interval: f32,
     /// Last recorded number of stars
     last_star_count: usize,
     /// Last recorded state of stars having children
     last_children_state: std::collections::HashMap<Entity, bool>,
-    /// Whether any changes were made to stars since last log
-    changes_made: bool,
 }
 
 impl Default for StarOfDavidLogState {
     fn default() -> Self {
         Self {
-            last_log_time: 0.0,
-            log_interval: 30.0, // Only log once every 30 seconds at most
             last_star_count: 0,
             last_children_state: std::collections::HashMap::new(),
-            changes_made: false,
         }
     }
 }
@@ -120,14 +111,26 @@ pub fn render_star_of_david(
     query: Query<Entity, (With<StarOfDavid>, Without<Children>)>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    windows: Query<&Window>,
 ) {
+    // Get window dimensions for positioning
+    let window_height = windows.get_single().map(|w| w.height()).unwrap_or(1080.0);
+
     // Only process entities that don't have children yet
     for entity in &query {
         // Create the material once - gold color
         let material = materials.add(Color::srgb(1.0, 0.84, 0.0));
 
         // Create a triangle mesh
-        let triangle_mesh = meshes.add(create_equilateral_triangle_mesh(150.0));
+        let triangle_mesh = meshes.add(create_equilateral_triangle_mesh(150.0 * 2.0));
+
+        // Position the star at the top portion of the screen
+        // Z-coordinate ensures it's behind UI but still visible in menu camera
+        let star_position_y = window_height * 0.25; // 25% down from the top
+        let z_position = 901.0;
+
+        // Triangle offset to create the star shape
+        let triangle_offset = 40.0;
 
         // Spawn the child entities for the two triangles
         commands.entity(entity).with_children(|parent| {
@@ -135,7 +138,7 @@ pub fn render_star_of_david(
             parent.spawn((
                 Mesh2d::from(triangle_mesh.clone()),
                 MeshMaterial2d(material.clone()),
-                Transform::from_xyz(0.0, 20.0, 901.0),
+                Transform::from_xyz(0.0, star_position_y + triangle_offset, z_position),
                 GlobalTransform::default(),
                 Visibility::default(),
                 InheritedVisibility::default(),
@@ -146,7 +149,7 @@ pub fn render_star_of_david(
             parent.spawn((
                 Mesh2d::from(triangle_mesh),
                 MeshMaterial2d(material),
-                Transform::from_xyz(0.0, -20.0, 901.0)
+                Transform::from_xyz(0.0, star_position_y - triangle_offset, z_position)
                     .with_rotation(Quat::from_rotation_z(std::f32::consts::PI)),
                 GlobalTransform::default(),
                 Visibility::default(),
@@ -190,8 +193,9 @@ pub fn create_star_of_david() -> impl Bundle {
     // Use debug level to reduce log spam
     debug!("Creating StarOfDavid bundle");
     (
-        // Position behind UI but still within camera view
-        Transform::from_xyz(0.0, 0.0, 900.0),
+        // Use a UI-oriented position that works with the menu camera
+        // Z-index places it behind UI elements but still visible
+        Transform::default(),
         GlobalTransform::default(),
         Visibility::default(),
         InheritedVisibility::default(),
