@@ -11,7 +11,12 @@ debug = ["bevy-persistent/pretty"]
 
 [dependencies]
 async-trait = "0.1.88"
-bevy = "0.15.3"
+bevy = { version = "0.15.3", features = [
+    "wayland",
+    "jpeg",
+    "dynamic_linking",
+    "serialize",
+] }
 bevy-persistent = { version = "0.7.0", features = ["bincode", "toml"] }
 # bevy_prng = { git = "https://github.com/Bluefinger/bevy_rand", branch = "main", features = [
 #     "wyrand",
