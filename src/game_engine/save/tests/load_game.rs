@@ -62,7 +62,7 @@ fn test_load_game() {
 
     // Get player life values using app.world()
     {
-        let mut world = app.world_mut();
+        let world = app.world_mut();
         let mut player_query = world.query::<&Player>();
 
         for player in player_query.iter(&world) {
