@@ -16,13 +16,14 @@ pub fn create_logo() -> impl Bundle {
             ..default()
         },
         BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.0)),
-        AppLayer::Menu.layer(),
+        AppLayer::Menu.layer(), // Top-level element needs explicit RenderLayers
         Interaction::None,
     )
 }
 
 /// Creates the Hebrew text "Rummage" (רומאג')
 pub fn create_hebrew_text(asset_server: &AssetServer) -> impl Bundle {
+    // No RenderLayers component - will inherit from parent
     (
         Node {
             margin: UiRect {
@@ -40,13 +41,13 @@ pub fn create_hebrew_text(asset_server: &AssetServer) -> impl Bundle {
         TextLayout::new_with_justify(JustifyText::Center),
         TextColor(Color::srgb(0.85, 0.65, 0.13)),
         BackgroundColor(Color::NONE),
-        AppLayer::Menu.layer(),
         Interaction::None,
     )
 }
 
 /// Creates the English text "Rummage"
 pub fn create_english_text(asset_server: &AssetServer) -> impl Bundle {
+    // No RenderLayers component - will inherit from parent
     (
         Node {
             margin: UiRect {
@@ -64,18 +65,20 @@ pub fn create_english_text(asset_server: &AssetServer) -> impl Bundle {
         TextLayout::new_with_justify(JustifyText::Center),
         TextColor(Color::srgb(0.85, 0.65, 0.13)),
         BackgroundColor(Color::NONE),
-        AppLayer::Menu.layer(),
         Interaction::None,
     )
 }
 
-/// Creates the decorative elements around the logo
+/// Creates decorative elements around the logo
 pub fn create_decorative_elements() -> impl Bundle {
+    // No RenderLayers component - will inherit from parent
     (
         Node {
-            width: Val::Px(200.0),
-            height: Val::Px(200.0),
-            position_type: PositionType::Absolute,
+            margin: UiRect {
+                top: Val::Px(270.0), // Position below the English text
+                ..default()
+            },
+            position_type: PositionType::Relative,
             ..default()
         },
         BackgroundColor(Color::NONE),

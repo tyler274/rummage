@@ -106,7 +106,6 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
             parent
                 .spawn((
                     create_logo(),
-                    AppLayer::Menu.layer(),
                     Visibility::Visible,
                     InheritedVisibility::default(),
                     ViewVisibility::default(),
@@ -114,21 +113,18 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 .with_children(|parent| {
                     parent.spawn((
                         create_hebrew_text(&asset_server),
-                        AppLayer::Menu.layer(),
                         Visibility::Visible,
                         InheritedVisibility::default(),
                         ViewVisibility::default(),
                     ));
                     parent.spawn((
                         create_english_text(&asset_server),
-                        AppLayer::Menu.layer(),
                         Visibility::Visible,
                         InheritedVisibility::default(),
                         ViewVisibility::default(),
                     ));
                     parent.spawn((
                         create_decorative_elements(),
-                        AppLayer::Menu.layer(),
                         Visibility::Visible,
                         InheritedVisibility::default(),
                         ViewVisibility::default(),
@@ -139,21 +135,17 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
             parent
                 .spawn((
                     Node {
-                        width: Val::Px(302.0), // Slightly larger to create border effect
-                        height: Val::Px(402.0),
+                        width: Val::Px(320.0),
+                        height: Val::Px(430.0),
                         flex_direction: FlexDirection::Column,
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
-                        margin: UiRect::top(Val::Px(50.0)),
+                        padding: UiRect::all(Val::Px(10.0)),
                         ..default()
                     },
-                    // Border color
-                    BackgroundColor(Color::srgba(0.6, 0.5, 0.2, 0.3)),
-                    BorderRadius::all(Val::Px(9.0)), // Slightly larger radius for outer element
-                    AppLayer::Menu.layer(),
-                    Visibility::Visible,
-                    InheritedVisibility::default(),
-                    ViewVisibility::default(),
+                    BackgroundColor(Color::srgba(0.5, 0.4, 0.1, 0.3)),
+                    BorderRadius::all(Val::Px(10.0)),
+                    MenuItem,
                 ))
                 .with_children(|parent| {
                     // Inner container (actual menu background)
@@ -170,7 +162,6 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                             // Slightly transparent dark panel for buttons
                             BackgroundColor(Color::srgba(0.15, 0.15, 0.15, 0.85)),
                             BorderRadius::all(Val::Px(8.0)),
-                            AppLayer::Menu.layer(),
                             Visibility::Visible,
                             InheritedVisibility::default(),
                             ViewVisibility::default(),
@@ -238,7 +229,6 @@ fn spawn_menu_button(
             // Border color
             BackgroundColor(Color::srgba(0.6, 0.5, 0.2, 0.5)),
             BorderRadius::all(Val::Px(5.0)),
-            AppLayer::Menu.layer(),
             Visibility::Visible,
             InheritedVisibility::default(),
             ViewVisibility::default(),
@@ -258,7 +248,6 @@ fn spawn_menu_button(
                     BorderRadius::all(Val::Px(4.0)),
                     Button,
                     action,
-                    AppLayer::Menu.layer(),
                     Visibility::Visible,
                     InheritedVisibility::default(),
                     ViewVisibility::default(),
@@ -274,7 +263,6 @@ fn spawn_menu_button(
                         },
                         TextLayout::new_with_justify(JustifyText::Center),
                         TextColor(Color::srgba(0.95, 0.95, 0.95, 1.0)),
-                        AppLayer::Menu.layer(),
                         Visibility::Visible,
                         InheritedVisibility::default(),
                         ViewVisibility::default(),

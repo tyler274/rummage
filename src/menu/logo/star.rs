@@ -90,7 +90,7 @@ pub fn render_star_of_david(
 
         // Use ImageNode to display the star image
         commands.entity(entity).with_children(|parent| {
-            // Create a UI image node for the star
+            // Create a UI image node for the star - don't add RenderLayers since it inherits from parent
             parent.spawn((
                 ImageNode::new(asset_server.load("textures/star.png")),
                 Node {
@@ -103,9 +103,8 @@ pub fn render_star_of_david(
                 },
                 GlobalZIndex(100), // Add high z-index to ensure visibility
                 Name::new("Star Image"),
-                Visibility::Visible,
-                InheritedVisibility::default(),
-                ViewVisibility::default(),
+                // These visibility components are already added by default by Bevy
+                // so we don't need to add them explicitly
             ));
         });
     }
@@ -128,7 +127,6 @@ pub fn create_star_of_david() -> impl Bundle {
         },
         BackgroundColor(Color::NONE), // Transparent background
         StarOfDavid,
-        AppLayer::Menu.layer(), // Only visible on menu layer
         Visibility::Visible,
         InheritedVisibility::default(),
         ViewVisibility::default(),
