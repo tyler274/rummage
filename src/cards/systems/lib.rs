@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::cards::Card;
 use crate::cards::components::Draggable;
+use crate::menu::input_blocker::InteractionBlockState;
 use crate::text;
 
 pub fn handle_card_dragging(
@@ -10,7 +11,13 @@ pub fn handle_card_dragging(
     windows: Query<&Window>,
     camera_q: Query<(&Camera, &GlobalTransform), With<crate::camera::components::GameCamera>>,
     player_config: Res<crate::player::resources::PlayerConfig>,
+    interaction_block: Res<InteractionBlockState>,
 ) {
+    // Skip interaction if blocked by menus
+    if interaction_block.should_block {
+        return;
+    }
+
     // Safely get window and camera
     let Ok(window) = windows.get_single() else {
         return; // No window available
