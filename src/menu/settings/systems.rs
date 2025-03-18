@@ -372,6 +372,11 @@ fn create_volume_slider(
 
             // Value text
             parent.spawn((
+                Node {
+                    width: Val::Auto,
+                    height: Val::Auto,
+                    ..default()
+                },
                 Text::new(format!("{}%", value)),
                 TextFont {
                     font_size: 20.0,
