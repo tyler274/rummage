@@ -2,6 +2,7 @@ use crate::camera::components::AppLayer;
 use crate::game_engine::save::{LoadGameEvent, SaveGameEvent};
 use crate::menu::{
     components::*,
+    input_blocker::InputBlocker,
     state::{GameMenuState, StateTransitionContext},
     styles::*,
 };
@@ -11,6 +12,21 @@ use bevy::ui::{AlignItems, JustifyContent, Val};
 
 /// Sets up the pause menu interface
 pub fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
+    // First, create a full-screen transparent input blocker
+    commands.spawn((
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            position_type: PositionType::Absolute,
+            ..default()
+        },
+        AppLayer::Menu.layer(),
+        InputBlocker,
+        MenuItem,
+        Name::new("Pause Menu Input Blocker"),
+    ));
+
+    // Then spawn the pause menu UI
     commands
         .spawn((
             Node {

@@ -1,3 +1,4 @@
+use crate::menu::input_blocker::InteractionBlockState;
 /// Drag and drop functionality for game objects.
 ///
 /// This module provides:
@@ -43,7 +44,13 @@ pub fn drag_system(
     mouse_button: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window, With<PrimaryWindow>>,
     camera_q: Query<(&Camera, &GlobalTransform), With<crate::camera::components::GameCamera>>,
+    interaction_block: Res<InteractionBlockState>,
 ) {
+    // Skip interaction if blocked by menus
+    if interaction_block.should_block {
+        return;
+    }
+
     // Get the primary window
     let Ok(window) = windows.get_single() else {
         return;
@@ -111,7 +118,13 @@ fn update_draggables(
     window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     mouse_button_input: Res<ButtonInput<MouseButton>>,
     mut position_cache: ResMut<DragCache>,
+    interaction_block: Res<InteractionBlockState>,
 ) {
+    // Skip interaction if blocked by menus
+    if interaction_block.should_block {
+        return;
+    }
+
     let (camera, camera_transform) = match camera_query.get_single() {
         Ok(result) => result,
         Err(_) => return, // No camera, can't process dragging
@@ -161,9 +174,15 @@ fn start_drag(
     mut commands: Commands,
     mouse_button_input: Res<ButtonInput<MouseButton>>,
     camera_query: Query<(&Camera, &GlobalTransform), With<crate::camera::components::GameCamera>>,
-    _window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
     draggable_query: Query<(Entity, &GlobalTransform, &Draggable)>,
+    interaction_block: Res<InteractionBlockState>,
 ) {
+    // Skip interaction if blocked by menus
+    if interaction_block.should_block {
+        return;
+    }
+
     if !mouse_button_input.just_pressed(MouseButton::Left) {
         return; // Not a left click, don't do anything
     }
@@ -173,7 +192,7 @@ fn start_drag(
         Err(_) => return, // No camera, can't process dragging
     };
 
-    let window = match _window_query.get_single() {
+    let window = match window_query.get_single() {
         Ok(result) => result,
         Err(_) => return, // No window, can't process dragging
     };

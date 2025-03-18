@@ -1,3 +1,4 @@
+use crate::camera::components::AppLayer;
 use bevy::prelude::*;
 use bevy::text::JustifyText;
 use bevy::ui::{AlignItems, JustifyContent, PositionType, UiRect, Val};
@@ -15,6 +16,7 @@ pub fn create_logo() -> impl Bundle {
             ..default()
         },
         BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.0)),
+        AppLayer::Menu.layer(),
         Interaction::None,
     )
 }
@@ -38,6 +40,7 @@ pub fn create_hebrew_text(asset_server: &AssetServer) -> impl Bundle {
         TextLayout::new_with_justify(JustifyText::Center),
         TextColor(Color::srgb(0.85, 0.65, 0.13)),
         BackgroundColor(Color::NONE),
+        AppLayer::Menu.layer(),
         Interaction::None,
     )
 }
@@ -61,6 +64,7 @@ pub fn create_english_text(asset_server: &AssetServer) -> impl Bundle {
         TextLayout::new_with_justify(JustifyText::Center),
         TextColor(Color::srgb(0.85, 0.65, 0.13)),
         BackgroundColor(Color::NONE),
+        AppLayer::Menu.layer(),
         Interaction::None,
     )
 }

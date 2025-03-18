@@ -1,5 +1,6 @@
 pub mod cleanup;
 pub mod components;
+pub mod input_blocker;
 pub mod logo;
 pub mod main_menu;
 pub mod pause_menu;
@@ -17,6 +18,7 @@ pub mod main;
 
 pub use cleanup::*;
 pub use components::*;
+pub use input_blocker::*;
 pub use main_menu::*;
 pub use pause_menu::*;
 pub use plugin::MenuPlugin;

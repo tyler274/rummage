@@ -1,6 +1,7 @@
 use crate::camera::components::AppLayer;
 use crate::game_engine::save::events::{LoadGameEvent, SaveGameEvent};
 use crate::game_engine::save::resources::SaveMetadata;
+use crate::menu::input_blocker::InputBlocker;
 use crate::menu::state::GameMenuState;
 use crate::menu::styles::{HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON};
 use bevy::prelude::*;
@@ -16,6 +17,20 @@ pub fn setup_save_dialog(
     mut context: ResMut<SaveLoadUiContext>,
 ) {
     info!("Setting up save game dialog");
+
+    // First, create a full-screen transparent input blocker
+    commands.spawn((
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            position_type: PositionType::Absolute,
+            ..default()
+        },
+        AppLayer::Menu.layer(),
+        InputBlocker,
+        SaveLoadUi,
+        Name::new("Save Dialog Input Blocker"),
+    ));
 
     // Create a semi-transparent background overlay
     commands
@@ -219,6 +234,20 @@ pub fn setup_load_dialog(
     save_metadata: Option<Res<SaveMetadata>>,
 ) {
     info!("Setting up load game dialog");
+
+    // First, create a full-screen transparent input blocker
+    commands.spawn((
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            position_type: PositionType::Absolute,
+            ..default()
+        },
+        AppLayer::Menu.layer(),
+        InputBlocker,
+        SaveLoadUi,
+        Name::new("Load Dialog Input Blocker"),
+    ));
 
     // Create a semi-transparent background overlay
     commands

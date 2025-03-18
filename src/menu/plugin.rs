@@ -11,6 +11,7 @@ use crate::{
         components::MenuItem,
         credits::CreditsPlugin,
         deck::DeckManagerPlugin,
+        input_blocker::InputBlockerPlugin,
         logo::{StarOfDavidPlugin, render_star_of_david},
         main::MainMenuPlugin,
         main_menu::{MenuBackground, menu_action, set_menu_camera_zoom, setup_main_menu},
@@ -70,6 +71,7 @@ impl Plugin for MenuPlugin {
                 CreditsPlugin,
                 DeckManagerPlugin,
                 SaveLoadUiPlugin,
+                InputBlockerPlugin,
             ))
             // Main Menu state
             .add_systems(
