@@ -14,10 +14,7 @@ pub struct LoadGamePanel;
 
 /// Marker component for save/load slot button
 #[derive(Component)]
-pub struct SaveSlotButton {
-    /// The name of the save slot
-    pub slot_name: String,
-}
+pub struct SaveSlotButton;
 
 /// Button actions specific to save/load UI
 #[derive(Component, Clone, Debug)]

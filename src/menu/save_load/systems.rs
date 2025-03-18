@@ -14,7 +14,7 @@ pub fn setup_save_dialog(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     save_metadata: Option<Res<SaveMetadata>>,
-    mut context: ResMut<SaveLoadUiContext>,
+    context: ResMut<SaveLoadUiContext>,
 ) {
     info!("Setting up save game dialog");
 
@@ -441,9 +441,7 @@ fn spawn_save_slot_button(
             BackgroundColor(NORMAL_BUTTON),
             Button,
             SaveLoadButtonAction::SaveToSlot(slot_name.to_string()),
-            SaveSlotButton {
-                slot_name: slot_name.to_string(),
-            },
+            SaveSlotButton,
             AppLayer::Menu.layer(),
         ))
         .with_children(|parent| {
@@ -498,9 +496,7 @@ fn spawn_load_slot_button(
             BackgroundColor(NORMAL_BUTTON),
             Button,
             SaveLoadButtonAction::LoadFromSlot(slot_name.to_string()),
-            SaveSlotButton {
-                slot_name: slot_name.to_string(),
-            },
+            SaveSlotButton,
             AppLayer::Menu.layer(),
         ))
         .with_children(|parent| {
