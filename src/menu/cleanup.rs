@@ -3,6 +3,7 @@ use crate::{
     cards::Card,
     menu::{
         components::{MenuCamera, MenuItem},
+        input_blocker::InputBlocker,
         logo::StarOfDavid,
         main_menu::MainMenuMusic,
     },
@@ -14,10 +15,12 @@ pub fn cleanup_main_menu(
     mut commands: Commands,
     menu_items: Query<Entity, With<MenuItem>>,
     main_menu_music: Query<Entity, With<MainMenuMusic>>,
+    input_blockers: Query<Entity, With<InputBlocker>>,
 ) {
     let count = menu_items.iter().count();
     info!("Cleaning up {} main menu items", count);
     for entity in menu_items.iter() {
+        info!("Despawning main menu entity: {:?}", entity);
         commands.entity(entity).despawn_recursive();
     }
 
@@ -26,6 +29,20 @@ pub fn cleanup_main_menu(
         debug!("Stopping main menu music");
         info!("Despawning main menu music entity: {:?}", entity);
         commands.entity(entity).despawn();
+    }
+
+    // Explicitly clean up any input blockers that might remain
+    let blocker_count = input_blockers.iter().count();
+    if blocker_count > 0 {
+        info!("Cleaning up {} input blockers", blocker_count);
+        for entity in input_blockers.iter() {
+            info!("Despawning input blocker: {:?}", entity);
+            commands.entity(entity).despawn_recursive();
+        }
+    }
+
+    if count == 0 {
+        warn!("No main menu items found to clean up");
     }
 }
 

@@ -136,19 +136,31 @@ impl Plugin for MenuPlugin {
             // Settings menu systems
             .add_systems(
                 OnEnter(GameMenuState::Settings),
-                (
-                    cleanup_pause_menu,
-                    setup_menu_camera,
-                    ensure_single_menu_camera,
-                    setup_settings_transition,
-                ),
+                (setup_menu_camera, setup_settings_transition).chain(),
             )
             .add_systems(
                 OnExit(GameMenuState::Settings),
-                |mut settings_state: ResMut<NextState<SettingsMenuState>>| {
-                    info!("Exiting settings, resetting SettingsMenuState to Disabled");
-                    settings_state.set(SettingsMenuState::Disabled);
+                |context: Res<StateTransitionContext>| {
+                    // Log the transition from settings
+                    info!(
+                        "Exiting settings, returning to {:?}",
+                        context.settings_origin
+                    );
                 },
+            )
+            // Add a system that runs when entering MainMenu state from any other state
+            .add_systems(
+                OnEnter(GameMenuState::MainMenu),
+                (|menu_items: Query<Entity, With<MenuItem>>,
+                  mut commands: Commands,
+                  asset_server: Res<AssetServer>| {
+                    // Only setup if there are no existing menu items (which could happen after returning from settings)
+                    if menu_items.iter().count() == 0 {
+                        info!("No menu items found on MainMenu state entry, setting up main menu");
+                        crate::menu::main_menu::setup_main_menu(commands, asset_server);
+                    }
+                })
+                .after(cleanup_main_menu),
             )
             // InGame state systems
             .add_systems(

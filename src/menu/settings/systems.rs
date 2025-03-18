@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy::text::JustifyText;
 use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
+use bevy_persistent::prelude::*;
 
 use crate::camera::components::AppLayer;
 use crate::menu::components::MenuItem;
@@ -697,11 +698,16 @@ pub fn settings_button_action(
                                 context.from_pause_menu = true;
                             }
 
+                            // First set the settings menu state to disabled to trigger cleanup
+                            next_state.set(SettingsMenuState::Disabled);
+
+                            // Then set the game menu state to the origin state
                             game_state.set(origin);
                         } else {
                             // Default to main menu if origin is not set
                             info!("No origin state found, defaulting to MainMenu");
                             context.from_pause_menu = false;
+                            next_state.set(SettingsMenuState::Disabled);
                             game_state.set(GameMenuState::MainMenu);
                         }
                     }
@@ -724,6 +730,7 @@ pub fn settings_button_action(
 pub fn cleanup_settings_menu(
     mut commands: Commands,
     menu_query: Query<(Entity, Option<&Name>), With<SettingsMenuItem>>,
+    input_blockers: Query<Entity, With<crate::menu::input_blocker::InputBlocker>>,
 ) {
     let count = menu_query.iter().count();
     info!("Cleaning up {} settings menu items", count);
@@ -739,6 +746,19 @@ pub fn cleanup_settings_menu(
             info!("Despawning settings menu entity without name: {:?}", entity);
         }
         commands.entity(entity).despawn_recursive();
+    }
+
+    // Explicitly clean up any input blockers
+    let blocker_count = input_blockers.iter().count();
+    if blocker_count > 0 {
+        info!(
+            "Cleaning up {} input blockers from settings menu",
+            blocker_count
+        );
+        for entity in input_blockers.iter() {
+            info!("Despawning input blocker: {:?}", entity);
+            commands.entity(entity).despawn_recursive();
+        }
     }
 
     if count == 0 {
@@ -758,6 +778,7 @@ pub fn volume_slider_interaction(
     mut volume_indicators: Query<(&mut Node, &Parent), Without<Button>>,
     mut global_volume: ResMut<bevy::prelude::GlobalVolume>,
     mut audio_players: Query<&mut bevy::audio::PlaybackSettings>,
+    mut persistent_settings: Option<ResMut<Persistent<RummageSettings>>>,
     windows: Query<&Window>,
     mouse_input: Res<ButtonInput<MouseButton>>,
 ) {
@@ -822,6 +843,15 @@ pub fn volume_slider_interaction(
                         if *parent_volume_type as u8 == *volume_type as u8 {
                             indicator_node.width = Val::Percent(clamped_value as f32);
                         }
+                    }
+                }
+
+                // Save settings immediately
+                if let Some(persistent) = persistent_settings.as_mut() {
+                    let mut settings = (*persistent).clone();
+                    settings.volume = volume_settings.clone();
+                    if let Err(e) = persistent.set(settings) {
+                        error!("Failed to save volume settings: {:?}", e);
                     }
                 }
 
