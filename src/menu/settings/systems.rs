@@ -4,6 +4,7 @@ use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
 
 use crate::camera::components::AppLayer;
 use crate::menu::components::MenuItem;
+use crate::menu::input_blocker::InputBlocker;
 use crate::menu::state::{GameMenuState, StateTransitionContext};
 use crate::menu::styles::*;
 
@@ -25,6 +26,21 @@ pub fn setup_main_settings(mut commands: Commands, context: Res<StateTransitionC
         "Settings transition context: from_pause_menu={}, settings_origin={:?}",
         context.from_pause_menu, context.settings_origin
     );
+
+    // First, create a full-screen transparent input blocker
+    commands.spawn((
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            position_type: PositionType::Absolute,
+            ..default()
+        },
+        AppLayer::Menu.layer(),
+        InputBlocker,
+        MenuItem,
+        SettingsMenuItem,
+        Name::new("Settings Menu Input Blocker"),
+    ));
 
     let root_entity = commands
         .spawn((
