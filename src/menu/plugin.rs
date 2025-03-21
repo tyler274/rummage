@@ -78,9 +78,8 @@ impl Plugin for MenuPlugin {
             .init_resource::<MenuVisibilityState>()
             .init_resource::<NeedsMainMenuSetup>()
             .init_resource::<UiHierarchyChecked>()
-            // Setup systems that run once on startup
+            // Setup plugins
             .add_plugins((
-                crate::menu::logo::StarOfDavidPlugin,
                 SettingsPlugin,
                 MainMenuPlugin,
                 CreditsPlugin,
