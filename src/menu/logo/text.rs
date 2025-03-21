@@ -50,20 +50,3 @@ pub fn create_english_text(asset_server: &AssetServer) -> impl Bundle {
         Interaction::None,
     )
 }
-
-/// Creates decorative elements around the logo
-pub fn create_decorative_elements() -> impl Bundle {
-    // No RenderLayers component - will inherit from parent
-    (
-        Node {
-            margin: UiRect {
-                top: Val::Px(270.0), // Position below the English text
-                ..default()
-            },
-            position_type: PositionType::Relative,
-            ..default()
-        },
-        BackgroundColor(Color::NONE),
-        Interaction::None,
-    )
-}
