@@ -10,6 +10,7 @@ use crate::{
         deck::DeckManagerPlugin,
         input_blocker::InputBlockerPlugin,
         main::MainMenuPlugin,
+        pause::PauseMenuPlugin,
         save_load::SaveLoadUiPlugin,
         settings::SettingsPlugin,
         state::GameMenuState,
@@ -35,6 +36,7 @@ impl Plugin for MenuPlugin {
             .add_plugins((
                 SettingsPlugin,
                 MainMenuPlugin,
+                PauseMenuPlugin,
                 CreditsPlugin,
                 DeckManagerPlugin,
                 SaveLoadUiPlugin,

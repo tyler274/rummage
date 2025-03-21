@@ -1,8 +1,8 @@
 use crate::menu::state::MenuState;
 use crate::menu::{
     components::{MenuBackground, MenuCamera, MenuItem, MenuRoot},
-    save_load::{SaveExists, check_save_exists},
-    styles::button_styles::{create_main_menu_button, create_main_menu_button_text},
+    save_load::SaveExists,
+    styles::button_styles::{create_main_menu_button, create_main_menu_button_text_bundle},
 };
 use bevy::prelude::*;
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, UiRect, Val};
@@ -62,24 +62,11 @@ pub fn setup_main_menu(
                             GlobalZIndex(51),
                         ))
                         .with_children(|button| {
-                            let (text, font, color, layout) =
-                                create_main_menu_button_text(&asset_server, "New Game");
-                            button
-                                .spawn((
-                                    text,
-                                    font,
-                                    color,
-                                    layout,
-                                    Text2d,
-                                    Name::new("New Game Button Text"),
-                                    MenuItem,
-                                ))
-                                .insert((
-                                    Visibility::Visible,
-                                    InheritedVisibility::default(),
-                                    ViewVisibility::default(),
-                                    GlobalZIndex(52),
-                                ));
+                            button.spawn(create_main_menu_button_text_bundle(
+                                &asset_server,
+                                "New Game",
+                                52,
+                            ));
                         });
 
                     // Load Game button - only show if save exists
@@ -303,24 +290,11 @@ pub fn setup_main_menu(
                                 GlobalZIndex(52),
                             ))
                             .with_children(|button| {
-                                let (text, font, color, layout) =
-                                    create_main_menu_button_text(&asset_server, "New Game");
-                                button
-                                    .spawn((
-                                        text,
-                                        font,
-                                        color,
-                                        layout,
-                                        Text2d,
-                                        Name::new("New Game Button Text"),
-                                        MenuItem,
-                                    ))
-                                    .insert((
-                                        Visibility::Visible,
-                                        InheritedVisibility::default(),
-                                        ViewVisibility::default(),
-                                        GlobalZIndex(53),
-                                    ));
+                                button.spawn(create_main_menu_button_text_bundle(
+                                    &asset_server,
+                                    "New Game",
+                                    52,
+                                ));
                             });
 
                         // Load Game button - only show if save exists

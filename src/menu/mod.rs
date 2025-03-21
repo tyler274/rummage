@@ -6,7 +6,7 @@ pub mod deck;
 pub mod input_blocker;
 pub mod logo;
 pub mod main;
-pub mod pause_menu;
+pub mod pause;
 pub mod plugin;
 pub mod save_load;
 pub mod settings;
