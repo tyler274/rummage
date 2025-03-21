@@ -7,10 +7,8 @@ mod game;
 mod main_menu;
 mod pause_menu;
 
-pub use decorative::*;
-pub use game::*;
-pub use main_menu::*;
-pub use pause_menu::*;
+// These modules are used internally but not exported
+// to avoid unused import warnings
 
 /// Component to mark the main menu music entity
 #[derive(Component)]

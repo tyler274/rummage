@@ -5,7 +5,7 @@ pub mod credits;
 pub mod deck;
 pub mod input_blocker;
 pub mod logo;
-pub mod main;
+pub mod main_menu;
 pub mod pause;
 pub mod plugin;
 pub mod save_load;
@@ -19,4 +19,4 @@ pub mod ui;
 
 pub use plugin::MenuPlugin;
 pub use state::*;
-pub use ui::{MenuVisibilityState, PreviousWindowSize};
+pub use ui::PreviousWindowSize;

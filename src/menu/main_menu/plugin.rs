@@ -3,9 +3,12 @@ use bevy::prelude::*;
 use crate::menu::{
     components::{MenuVisibilityState, NeedsMainMenuSetup},
     state::GameMenuState,
-    systems::main_menu::background::update_background,
-    systems::main_menu::interactions::handle_main_menu_interactions,
-    systems::main_menu::setup::setup_main_menu,
+};
+
+use super::systems::{
+    background::update_background,
+    interactions::handle_main_menu_interactions,
+    setup::setup_main_menu,
 };
 
 #[derive(Resource, Default)]
@@ -48,4 +51,4 @@ pub fn check_main_menu_setup(
         info!("Main menu needs setup, dispatching setup event");
         commands.insert_resource(NeedsMainMenuSetup(false));
     }
-}
+} 

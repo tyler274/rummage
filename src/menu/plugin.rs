@@ -8,7 +8,7 @@ use crate::{
         credits::CreditsPlugin,
         deck::DeckManagerPlugin,
         input_blocker::InputBlockerPlugin,
-        main::MainMenuPlugin,
+        main_menu::MainMenuPlugin,
         pause::PauseMenuPlugin,
         save_load::SaveLoadUiPlugin,
         settings::SettingsPlugin,

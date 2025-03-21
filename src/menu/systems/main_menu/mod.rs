@@ -4,11 +4,7 @@ pub mod interactions;
 pub mod setup;
 pub mod states;
 
-pub use background::*;
-pub use buttons::*;
-pub use states::*;
-
-// Reexport key functions for easier access
-pub use background::update_background;
+// Remove unused imports
+// Keep only specific functions for external use
 pub use interactions::handle_main_menu_interactions;
 pub use setup::setup_main_menu;
