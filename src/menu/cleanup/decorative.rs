@@ -1,4 +1,4 @@
-use crate::menu::{camera::MenuCamera, logo::StarOfDavid};
+use crate::menu::{camera::MenuCamera, star_of_david::StarOfDavid};
 use bevy::prelude::*;
 
 /// Cleans up menu camera entities

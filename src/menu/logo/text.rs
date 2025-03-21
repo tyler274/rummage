@@ -1,25 +1,6 @@
-use crate::camera::components::AppLayer;
 use bevy::prelude::*;
 use bevy::text::JustifyText;
-use bevy::ui::{AlignItems, JustifyContent, PositionType, UiRect, Val};
-
-/// Creates a container for the logo group (Star of David + text)
-pub fn create_logo() -> impl Bundle {
-    (
-        Node {
-            width: Val::Px(300.0),
-            height: Val::Px(400.0),
-            flex_direction: FlexDirection::Column,
-            align_items: AlignItems::Center,
-            justify_content: JustifyContent::Center,
-            margin: UiRect::bottom(Val::Px(40.0)),
-            ..default()
-        },
-        BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.0)),
-        AppLayer::Menu.layer(), // Top-level element needs explicit RenderLayers
-        Interaction::None,
-    )
-}
+use bevy::ui::{PositionType, UiRect, Val};
 
 /// Creates the Hebrew text "Rummage" (רומאג')
 pub fn create_hebrew_text(asset_server: &AssetServer) -> impl Bundle {

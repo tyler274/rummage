@@ -1,7 +1,8 @@
 use crate::menu::{
     camera::MenuCamera,
     components::{MenuItem, MenuRoot},
-    logo::{StarOfDavid, create_english_text, create_hebrew_text, create_star_of_david},
+    logo::{create_english_text, create_hebrew_text},
+    star_of_david::{StarOfDavid, create_star_of_david},
 };
 use bevy::prelude::*;
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, UiRect, Val};

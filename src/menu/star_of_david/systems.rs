@@ -4,10 +4,10 @@ use crate::menu::{
     camera::MenuCamera,
     components::MenuRoot,
     decorations::MenuDecorativeElement,
-    logo::{create_english_text, create_hebrew_text, create_logo},
+    logo::{create_english_text, create_hebrew_text},
 };
 
-use super::components::StarOfDavid;
+use super::{components::StarOfDavid, renderer::create_logo};
 
 /// Creates the Star of David bundle for spawning in the scene
 pub fn create_star_of_david() -> impl Bundle {
