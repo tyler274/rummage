@@ -6,14 +6,13 @@ use crate::menu::{
 };
 
 use super::systems::{
-    background::update_background,
-    interactions::handle_main_menu_interactions,
+    background::update_background, interactions::handle_main_menu_interactions,
     setup::setup_main_menu,
 };
 
 #[derive(Resource, Default)]
 pub struct MultiplayerState {
-    pub is_multiplayer: bool,
+    // Field removed as it was unused
 }
 
 /// Plugin for main menu functionality
@@ -51,4 +50,4 @@ pub fn check_main_menu_setup(
         info!("Main menu needs setup, dispatching setup event");
         commands.insert_resource(NeedsMainMenuSetup(false));
     }
-} 
+}

@@ -1,16 +1,12 @@
-use crate::menu::components::MenuCamera;
+use crate::menu::camera::setup::MenuCamera;
 use crate::menu::state::StateTransitionContext;
 use crate::menu::{
-    components::{MenuItem, MenuRoot},
+    components::{MenuItem, MenuRoot, NeedsMainMenuSetup},
     save_load::SaveExists,
     settings::SettingsMenuState,
     state::GameMenuState,
 };
 use bevy::prelude::*;
-
-/// Resource indicating that the main menu needs to be set up
-#[derive(Resource)]
-pub struct NeedsMainMenuSetup(pub bool);
 
 /// Set up the transition context for settings menu
 pub fn setup_settings_transition(

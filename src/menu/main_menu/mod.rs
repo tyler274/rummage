@@ -7,4 +7,3 @@ mod systems;
 pub use plugin::MainMenuPlugin;
 
 // Export components needed by other modules
-pub use components::*;

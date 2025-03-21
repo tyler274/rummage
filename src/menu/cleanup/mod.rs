@@ -9,7 +9,3 @@ mod pause_menu;
 
 // These modules are used internally but not exported
 // to avoid unused import warnings
-
-/// Component to mark the main menu music entity
-#[derive(Component)]
-pub struct MainMenuMusic;

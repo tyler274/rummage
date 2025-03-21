@@ -19,4 +19,3 @@ pub mod ui;
 
 pub use plugin::MenuPlugin;
 pub use state::*;
-pub use ui::PreviousWindowSize;

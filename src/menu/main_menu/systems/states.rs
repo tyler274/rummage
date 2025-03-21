@@ -5,5 +5,4 @@ use bevy::prelude::*;
 pub enum MultiplayerState {
     #[default]
     None,
-    Menu,
 }
