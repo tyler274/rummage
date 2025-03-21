@@ -1,10 +1,9 @@
-use crate::camera::components::{AppLayer, MenuCamera};
+use crate::camera::components::AppLayer;
 use crate::menu::{
-    components::*,
-    logo::{create_decorative_elements, create_english_text, create_hebrew_text, create_logo},
-    plugin::PreviousWindowSize,
+    components::{MenuButtonAction, MenuCamera, MenuItem},
     state::GameMenuState,
     styles::*,
+    ui::PreviousWindowSize,
 };
 use bevy::audio::{AudioPlayer, PlaybackMode, PlaybackSettings, Volume};
 use bevy::prelude::*;
@@ -22,9 +21,25 @@ pub struct MenuBackground;
 pub struct MainMenuMusic;
 
 /// Sets up the main menu interface with buttons and layout
-pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
-    // The camera is now spawned by setup_menu_camera in plugin.rs
-    // No need to spawn another camera here
+pub fn setup_main_menu(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    existing_menu_items: Query<Entity, With<MenuItem>>,
+) {
+    info!("Setting up main menu interface");
+
+    // Check for existing menu items first
+    let menu_items_count = existing_menu_items.iter().count();
+    if menu_items_count > 0 {
+        info!(
+            "Found {} existing menu items, they will be cleaned up by cleanup systems",
+            menu_items_count
+        );
+        // Immediately clean up any existing menu items to avoid conflicts
+        for entity in existing_menu_items.iter() {
+            commands.entity(entity).despawn_recursive();
+        }
+    }
 
     // Load and play background music
     let music_handle = asset_server.load("music/Negev sings Hava Nagila [XwZwz0iCuF0].ogg");
@@ -79,10 +94,8 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     info!("Spawned menu background: {:?}", background_entity);
 
-    // Star of David is now spawned in the setup_main_menu_star system in plugin.rs
-
     // Main menu container - now transparent to let the background image show through
-    commands
+    let menu_container = commands
         .spawn((
             // Node component (non-deprecated in Bevy 0.15.x)
             Node {
@@ -93,113 +106,89 @@ pub fn setup_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            // Semi-transparent background for better text readability - using srgba instead of rgba
-            // BackgroundColor(Color::srgba(0.22, 0.15, 0.05, 0.7)),
             MenuItem,
             AppLayer::Menu.layer(),
+            Name::new("Main Menu Container"),
             Visibility::Visible,
             InheritedVisibility::default(),
             ViewVisibility::default(),
+            GlobalZIndex(5), // Ensure container is above background but below buttons
         ))
-        .with_children(|parent| {
-            // Add the logo
-            parent
-                .spawn((
-                    create_logo(),
-                    Visibility::Visible,
-                    InheritedVisibility::default(),
-                    ViewVisibility::default(),
-                ))
-                .with_children(|parent| {
-                    parent.spawn((
-                        create_hebrew_text(&asset_server),
-                        Visibility::Visible,
-                        InheritedVisibility::default(),
-                        ViewVisibility::default(),
-                    ));
-                    parent.spawn((
-                        create_english_text(&asset_server),
-                        Visibility::Visible,
-                        InheritedVisibility::default(),
-                        ViewVisibility::default(),
-                    ));
-                    parent.spawn((
-                        create_decorative_elements(),
-                        Visibility::Visible,
-                        InheritedVisibility::default(),
-                        ViewVisibility::default(),
-                    ));
-                });
+        .id();
 
-            // Menu buttons container with a border (using nested nodes for border effect)
-            parent
-                .spawn((
-                    Node {
-                        width: Val::Px(320.0),
-                        height: Val::Px(430.0),
-                        flex_direction: FlexDirection::Column,
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        padding: UiRect::all(Val::Px(10.0)),
-                        ..default()
-                    },
-                    BackgroundColor(Color::srgba(0.5, 0.4, 0.1, 0.3)),
-                    BorderRadius::all(Val::Px(10.0)),
-                    MenuItem,
-                ))
-                .with_children(|parent| {
-                    // Inner container (actual menu background)
-                    parent
-                        .spawn((
-                            Node {
-                                width: Val::Px(300.0),
-                                height: Val::Px(400.0),
-                                flex_direction: FlexDirection::Column,
-                                justify_content: JustifyContent::SpaceAround,
-                                align_items: AlignItems::Center,
-                                ..default()
-                            },
-                            // Slightly transparent dark panel for buttons
-                            BackgroundColor(Color::srgba(0.15, 0.15, 0.15, 0.85)),
-                            BorderRadius::all(Val::Px(8.0)),
-                            Visibility::Visible,
-                            InheritedVisibility::default(),
-                            ViewVisibility::default(),
-                        ))
-                        .with_children(|parent| {
-                            spawn_menu_button(
-                                parent,
-                                "New Game",
-                                MenuButtonAction::NewGame,
-                                &asset_server,
-                            );
-                            spawn_menu_button(
-                                parent,
-                                "Load Game",
-                                MenuButtonAction::LoadGame,
-                                &asset_server,
-                            );
-                            spawn_menu_button(
-                                parent,
-                                "Multiplayer",
-                                MenuButtonAction::Multiplayer,
-                                &asset_server,
-                            );
-                            spawn_menu_button(
-                                parent,
-                                "Settings",
-                                MenuButtonAction::Settings,
-                                &asset_server,
-                            );
-                            spawn_menu_button(
-                                parent,
-                                "Quit",
-                                MenuButtonAction::Quit,
-                                &asset_server,
-                            );
-                        });
-                });
-        });
+    info!("Spawned main menu container: {:?}", menu_container);
+
+    // Create a container for the menu buttons as a child of the menu container
+    let mut button_container = Entity::PLACEHOLDER;
+    commands.entity(menu_container).with_children(|parent| {
+        button_container = parent
+            .spawn((
+                Node {
+                    width: Val::Percent(100.0),
+                    height: Val::Auto,
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::Center,
+                    row_gap: Val::Px(20.0),
+                    ..default()
+                },
+                MenuItem,
+                Name::new("Menu Buttons Container"),
+                GlobalZIndex(5), // Ensure container is above background but below buttons
+                Visibility::Visible,
+                InheritedVisibility::default(),
+                ViewVisibility::default(),
+            ))
+            .id();
+    });
+
+    info!("Spawned button container: {:?}", button_container);
+
+    // Add buttons to the button container
+    commands.entity(button_container).with_children(|parent| {
+        spawn_menu_button(parent, "New Game", MenuButtonAction::NewGame, &asset_server);
+        spawn_menu_button(
+            parent,
+            "Load Game",
+            MenuButtonAction::LoadGame,
+            &asset_server,
+        );
+        spawn_menu_button(
+            parent,
+            "Multiplayer",
+            MenuButtonAction::Multiplayer,
+            &asset_server,
+        );
+        spawn_menu_button(
+            parent,
+            "Settings",
+            MenuButtonAction::Settings,
+            &asset_server,
+        );
+        spawn_menu_button(parent, "Quit", MenuButtonAction::Quit, &asset_server);
+    });
+
+    info!("Main menu setup complete, forcing visibility...");
+
+    // Force visibility on all menu items directly
+    commands.entity(menu_container).insert(Visibility::Visible);
+    commands
+        .entity(button_container)
+        .insert(Visibility::Visible);
+    commands
+        .entity(background_entity)
+        .insert(Visibility::Visible);
+
+    // After setup, verify all menu items are visible
+    for entity in existing_menu_items.iter() {
+        commands.entity(entity).insert(Visibility::Visible);
+    }
+
+    // Log visibility status for key entities for debugging
+    info!("Main menu setup complete with visibility set");
+    info!("Menu container entity: {:?}", menu_container);
+    info!("Button container entity: {:?}", button_container);
+    info!("Background entity: {:?}", background_entity);
 }
 
 /// Sets the initial zoom level for the menu camera
@@ -224,6 +213,7 @@ fn spawn_menu_button(
                 height: Val::Px(52.0),
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
+                position_type: PositionType::Relative,
                 ..default()
             },
             // Border color
@@ -232,6 +222,9 @@ fn spawn_menu_button(
             Visibility::Visible,
             InheritedVisibility::default(),
             ViewVisibility::default(),
+            GlobalZIndex(20), // Ensure buttons appear above everything
+            MenuItem,
+            Name::new(format!("{} Button Container", text)),
         ))
         .with_children(|parent| {
             // Inner button (actual button)
@@ -242,6 +235,7 @@ fn spawn_menu_button(
                         height: Val::Px(50.0),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
+                        position_type: PositionType::Relative,
                         ..default()
                     },
                     BackgroundColor(NORMAL_BUTTON),
@@ -251,6 +245,9 @@ fn spawn_menu_button(
                     Visibility::Visible,
                     InheritedVisibility::default(),
                     ViewVisibility::default(),
+                    GlobalZIndex(21), // Ensure inner button appears above container
+                    MenuItem,
+                    Name::new(format!("{} Button", text)),
                 ))
                 .with_children(|parent| {
                     // Button text
@@ -266,6 +263,9 @@ fn spawn_menu_button(
                         Visibility::Visible,
                         InheritedVisibility::default(),
                         ViewVisibility::default(),
+                        GlobalZIndex(22), // Ensure text appears above button
+                        MenuItem,
+                        Name::new(format!("{} Text", text)),
                     ));
                 });
         });

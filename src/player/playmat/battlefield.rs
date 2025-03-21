@@ -4,6 +4,7 @@ use crate::camera::components::AppLayer;
 use crate::game_engine::zones::Zone;
 use crate::player::components::Player;
 use crate::player::resources::PlayerConfig;
+use bevy::input::keyboard::KeyCode;
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
 
@@ -313,102 +314,47 @@ fn position_card_group(
     }
 }
 
-/// Toggle between grouped and ungrouped layout
+/// System to toggle battlefield card grouping
 pub fn toggle_battlefield_grouping(
-    mouse_button_input: Res<ButtonInput<MouseButton>>,
-    key_input: Res<ButtonInput<KeyCode>>,
-    windows: Query<&Window>,
-    camera_query: Query<(&Camera, &GlobalTransform)>,
-    mut battlefield_query: Query<(&mut BattlefieldZone, &GlobalTransform)>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut battlefield_query: Query<&mut BattlefieldZone>,
+    game_state: Res<State<crate::menu::state::GameMenuState>>,
 ) {
-    // Toggle grouping with right click + shift
-    let right_clicked = mouse_button_input.just_pressed(MouseButton::Right);
-    let shift_key = key_input.pressed(KeyCode::ShiftLeft) || key_input.pressed(KeyCode::ShiftRight);
-
-    if !right_clicked || !shift_key {
+    // Disable interactions if in any menu state
+    if *game_state != crate::menu::state::GameMenuState::InGame {
         return;
     }
 
-    // Get cursor position
-    let window = windows.single();
-    if let Some(cursor_position) = window.cursor_position() {
-        // Get camera - handle case where multiple cameras might exist
-        if let Ok((camera, camera_transform)) = camera_query.get_single() {
-            // Convert cursor to world position
-            if let Ok(cursor_world_position) = camera
-                .viewport_to_world(camera_transform, cursor_position)
-                .map(|ray| ray.origin.truncate())
-            {
-                // Check for click on battlefield
-                for (mut battlefield, transform) in battlefield_query.iter_mut() {
-                    let battlefield_position = transform.translation().truncate();
-                    let distance = (battlefield_position - cursor_world_position).length();
-
-                    // Simple distance-based detection
-                    if distance < 300.0 {
-                        // Toggle grouping
-                        battlefield.group_by_type = !battlefield.group_by_type;
-                        info!(
-                            "Battlefield grouping toggled: {}",
-                            battlefield.group_by_type
-                        );
-                        break;
-                    }
-                }
-            }
+    if keyboard_input.just_pressed(KeyCode::KeyG) {
+        for mut battlefield in battlefield_query.iter_mut() {
+            battlefield.group_by_type = !battlefield.group_by_type;
+            info!(
+                "Battlefield grouping toggled: {}",
+                battlefield.group_by_type
+            );
         }
     }
 }
 
-/// Adjust battlefield zoom with mouse wheel
+/// System to adjust battlefield zoom level
 pub fn adjust_battlefield_zoom(
-    mut mouse_wheel: EventReader<MouseWheel>,
-    key_input: Res<ButtonInput<KeyCode>>,
-    windows: Query<&Window>,
-    camera_query: Query<(&Camera, &GlobalTransform)>,
-    mut battlefield_query: Query<(&mut BattlefieldZone, &GlobalTransform)>,
+    mut scroll_evr: EventReader<MouseWheel>,
+    mut battlefield_query: Query<&mut BattlefieldZone>,
+    game_state: Res<State<crate::menu::state::GameMenuState>>,
 ) {
-    // Only zoom when ctrl is pressed
-    let ctrl_pressed =
-        key_input.pressed(KeyCode::ControlLeft) || key_input.pressed(KeyCode::ControlRight);
-    if !ctrl_pressed {
+    // Disable interactions if in any menu state
+    if *game_state != crate::menu::state::GameMenuState::InGame {
         return;
     }
 
-    // Get total scroll amount
-    let scroll = mouse_wheel.read().fold(0.0, |acc, event| {
-        acc + match event.unit {
-            MouseScrollUnit::Line => event.y * 0.1,
-            MouseScrollUnit::Pixel => event.y * 0.002,
-        }
-    });
+    for ev in scroll_evr.read() {
+        let scroll_amount = match ev.unit {
+            MouseScrollUnit::Line => ev.y * 0.1,
+            MouseScrollUnit::Pixel => ev.y * 0.001,
+        };
 
-    if scroll == 0.0 {
-        return;
-    }
-
-    // Get cursor position
-    let window = windows.single();
-    if let Some(cursor_position) = window.cursor_position() {
-        // Get camera - handle case where multiple cameras might exist
-        if let Ok((camera, camera_transform)) = camera_query.get_single() {
-            // Check if cursor is over battlefield
-            if let Ok(cursor_world_position) = camera
-                .viewport_to_world(camera_transform, cursor_position)
-                .map(|ray| ray.origin.truncate())
-            {
-                for (mut battlefield, transform) in battlefield_query.iter_mut() {
-                    let battlefield_position = transform.translation().truncate();
-                    let distance = (battlefield_position - cursor_world_position).length();
-
-                    if distance < 300.0 {
-                        // Adjust zoom level
-                        battlefield.zoom_level =
-                            (battlefield.zoom_level + scroll * 0.1).max(0.3).min(2.0);
-                        break;
-                    }
-                }
-            }
+        for mut battlefield in battlefield_query.iter_mut() {
+            battlefield.zoom_level = (battlefield.zoom_level + scroll_amount).clamp(0.5, 2.0);
         }
     }
 }

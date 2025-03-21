@@ -64,7 +64,7 @@ impl Default for VolumeSettings {
 }
 
 /// Graphics quality settings
-#[derive(Resource, Debug, Clone, PartialEq, Eq)]
+#[derive(Resource, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(dead_code)]
 pub enum GraphicsQuality {
     /// Low quality graphics for performance
@@ -82,7 +82,7 @@ impl Default for GraphicsQuality {
 }
 
 /// Gameplay settings resource
-#[derive(Resource, Debug, Clone)]
+#[derive(Resource, Debug, Clone, Serialize, Deserialize)]
 pub struct GameplaySettings {
     /// Enable auto-pass priority when no valid actions
     pub auto_pass: bool,
@@ -98,6 +98,27 @@ impl Default for GameplaySettings {
             auto_pass: true,
             show_tooltips: true,
             animation_speed: 1.0,
+        }
+    }
+}
+
+/// Combined settings that will be saved to TOML
+#[derive(Resource, Debug, Clone, Serialize, Deserialize)]
+pub struct RummageSettings {
+    /// Volume settings
+    pub volume: VolumeSettings,
+    /// Graphics settings
+    pub graphics: GraphicsQuality,
+    /// Gameplay settings
+    pub gameplay: GameplaySettings,
+}
+
+impl Default for RummageSettings {
+    fn default() -> Self {
+        Self {
+            volume: VolumeSettings::default(),
+            graphics: GraphicsQuality::default(),
+            gameplay: GameplaySettings::default(),
         }
     }
 }

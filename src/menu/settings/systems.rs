@@ -701,6 +701,9 @@ pub fn settings_button_action(
                             // First set the settings menu state to disabled to trigger cleanup
                             next_state.set(SettingsMenuState::Disabled);
 
+                            // Log transition for debugging
+                            info!("Transitioning from Settings to {:?}", origin);
+
                             // Then set the game menu state to the origin state
                             game_state.set(origin);
                         } else {
@@ -708,6 +711,10 @@ pub fn settings_button_action(
                             info!("No origin state found, defaulting to MainMenu");
                             context.from_pause_menu = false;
                             next_state.set(SettingsMenuState::Disabled);
+
+                            // Log transition for debugging
+                            info!("Transitioning from Settings to MainMenu (default)");
+
                             game_state.set(GameMenuState::MainMenu);
                         }
                     }

@@ -39,6 +39,11 @@ pub fn spawn_type_line_text(
     // Spawn the type line entity with proper styling
     commands
         .spawn((
+            Node {
+                width: Val::Auto,
+                height: Val::Auto,
+                ..default()
+            },
             Text2d::new(type_line_component.type_line.clone()),
             Transform::from_translation(Vec3::new(type_line_x, type_line_y, 0.1)),
             GlobalTransform::default(),
@@ -53,6 +58,9 @@ pub fn spawn_type_line_text(
             },
             CardTextType::TypeLine,
             Name::new(format!("Type Line: {}", type_line_component.type_line)),
+            Visibility::Visible,
+            InheritedVisibility::default(),
+            ViewVisibility::default(),
         ))
         .id()
 }

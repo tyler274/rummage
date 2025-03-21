@@ -1,9 +1,10 @@
 use crate::camera::{
     CameraPanState,
-    components::{AppLayer, GameCamera},
+    components::GameCamera,
     config::CameraConfig,
     systems::{camera_movement, handle_window_resize, set_initial_zoom},
 };
+use crate::game_engine::zones::ZoneManager;
 use crate::menu::GameMenuState;
 use crate::player::{PlayerPlugin, resources::PlayerConfig, spawn_players};
 #[cfg(feature = "snapshot")]
@@ -70,6 +71,7 @@ fn setup_game(
     game_cameras: Query<Entity, With<GameCamera>>,
     context: Res<crate::menu::state::StateTransitionContext>,
     player_config: Res<PlayerConfig>,
+    _zone_manager: ResMut<ZoneManager>,
 ) {
     info!("Setting up game environment...");
     info!("Game engine initializing game engine resources...");
@@ -77,59 +79,19 @@ fn setup_game(
     // Skip camera setup if we're coming from the pause menu and already have a camera
     if context.from_pause_menu {
         info!("Resuming from pause menu, skipping game setup");
-        // Only set up camera if needed here, but don't create cards
-        if game_cameras.is_empty() {
-            info!("No game camera found despite coming from pause menu, setting up camera anyway");
-            // Spawn a new camera directly here
-            commands.spawn((
-                Camera2d::default(),
-                Camera {
-                    order: 0, // Explicitly set order to 0 for game camera
-                    ..default()
-                },
-                Visibility::default(),
-                InheritedVisibility::default(),
-                ViewVisibility::default(),
-                Transform::default(), // Use default transform position (0,0,0)
-                GlobalTransform::default(),
-                GameCamera,
-                AppLayer::game_layers(), // Use combined game layers to see all game elements including cards
-            ));
-
-            // Initialize camera pan state
-            commands.insert_resource(CameraPanState::default());
-        }
-    } else {
-        // Normal game setup - this is a fresh game
-        info!("Setting up game camera...");
-        // Spawn a new camera directly here
-        commands.spawn((
-            Camera2d::default(),
-            Camera {
-                order: 0, // Explicitly set order to 0 for game camera
-                ..default()
-            },
-            Visibility::default(),
-            InheritedVisibility::default(),
-            ViewVisibility::default(),
-            Transform::default(), // Use default transform position (0,0,0)
-            GlobalTransform::default(),
-            GameCamera,
-            AppLayer::game_layers(), // Use combined game layers to see all game elements including cards
-        ));
-
-        // Initialize camera pan state
-        commands.insert_resource(CameraPanState::default());
-
-        // Spawn the players using the new system
-        info!("Spawning initial hand...");
-        spawn_players(
-            &mut commands,
-            asset_server,
-            game_cameras,
-            Some(player_config),
-        );
+        // Don't create a camera here, as it will be handled by the dedicated setup_game_camera system
+        return;
     }
+
+    // For normal game setup, don't create camera here - it will be created by the setup_game_camera system
+    // which ensures uniqueness
+    info!("Spawning initial hand...");
+    spawn_players(
+        &mut commands,
+        asset_server,
+        game_cameras,
+        Some(player_config),
+    );
 
     info!("Game setup complete!");
 }

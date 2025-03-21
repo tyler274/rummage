@@ -39,6 +39,11 @@ pub fn spawn_power_toughness_text(
     // Spawn the P/T entity
     commands
         .spawn((
+            Node {
+                width: Val::Auto,
+                height: Val::Auto,
+                ..default()
+            },
             Text2d::new(pt_component.power_toughness.clone()),
             Transform::from_translation(Vec3::new(pt_x, pt_y, 0.1)),
             GlobalTransform::default(),
@@ -53,6 +58,9 @@ pub fn spawn_power_toughness_text(
             },
             CardTextType::PowerToughness,
             Name::new(format!("Power/Toughness: {}", pt_component.power_toughness)),
+            Visibility::Visible,
+            InheritedVisibility::default(),
+            ViewVisibility::default(),
         ))
         .id()
 }

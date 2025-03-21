@@ -48,15 +48,19 @@ impl Plugin for MainRummagePlugin {
             // Initialize zone manager resource
             .init_resource::<ZoneManager>()
             // Add game setup system
-            .add_systems(OnEnter(GameMenuState::InGame), setup_game)
-            // Add system to create game camera when entering game state
-            .add_systems(OnEnter(GameMenuState::InGame), setup_game_camera)
+            .add_systems(
+                OnEnter(GameMenuState::InGame),
+                (setup_game, setup_game_camera, ensure_game_camera_visible),
+            )
             // System to connect cards to zones after they're spawned - moved to FixedUpdate
-            .add_systems(FixedUpdate, connect_cards_to_zones)
-            // Add a system to ensure game camera is visible in InGame state
-            .add_systems(OnEnter(GameMenuState::InGame), ensure_game_camera_visible)
-            // Add a diagnostic system to check card status - moved to FixedUpdate
-            .add_systems(FixedUpdate, check_card_status);
+            .add_systems(
+                Update,
+                (
+                    connect_cards_to_zones,
+                    check_card_status,
+                    register_unzoned_cards.run_if(in_state(GameMenuState::InGame)),
+                ),
+            );
     }
 }
 
@@ -379,7 +383,23 @@ fn check_card_status(
     if game_camera_query.is_empty() {
         error!("No game camera found!");
     } else {
-        info!("Game camera entity: {:?}", game_camera_query.single());
+        // Changed from single() to safely handle multiple cameras
+        let camera_count = game_camera_query.iter().count();
+        if camera_count > 1 {
+            warn!(
+                "Multiple game cameras found ({}), this may cause rendering issues",
+                camera_count
+            );
+            info!(
+                "Game camera entities: {:?}",
+                game_camera_query.iter().collect::<Vec<_>>()
+            );
+        } else {
+            info!(
+                "Game camera entity: {:?}",
+                game_camera_query.iter().next().unwrap()
+            );
+        }
     }
 
     // Print some cards for debugging
@@ -409,4 +429,65 @@ fn setup_game_camera(commands: Commands, game_cameras: Query<Entity, With<GameCa
 
     // Call the camera module's setup system directly
     setup_camera(commands);
+}
+
+/// System to register cards that are not in any zone
+fn register_unzoned_cards(
+    cards: Query<
+        (Entity, &CardZone),
+        (
+            With<crate::cards::Card>,
+            Without<crate::game_engine::zones::ZoneMarker>,
+        ),
+    >,
+    player_query: Query<(Entity, &Player)>,
+    mut zone_manager: ResMut<ZoneManager>,
+) {
+    let card_count = cards.iter().count();
+    if card_count == 0 {
+        return;
+    }
+
+    info!(
+        "Found {} cards not registered in any zone, attempting to register them",
+        card_count
+    );
+
+    // Create a map of player indices to player entities
+    let mut player_map = std::collections::HashMap::new();
+    for (entity, player) in player_query.iter() {
+        player_map.insert(player.player_index, entity);
+    }
+
+    // Register each card to the appropriate player's hand based on position
+    for (card_entity, card_zone) in cards.iter() {
+        // First check if this card is already registered to avoid duplicates
+        let already_registered = zone_manager.get_card_zone(card_entity).is_some();
+        if already_registered {
+            continue;
+        }
+
+        let owner = if let Some(owner) = card_zone.zone_owner {
+            owner
+        } else if player_map.len() > 0 {
+            // Default to first player if no owner is specified
+            player_map.get(&0).copied().unwrap_or(Entity::PLACEHOLDER)
+        } else {
+            warn!(
+                "No players found to assign card ownership for card {:?}",
+                card_entity
+            );
+            Entity::PLACEHOLDER
+        };
+
+        // Initialize player zones if they don't exist yet
+        zone_manager.init_player_zones(owner);
+
+        // Add the card to the player's hand by default
+        zone_manager.add_to_hand(owner, card_entity);
+        info!(
+            "Registered card {:?} to player {:?}'s hand",
+            card_entity, owner
+        );
+    }
 }

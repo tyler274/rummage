@@ -46,10 +46,11 @@ pub fn spawn_player_playmat(
     // Create the main playmat entity
     let playmat_entity = commands
         .spawn((
-            SpatialBundle {
-                transform: Transform::from_translation(player_position),
-                ..default()
-            },
+            Transform::from_translation(player_position),
+            GlobalTransform::default(),
+            Visibility::Visible,
+            InheritedVisibility::default(),
+            ViewVisibility::default(),
             PlayerPlaymat {
                 player_id: player_entity,
                 player_index: player.player_index,

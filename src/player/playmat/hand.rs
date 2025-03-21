@@ -199,7 +199,13 @@ pub fn toggle_hand_expansion(
     windows: Query<&Window>,
     camera_query: Query<(&Camera, &GlobalTransform), With<GameCamera>>,
     mut hand_query: Query<(&mut HandZone, &GlobalTransform)>,
+    game_state: Res<State<crate::menu::state::GameMenuState>>,
 ) {
+    // Disable interactions if in any menu state
+    if *game_state != crate::menu::state::GameMenuState::InGame {
+        return;
+    }
+
     // Only process on mouse click
     if !mouse_button_input.just_pressed(MouseButton::Left) {
         return;

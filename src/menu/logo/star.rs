@@ -45,32 +45,136 @@ impl Plugin for StarOfDavidPlugin {
 }
 
 /// System to monitor changes in StarOfDavid entities and log when necessary
-fn monitor_star_of_david_changes(
-    query: Query<Entity, (With<StarOfDavid>, Changed<Children>)>,
-    children_query: Query<&Children>,
+pub fn monitor_star_of_david_changes(
+    stars: Query<(Entity, Option<&Parent>, Option<&Name>, &Visibility), With<StarOfDavid>>,
     mut log_state: ResMut<StarOfDavidLogState>,
-    star_count_query: Query<Entity, With<StarOfDavid>>,
+    mut commands: Commands,
+    menu_state: Res<State<crate::menu::state::GameMenuState>>,
 ) {
-    // Only process if changes or if star count has changed
-    let current_star_count = star_count_query.iter().count();
-    let count_changed = current_star_count != log_state.last_star_count;
+    let current_count = stars.iter().count();
+    let visible_count = stars
+        .iter()
+        .filter(|(_, _, _, vis)| *vis == Visibility::Visible)
+        .count();
 
-    if count_changed {
-        debug!("StarOfDavid entities found: {}", current_star_count);
-        log_state.last_star_count = current_star_count;
+    // Track stars by context (pause menu vs main menu)
+    let current_state = menu_state.get();
+
+    // Only log when the count changes or if multiple visible stars detected
+    if current_count != log_state.last_star_count || visible_count > 1 {
+        info!(
+            "Star of David status: {} total, {} visible in state {:?}",
+            current_count, visible_count, current_state
+        );
+        log_state.last_star_count = current_count;
     }
 
-    // Check for entities with changed Children component
-    for entity in &query {
-        let has_children = children_query
-            .get(entity)
-            .map(|children| !children.is_empty())
-            .unwrap_or(false);
+    // Only enforce star visibility if needed, not every frame
+    // Find stars that need to be shown in current state
+    let mut main_menu_stars = Vec::new();
+    let mut pause_stars = Vec::new();
 
-        debug!(
-            "StarOfDavid entity {:?} children changed, has children: {}",
-            entity, has_children
-        );
+    // Categorize stars by name
+    for (entity, _, name, visibility) in stars.iter() {
+        if let Some(name_comp) = name {
+            let name_str = name_comp.as_str();
+            if name_str.contains("Main Menu") {
+                main_menu_stars.push((entity, *visibility));
+            } else if name_str.contains("Pause") {
+                pause_stars.push((entity, *visibility));
+            }
+        }
+    }
+
+    // Choose which stars should be visible based on current state
+    let needs_main_menu_star = matches!(current_state, crate::menu::state::GameMenuState::MainMenu);
+    let needs_pause_star = matches!(current_state, crate::menu::state::GameMenuState::PausedGame);
+
+    // Handle main menu stars
+    if needs_main_menu_star && !main_menu_stars.is_empty() {
+        // Find the first main menu star
+        let first_main_menu_star = main_menu_stars[0].0;
+
+        // Only update visibility if it's not already visible
+        if main_menu_stars[0].1 != Visibility::Visible {
+            info!("Making main menu star visible: {:?}", first_main_menu_star);
+            commands
+                .entity(first_main_menu_star)
+                .insert(Visibility::Visible);
+        }
+
+        // Hide other main menu stars (if any)
+        for (entity, visibility) in main_menu_stars.iter().skip(1) {
+            if *visibility != Visibility::Hidden {
+                commands.entity(*entity).insert(Visibility::Hidden);
+            }
+        }
+    } else if !needs_main_menu_star {
+        // Hide all main menu stars if we're not in main menu
+        for (entity, visibility) in main_menu_stars.iter() {
+            if *visibility != Visibility::Hidden {
+                commands.entity(*entity).insert(Visibility::Hidden);
+            }
+        }
+    }
+
+    // Handle pause stars
+    if needs_pause_star && !pause_stars.is_empty() {
+        // Find the first pause star
+        let first_pause_star = pause_stars[0].0;
+
+        // Only update visibility if it's not already visible
+        if pause_stars[0].1 != Visibility::Visible {
+            info!("Making pause star visible: {:?}", first_pause_star);
+            commands
+                .entity(first_pause_star)
+                .insert(Visibility::Visible);
+        }
+
+        // Hide other pause stars (if any)
+        for (entity, visibility) in pause_stars.iter().skip(1) {
+            if *visibility != Visibility::Hidden {
+                commands.entity(*entity).insert(Visibility::Hidden);
+            }
+        }
+    } else if !needs_pause_star {
+        // Hide all pause stars if we're not in pause menu
+        for (entity, visibility) in pause_stars.iter() {
+            if *visibility != Visibility::Hidden {
+                commands.entity(*entity).insert(Visibility::Hidden);
+            }
+        }
+    }
+
+    // Remove excess stars if we have more than we need (more than one per type)
+    if current_count > 2 {
+        info!("Cleaning up excess stars to prevent duplication issues");
+
+        // Collect stars to keep (one main menu star and one pause star at most)
+        let mut stars_to_keep = Vec::new();
+        let mut main_menu_star_kept = false;
+        let mut pause_star_kept = false;
+
+        for (entity, _, name, _) in stars.iter() {
+            if let Some(name_comp) = name {
+                let name_str = name_comp.as_str();
+                if name_str.contains("Main Menu") && !main_menu_star_kept {
+                    stars_to_keep.push(entity);
+                    main_menu_star_kept = true;
+                } else if name_str.contains("Pause") && !pause_star_kept {
+                    stars_to_keep.push(entity);
+                    pause_star_kept = true;
+                }
+            }
+        }
+
+        // Despawn any stars that aren't the ones we're keeping
+        for (entity, _, _, _) in stars.iter() {
+            if !stars_to_keep.contains(&entity) {
+                warn!("Despawning excess Star of David: {:?}", entity);
+                commands.entity(entity).despawn_recursive();
+            }
+        }
     }
 }
 
@@ -87,11 +191,18 @@ pub fn render_star_of_david(
             entity
         );
 
+        // First, ensure the parent entity has proper UI components
+        commands.entity(entity).insert((
+            ZIndex::default(),
+            Transform::default(),
+            GlobalTransform::default(),
+        ));
+
         // Use ImageNode to display the star image
         commands.entity(entity).with_children(|parent| {
             // Create a UI image node for the star - don't add RenderLayers since it inherits from parent
             parent.spawn((
-                ImageNode::new(asset_server.load("textures/star.png")),
+                // Use individual components instead of NodeBundle
                 Node {
                     width: Val::Px(120.0),
                     height: Val::Px(120.0),
@@ -100,10 +211,13 @@ pub fn render_star_of_david(
                     align_items: AlignItems::Center,
                     ..default()
                 },
-                GlobalZIndex(100), // Add high z-index to ensure visibility
+                BackgroundColor(Color::NONE),
+                ZIndex(100), // Use ZIndex directly with a value
+                Visibility::Inherited,
+                InheritedVisibility::default(),
+                ViewVisibility::default(),
+                ImageNode::new(asset_server.load("textures/star.png")),
                 Name::new("Star Image"),
-                // These visibility components are already added by default by Bevy
-                // so we don't need to add them explicitly
             ));
         });
     }
@@ -113,7 +227,7 @@ pub fn render_star_of_david(
 pub fn create_star_of_david() -> impl Bundle {
     info!("Creating StarOfDavid bundle as UI component");
     (
-        // Use UI-oriented components
+        // Use individual components instead of NodeBundle
         Node {
             width: Val::Px(120.0),
             height: Val::Px(120.0),
@@ -124,10 +238,14 @@ pub fn create_star_of_david() -> impl Bundle {
             margin: UiRect::all(Val::Px(10.0)),
             ..default()
         },
-        BackgroundColor(Color::NONE), // Transparent background
+        BackgroundColor(Color::NONE),
         StarOfDavid,
         Visibility::Visible,
         InheritedVisibility::default(),
         ViewVisibility::default(),
+        // Add this to ensure we're in a UI hierarchy
+        ZIndex::default(),
+        Transform::default(),
+        GlobalTransform::default(),
     )
 }

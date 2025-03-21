@@ -217,8 +217,14 @@ pub fn handle_zone_interactions(
     camera_query: Query<(&Camera, &GlobalTransform), With<GameCamera>>,
     zone_query: Query<(Entity, &PlaymatZone, &GlobalTransform)>,
     mut zone_focus: ResMut<ZoneFocusState>,
+    game_state: Res<State<crate::menu::state::GameMenuState>>,
     _commands: Commands,
 ) {
+    // Disable interactions if in any menu state
+    if *game_state != crate::menu::state::GameMenuState::InGame {
+        return;
+    }
+
     let mouse_clicked = mouse_button_input.just_pressed(MouseButton::Left);
     let right_clicked = mouse_button_input.just_pressed(MouseButton::Right);
     let shift_key = key_input.pressed(KeyCode::ShiftLeft) || key_input.pressed(KeyCode::ShiftRight);
@@ -445,10 +451,7 @@ pub fn update_phase_based_layout(
     }
 }
 
-/// Spawns a complete playmat for a player with all zones
-///
-/// This function coordinates the spawning of all playmat zones for a player,
-/// including battlefield, hand, library, graveyard, exile, and command zone.
+/// System to spawn a player's playmat with all zones
 pub fn spawn_player_playmat(
     commands: &mut Commands,
     asset_server: &Res<AssetServer>,
@@ -466,21 +469,14 @@ pub fn spawn_player_playmat(
     let playmat_color = match player.player_index {
         0 => Color::srgb(0.2, 0.2, 0.7), // Blue for bottom player
         1 => Color::srgb(0.7, 0.2, 0.2), // Red for right player
-        2 => Color::srgb(0.2, 0.7, 0.2), // Green for top player
+        2 => Color::srgb(0.7, 0.2, 0.2), // Green for top player
         _ => Color::srgb(0.7, 0.7, 0.2), // Yellow for left player
     };
 
     // Create the main playmat entity with a visible Sprite component
     let playmat_entity = commands
         .spawn((
-            // Add a visible background for the playmat
-            Sprite {
-                color: playmat_color,
-                // Use the standard playmat size - adjusted for better corner-to-corner positioning
-                custom_size: Some(Vec2::new(330.0, 250.0)),
-                ..default()
-            },
-            // Use the position from the parameter with appropriate rotation
+            // Replace SpatialBundle with individual components
             Transform {
                 translation: Vec3::new(
                     player_position.x,
@@ -515,9 +511,16 @@ pub fn spawn_player_playmat(
                 scale: Vec3::ONE,
             },
             GlobalTransform::default(),
-            Visibility::Visible, // Explicitly set to visible
+            Visibility::Visible,
             InheritedVisibility::default(),
             ViewVisibility::default(),
+            // Add a visible background for the playmat
+            Sprite {
+                color: playmat_color,
+                // Use the standard playmat size - adjusted for better corner-to-corner positioning
+                custom_size: Some(Vec2::new(330.0, 250.0)),
+                ..default()
+            },
             PlayerPlaymat {
                 player_id: player_entity,
                 player_index: player.player_index,

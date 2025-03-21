@@ -27,9 +27,11 @@ pub fn create_hebrew_text(asset_server: &AssetServer) -> impl Bundle {
     (
         Node {
             margin: UiRect {
-                top: Val::Px(150.0), // Position below the Star of David
+                top: Val::Px(120.0), // Position below the Star of David
                 ..default()
             },
+            width: Val::Auto,
+            height: Val::Auto,
             ..default()
         },
         Text::new("רומאג'"),
@@ -50,16 +52,15 @@ pub fn create_english_text(asset_server: &AssetServer) -> impl Bundle {
     // No RenderLayers component - will inherit from parent
     (
         Node {
-            margin: UiRect {
-                top: Val::Px(210.0), // Position below the Hebrew text
-                ..default()
-            },
+            margin: UiRect::top(Val::Px(20.0)), // Space between Hebrew and English text
+            width: Val::Auto,
+            height: Val::Auto,
             ..default()
         },
         Text::new("Rummage"),
         TextFont {
             font: asset_server.load("fonts/DejaVuSans.ttf"),
-            font_size: 28.0,
+            font_size: 52.0,
             ..default()
         },
         TextLayout::new_with_justify(JustifyText::Center),

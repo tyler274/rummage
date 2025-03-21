@@ -11,7 +11,23 @@ use bevy::text::JustifyText;
 use bevy::ui::{AlignItems, JustifyContent, Val};
 
 /// Sets up the pause menu interface
-pub fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn setup_pause_menu(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    existing_menu_items: Query<Entity, With<MenuItem>>,
+) {
+    // Check for existing menu items first and clean them up if necessary
+    let existing_count = existing_menu_items.iter().count();
+    if existing_count > 0 {
+        info!(
+            "Found {} existing menu items, cleaning up before creating pause menu",
+            existing_count
+        );
+        for entity in existing_menu_items.iter() {
+            commands.entity(entity).despawn_recursive();
+        }
+    }
+
     // First, create a full-screen transparent input blocker
     commands.spawn((
         Node {
@@ -48,17 +64,34 @@ pub fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) 
                 .spawn((
                     Node {
                         width: Val::Px(300.0),
-                        height: Val::Px(400.0),
+                        height: Val::Px(450.0), // Increased height to accommodate logo
                         flex_direction: FlexDirection::Column,
-                        justify_content: JustifyContent::SpaceAround,
+                        justify_content: JustifyContent::Start, // Changed to start for better positioning
                         align_items: AlignItems::Center,
+                        padding: UiRect::top(Val::Px(20.0)),
                         ..default()
                     },
                     BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
                     AppLayer::Menu.layer(),
                 ))
                 .with_children(|parent| {
-                    // Title
+                    // Logo container is now the first child above the PAUSED text
+                    // The star component itself will be created in the setup_pause_star function
+                    parent.spawn((
+                        Node {
+                            width: Val::Px(150.0),
+                            height: Val::Px(150.0),
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Center,
+                            margin: UiRect::bottom(Val::Px(10.0)),
+                            ..default()
+                        },
+                        Name::new("Logo Position"),
+                        MenuItem,
+                        AppLayer::Menu.layer(),
+                    ));
+
+                    // Title (now appears after the logo)
                     parent.spawn((
                         Text::new("PAUSED"),
                         TextFont {
@@ -66,6 +99,17 @@ pub fn setup_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) 
                             ..default()
                         },
                         TextLayout::new_with_justify(JustifyText::Center),
+                        AppLayer::Menu.layer(),
+                    ));
+                    
+                    // Add spacing after the title
+                    parent.spawn((
+                        Node {
+                            width: Val::Percent(100.0),
+                            height: Val::Px(20.0),
+                            ..default()
+                        },
+                        Name::new("Title Spacing"),
                         AppLayer::Menu.layer(),
                     ));
 

@@ -56,6 +56,11 @@ pub fn spawn_rules_text(
     // Spawn the text entity with proper positioning
     let text_entity = commands
         .spawn((
+            Node {
+                width: Val::Auto,
+                height: Val::Auto,
+                ..default()
+            },
             Text2d::new(formatted_text.clone()),
             Transform::from_translation(Vec3::new(
                 local_offset.x,
@@ -72,6 +77,9 @@ pub fn spawn_rules_text(
             TextLayout::new_with_justify(JustifyText::Left),
             CardTextType::RulesText,
             Name::new("Card Rules Text"),
+            Visibility::Visible,
+            InheritedVisibility::default(),
+            ViewVisibility::default(),
         ))
         .id();
 

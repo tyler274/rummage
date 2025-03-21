@@ -2,7 +2,7 @@ use crate::{
     camera::components::GameCamera,
     cards::Card,
     menu::{
-        components::{MenuCamera, MenuItem},
+        components::{MenuCamera, MenuDecorativeElement, MenuItem},
         input_blocker::InputBlocker,
         logo::StarOfDavid,
         main_menu::MainMenuMusic,
@@ -13,22 +13,35 @@ use bevy::prelude::*;
 /// Cleans up main menu entities
 pub fn cleanup_main_menu(
     mut commands: Commands,
-    menu_items: Query<Entity, With<MenuItem>>,
+    menu_items: Query<(Entity, Option<&Name>), With<MenuItem>>,
     main_menu_music: Query<Entity, With<MainMenuMusic>>,
     input_blockers: Query<Entity, With<InputBlocker>>,
 ) {
     let count = menu_items.iter().count();
-    info!("Cleaning up {} main menu items", count);
-    for entity in menu_items.iter() {
-        info!("Despawning main menu entity: {:?}", entity);
-        commands.entity(entity).despawn_recursive();
+
+    // Only clean up if there are items to clean up
+    if count > 0 {
+        info!("Cleaning up {} main menu items", count);
+        for (entity, name) in menu_items.iter() {
+            if let Some(name_comp) = name {
+                info!("Despawning main menu entity: {:?} ({})", entity, name_comp);
+            } else {
+                info!("Despawning unnamed main menu entity: {:?}", entity);
+            }
+            commands.entity(entity).despawn_recursive();
+        }
+    } else {
+        info!("No main menu items found to clean up");
     }
 
     // Clean up the main menu music
-    for entity in main_menu_music.iter() {
+    let music_count = main_menu_music.iter().count();
+    if music_count > 0 {
         debug!("Stopping main menu music");
-        info!("Despawning main menu music entity: {:?}", entity);
-        commands.entity(entity).despawn();
+        for entity in main_menu_music.iter() {
+            info!("Despawning main menu music entity: {:?}", entity);
+            commands.entity(entity).despawn();
+        }
     }
 
     // Explicitly clean up any input blockers that might remain
@@ -41,17 +54,40 @@ pub fn cleanup_main_menu(
         }
     }
 
-    if count == 0 {
-        warn!("No main menu items found to clean up");
-    }
+    // Log the completion of cleanup
+    info!("Main menu cleanup complete");
 }
 
 /// Cleans up pause menu entities
-pub fn cleanup_pause_menu(mut commands: Commands, menu_items: Query<Entity, With<MenuItem>>) {
+pub fn cleanup_pause_menu(
+    mut commands: Commands,
+    menu_items: Query<Entity, With<MenuItem>>,
+    decorative_elements: Query<(Entity, Option<&StarOfDavid>), With<MenuDecorativeElement>>,
+) {
     let count = menu_items.iter().count();
     info!("Cleaning up {} pause menu items", count);
     for entity in menu_items.iter() {
         commands.entity(entity).despawn_recursive();
+    }
+
+    // Hide decorative elements (including Stars of David) rather than despawning them
+    // This allows us to reuse them when returning to main menu
+    let element_count = decorative_elements.iter().count();
+    if element_count > 0 {
+        info!(
+            "Setting {} decorative elements to Hidden visibility",
+            element_count
+        );
+        for (entity, star) in decorative_elements.iter() {
+            // Log if it's a Star of David
+            if star.is_some() {
+                info!("Setting Star of David {:?} to Hidden", entity);
+            } else {
+                debug!("Setting decorative element {:?} to Hidden", entity);
+            }
+            // Just change visibility instead of despawning
+            commands.entity(entity).insert(Visibility::Hidden);
+        }
     }
 }
 
