@@ -1,4 +1,4 @@
-use crate::menu::components::{MenuBackground, MenuItem};
+use crate::menu::{backgrounds::MenuBackground, components::MenuItem};
 use bevy::prelude::*;
 
 /// Resource to track previous window size
@@ -21,6 +21,7 @@ pub struct MenuVisibilityLogState {
     pub last_item_count: usize,
     pub last_visible_items: usize,
     pub camera_states: std::collections::HashMap<Entity, Visibility>,
+    pub last_update: std::time::Instant,
 }
 
 impl Default for MenuVisibilityLogState {
@@ -29,6 +30,7 @@ impl Default for MenuVisibilityLogState {
             last_item_count: 0,
             last_visible_items: 0,
             camera_states: std::collections::HashMap::new(),
+            last_update: std::time::Instant::now(),
         }
     }
 }
@@ -71,14 +73,12 @@ pub fn update_menu_visibility_state(
     }
 }
 
-/// Debug system to check visibility of menu elements
+/// Debug menu visibility and update visibility state
+#[allow(dead_code)]
 pub fn debug_menu_visibility(
     menu_cameras: Query<
         (Entity, &Visibility),
-        (
-            With<crate::menu::components::MenuCamera>,
-            Changed<Visibility>,
-        ),
+        (Changed<Visibility>, With<crate::menu::camera::MenuCamera>),
     >,
     menu_items: Query<(Entity, &Visibility), (With<MenuItem>, Changed<Visibility>)>,
     mut log_state: ResMut<MenuVisibilityLogState>,

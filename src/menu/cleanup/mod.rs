@@ -1,7 +1,5 @@
 //! Module for handling cleanup of menu and game entities
 
-use bevy::prelude::*;
-
 mod decorative;
 mod game;
 mod main_menu;

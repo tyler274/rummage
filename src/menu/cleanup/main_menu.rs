@@ -1,4 +1,6 @@
-use crate::menu::{cleanup::MainMenuMusic, components::MenuItem, input_blocker::InputBlocker};
+use crate::menu::{
+    components::MenuItem, input_blocker::InputBlocker, main_menu::components::MainMenuMusic,
+};
 use bevy::prelude::*;
 
 /// Cleans up main menu entities

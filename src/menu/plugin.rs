@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 
 use crate::{
-    camera::components::GameCamera,
     cards::Card,
     menu::{
         components::{MenuVisibilityState, NeedsMainMenuSetup, UiHierarchyChecked},

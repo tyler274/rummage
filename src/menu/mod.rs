@@ -1,8 +1,10 @@
+pub mod backgrounds;
 pub mod camera;
 pub mod cleanup;
 pub mod components;
 pub mod credits;
 pub mod deck;
+pub mod decorations;
 pub mod input_blocker;
 pub mod logo;
 pub mod main_menu;

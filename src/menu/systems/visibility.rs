@@ -1,66 +1,64 @@
 use crate::menu::{
-    components::{MenuBackground, MenuCamera, MenuItem},
+    backgrounds::MenuBackground,
+    camera::MenuCamera,
+    components::{MenuItem, MenuVisibilityState},
     state::GameMenuState,
-    ui::{MenuVisibilityLogState, MenuVisibilityState, PreviousWindowSize},
+    ui::{MenuVisibilityLogState, PreviousWindowSize},
 };
 use bevy::prelude::*;
 
 /// Update menu visibility state resource
 pub fn update_menu_visibility_state(
-    menu_items: Query<&Visibility, With<MenuItem>>,
+    menu_items: Query<Entity, With<MenuItem>>,
+    visible_items: Query<(Entity, &Visibility), With<MenuItem>>,
     mut menu_state: ResMut<MenuVisibilityState>,
 ) {
+    // Gather counts
     let total_items = menu_items.iter().count();
-    let visible_items = menu_items
+    let visible_items_count = visible_items
         .iter()
-        .filter(|visibility| matches!(visibility, Visibility::Visible))
+        .filter(|(_, vis)| **vis == Visibility::Visible)
         .count();
 
-    // Only update if changed
-    if menu_state.item_count != total_items || menu_state.visible_count != visible_items {
-        menu_state.item_count = total_items;
-        menu_state.visible_count = visible_items;
+    // Only update if there's a change
+    if menu_state.visible_items != visible_items_count {
+        menu_state.visible_items = visible_items_count;
+        info!(
+            "Menu visibility update: {}/{} items visible",
+            visible_items_count, total_items
+        );
     }
 }
 
-/// Debug system to check visibility of menu elements
+/// Prints debug info about menu visibility state
 pub fn debug_menu_visibility(
-    menu_cameras: Query<(Entity, &Visibility), (With<MenuCamera>, Changed<Visibility>)>,
-    menu_items: Query<(Entity, &Visibility), (With<MenuItem>, Changed<Visibility>)>,
-    mut log_state: ResMut<MenuVisibilityLogState>,
     menu_state: Res<MenuVisibilityState>,
+    menu_items: Query<Entity, With<MenuItem>>,
+    visible_items: Query<(Entity, &Visibility), With<MenuItem>>,
+    mut log_state: Local<MenuVisibilityLogState>,
+    menu_cameras: Query<(Entity, &Visibility), With<MenuCamera>>,
 ) {
-    // Count cameras and menu items with changed visibility
-    let camera_count = menu_cameras.iter().count();
-    let menu_item_count = menu_items.iter().count();
+    // Only log if something changed
+    if log_state.last_update.elapsed().as_secs_f32() >= 5.0 {
+        // Calculate visibility stats
+        let total_items = menu_items.iter().count();
+        let items_visible = visible_items
+            .iter()
+            .filter(|(_, vis)| **vis == Visibility::Visible)
+            .count();
 
-    // Only proceed if any component actually changed
-    if camera_count == 0 && menu_item_count == 0 {
-        return;
-    }
-
-    // Collect current camera states for changed cameras
-    for (entity, visibility) in menu_cameras.iter() {
-        log_state.camera_states.insert(entity, *visibility);
-        debug!(
-            "Menu camera {:?} visibility changed to: {:?}",
-            entity, visibility
+        // Log the state
+        info!(
+            "Menu visibility: {}/{} items visible",
+            items_visible, total_items
         );
-    }
 
-    // Count visible items
-    if menu_item_count > 0 {
-        // We need to query all items to get the total count when visibility changes
-        let all_items = menu_state.item_count;
-        let visible_items = menu_state.visible_count;
-
-        // Only log if visibility actually changed
-        if visible_items != log_state.last_visible_items {
-            log_state.last_item_count = all_items;
-            log_state.last_visible_items = visible_items;
-            debug!("Total menu items: {}", all_items);
-            debug!("Visible menu items: {}/{}", visible_items, all_items);
+        // Log camera visibility
+        for (entity, visibility) in menu_cameras.iter() {
+            info!("Menu camera {:?} visibility: {:?}", entity, visibility);
         }
+
+        log_state.last_update = std::time::Instant::now();
     }
 }
 

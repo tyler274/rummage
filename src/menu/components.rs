@@ -37,12 +37,16 @@ pub enum MenuButtonAction {
     Continue,
     /// Load a previously saved game
     LoadGame,
+    /// Enter multiplayer mode
+    Multiplayer,
     /// Open settings menu
     Settings,
     /// Exit the game
     Quit,
     /// Resume the current game
     Resume,
+    /// Restart the current game with a new hand
+    Restart,
     /// Return to the main menu
     MainMenu,
     /// Save the current game

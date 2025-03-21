@@ -1,7 +1,7 @@
-use crate::menu::components::{MenuCamera, MenuDecorativeElement, MenuRoot};
 use crate::menu::logo::{
     StarOfDavid, create_english_text, create_hebrew_text, create_logo, create_star_of_david,
 };
+use crate::menu::{camera::MenuCamera, components::MenuRoot, decorations::MenuDecorativeElement};
 use bevy::prelude::*;
 
 /// Sets up a Star of David for the main menu and attaches it to the menu camera

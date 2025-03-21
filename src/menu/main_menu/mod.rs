@@ -1,5 +1,5 @@
 mod cleanup;
-mod components;
+pub mod components;
 mod plugin;
 mod systems;
 

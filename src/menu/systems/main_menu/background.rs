@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::ui::{PositionType, Val};
 
-use crate::menu::components::{MenuBackground, MenuItem};
+use crate::menu::{backgrounds::MenuBackground, components::MenuItem};
 
 /// Sets up the menu background with starry pattern
 pub fn setup_menu_background(mut commands: Commands, asset_server: &AssetServer) {

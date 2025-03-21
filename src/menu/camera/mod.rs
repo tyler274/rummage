@@ -1,7 +1,6 @@
 //! Module for menu camera management
-use bevy::prelude::*;
 
-mod setup;
+pub mod setup;
 mod visibility;
 
 // Re-export essential items for use in other modules

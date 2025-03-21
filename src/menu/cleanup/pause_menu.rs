@@ -1,7 +1,4 @@
-use crate::menu::{
-    components::{MenuDecorativeElement, MenuItem},
-    logo::StarOfDavid,
-};
+use crate::menu::{components::MenuItem, decorations::MenuDecorativeElement, logo::StarOfDavid};
 use bevy::prelude::*;
 
 /// Cleans up pause menu entities

@@ -1,5 +1,6 @@
 use crate::menu::{
-    components::{MenuCamera, MenuItem, MenuRoot},
+    camera::MenuCamera,
+    components::{MenuItem, MenuRoot},
     logo::{StarOfDavid, create_english_text, create_hebrew_text, create_star_of_david},
 };
 use bevy::prelude::*;
@@ -110,7 +111,7 @@ pub fn setup_pause_star(
         commands.entity(camera_entity).with_children(|parent| {
             // Create a parent entity that will contain the star and text elements
             parent
-                .spawn((create_logo(), Name::new("Pause Logo Group")))
+                .spawn((create_logo_container(), Name::new("Pause Logo Group")))
                 .with_children(|logo_parent| {
                     // Spawn the Star of David with the logo container as parent
                     logo_parent.spawn((create_star_of_david(), Name::new("Pause Star of David")));
@@ -155,7 +156,7 @@ pub fn setup_pause_star(
             ))
             .with_children(|parent| {
                 parent
-                    .spawn((create_logo(), Name::new("Pause Logo Group")))
+                    .spawn((create_logo_container(), Name::new("Pause Logo Group")))
                     .with_children(|logo_parent| {
                         // Spawn the Star of David with the logo container as parent
                         logo_parent
@@ -180,7 +181,7 @@ pub fn setup_pause_star(
 }
 
 /// Creates the logo container for menu items
-pub fn create_logo() -> impl Bundle {
+pub fn create_logo_container() -> impl Bundle {
     (
         Node {
             width: Val::Px(200.0),

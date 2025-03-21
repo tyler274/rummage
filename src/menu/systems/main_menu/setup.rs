@@ -2,10 +2,9 @@ use bevy::prelude::*;
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, PositionType, Val};
 
 use crate::menu::{
-    components::MenuBackground,
-    components::MenuCamera,
-    components::MenuItem,
-    components::MenuRoot,
+    backgrounds::MenuBackground,
+    camera::MenuCamera,
+    components::{MenuItem, MenuRoot},
     save_load::SaveExists,
     save_load::resources::check_save_exists,
     systems::{logo::setup_main_menu_star, main_menu::buttons::create_main_menu_buttons},
