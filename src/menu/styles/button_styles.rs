@@ -1,5 +1,6 @@
 use crate::menu::components::MenuItem;
 use bevy::prelude::*;
+use bevy::text::JustifyText;
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, UiRect, Val};
 
 /// Normal button color
@@ -76,6 +77,7 @@ pub struct MenuButtonTextBundle {
 }
 
 /// Creates a menu button text bundle with standard styling
+#[allow(unused_variables)]
 pub fn create_main_menu_button_text_bundle(
     asset_server: &AssetServer,
     text_str: &str,
@@ -205,4 +207,42 @@ pub fn create_settings_label(
         TextColor(Color::WHITE),
         TextLayout::new_with_justify(JustifyText::Center),
     )
+}
+
+/// Create a button with text
+#[allow(unused_variables)]
+pub fn button_with_text<T: Component + Default>(
+    parent: &mut ChildBuilder,
+    asset_server: &AssetServer,
+    button_text: &str,
+    z_index: i32,
+) -> Entity {
+    // Create a button entity
+    parent
+        .spawn((
+            Button::default(),
+            Node {
+                width: Val::Px(150.0),
+                height: Val::Px(40.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            BackgroundColor(NORMAL_BUTTON),
+            T::default(),
+            Name::new(format!("{} Button", button_text)),
+        ))
+        .with_children(|parent| {
+            parent.spawn((
+                Text::new(button_text.to_string()),
+                TextFont {
+                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font_size: 20.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                TextLayout::new_with_justify(JustifyText::Center),
+            ));
+        })
+        .id()
 }

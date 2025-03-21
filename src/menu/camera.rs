@@ -1,4 +1,3 @@
-use crate::camera::components::AppLayer;
 use crate::menu::components::MenuCamera;
 use bevy::prelude::*;
 

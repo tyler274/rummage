@@ -5,7 +5,7 @@ use bevy::prelude::*;
 pub fn pause_menu_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut next_state: ResMut<NextState<GameMenuState>>,
-    mut context: ResMut<StateTransitionContext>,
+    context: Res<StateTransitionContext>,
     current_state: Res<State<GameMenuState>>,
 ) {
     // Only respond to Escape key press

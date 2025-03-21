@@ -1,83 +1,64 @@
+use crate::menu::{
+    components::MenuButtonAction, save_load::SaveLoadUiContext, save_load::SaveLoadUiState,
+    state::GameMenuState,
+};
 use bevy::prelude::*;
 
-use crate::menu::state::MenuState;
-use crate::menu::systems::main_menu::states::MultiplayerState;
-
-/// Handle button clicks in the main menu
+/// Handles button interactions for the main menu
 pub fn handle_main_menu_interactions(
     mut interaction_query: Query<
-        (&Interaction, &mut BackgroundColor, &Name, &Parent),
+        (&Interaction, &MenuButtonAction, &mut BackgroundColor),
         (Changed<Interaction>, With<Button>),
     >,
-    text_query: Query<&Parent, With<Text>>,
-    mut next_state: ResMut<NextState<MenuState>>,
-    mut multi_state: ResMut<NextState<MultiplayerState>>,
-    mut app_exit_events: EventWriter<bevy::app::AppExit>,
+    mut next_state: ResMut<NextState<GameMenuState>>,
+    mut exit: EventWriter<bevy::app::AppExit>,
+    mut save_load_state: ResMut<NextState<SaveLoadUiState>>,
+    mut save_load_context: ResMut<SaveLoadUiContext>,
 ) {
-    for (interaction, mut color, name, parent) in interaction_query.iter_mut() {
-        let button_name = name.as_str();
-
+    for (interaction, action, mut background_color) in interaction_query.iter_mut() {
         match *interaction {
             Interaction::Pressed => {
-                info!("Button pressed: {}", button_name);
-
-                // Handle different buttons based on their names
-                match button_name {
-                    "New Game Button" => {
-                        info!("New Game selected");
-                        next_state.set(MenuState::NewGame);
+                // Button pressed - execute the action
+                match action {
+                    MenuButtonAction::NewGame => {
+                        info!("New Game button pressed");
+                        next_state.set(GameMenuState::InGame);
                     }
-                    "Load Game Button" => {
-                        info!("Load Game selected");
-                        next_state.set(MenuState::LoadGame);
+                    MenuButtonAction::LoadGame => {
+                        info!("Load Game button pressed");
+                        save_load_context.from_pause_menu = false;
+                        save_load_state.set(SaveLoadUiState::LoadGame);
                     }
-                    "Multiplayer Button" => {
-                        info!("Multiplayer selected");
-                        multi_state.set(MultiplayerState::Menu);
+                    MenuButtonAction::Settings => {
+                        info!("Settings button pressed");
+                        next_state.set(GameMenuState::Settings);
                     }
-                    "Settings Button" => {
-                        info!("Settings selected");
-                        next_state.set(MenuState::Settings);
+                    MenuButtonAction::Multiplayer => {
+                        info!("Multiplayer button pressed");
+                        // Placeholder for multiplayer functionality
                     }
-                    "Credits Button" => {
-                        info!("Credits selected");
-                        next_state.set(MenuState::Credits);
+                    MenuButtonAction::Quit => {
+                        info!("Exit button pressed");
+                        exit.send(bevy::app::AppExit::default());
                     }
-                    "Exit Button" => {
-                        info!("Exit selected");
-                        app_exit_events.send(bevy::app::AppExit::default());
+                    MenuButtonAction::Credits => {
+                        info!("Credits button pressed");
+                        next_state.set(GameMenuState::Credits);
                     }
                     _ => {
-                        // Check for text elements with parent buttons
-                        for text_parent in text_query.iter() {
-                            if text_parent.get() == parent.get() {
-                                info!("Button with text pressed: {}", button_name);
-                                // Handle based on the parent button's name
-                                if button_name.contains("New Game") {
-                                    next_state.set(MenuState::NewGame);
-                                } else if button_name.contains("Load Game") {
-                                    next_state.set(MenuState::LoadGame);
-                                } else if button_name.contains("Multiplayer") {
-                                    multi_state.set(MultiplayerState::Menu);
-                                } else if button_name.contains("Settings") {
-                                    next_state.set(MenuState::Settings);
-                                } else if button_name.contains("Credits") {
-                                    next_state.set(MenuState::Credits);
-                                } else if button_name.contains("Exit") {
-                                    app_exit_events.send(bevy::app::AppExit::default());
-                                }
-                            }
-                        }
+                        info!("Button pressed with action: {:?}", action);
                     }
                 }
+                // Set button color to pressed state
+                *background_color = Color::srgb(0.35, 0.35, 0.35).into();
             }
             Interaction::Hovered => {
-                // Highlight button on hover
-                *color = Color::srgb(0.25, 0.25, 0.25).into();
+                // Button is being hovered
+                *background_color = Color::srgb(0.25, 0.25, 0.25).into();
             }
             Interaction::None => {
-                // Reset color when not interacting
-                *color = Color::srgb(0.15, 0.15, 0.15).into();
+                // No interaction
+                *background_color = Color::srgba(0.15, 0.15, 0.15, 0.8).into();
             }
         }
     }

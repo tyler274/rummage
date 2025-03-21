@@ -1,7 +1,8 @@
 use bevy::prelude::*;
-use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
+use bevy::text::JustifyText;
+use bevy::ui::{AlignItems, FlexDirection, JustifyContent, UiRect, Val};
 
-use crate::menu::components::{MenuItem, MenuRoot};
+use crate::menu::components::{MenuButtonAction, MenuItem, MenuRoot};
 use crate::menu::styles::button_styles::create_main_menu_button;
 
 /// Creates text components for a menu button
@@ -46,6 +47,7 @@ pub struct MenuButtonBundle {
 
 impl MenuButtonBundle {
     /// Create a new menu button bundle with the given name and z-index
+    #[allow(unused_variables)]
     pub fn new(button_name: &str, z_index: i32) -> Self {
         let (button, node, background) = create_main_menu_button();
 
@@ -150,4 +152,112 @@ impl MenuRootBundle {
             z_index: ZIndex::default(),
         }
     }
+}
+
+/// Creates the main menu buttons
+pub fn create_main_menu_buttons(
+    parent: &mut ChildBuilder,
+    asset_server: &AssetServer,
+    save_exists: bool,
+) {
+    // Create the buttons container
+    parent
+        .spawn((
+            Node {
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                width: Val::Px(300.0),
+                row_gap: Val::Px(10.0),
+                ..default()
+            },
+            BackgroundColor(Color::NONE),
+            MenuItem,
+            Name::new("Menu Buttons Container"),
+        ))
+        .with_children(|container| {
+            // New Game button
+            spawn_menu_button(
+                container,
+                "New Game",
+                MenuButtonAction::NewGame,
+                asset_server,
+            );
+
+            // Load Game button - only show if save exists
+            if save_exists {
+                spawn_menu_button(
+                    container,
+                    "Load Game",
+                    MenuButtonAction::LoadGame,
+                    asset_server,
+                );
+            }
+
+            // Multiplayer button
+            spawn_menu_button(
+                container,
+                "Multiplayer",
+                MenuButtonAction::Multiplayer,
+                asset_server,
+            );
+
+            // Settings button
+            spawn_menu_button(
+                container,
+                "Settings",
+                MenuButtonAction::Settings,
+                asset_server,
+            );
+
+            // Credits button
+            spawn_menu_button(
+                container,
+                "Credits",
+                MenuButtonAction::Credits,
+                asset_server,
+            );
+
+            // Exit button
+            spawn_menu_button(container, "Exit", MenuButtonAction::Quit, asset_server);
+        });
+}
+
+/// Spawns a menu button with the given text and action
+fn spawn_menu_button(
+    parent: &mut ChildBuilder,
+    text: &str,
+    action: MenuButtonAction,
+    asset_server: &AssetServer,
+) {
+    parent
+        .spawn((
+            Node {
+                width: Val::Px(250.0),
+                height: Val::Px(50.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                padding: UiRect::all(Val::Px(5.0)),
+                ..default()
+            },
+            Button,
+            BackgroundColor(Color::srgba(0.15, 0.15, 0.15, 0.8)),
+            action,
+            MenuItem,
+            Name::new(format!("{} Button", text)),
+        ))
+        .with_children(|button| {
+            button.spawn((
+                Text::new(text),
+                TextFont {
+                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font_size: 30.0,
+                    ..default()
+                },
+                TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                TextLayout::new_with_justify(JustifyText::Center),
+                MenuItem,
+                Name::new(format!("{} Text", text)),
+            ));
+        });
 }

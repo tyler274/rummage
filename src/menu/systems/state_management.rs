@@ -1,11 +1,12 @@
 use crate::menu::components::MenuCamera;
 use crate::menu::state::StateTransitionContext;
 use crate::menu::{
-    components::MenuItem, save_load::resources::SaveExists, settings::systems::setup_main_settings,
-    state::GameMenuState, systems::pause_menu::setup::setup_pause_menu,
+    components::{MenuItem, MenuRoot},
+    save_load::SaveExists,
+    settings::SettingsMenuState,
+    state::GameMenuState,
 };
-use bevy::utils::warn;
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::prelude::*;
 
 /// Resource indicating that the main menu needs to be set up
 #[derive(Resource)]
@@ -66,13 +67,14 @@ pub fn setup_settings_transition(
 /// Monitor state transitions and handle diagnostics
 pub fn monitor_state_transitions(
     state: Res<State<GameMenuState>>,
-    mut next_state: ResMut<NextState<GameMenuState>>,
+    _next_state: ResMut<NextState<GameMenuState>>,
     mut last_state: Local<Option<GameMenuState>>,
     menu_items: Query<Entity, With<MenuItem>>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     menu_cameras: Query<Entity, With<MenuCamera>>,
-    save_exists: Option<Res<SaveExists>>,
+    existing_roots: Query<Entity, With<MenuRoot>>,
+    save_exists: Option<ResMut<SaveExists>>,
 ) {
     // Check if state has changed
     if last_state.is_none() || last_state.unwrap() != *state.get() {
@@ -92,19 +94,25 @@ pub fn monitor_state_transitions(
 
                     // Ensure menu camera exists before setting up UI
                     if menu_cameras.iter().count() == 0 {
-                        warn!("No menu camera found for UI, creating one...");
+                        info!("No menu camera found for UI, creating one...");
                         commands.spawn((Camera2d::default(), MenuCamera, Name::new("Menu Camera")));
                     }
 
-                    // Set up the main menu directly
-                    let save_exists_res = save_exists
-                        .unwrap_or(Res::<SaveExists>::clone_from(&Res::new(SaveExists(false))));
-                    crate::menu::systems::main_menu::setup::setup_main_menu(
-                        commands,
-                        asset_server,
-                        menu_cameras,
-                        save_exists_res,
-                    );
+                    // Get the save exists resource
+                    if let Some(save_exists_res) = save_exists {
+                        // Set up the main menu directly
+                        crate::menu::systems::main_menu::setup::setup_main_menu(
+                            commands,
+                            asset_server,
+                            menu_cameras,
+                            existing_roots,
+                            save_exists_res,
+                        );
+                    } else {
+                        // Wait for the resource to be available in the next frame
+                        info!("SaveExists resource not available, deferring main menu setup");
+                        commands.insert_resource(NeedsMainMenuSetup(true));
+                    }
                 }
             }
             GameMenuState::Settings => {
@@ -148,24 +156,31 @@ pub fn perform_main_menu_setup_if_needed(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     menu_cameras: Query<Entity, With<MenuCamera>>,
+    existing_roots: Query<Entity, With<MenuRoot>>,
     setup_flag: Option<Res<NeedsMainMenuSetup>>,
     mut next_state: ResMut<NextState<GameMenuState>>,
-    save_exists: Option<Res<SaveExists>>,
+    save_exists: Option<ResMut<SaveExists>>,
 ) {
     if let Some(flag) = setup_flag {
         if flag.0 {
             info!("Setting up main menu as requested");
             commands.remove_resource::<NeedsMainMenuSetup>();
 
-            // Set up the main menu directly
-            let save_exists_res =
-                save_exists.unwrap_or(Res::<SaveExists>::clone_from(&Res::new(SaveExists(false))));
-            crate::menu::systems::main_menu::setup::setup_main_menu(
-                commands,
-                asset_server,
-                menu_cameras,
-                save_exists_res,
-            );
+            if let Some(save_exists_res) = save_exists {
+                // Set up the main menu directly
+                crate::menu::systems::main_menu::setup::setup_main_menu(
+                    commands,
+                    asset_server,
+                    menu_cameras,
+                    existing_roots,
+                    save_exists_res,
+                );
+            } else {
+                // Insert the resource and defer setup to next frame
+                commands.insert_resource(SaveExists(false));
+                commands.insert_resource(NeedsMainMenuSetup(true));
+                return;
+            }
 
             next_state.set(GameMenuState::MainMenu);
         }

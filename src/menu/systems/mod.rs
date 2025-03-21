@@ -19,3 +19,9 @@ pub use pause_menu::setup as pause_menu_setup;
 
 pub use state_management::*;
 pub use visibility::*;
+
+// Reexport key functionality
+pub use logo::setup_main_menu_star;
+pub use main_menu::handle_main_menu_interactions;
+pub use main_menu::setup_main_menu;
+pub use pause_menu::setup::setup_pause_menu;

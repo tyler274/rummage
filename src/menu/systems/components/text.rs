@@ -1,7 +1,4 @@
-use crate::menu::{
-    components::{MenuItem, MenuTextBundle},
-    styles::text_font_with_font,
-};
+use crate::menu::components::{MenuItem, MenuTextBundle};
 use bevy::prelude::*;
 use bevy::text::JustifyText;
 

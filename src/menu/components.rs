@@ -78,6 +78,8 @@ pub enum MenuButtonAction {
     MainMenu,
     /// Save the current game
     SaveGame,
+    /// Show credits screen
+    Credits,
 }
 
 /// Bundle for menu items that combines commonly used components

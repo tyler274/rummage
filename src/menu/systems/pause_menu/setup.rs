@@ -1,14 +1,14 @@
+use bevy::prelude::*;
+use bevy::text::JustifyText;
+use bevy::ui::{AlignItems, FlexDirection, JustifyContent, Val};
+
 use crate::camera::components::AppLayer;
 use crate::menu::{
     components::{MenuButtonAction, MenuItem, MenuRoot},
     input_blocker::InputBlocker,
-    state::GameMenuState,
     styles::NORMAL_BUTTON,
     systems::pause_menu::buttons::spawn_menu_button,
 };
-use bevy::prelude::*;
-use bevy::text::JustifyText;
-use bevy::ui::{AlignItems, JustifyContent, Val};
 
 /// Sets up the pause menu interface
 pub fn setup_pause_menu(

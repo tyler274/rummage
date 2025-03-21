@@ -1,166 +1,87 @@
 use bevy::prelude::*;
-use bevy::ui::{AlignItems, FlexDirection, JustifyContent, UiRect, Val};
+use bevy::ui::{AlignItems, FlexDirection, JustifyContent, PositionType, Val};
 
 use crate::menu::{
-    components::{MenuCamera, MenuItem, MenuRoot},
+    components::MenuBackground,
+    components::MenuCamera,
+    components::MenuItem,
+    components::MenuRoot,
     save_load::SaveExists,
-    systems::{
-        components::text::MenuButtonTextBundle,
-        main_menu::buttons::{MenuButtonBundle, MenuContainerBundle, MenuRootBundle},
-    },
+    save_load::resources::check_save_exists,
+    systems::{logo::setup_main_menu_star, main_menu::buttons::create_main_menu_buttons},
 };
 
-/// Sets up the main menu UI elements
+/// Sets up the main menu interface with buttons and layout
 pub fn setup_main_menu(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    menu_cameras: Query<Entity, With<MenuCamera>>,
-    save_exists: Res<SaveExists>,
+    existing_menu_items: Query<Entity, With<MenuCamera>>,
+    existing_roots: Query<Entity, With<MenuRoot>>,
+    save_exists: ResMut<SaveExists>,
 ) {
-    info!("Setting up main menu");
+    info!("Setting up main menu interface");
 
-    // Find the menu camera to attach UI elements to
-    if let Some(camera) = menu_cameras.iter().next() {
-        info!("Found menu camera for main menu UI: {:?}", camera);
-
-        // Create main menu buttons under the camera
-        commands.entity(camera).with_children(|parent| {
-            // Main menu buttons container
-            parent
-                .spawn(MenuContainerBundle::button_container())
-                .with_children(|container| {
-                    // New Game button
-                    container
-                        .spawn(MenuButtonBundle::new("New Game", 51))
-                        .with_children(|button| {
-                            button.spawn(MenuButtonTextBundle::new(&asset_server, "New Game", 52));
-                        });
-
-                    // Load Game button - only show if save exists
-                    if save_exists.0 {
-                        container
-                            .spawn(MenuButtonBundle::new("Load Game", 51))
-                            .with_children(|button| {
-                                button.spawn(MenuButtonTextBundle::new(
-                                    &asset_server,
-                                    "Load Game",
-                                    52,
-                                ));
-                            });
-                    }
-
-                    // Multiplayer button
-                    container
-                        .spawn(MenuButtonBundle::new("Multiplayer", 51))
-                        .with_children(|button| {
-                            button.spawn(MenuButtonTextBundle::new(
-                                &asset_server,
-                                "Multiplayer",
-                                52,
-                            ));
-                        });
-
-                    // Settings button
-                    container
-                        .spawn(MenuButtonBundle::new("Settings", 51))
-                        .with_children(|button| {
-                            button.spawn(MenuButtonTextBundle::new(&asset_server, "Settings", 52));
-                        });
-
-                    // Credits button
-                    container
-                        .spawn(MenuButtonBundle::new("Credits", 51))
-                        .with_children(|button| {
-                            button.spawn(MenuButtonTextBundle::new(&asset_server, "Credits", 52));
-                        });
-
-                    // Exit button
-                    container
-                        .spawn(MenuButtonBundle::new("Exit", 51))
-                        .with_children(|button| {
-                            button.spawn(MenuButtonTextBundle::new(&asset_server, "Exit", 52));
-                        });
-                });
-        });
-
-        info!("Main menu buttons attached to camera entity");
+    // Check for existing menu items first
+    let menu_items_count = existing_menu_items.iter().count();
+    if menu_items_count > 0 {
+        info!(
+            "Found {} existing menu cameras, they will be handled by camera systems",
+            menu_items_count
+        );
     } else {
-        warn!("No menu camera found, creating standalone main menu");
-
-        // Create a root node with buttons as children
-        commands
-            .spawn(MenuRootBundle::new())
-            .with_children(|parent| {
-                // Buttons container
-                parent
-                    .spawn(MenuContainerBundle::button_container())
-                    .with_children(|container| {
-                        // New Game button
-                        container
-                            .spawn(MenuButtonBundle::new("New Game", 52))
-                            .with_children(|button| {
-                                button.spawn(MenuButtonTextBundle::new(
-                                    &asset_server,
-                                    "New Game",
-                                    53,
-                                ));
-                            });
-
-                        // Load Game button - only show if save exists
-                        if save_exists.0 {
-                            container
-                                .spawn(MenuButtonBundle::new("Load Game", 52))
-                                .with_children(|button| {
-                                    button.spawn(MenuButtonTextBundle::new(
-                                        &asset_server,
-                                        "Load Game",
-                                        53,
-                                    ));
-                                });
-                        }
-
-                        // Multiplayer button
-                        container
-                            .spawn(MenuButtonBundle::new("Multiplayer", 52))
-                            .with_children(|button| {
-                                button.spawn(MenuButtonTextBundle::new(
-                                    &asset_server,
-                                    "Multiplayer",
-                                    53,
-                                ));
-                            });
-
-                        // Settings button
-                        container
-                            .spawn(MenuButtonBundle::new("Settings", 52))
-                            .with_children(|button| {
-                                button.spawn(MenuButtonTextBundle::new(
-                                    &asset_server,
-                                    "Settings",
-                                    53,
-                                ));
-                            });
-
-                        // Credits button
-                        container
-                            .spawn(MenuButtonBundle::new("Credits", 52))
-                            .with_children(|button| {
-                                button.spawn(MenuButtonTextBundle::new(
-                                    &asset_server,
-                                    "Credits",
-                                    53,
-                                ));
-                            });
-
-                        // Exit button
-                        container
-                            .spawn(MenuButtonBundle::new("Exit", 52))
-                            .with_children(|button| {
-                                button.spawn(MenuButtonTextBundle::new(&asset_server, "Exit", 53));
-                            });
-                    });
-            });
-
-        info!("Created standalone main menu");
+        // Spawn camera if none exists
+        commands.spawn((Camera2d::default(), MenuCamera, Name::new("Menu Camera")));
     }
+
+    // Clean up any existing menu items with MenuRoot
+    for entity in existing_roots.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+
+    // Setup background
+    commands.spawn((
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            position_type: PositionType::Absolute,
+            ..default()
+        },
+        BackgroundColor(Color::srgba(0.1, 0.1, 0.15, 1.0)),
+        ImageNode::new(asset_server.load("textures/menu_background.png")),
+        MenuBackground,
+        MenuItem,
+        Name::new("Menu Background"),
+    ));
+
+    // Setup Star of David
+    setup_main_menu_star(&mut commands, &asset_server);
+
+    // Create the main container
+    let container = commands
+        .spawn((
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                ..default()
+            },
+            BackgroundColor(Color::NONE),
+            MenuRoot,
+            Name::new("Main Menu Root"),
+        ))
+        .id();
+
+    // Check if save exists and store the value
+    let has_save = {
+        let mut save_exists_ref = save_exists;
+        check_save_exists(&mut save_exists_ref);
+        save_exists_ref.0
+    };
+
+    // Add menu buttons as children to the container
+    commands.entity(container).with_children(|parent| {
+        create_main_menu_buttons(parent, &asset_server, has_save);
+    });
 }

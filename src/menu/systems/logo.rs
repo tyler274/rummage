@@ -5,123 +5,83 @@ use crate::menu::{
 use bevy::prelude::*;
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, UiRect, Val};
 
-/// Sets up a Star of David for the main menu and attaches it to the menu camera
-pub fn setup_main_menu_star(
-    mut commands: Commands,
-    menu_cameras: Query<Entity, With<MenuCamera>>,
-    asset_server: Res<AssetServer>,
-) {
-    info!("Setting up Star of David for main menu");
+/// Sets up the main menu star animation and logo
+pub fn setup_main_menu_star(commands: &mut Commands, asset_server: &AssetServer) {
+    info!("Setting up main menu star");
 
-    // Check if we have a menu camera to attach to
-    if let Some(camera) = menu_cameras.iter().next() {
-        info!("Found menu camera for Star of David: {:?}", camera);
+    // Create the star container
+    commands
+        .spawn((
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(25.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            BackgroundColor(Color::NONE),
+            StarOfDavid,
+            MenuItem,
+            Name::new("Main Menu Star Container"),
+        ))
+        .with_children(|parent| {
+            // Add the star image
+            parent.spawn((
+                Node {
+                    width: Val::Px(150.0),
+                    height: Val::Px(150.0),
+                    ..default()
+                },
+                BackgroundColor(Color::NONE),
+                StarOfDavid,
+                MenuItem,
+                ImageNode::new(asset_server.load("textures/star_of_david.png")),
+                Name::new("Star of David Image"),
+            ));
 
-        // Create the star of david with text directly under camera
-        commands.entity(camera).with_children(|parent| {
-            // Create a logo container
+            // Add the logo text below the star
             parent
                 .spawn((
-                    create_logo(),
-                    Name::new("Main Menu Logo Container"),
+                    Node {
+                        margin: UiRect::top(Val::Px(150.0)),
+                        flex_direction: FlexDirection::Column,
+                        align_items: AlignItems::Center,
+                        ..default()
+                    },
+                    BackgroundColor(Color::NONE),
                     MenuItem,
-                    Visibility::Visible,
-                    GlobalZIndex(30),
+                    Name::new("Logo Text Container"),
                 ))
-                .with_children(|container| {
-                    // Add the Star of David
-                    container.spawn((
-                        create_star_of_david(),
-                        Name::new("Main Menu Star of David"),
+                .with_children(|text_container| {
+                    // Hebrew text
+                    text_container.spawn((
+                        Text::new("רומאז׳"),
+                        TextFont {
+                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                            font_size: 48.0,
+                            ..default()
+                        },
+                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                        TextLayout::new_with_justify(JustifyText::Center),
                         MenuItem,
-                        Visibility::Visible,
-                        GlobalZIndex(31),
+                        Name::new("Hebrew Logo Text"),
                     ));
 
-                    // Add Hebrew text
-                    container.spawn((
-                        create_hebrew_text(&asset_server),
-                        Name::new("Main Menu Hebrew Text"),
+                    // English text
+                    text_container.spawn((
+                        Text::new("RUMMAGE"),
+                        TextFont {
+                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                            font_size: 36.0,
+                            ..default()
+                        },
+                        TextColor(Color::srgb(0.8, 0.8, 0.8)),
+                        TextLayout::new_with_justify(JustifyText::Center),
                         MenuItem,
-                        Visibility::Visible,
-                        GlobalZIndex(31),
-                    ));
-
-                    // Add English text
-                    container.spawn((
-                        create_english_text(&asset_server),
-                        Name::new("Main Menu English Text"),
-                        MenuItem,
-                        Visibility::Visible,
-                        GlobalZIndex(31),
+                        Name::new("English Logo Text"),
                     ));
                 });
         });
-
-        info!("Created and attached Star of David and text to menu camera");
-    } else {
-        // No camera found, create standalone logo
-        warn!("No menu camera found, creating standalone logo");
-
-        // Create a root node with the logo as its child
-        commands
-            .spawn((
-                Node {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0),
-                    flex_direction: FlexDirection::Column,
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    ..default()
-                },
-                Name::new("Main Menu Logo Root"),
-                MenuRoot,
-                MenuItem,
-                Visibility::Visible,
-                GlobalZIndex(30),
-            ))
-            .with_children(|parent| {
-                // Create the logo container as a child of the root
-                parent
-                    .spawn((
-                        create_logo(),
-                        Name::new("Main Menu Logo Container"),
-                        MenuItem,
-                        Visibility::Visible,
-                        GlobalZIndex(31),
-                    ))
-                    .with_children(|container| {
-                        // Add the Star of David
-                        container.spawn((
-                            create_star_of_david(),
-                            Name::new("Main Menu Star of David"),
-                            MenuItem,
-                            Visibility::Visible,
-                            GlobalZIndex(32),
-                        ));
-
-                        // Add Hebrew text
-                        container.spawn((
-                            create_hebrew_text(&asset_server),
-                            Name::new("Main Menu Hebrew Text"),
-                            MenuItem,
-                            Visibility::Visible,
-                            GlobalZIndex(32),
-                        ));
-
-                        // Add English text
-                        container.spawn((
-                            create_english_text(&asset_server),
-                            Name::new("Main Menu English Text"),
-                            MenuItem,
-                            Visibility::Visible,
-                            GlobalZIndex(32),
-                        ));
-                    });
-            });
-
-        info!("Created standalone Star of David and text");
-    }
 }
 
 /// Setup Star of David for pause menu

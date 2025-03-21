@@ -4,7 +4,6 @@ use crate::{
     camera::components::GameCamera,
     cards::Card,
     menu::{
-        camera::setup_menu_camera,
         components::{MenuVisibilityState, NeedsMainMenuSetup, UiHierarchyChecked},
         credits::CreditsPlugin,
         deck::DeckManagerPlugin,
@@ -97,33 +96,8 @@ pub fn start_game_loading(
     next_state.set(GameMenuState::InGame);
 }
 
-/// Finishes the game loading process
-fn finish_loading() {
-    info!("Loading state finished");
-}
-
 /// Handle cleanup when returning to main menu
 #[allow(dead_code)]
 fn handle_game_cleanup(_commands: Commands, _cards: Query<Entity, With<Card>>) {
-    // ... existing code ...
-}
-
-/// Creates the logo container for menu items
-fn create_logo() -> impl Bundle {
-    (
-        Node {
-            width: Val::Px(200.0),
-            height: Val::Px(300.0),
-            flex_direction: FlexDirection::Column,
-            justify_content: JustifyContent::Center,
-            align_items: AlignItems::Center,
-            margin: UiRect::vertical(Val::Px(20.0)),
-            ..default()
-        },
-        BackgroundColor(Color::NONE),
-        Visibility::Visible,
-        ZIndex::default(),    // Ensure we have a ZIndex for proper UI hierarchy
-        Transform::default(), // Use Transform instead of TransformBundle
-        GlobalTransform::default(), // Add GlobalTransform explicitly
-    )
+    // Implementation pending
 }

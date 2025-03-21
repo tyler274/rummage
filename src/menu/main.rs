@@ -1,9 +1,12 @@
+use bevy::prelude::*;
+
 use crate::menu::{
     components::{MenuVisibilityState, NeedsMainMenuSetup},
     state::GameMenuState,
-    systems::main_menu_setup::setup_main_menu as system_setup_main_menu,
+    systems::main_menu::background::update_background,
+    systems::main_menu::interactions::handle_main_menu_interactions,
+    systems::main_menu::setup::setup_main_menu,
 };
-use bevy::prelude::*;
 
 #[derive(Resource, Default)]
 pub struct MultiplayerState {
@@ -19,10 +22,14 @@ impl Plugin for MainMenuPlugin {
             // Register resources
             .init_resource::<MultiplayerState>()
             // Register systems
-            .add_systems(OnEnter(GameMenuState::MainMenu), system_setup_main_menu)
+            .add_systems(OnEnter(GameMenuState::MainMenu), setup_main_menu)
             .add_systems(
                 Update,
-                check_main_menu_setup.run_if(in_state(GameMenuState::MainMenu)),
+                (
+                    check_main_menu_setup.run_if(in_state(GameMenuState::MainMenu)),
+                    handle_main_menu_interactions.run_if(in_state(GameMenuState::MainMenu)),
+                    update_background.run_if(in_state(GameMenuState::MainMenu)),
+                ),
             );
 
         info!("Main menu plugin registered");

@@ -6,10 +6,10 @@
 //! - Gameplay settings
 //! - Control settings
 
-mod components;
-mod plugin;
-mod state;
-mod systems;
+pub mod components;
+pub mod plugin;
+pub mod state;
+pub mod systems;
 
 pub use plugin::SettingsPlugin;
 pub use state::*;

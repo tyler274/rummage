@@ -1,69 +1,41 @@
 use bevy::prelude::*;
 use bevy::ui::{PositionType, Val};
 
-use crate::menu::components::{MenuBackground, MenuCamera, MenuItem, MenuRoot};
+use crate::menu::components::{MenuBackground, MenuItem};
 
-/// Sets up the main menu background
-pub fn setup_menu_background(
-    mut commands: Commands,
-    menu_cameras: Query<Entity, With<MenuCamera>>,
-    window: Query<&Window>,
+/// Sets up the menu background with starry pattern
+pub fn setup_menu_background(mut commands: Commands, asset_server: &AssetServer) {
+    info!("Setting up menu background");
+
+    // Full screen background
+    commands.spawn((
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            position_type: PositionType::Absolute,
+            ..default()
+        },
+        BackgroundColor(Color::srgba(0.1, 0.1, 0.15, 1.0)),
+        ImageNode::new(asset_server.load("textures/menu_background.png")),
+        MenuBackground,
+        MenuItem,
+        Name::new("Menu Background"),
+    ));
+}
+
+/// Updates the background color based on menu state
+pub fn update_background(
+    mut background_query: Query<&mut BackgroundColor, With<MenuBackground>>,
+    time: Res<Time>,
 ) {
-    // Get window dimensions to set appropriate background size
-    let window = window.single();
-    let width = window.resolution.width();
-    let height = window.resolution.height();
-
-    info!(
-        "Setting up menu background with window dimensions: {}x{}",
-        width, height
-    );
-
-    // Find the menu camera to attach the background to
-    if let Some(camera) = menu_cameras.iter().next() {
-        info!("Found menu camera for background: {:?}", camera);
-
-        // Create and attach background to camera
-        commands.entity(camera).with_children(|parent| {
-            parent.spawn((
-                Node {
-                    width: Val::Px(width),
-                    height: Val::Px(height),
-                    position_type: PositionType::Absolute,
-                    left: Val::Px(0.0),
-                    top: Val::Px(0.0),
-                    ..default()
-                },
-                BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.85)),
-                Name::new("Menu Background"),
-                MenuBackground,
-                MenuItem,
-                GlobalZIndex(-10),
-            ));
-        });
-
-        info!("Menu background attached to camera entity");
-    } else {
-        warn!("No menu camera found, creating standalone background");
-
-        // Create a standalone background
-        commands.spawn((
-            Node {
-                width: Val::Px(width),
-                height: Val::Px(height),
-                position_type: PositionType::Absolute,
-                left: Val::Px(0.0),
-                top: Val::Px(0.0),
-                ..default()
-            },
-            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.85)),
-            Name::new("Menu Background"),
-            MenuBackground,
-            MenuRoot,
-            MenuItem,
-            GlobalZIndex(-10),
-        ));
-
-        info!("Created standalone menu background");
+    // Create subtle color animation for the background
+    for mut background in background_query.iter_mut() {
+        let t = (time.elapsed_secs_f64() * 0.1).sin() * 0.5 + 0.5;
+        background.0 = Color::srgba(
+            0.05 + t as f32 * 0.03,
+            0.05 + t as f32 * 0.02,
+            0.10 + t as f32 * 0.05,
+            1.0,
+        );
     }
 }

@@ -1,12 +1,12 @@
 use crate::menu::{
-    components::*, save_load::resources::SaveLoadUiState, state::GameMenuState,
+    components::*, save_load::SaveLoadUiContext, save_load::SaveLoadUiState, state::GameMenuState,
     styles::HOVERED_BUTTON, styles::NORMAL_BUTTON, styles::PRESSED_BUTTON,
 };
 use bevy::{app::AppExit, prelude::*};
 
 /// System to handle pause menu button interactions
 pub fn pause_menu_action(
-    mut commands: Commands,
+    _commands: Commands,
     mut interaction_query: Query<
         (&Interaction, &mut BackgroundColor, &MenuButtonAction),
         (Changed<Interaction>, With<Button>),
@@ -14,7 +14,7 @@ pub fn pause_menu_action(
     mut app_exit_events: EventWriter<AppExit>,
     mut game_state: ResMut<NextState<GameMenuState>>,
     mut save_load_state: ResMut<NextState<SaveLoadUiState>>,
-    mut save_load_context: ResMut<crate::menu::save_load::resources::SaveLoadUiContext>,
+    mut save_load_context: ResMut<SaveLoadUiContext>,
 ) {
     for (interaction, mut background_color, action) in &mut interaction_query {
         match *interaction {
