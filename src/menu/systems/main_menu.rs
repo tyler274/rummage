@@ -1,12 +1,19 @@
 use crate::menu::state::MenuState;
 use crate::menu::{
     components::{MenuBackground, MenuCamera, MenuItem, MenuRoot},
+    save_load::{SaveExists, check_save_exists},
     styles::button_styles::{create_main_menu_button, create_main_menu_button_text},
 };
-use crate::net::multiplayer::state::MultiplayerState;
-use crate::save_load::{SaveExists, check_save_exists};
 use bevy::prelude::*;
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, UiRect, Val};
+
+// Temporary enum for multiplayer state until the actual implementation is created
+#[derive(States, Default, Debug, Clone, Eq, PartialEq, Hash)]
+pub enum MultiplayerState {
+    #[default]
+    None,
+    Menu,
+}
 
 /// Sets up the main menu UI elements
 pub fn setup_main_menu(
@@ -55,15 +62,24 @@ pub fn setup_main_menu(
                             GlobalZIndex(51),
                         ))
                         .with_children(|button| {
-                            button.spawn((
-                                create_main_menu_button_text(&asset_server, "New Game"),
-                                Name::new("New Game Button Text"),
-                                MenuItem,
-                                Visibility::Visible,
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                                GlobalZIndex(52),
-                            ));
+                            let (text, font, color, layout) =
+                                create_main_menu_button_text(&asset_server, "New Game");
+                            button
+                                .spawn((
+                                    text,
+                                    font,
+                                    color,
+                                    layout,
+                                    Text2d,
+                                    Name::new("New Game Button Text"),
+                                    MenuItem,
+                                ))
+                                .insert((
+                                    Visibility::Visible,
+                                    InheritedVisibility::default(),
+                                    ViewVisibility::default(),
+                                    GlobalZIndex(52),
+                                ));
                         });
 
                     // Load Game button - only show if save exists
@@ -79,15 +95,24 @@ pub fn setup_main_menu(
                                 GlobalZIndex(51),
                             ))
                             .with_children(|button| {
-                                button.spawn((
-                                    create_main_menu_button_text(&asset_server, "Load Game"),
-                                    Name::new("Load Game Button Text"),
-                                    MenuItem,
-                                    Visibility::Visible,
-                                    InheritedVisibility::default(),
-                                    ViewVisibility::default(),
-                                    GlobalZIndex(52),
-                                ));
+                                let (text, font, color, layout) =
+                                    create_main_menu_button_text(&asset_server, "Load Game");
+                                button
+                                    .spawn((
+                                        text,
+                                        font,
+                                        color,
+                                        layout,
+                                        Text2d,
+                                        Name::new("Load Game Button Text"),
+                                        MenuItem,
+                                    ))
+                                    .insert((
+                                        Visibility::Visible,
+                                        InheritedVisibility::default(),
+                                        ViewVisibility::default(),
+                                        GlobalZIndex(52),
+                                    ));
                             });
                     }
 
@@ -103,15 +128,24 @@ pub fn setup_main_menu(
                             GlobalZIndex(51),
                         ))
                         .with_children(|button| {
-                            button.spawn((
-                                create_main_menu_button_text(&asset_server, "Multiplayer"),
-                                Name::new("Multiplayer Button Text"),
-                                MenuItem,
-                                Visibility::Visible,
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                                GlobalZIndex(52),
-                            ));
+                            let (text, font, color, layout) =
+                                create_main_menu_button_text(&asset_server, "Multiplayer");
+                            button
+                                .spawn((
+                                    text,
+                                    font,
+                                    color,
+                                    layout,
+                                    Text2d,
+                                    Name::new("Multiplayer Button Text"),
+                                    MenuItem,
+                                ))
+                                .insert((
+                                    Visibility::Visible,
+                                    InheritedVisibility::default(),
+                                    ViewVisibility::default(),
+                                    GlobalZIndex(52),
+                                ));
                         });
 
                     // Settings button
@@ -126,15 +160,24 @@ pub fn setup_main_menu(
                             GlobalZIndex(51),
                         ))
                         .with_children(|button| {
-                            button.spawn((
-                                create_main_menu_button_text(&asset_server, "Settings"),
-                                Name::new("Settings Button Text"),
-                                MenuItem,
-                                Visibility::Visible,
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                                GlobalZIndex(52),
-                            ));
+                            let (text, font, color, layout) =
+                                create_main_menu_button_text(&asset_server, "Settings");
+                            button
+                                .spawn((
+                                    text,
+                                    font,
+                                    color,
+                                    layout,
+                                    Text2d,
+                                    Name::new("Settings Button Text"),
+                                    MenuItem,
+                                ))
+                                .insert((
+                                    Visibility::Visible,
+                                    InheritedVisibility::default(),
+                                    ViewVisibility::default(),
+                                    GlobalZIndex(52),
+                                ));
                         });
 
                     // Credits button
@@ -149,15 +192,24 @@ pub fn setup_main_menu(
                             GlobalZIndex(51),
                         ))
                         .with_children(|button| {
-                            button.spawn((
-                                create_main_menu_button_text(&asset_server, "Credits"),
-                                Name::new("Credits Button Text"),
-                                MenuItem,
-                                Visibility::Visible,
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                                GlobalZIndex(52),
-                            ));
+                            let (text, font, color, layout) =
+                                create_main_menu_button_text(&asset_server, "Credits");
+                            button
+                                .spawn((
+                                    text,
+                                    font,
+                                    color,
+                                    layout,
+                                    Text2d,
+                                    Name::new("Credits Button Text"),
+                                    MenuItem,
+                                ))
+                                .insert((
+                                    Visibility::Visible,
+                                    InheritedVisibility::default(),
+                                    ViewVisibility::default(),
+                                    GlobalZIndex(52),
+                                ));
                         });
 
                     // Exit button
@@ -172,15 +224,24 @@ pub fn setup_main_menu(
                             GlobalZIndex(51),
                         ))
                         .with_children(|button| {
-                            button.spawn((
-                                create_main_menu_button_text(&asset_server, "Exit"),
-                                Name::new("Exit Button Text"),
-                                MenuItem,
-                                Visibility::Visible,
-                                InheritedVisibility::default(),
-                                ViewVisibility::default(),
-                                GlobalZIndex(52),
-                            ));
+                            let (text, font, color, layout) =
+                                create_main_menu_button_text(&asset_server, "Exit");
+                            button
+                                .spawn((
+                                    text,
+                                    font,
+                                    color,
+                                    layout,
+                                    Text2d,
+                                    Name::new("Exit Button Text"),
+                                    MenuItem,
+                                ))
+                                .insert((
+                                    Visibility::Visible,
+                                    InheritedVisibility::default(),
+                                    ViewVisibility::default(),
+                                    GlobalZIndex(52),
+                                ));
                         });
                 });
         });
@@ -242,15 +303,24 @@ pub fn setup_main_menu(
                                 GlobalZIndex(52),
                             ))
                             .with_children(|button| {
-                                button.spawn((
-                                    create_main_menu_button_text(&asset_server, "New Game"),
-                                    Name::new("New Game Button Text"),
-                                    MenuItem,
-                                    Visibility::Visible,
-                                    InheritedVisibility::default(),
-                                    ViewVisibility::default(),
-                                    GlobalZIndex(53),
-                                ));
+                                let (text, font, color, layout) =
+                                    create_main_menu_button_text(&asset_server, "New Game");
+                                button
+                                    .spawn((
+                                        text,
+                                        font,
+                                        color,
+                                        layout,
+                                        Text2d,
+                                        Name::new("New Game Button Text"),
+                                        MenuItem,
+                                    ))
+                                    .insert((
+                                        Visibility::Visible,
+                                        InheritedVisibility::default(),
+                                        ViewVisibility::default(),
+                                        GlobalZIndex(53),
+                                    ));
                             });
 
                         // Load Game button - only show if save exists
@@ -266,15 +336,24 @@ pub fn setup_main_menu(
                                     GlobalZIndex(52),
                                 ))
                                 .with_children(|button| {
-                                    button.spawn((
-                                        create_main_menu_button_text(&asset_server, "Load Game"),
-                                        Name::new("Load Game Button Text"),
-                                        MenuItem,
-                                        Visibility::Visible,
-                                        InheritedVisibility::default(),
-                                        ViewVisibility::default(),
-                                        GlobalZIndex(53),
-                                    ));
+                                    let (text, font, color, layout) =
+                                        create_main_menu_button_text(&asset_server, "Load Game");
+                                    button
+                                        .spawn((
+                                            text,
+                                            font,
+                                            color,
+                                            layout,
+                                            Text2d,
+                                            Name::new("Load Game Button Text"),
+                                            MenuItem,
+                                        ))
+                                        .insert((
+                                            Visibility::Visible,
+                                            InheritedVisibility::default(),
+                                            ViewVisibility::default(),
+                                            GlobalZIndex(53),
+                                        ));
                                 });
                         }
 
@@ -290,15 +369,24 @@ pub fn setup_main_menu(
                                 GlobalZIndex(52),
                             ))
                             .with_children(|button| {
-                                button.spawn((
-                                    create_main_menu_button_text(&asset_server, "Multiplayer"),
-                                    Name::new("Multiplayer Button Text"),
-                                    MenuItem,
-                                    Visibility::Visible,
-                                    InheritedVisibility::default(),
-                                    ViewVisibility::default(),
-                                    GlobalZIndex(53),
-                                ));
+                                let (text, font, color, layout) =
+                                    create_main_menu_button_text(&asset_server, "Multiplayer");
+                                button
+                                    .spawn((
+                                        text,
+                                        font,
+                                        color,
+                                        layout,
+                                        Text2d,
+                                        Name::new("Multiplayer Button Text"),
+                                        MenuItem,
+                                    ))
+                                    .insert((
+                                        Visibility::Visible,
+                                        InheritedVisibility::default(),
+                                        ViewVisibility::default(),
+                                        GlobalZIndex(53),
+                                    ));
                             });
 
                         // Settings button
@@ -313,15 +401,24 @@ pub fn setup_main_menu(
                                 GlobalZIndex(52),
                             ))
                             .with_children(|button| {
-                                button.spawn((
-                                    create_main_menu_button_text(&asset_server, "Settings"),
-                                    Name::new("Settings Button Text"),
-                                    MenuItem,
-                                    Visibility::Visible,
-                                    InheritedVisibility::default(),
-                                    ViewVisibility::default(),
-                                    GlobalZIndex(53),
-                                ));
+                                let (text, font, color, layout) =
+                                    create_main_menu_button_text(&asset_server, "Settings");
+                                button
+                                    .spawn((
+                                        text,
+                                        font,
+                                        color,
+                                        layout,
+                                        Text2d,
+                                        Name::new("Settings Button Text"),
+                                        MenuItem,
+                                    ))
+                                    .insert((
+                                        Visibility::Visible,
+                                        InheritedVisibility::default(),
+                                        ViewVisibility::default(),
+                                        GlobalZIndex(53),
+                                    ));
                             });
 
                         // Credits button
@@ -336,15 +433,24 @@ pub fn setup_main_menu(
                                 GlobalZIndex(52),
                             ))
                             .with_children(|button| {
-                                button.spawn((
-                                    create_main_menu_button_text(&asset_server, "Credits"),
-                                    Name::new("Credits Button Text"),
-                                    MenuItem,
-                                    Visibility::Visible,
-                                    InheritedVisibility::default(),
-                                    ViewVisibility::default(),
-                                    GlobalZIndex(53),
-                                ));
+                                let (text, font, color, layout) =
+                                    create_main_menu_button_text(&asset_server, "Credits");
+                                button
+                                    .spawn((
+                                        text,
+                                        font,
+                                        color,
+                                        layout,
+                                        Text2d,
+                                        Name::new("Credits Button Text"),
+                                        MenuItem,
+                                    ))
+                                    .insert((
+                                        Visibility::Visible,
+                                        InheritedVisibility::default(),
+                                        ViewVisibility::default(),
+                                        GlobalZIndex(53),
+                                    ));
                             });
 
                         // Exit button
@@ -359,15 +465,24 @@ pub fn setup_main_menu(
                                 GlobalZIndex(52),
                             ))
                             .with_children(|button| {
-                                button.spawn((
-                                    create_main_menu_button_text(&asset_server, "Exit"),
-                                    Name::new("Exit Button Text"),
-                                    MenuItem,
-                                    Visibility::Visible,
-                                    InheritedVisibility::default(),
-                                    ViewVisibility::default(),
-                                    GlobalZIndex(53),
-                                ));
+                                let (text, font, color, layout) =
+                                    create_main_menu_button_text(&asset_server, "Exit");
+                                button
+                                    .spawn((
+                                        text,
+                                        font,
+                                        color,
+                                        layout,
+                                        Text2d,
+                                        Name::new("Exit Button Text"),
+                                        MenuItem,
+                                    ))
+                                    .insert((
+                                        Visibility::Visible,
+                                        InheritedVisibility::default(),
+                                        ViewVisibility::default(),
+                                        GlobalZIndex(53),
+                                    ));
                             });
                     });
             });
@@ -385,7 +500,7 @@ pub fn handle_main_menu_interactions(
     text_query: Query<&Parent, With<Text>>,
     mut next_state: ResMut<NextState<MenuState>>,
     mut multi_state: ResMut<NextState<MultiplayerState>>,
-    mut exit: EventWriter<bevy::app::AppExit>,
+    mut app_exit_events: EventWriter<bevy::app::AppExit>,
 ) {
     for (interaction, mut color, name, parent) in interaction_query.iter_mut() {
         let button_name = name.as_str();
@@ -418,7 +533,7 @@ pub fn handle_main_menu_interactions(
                     }
                     "Exit Button" => {
                         info!("Exit selected");
-                        exit.send(bevy::app::AppExit);
+                        app_exit_events.send(bevy::app::AppExit::default());
                     }
                     _ => {
                         // Check for text elements with parent buttons
@@ -437,7 +552,7 @@ pub fn handle_main_menu_interactions(
                                 } else if button_name.contains("Credits") {
                                     next_state.set(MenuState::Credits);
                                 } else if button_name.contains("Exit") {
-                                    exit.send(bevy::app::AppExit);
+                                    app_exit_events.send(bevy::app::AppExit::default());
                                 }
                             }
                         }
@@ -446,11 +561,11 @@ pub fn handle_main_menu_interactions(
             }
             Interaction::Hovered => {
                 // Highlight button on hover
-                *color = Color::rgb(0.25, 0.25, 0.25).into();
+                *color = Color::srgb(0.25, 0.25, 0.25).into();
             }
             Interaction::None => {
                 // Reset color when not interacting
-                *color = Color::rgb(0.15, 0.15, 0.15).into();
+                *color = Color::srgb(0.15, 0.15, 0.15).into();
             }
         }
     }
@@ -479,19 +594,15 @@ pub fn setup_menu_background(
         // Create and attach background to camera
         commands.entity(camera).with_children(|parent| {
             parent.spawn((
-                NodeBundle {
-                    style: Style {
-                        width: Val::Px(width),
-                        height: Val::Px(height),
-                        position_type: bevy::ui::PositionType::Absolute,
-                        left: Val::Px(0.0),
-                        top: Val::Px(0.0),
-                        ..default()
-                    },
-                    z_index: ZIndex::Global(-10),
-                    background_color: Color::rgba(0.0, 0.0, 0.0, 0.85).into(),
+                Node {
+                    width: Val::Px(width),
+                    height: Val::Px(height),
+                    position_type: bevy::ui::PositionType::Absolute,
+                    left: Val::Px(0.0),
+                    top: Val::Px(0.0),
                     ..default()
                 },
+                BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.85)),
                 Name::new("Menu Background"),
                 MenuBackground,
                 MenuItem,
@@ -505,19 +616,15 @@ pub fn setup_menu_background(
 
         // Create a standalone background
         commands.spawn((
-            NodeBundle {
-                style: Style {
-                    width: Val::Px(width),
-                    height: Val::Px(height),
-                    position_type: bevy::ui::PositionType::Absolute,
-                    left: Val::Px(0.0),
-                    top: Val::Px(0.0),
-                    ..default()
-                },
-                z_index: ZIndex::Global(-10),
-                background_color: Color::rgba(0.0, 0.0, 0.0, 0.85).into(),
+            Node {
+                width: Val::Px(width),
+                height: Val::Px(height),
+                position_type: bevy::ui::PositionType::Absolute,
+                left: Val::Px(0.0),
+                top: Val::Px(0.0),
                 ..default()
             },
+            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.85)),
             Name::new("Menu Background"),
             MenuBackground,
             MenuRoot,
