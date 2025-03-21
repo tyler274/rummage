@@ -636,18 +636,26 @@ fn create_keybinding(parent: &mut ChildBuilder, action: &str, key: &str) {
 fn spawn_settings_button(parent: &mut ChildBuilder, text: &str, action: SettingsButtonAction) {
     parent
         .spawn((
-            button_style(),
-            BackgroundColor(NORMAL_BUTTON),
             Button,
+            Node {
+                width: Val::Px(180.0),
+                height: Val::Px(50.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                margin: UiRect::all(Val::Px(5.0)),
+                ..default()
+            },
+            BackgroundColor(NORMAL_BUTTON),
             action,
             AppLayer::Menu.layer(),
+            SettingsMenuItem,
         ))
         .with_children(|parent| {
             parent.spawn((
-                Text::new(text),
-                text_style(),
+                Text::from_section(text, text_style()),
                 TextLayout::new_with_justify(JustifyText::Center),
                 AppLayer::Menu.layer(),
+                SettingsMenuItem,
             ));
         });
 }

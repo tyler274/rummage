@@ -101,7 +101,7 @@ pub fn setup_pause_menu(
                         TextLayout::new_with_justify(JustifyText::Center),
                         AppLayer::Menu.layer(),
                     ));
-                    
+
                     // Add spacing after the title
                     parent.spawn((
                         Node {
@@ -145,7 +145,7 @@ pub fn setup_pause_menu(
         });
 }
 
-/// Creates a menu button with text and interaction handlers
+/// Creates a button for the pause menu
 fn spawn_menu_button(
     parent: &mut ChildBuilder,
     text: &str,
@@ -154,16 +154,22 @@ fn spawn_menu_button(
 ) {
     parent
         .spawn((
-            button_style(),
-            BackgroundColor(NORMAL_BUTTON),
             Button,
+            Node {
+                width: Val::Px(180.0),
+                height: Val::Px(50.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                margin: UiRect::all(Val::Px(5.0)),
+                ..default()
+            },
+            BackgroundColor(NORMAL_BUTTON),
             action,
             AppLayer::Menu.layer(),
         ))
         .with_children(|parent| {
             parent.spawn((
-                Text::new(text),
-                text_style(),
+                Text::from_section(text, text_style()),
                 TextLayout::new_with_justify(JustifyText::Center),
                 AppLayer::Menu.layer(),
             ));

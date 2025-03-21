@@ -1,2 +1,2 @@
-Use the rules in .cursor/rules as needed. Commit changes with a descriptive multiline
-commit message using repeated "-m" arguments. 
+Use the rules in .cursor/rules/general.mdc always.
+Commit changes with a descriptive multiline message using repeated "-m" arguments. 

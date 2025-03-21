@@ -1,6 +1,6 @@
-use crate::camera::components::{AppLayer, GameCamera};
+use crate::camera::components::AppLayer;
 use crate::menu::components::MenuCamera;
-use bevy::{ecs::system::ParamSet, prelude::*};
+use bevy::prelude::*;
 
 /// Sets up a dedicated camera for the menu
 pub fn setup_menu_camera(

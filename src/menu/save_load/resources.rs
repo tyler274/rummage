@@ -22,3 +22,14 @@ pub struct SaveLoadUiContext {
     /// The current selected save slot
     pub selected_slot: Option<String>,
 }
+
+/// Resource to track whether a save exists
+#[derive(Resource, Default)]
+pub struct SaveExists(pub bool);
+
+/// Check if a save exists
+pub fn check_save_exists(mut save_exists: ResMut<SaveExists>) {
+    // This is just a placeholder implementation
+    // In a real implementation, you would check the filesystem
+    save_exists.0 = true;
+}

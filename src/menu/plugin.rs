@@ -4,63 +4,17 @@ use crate::{
     camera::components::GameCamera,
     cards::Card,
     menu::{
-        camera::{
-            ensure_single_menu_camera, manage_camera_visibility, manage_pause_camera_visibility,
-            setup_menu_camera,
-        },
-        cleanup::{
-            cleanup_game, cleanup_main_menu, cleanup_menu_camera, cleanup_pause_menu,
-            cleanup_star_of_david_thoroughly,
-        },
-        components::{
-            MenuBackground, MenuCamera, MenuItem, MenuRoot, MenuVisibilityState,
-            NeedsMainMenuSetup, UiHierarchyChecked,
-        },
+        camera::setup_menu_camera,
+        components::{MenuVisibilityState, NeedsMainMenuSetup, UiHierarchyChecked},
         credits::CreditsPlugin,
         deck::DeckManagerPlugin,
         input_blocker::InputBlockerPlugin,
-        logo::StarOfDavid,
         main::MainMenuPlugin,
-        main_menu::{menu_action, set_menu_camera_zoom},
-        pause_menu::{handle_pause_input, pause_menu_action, setup_pause_menu},
         save_load::SaveLoadUiPlugin,
-        settings::{SettingsMenuState, SettingsPlugin},
-        stars,
+        settings::SettingsPlugin,
         state::GameMenuState,
         state::StateTransitionContext,
-        state_transitions,
-        systems::{
-            check_menu_items_exist,
-            debug_menu_visibility,
-            detect_ui_hierarchy_issues,
-            ensure_menu_item_visibility,
-            fix_changed_main_menu_visibility,
-            fix_visibility_for_changed_items,
-            force_main_menu_items_visibility,
-            force_startup_visibility,
-            handle_main_menu_interactions,
-            log_settings_exit,
-            monitor_state_transitions,
-            perform_main_menu_setup_if_needed,
-            // Main menu systems
-            setup_main_menu,
-            // Logo systems
-            setup_main_menu_star,
-            setup_menu_background,
-            setup_pause_star,
-            // State management systems
-            setup_settings_transition,
-            update_menu_background,
-            // Visibility systems
-            update_menu_visibility_state,
-        },
-        ui,
     },
-};
-
-// Import types from the ui module
-use crate::menu::ui::{
-    MenuVisibilityLogState, MenuVisibilityState as UiMenuVisibilityState, PreviousWindowSize,
 };
 
 /// Plugin for handling all menu-related functionality
@@ -74,7 +28,6 @@ impl Plugin for MenuPlugin {
             // Register resources
             .insert_resource(GameMenuState::MainMenu)
             .insert_resource(StateTransitionContext::default())
-            .init_resource::<MenuVisibilityLogState>()
             .init_resource::<MenuVisibilityState>()
             .init_resource::<NeedsMainMenuSetup>()
             .init_resource::<UiHierarchyChecked>()

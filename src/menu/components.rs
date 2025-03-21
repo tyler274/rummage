@@ -79,3 +79,52 @@ pub enum MenuButtonAction {
     /// Save the current game
     SaveGame,
 }
+
+/// Bundle for menu items that combines commonly used components
+#[derive(Bundle)]
+pub struct MenuItemBundle {
+    /// The name of the menu item for debugging
+    pub name: Name,
+    /// The menu item component
+    pub menu_item: MenuItem,
+    /// Visibility component
+    pub visibility: Visibility,
+    /// Inherited visibility component
+    pub inherited_visibility: InheritedVisibility,
+    /// View visibility component
+    pub view_visibility: ViewVisibility,
+    /// Z-index for layering
+    pub z_index: ZIndex,
+}
+
+impl Default for MenuItemBundle {
+    fn default() -> Self {
+        Self {
+            name: Name::new("Menu Item"),
+            menu_item: MenuItem,
+            visibility: Visibility::Visible,
+            inherited_visibility: InheritedVisibility::default(),
+            view_visibility: ViewVisibility::default(),
+            z_index: ZIndex::Global(10),
+        }
+    }
+}
+
+/// Bundle for menu text that combines commonly used components
+#[derive(Bundle)]
+pub struct MenuTextBundle {
+    /// The text component
+    pub text: Text,
+    /// The text layout component
+    pub text_layout: TextLayout,
+    /// Menu item marker
+    pub menu_item: MenuItem,
+    /// Visibility component
+    pub visibility: Visibility,
+    /// Inherited visibility component
+    pub inherited_visibility: InheritedVisibility,
+    /// View visibility component
+    pub view_visibility: ViewVisibility,
+    /// Z-index for layering
+    pub z_index: ZIndex,
+}
