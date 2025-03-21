@@ -3,7 +3,10 @@ use crate::menu::components::MenuCamera;
 use bevy::{ecs::system::ParamSet, prelude::*};
 
 /// Sets up a dedicated camera for the menu
-pub fn setup_menu_camera(mut commands: Commands, cameras: Query<Entity, With<MenuCamera>>) {
+pub fn setup_menu_camera(
+    mut commands: Commands,
+    cameras: Query<(Entity, Option<&Camera>), With<MenuCamera>>,
+) {
     // Check if a menu camera already exists to avoid duplicates
     if !cameras.is_empty() {
         info!("Menu camera already exists, skipping creation");
@@ -14,23 +17,19 @@ pub fn setup_menu_camera(mut commands: Commands, cameras: Query<Entity, With<Men
 
     // Find the highest camera order from existing cameras
     let mut highest_order = 0;
-    for camera in cameras.iter() {
-        if let Some(camera_bundle) = commands.get_entity(camera) {
-            if let Some(camera_component) = camera_bundle.get::<Camera>() {
-                if camera_component.order > highest_order {
-                    highest_order = camera_component.order;
-                }
+    for (_, camera) in cameras.iter() {
+        if let Some(camera) = camera {
+            if camera.order > highest_order {
+                highest_order = camera.order;
             }
         }
     }
 
     // Create a new camera with a higher order
     commands.spawn((
-        Camera2dBundle {
-            camera: Camera {
-                order: highest_order + 1,
-                ..default()
-            },
+        Camera2d::default(),
+        Camera {
+            order: highest_order + 1,
             ..default()
         },
         MenuCamera,

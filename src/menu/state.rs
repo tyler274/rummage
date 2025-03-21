@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 /// The different menu states in the game
-#[derive(States, Debug, Hash, Eq, PartialEq, Clone, Copy, Default)]
+#[derive(States, Debug, Hash, Eq, PartialEq, Clone, Copy, Default, Resource)]
 pub enum MenuState {
     /// The main menu state shown at the start
     #[default]
@@ -29,6 +29,9 @@ pub enum MenuState {
     PausedGame,
 }
 
+/// Type alias for backward compatibility during refactoring
+pub type GameMenuState = MenuState;
+
 /// Resource to track context around state transitions
 #[derive(Resource, Debug, Default, Clone)]
 pub struct StateTransitionContext {
@@ -37,4 +40,7 @@ pub struct StateTransitionContext {
 
     /// Whether we're transitioning back from settings
     pub returning_from_settings: bool,
+
+    /// Whether transitioning from pause menu
+    pub from_pause_menu: bool,
 }

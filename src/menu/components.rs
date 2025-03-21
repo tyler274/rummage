@@ -45,7 +45,7 @@ pub struct MenuVisibilityState {
 pub struct NeedsMainMenuSetup(pub bool);
 
 /// Resource to track if we've checked for UI hierarchy issues
-#[derive(Resource, Debug, Default)]
+#[derive(Resource, Debug, Default, PartialEq)]
 pub struct UiHierarchyChecked(pub bool);
 
 /// Marker component for the game camera
