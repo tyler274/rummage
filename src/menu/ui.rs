@@ -49,9 +49,8 @@ pub fn create_logo() -> impl Bundle {
         },
         BackgroundColor(Color::NONE),
         Visibility::Visible,
-        ZIndex::default(),    // Ensure we have a ZIndex for proper UI hierarchy
-        Transform::default(), // Use Transform instead of TransformBundle
-        GlobalTransform::default(), // Add GlobalTransform explicitly
+        ZIndex::default(),
+        Name::new("Logo Container"),
     )
 }
 

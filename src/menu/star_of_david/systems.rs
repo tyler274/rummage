@@ -1,8 +1,24 @@
-use crate::menu::logo::{
-    StarOfDavid, create_english_text, create_hebrew_text, create_logo, create_star_of_david,
-};
-use crate::menu::{camera::MenuCamera, components::MenuRoot, decorations::MenuDecorativeElement};
 use bevy::prelude::*;
+
+use crate::menu::{
+    camera::MenuCamera,
+    components::MenuRoot,
+    decorations::MenuDecorativeElement,
+    logo::{create_english_text, create_hebrew_text, create_logo},
+};
+
+use super::components::StarOfDavid;
+
+/// Creates the Star of David bundle for spawning in the scene
+pub fn create_star_of_david() -> impl Bundle {
+    (
+        // Just mark this entity with the component, no transform needed
+        // since it will be positioned by its parent
+        StarOfDavid,
+        // This entity doesn't need any specific visual elements
+        // since it serves as a container for other visual elements
+    )
+}
 
 /// Sets up a Star of David for the main menu and attaches it to the menu camera
 pub fn setup_main_menu_star(
@@ -268,6 +284,14 @@ pub fn setup_pause_star(
                     });
             });
 
-        info!("Created standalone pause menu logo container with Star of David and text elements");
+        info!("Created standalone pause menu logo container with Star of David");
     }
+}
+
+/// Cleanup the Star of David for both menus
+pub fn cleanup_star_of_david(mut commands: Commands, stars: Query<Entity, With<StarOfDavid>>) {
+    for entity in stars.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+    info!("Cleaned up all Star of David entities");
 }

@@ -1,9 +1,9 @@
 use crate::menu::{
     backgrounds::MenuBackground,
     camera::MenuCamera,
-    components::{MenuItem, MenuVisibilityState},
+    components::MenuItem,
     state::GameMenuState,
-    ui::{MenuVisibilityLogState, PreviousWindowSize},
+    visibility::components::{MenuVisibilityLogState, MenuVisibilityState, PreviousWindowSize},
 };
 use bevy::prelude::*;
 
@@ -22,8 +22,10 @@ pub fn update_menu_visibility_state(
 
     // Only update if there's a change
     if menu_state.visible_items != visible_items_count {
+        menu_state.item_count = total_items;
+        menu_state.visible_count = visible_items_count;
         menu_state.visible_items = visible_items_count;
-        info!(
+        debug!(
             "Menu visibility update: {}/{} items visible",
             visible_items_count, total_items
         );
@@ -32,30 +34,21 @@ pub fn update_menu_visibility_state(
 
 /// Prints debug info about menu visibility state
 pub fn debug_menu_visibility(
-    _menu_state: Res<MenuVisibilityState>,
-    menu_items: Query<Entity, With<MenuItem>>,
-    visible_items: Query<(Entity, &Visibility), With<MenuItem>>,
-    mut log_state: Local<MenuVisibilityLogState>,
+    menu_state: Res<MenuVisibilityState>,
     menu_cameras: Query<(Entity, &Visibility), With<MenuCamera>>,
+    mut log_state: Local<MenuVisibilityLogState>,
 ) {
     // Only log if something changed
     if log_state.last_update.elapsed().as_secs_f32() >= 5.0 {
-        // Calculate visibility stats
-        let total_items = menu_items.iter().count();
-        let items_visible = visible_items
-            .iter()
-            .filter(|(_, vis)| **vis == Visibility::Visible)
-            .count();
-
         // Log the state
-        info!(
+        debug!(
             "Menu visibility: {}/{} items visible",
-            items_visible, total_items
+            menu_state.visible_count, menu_state.item_count
         );
 
         // Log camera visibility
         for (entity, visibility) in menu_cameras.iter() {
-            info!("Menu camera {:?} visibility: {:?}", entity, visibility);
+            debug!("Menu camera {:?} visibility: {:?}", entity, visibility);
         }
 
         log_state.last_update = std::time::Instant::now();
@@ -160,14 +153,14 @@ pub fn ensure_menu_item_visibility(
 
     for (mut visibility, name) in menu_items.iter_mut() {
         if should_be_visible && *visibility != Visibility::Visible {
-            info!(
+            debug!(
                 "Setting menu item '{}' to Visible in state {:?}",
                 name,
                 state.get()
             );
             *visibility = Visibility::Visible;
         } else if !should_be_visible && *visibility == Visibility::Visible {
-            info!(
+            debug!(
                 "Setting menu item '{}' to Hidden in state {:?}",
                 name,
                 state.get()
@@ -186,11 +179,11 @@ pub fn fix_visibility_for_changed_items(
 ) {
     let item_count = items.iter().count();
     if item_count > 0 {
-        info!("Fixing visibility for {} changed menu items", item_count);
+        debug!("Fixing visibility for {} changed menu items", item_count);
 
         for (mut visibility, z_index, name) in items.iter_mut() {
             if *visibility != Visibility::Visible && z_index.0 > 0 {
-                info!("Forcing menu item '{}' to be visible", name);
+                debug!("Forcing menu item '{}' to be visible", name);
                 *visibility = Visibility::Visible;
             }
         }
@@ -202,7 +195,7 @@ pub fn force_startup_visibility(
     mut menu_items: Query<(&mut Visibility, Option<&Name>), With<MenuItem>>,
 ) {
     let item_count = menu_items.iter().count();
-    info!(
+    debug!(
         "On startup, found {} menu items to force visible",
         item_count
     );
@@ -210,9 +203,9 @@ pub fn force_startup_visibility(
     for (mut visibility, name) in menu_items.iter_mut() {
         if *visibility != Visibility::Visible {
             if let Some(name) = name {
-                info!("Forcing '{}' to be visible on startup", name);
+                debug!("Forcing '{}' to be visible on startup", name);
             } else {
-                info!("Forcing unnamed menu item to be visible on startup");
+                debug!("Forcing unnamed menu item to be visible on startup");
             }
             *visibility = Visibility::Visible;
         }
@@ -237,7 +230,7 @@ pub fn force_main_menu_items_visibility(
         .count();
 
     if hidden_count > 0 {
-        info!(
+        debug!(
             "Found {} hidden menu items out of {} total, forcing visibility",
             hidden_count, count
         );
@@ -251,20 +244,17 @@ pub fn force_main_menu_items_visibility(
     }
 }
 
-/// Fix visibility for any menu items whose visibility has changed while in main menu
+/// Fix visibility for changed menu items in the main menu
 pub fn fix_changed_main_menu_visibility(
     mut menu_items: Query<(&mut Visibility, &Name), (With<MenuItem>, Changed<Visibility>)>,
 ) {
-    // Only update items whose visibility has changed
-    if !menu_items.is_empty() {
-        info!(
-            "Setting visibility for {} changed menu items",
-            menu_items.iter().count()
-        );
+    let changed_count = menu_items.iter().count();
+    if changed_count > 0 {
+        debug!("Fixing visibility for {} changed menu items", changed_count);
 
         for (mut visibility, name) in menu_items.iter_mut() {
             if *visibility != Visibility::Visible {
-                info!("Setting menu item '{}' visibility to Visible", name);
+                debug!("Forcing menu item '{}' to be visible", name);
                 *visibility = Visibility::Visible;
             }
         }

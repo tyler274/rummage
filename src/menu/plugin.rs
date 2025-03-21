@@ -3,16 +3,21 @@ use bevy::prelude::*;
 use crate::{
     cards::Card,
     menu::{
+        backgrounds::BackgroundsPlugin,
+        cleanup::CleanupPlugin,
         components::{MenuVisibilityState, NeedsMainMenuSetup, UiHierarchyChecked},
         credits::CreditsPlugin,
         deck::DeckManagerPlugin,
         input_blocker::InputBlockerPlugin,
+        logo::LogoPlugin,
         main_menu::MainMenuPlugin,
         pause::PauseMenuPlugin,
         save_load::SaveLoadUiPlugin,
         settings::SettingsPlugin,
+        star_of_david::StarOfDavidPlugin,
         state::GameMenuState,
         state::StateTransitionContext,
+        visibility::VisibilityPlugin,
     },
 };
 
@@ -32,6 +37,9 @@ impl Plugin for MenuPlugin {
             .init_resource::<UiHierarchyChecked>()
             // Setup plugins
             .add_plugins((
+                CleanupPlugin,
+                VisibilityPlugin,
+                BackgroundsPlugin,
                 SettingsPlugin,
                 MainMenuPlugin,
                 PauseMenuPlugin,
@@ -39,6 +47,8 @@ impl Plugin for MenuPlugin {
                 DeckManagerPlugin,
                 SaveLoadUiPlugin,
                 InputBlockerPlugin,
+                StarOfDavidPlugin,
+                LogoPlugin,
             ));
 
         info!("Menu plugin registered");

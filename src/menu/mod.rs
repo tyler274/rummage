@@ -12,12 +12,13 @@ pub mod pause;
 pub mod plugin;
 pub mod save_load;
 pub mod settings;
-pub mod stars;
+pub mod star_of_david;
 pub mod state;
 pub mod state_transitions;
 pub mod styles;
 pub mod systems;
 pub mod ui;
+pub mod visibility;
 
 pub use plugin::MenuPlugin;
 pub use state::*;
