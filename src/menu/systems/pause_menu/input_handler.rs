@@ -2,7 +2,7 @@ use crate::menu::state::{GameMenuState, StateTransitionContext};
 use bevy::prelude::*;
 
 /// Handles keyboard input when in the pause menu, specifically ESC to toggle pause
-pub fn handle_pause_input(
+pub fn pause_menu_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut next_state: ResMut<NextState<GameMenuState>>,
     mut context: ResMut<StateTransitionContext>,
@@ -11,7 +11,7 @@ pub fn handle_pause_input(
     // Only respond to Escape key press
     if keyboard.just_pressed(KeyCode::Escape) {
         match current_state.get() {
-            GameMenuState::Paused => {
+            GameMenuState::PausedGame => {
                 // If we're in the pause menu, resume the game
                 info!("Escape key pressed while paused, resuming game");
                 next_state.set(GameMenuState::InGame);
@@ -19,7 +19,7 @@ pub fn handle_pause_input(
             GameMenuState::InGame => {
                 // If we're in-game, pause the game
                 info!("Escape key pressed during gameplay, pausing game");
-                next_state.set(GameMenuState::Paused);
+                next_state.set(GameMenuState::PausedGame);
             }
             GameMenuState::MainMenu => {
                 // Do nothing in main menu
@@ -29,7 +29,7 @@ pub fn handle_pause_input(
                 // For other states, check where we came from
                 if context.from_pause_menu {
                     info!("Escape pressed in submenu, returning to pause menu");
-                    next_state.set(GameMenuState::Paused);
+                    next_state.set(GameMenuState::PausedGame);
                 } else {
                     info!("Escape pressed in submenu, returning to main menu");
                     next_state.set(GameMenuState::MainMenu);

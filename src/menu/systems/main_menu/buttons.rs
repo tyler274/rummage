@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy::ui::{AlignItems, JustifyContent, JustifyText, UiRect, Val};
+use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
 
 use crate::menu::components::{MenuItem, MenuRoot};
 use crate::menu::styles::button_styles::create_main_menu_button;
@@ -58,7 +58,7 @@ impl MenuButtonBundle {
             visibility: Visibility::Visible,
             inherited_visibility: InheritedVisibility::default(),
             view_visibility: ViewVisibility::default(),
-            z_index: ZIndex::Global(z_index),
+            z_index: ZIndex::default(),
         }
     }
 }
@@ -100,7 +100,7 @@ impl MenuContainerBundle {
             visibility: Visibility::Visible,
             inherited_visibility: InheritedVisibility::default(),
             view_visibility: ViewVisibility::default(),
-            z_index: ZIndex::Global(50),
+            z_index: ZIndex::default(),
         }
     }
 }
@@ -147,7 +147,7 @@ impl MenuRootBundle {
             visibility: Visibility::Visible,
             inherited_visibility: InheritedVisibility::default(),
             view_visibility: ViewVisibility::default(),
-            z_index: ZIndex::Global(50),
+            z_index: ZIndex::default(),
         }
     }
 }

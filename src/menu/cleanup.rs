@@ -5,10 +5,13 @@ use crate::{
         components::{MenuCamera, MenuDecorativeElement, MenuItem},
         input_blocker::InputBlocker,
         logo::StarOfDavid,
-        main_menu::MainMenuMusic,
     },
 };
 use bevy::prelude::*;
+
+/// Component to mark the main menu music entity
+#[derive(Component)]
+pub struct MainMenuMusic;
 
 /// Cleans up main menu entities
 pub fn cleanup_main_menu(

@@ -638,21 +638,26 @@ fn spawn_settings_button(parent: &mut ChildBuilder, text: &str, action: Settings
         .spawn((
             Button,
             Node {
-                width: Val::Px(180.0),
-                height: Val::Px(50.0),
+                width: Val::Px(150.0),
+                height: Val::Px(40.0),
+                margin: UiRect::all(Val::Px(5.0)),
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
-                margin: UiRect::all(Val::Px(5.0)),
                 ..default()
             },
-            BackgroundColor(NORMAL_BUTTON),
+            BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
             action,
             AppLayer::Menu.layer(),
             SettingsMenuItem,
         ))
         .with_children(|parent| {
             parent.spawn((
-                Text::from_section(text, text_style()),
+                Text::new(text),
+                TextFont {
+                    font_size: 24.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
                 TextLayout::new_with_justify(JustifyText::Center),
                 AppLayer::Menu.layer(),
                 SettingsMenuItem,

@@ -105,7 +105,7 @@ impl Default for MenuItemBundle {
             visibility: Visibility::Visible,
             inherited_visibility: InheritedVisibility::default(),
             view_visibility: ViewVisibility::default(),
-            z_index: ZIndex::Global(10),
+            z_index: ZIndex::default(),
         }
     }
 }

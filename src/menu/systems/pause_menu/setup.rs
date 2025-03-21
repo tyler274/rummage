@@ -1,6 +1,10 @@
 use crate::camera::components::AppLayer;
 use crate::menu::{
-    components::*, input_blocker::InputBlocker, systems::pause_menu::buttons::spawn_menu_button,
+    components::{MenuButtonAction, MenuItem, MenuRoot},
+    input_blocker::InputBlocker,
+    state::GameMenuState,
+    styles::NORMAL_BUTTON,
+    systems::pause_menu::buttons::spawn_menu_button,
 };
 use bevy::prelude::*;
 use bevy::text::JustifyText;
@@ -12,31 +16,27 @@ pub fn setup_pause_menu(
     asset_server: Res<AssetServer>,
     existing_menu_items: Query<Entity, With<MenuItem>>,
 ) {
-    // Check for existing menu items first and clean them up if necessary
-    let existing_count = existing_menu_items.iter().count();
-    if existing_count > 0 {
-        info!(
-            "Found {} existing menu items, cleaning up before creating pause menu",
-            existing_count
-        );
-        for entity in existing_menu_items.iter() {
-            commands.entity(entity).despawn_recursive();
-        }
+    // First despawn any existing menu items to avoid duplication
+    for entity in existing_menu_items.iter() {
+        commands.entity(entity).despawn_recursive();
     }
 
-    // First, create a full-screen transparent input blocker
+    // Add an input blocker to catch keyboard/mouse input
     commands.spawn((
-        Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            position_type: PositionType::Absolute,
-            ..default()
-        },
-        AppLayer::Menu.layer(),
         InputBlocker,
-        MenuItem,
+        AppLayer::Menu.layer(),
         Name::new("Pause Menu Input Blocker"),
     ));
+
+    // Spawn a pause menu root entity to help with cleanup
+    commands.spawn((
+        MenuRoot,
+        Name::new("Pause Menu Root"),
+        AppLayer::Menu.layer(),
+    ));
+
+    // Entity ID for the button container
+    let mut button_container_entity = None;
 
     // Then spawn the pause menu UI
     commands
@@ -52,7 +52,7 @@ pub fn setup_pause_menu(
             BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.5)),
             MenuItem,
             AppLayer::Menu.layer(),
-            GlobalZIndex(-5),
+            ZIndex::default(),
         ))
         .with_children(|parent| {
             // Pause menu container
@@ -64,7 +64,10 @@ pub fn setup_pause_menu(
                         flex_direction: FlexDirection::Column,
                         justify_content: JustifyContent::Start, // Changed to start for better positioning
                         align_items: AlignItems::Center,
-                        padding: UiRect::top(Val::Px(20.0)),
+                        padding: UiRect {
+                            top: Val::Px(20.0),
+                            ..default()
+                        },
                         ..default()
                     },
                     BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
@@ -72,14 +75,16 @@ pub fn setup_pause_menu(
                 ))
                 .with_children(|parent| {
                     // Logo container is now the first child above the PAUSED text
-                    // The star component itself will be created in the setup_pause_star function
                     parent.spawn((
                         Node {
                             width: Val::Px(150.0),
                             height: Val::Px(150.0),
                             justify_content: JustifyContent::Center,
                             align_items: AlignItems::Center,
-                            margin: UiRect::bottom(Val::Px(10.0)),
+                            margin: UiRect {
+                                bottom: Val::Px(10.0),
+                                ..default()
+                            },
                             ..default()
                         },
                         Name::new("Logo Position"),
@@ -102,67 +107,100 @@ pub fn setup_pause_menu(
                     ));
 
                     // Create a container for buttons to control spacing
-                    parent
+                    let container_entity = parent
                         .spawn((
                             Node {
                                 width: Val::Percent(80.0),
                                 flex_direction: FlexDirection::Column,
                                 align_items: AlignItems::Center,
-                                margin: UiRect::top(Val::Px(30.0)),
+                                margin: UiRect {
+                                    top: Val::Px(30.0),
+                                    ..default()
+                                },
                                 ..default()
                             },
                             MenuItem,
                             AppLayer::Menu.layer(),
                         ))
-                        .with_children(|parent| {
-                            // Resume Game Button
-                            spawn_menu_button(
-                                parent,
-                                "Resume Game",
-                                MenuButtonAction::Resume,
-                                &asset_server,
-                            );
+                        .id();
 
-                            // Save Game Button
-                            spawn_menu_button(
-                                parent,
-                                "Save Game",
-                                MenuButtonAction::SaveGame,
-                                &asset_server,
-                            );
-
-                            // Load Game Button
-                            spawn_menu_button(
-                                parent,
-                                "Load Game",
-                                MenuButtonAction::LoadGame,
-                                &asset_server,
-                            );
-
-                            // Settings Button
-                            spawn_menu_button(
-                                parent,
-                                "Settings",
-                                MenuButtonAction::Settings,
-                                &asset_server,
-                            );
-
-                            // Exit to Main Menu Button
-                            spawn_menu_button(
-                                parent,
-                                "Exit to Main Menu",
-                                MenuButtonAction::MainMenu,
-                                &asset_server,
-                            );
-
-                            // Quit Game Button
-                            spawn_menu_button(
-                                parent,
-                                "Quit Game",
-                                MenuButtonAction::QuitGame,
-                                &asset_server,
-                            );
-                        });
+                    // Store the entity ID for later use
+                    button_container_entity = Some(container_entity);
                 });
         });
+
+    // Add buttons to the container
+    if let Some(container_entity) = button_container_entity {
+        // Add the standard buttons
+        commands.entity(container_entity).with_children(|parent| {
+            // Resume Game Button
+            spawn_menu_button(
+                parent,
+                "Resume Game",
+                MenuButtonAction::Resume,
+                &asset_server,
+            );
+
+            // Save Game Button
+            spawn_menu_button(
+                parent,
+                "Save Game",
+                MenuButtonAction::SaveGame,
+                &asset_server,
+            );
+
+            // Load Game Button
+            spawn_menu_button(
+                parent,
+                "Load Game",
+                MenuButtonAction::LoadGame,
+                &asset_server,
+            );
+
+            // Settings Button
+            spawn_menu_button(
+                parent,
+                "Settings",
+                MenuButtonAction::Settings,
+                &asset_server,
+            );
+
+            // Exit to Main Menu Button
+            spawn_menu_button(
+                parent,
+                "Exit to Main Menu",
+                MenuButtonAction::MainMenu,
+                &asset_server,
+            );
+
+            // Create Quit button
+            parent
+                .spawn((
+                    Name::new("Quit Game Button"),
+                    Button,
+                    Node {
+                        width: Val::Px(200.0),
+                        height: Val::Px(50.0),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        margin: UiRect::all(Val::Px(10.0)),
+                        ..default()
+                    },
+                    BackgroundColor(NORMAL_BUTTON),
+                    MenuButtonAction::Quit,
+                    MenuItem,
+                ))
+                .with_children(|parent| {
+                    parent.spawn((
+                        Text::new("Quit Game"),
+                        TextFont {
+                            font_size: 24.0,
+                            ..default()
+                        },
+                        TextColor(Color::WHITE),
+                        TextLayout::new_with_justify(JustifyText::Center),
+                    ));
+                });
+        });
+    }
 }

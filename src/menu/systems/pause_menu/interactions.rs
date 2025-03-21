@@ -1,76 +1,60 @@
-use crate::game_engine::save::{LoadGameEvent, SaveGameEvent};
 use crate::menu::{
-    components::*,
-    state::{GameMenuState, StateTransitionContext},
-    styles::*,
+    components::*, save_load::resources::SaveLoadUiState, state::GameMenuState,
+    styles::HOVERED_BUTTON, styles::NORMAL_BUTTON, styles::PRESSED_BUTTON,
 };
-use bevy::prelude::*;
+use bevy::{app::AppExit, prelude::*};
 
-/// Handles pause menu button interactions and actions
+/// System to handle pause menu button interactions
 pub fn pause_menu_action(
+    mut commands: Commands,
     mut interaction_query: Query<
-        (&Interaction, &MenuButtonAction, &mut BackgroundColor),
+        (&Interaction, &mut BackgroundColor, &MenuButtonAction),
         (Changed<Interaction>, With<Button>),
     >,
-    mut next_state: ResMut<NextState<GameMenuState>>,
-    mut context: ResMut<StateTransitionContext>,
-    mut exit: EventWriter<bevy::app::AppExit>,
-    _save_events: EventWriter<SaveGameEvent>,
-    _load_events: EventWriter<LoadGameEvent>,
-    mut save_load_state: ResMut<NextState<crate::menu::save_load::SaveLoadUiState>>,
-    mut save_load_context: ResMut<crate::menu::save_load::SaveLoadUiContext>,
+    mut app_exit_events: EventWriter<AppExit>,
+    mut game_state: ResMut<NextState<GameMenuState>>,
+    mut save_load_state: ResMut<NextState<SaveLoadUiState>>,
+    mut save_load_context: ResMut<crate::menu::save_load::resources::SaveLoadUiContext>,
 ) {
-    for (interaction, action, mut color) in interaction_query.iter_mut() {
+    for (interaction, mut background_color, action) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => {
-                info!("Pause menu button pressed: {:?}", action);
-                *color = PRESSED_BUTTON_COLOR.into();
+                *background_color = PRESSED_BUTTON.into();
 
                 match action {
                     MenuButtonAction::Resume => {
+                        // Resume the game
                         info!("Resuming game from pause menu");
-                        next_state.set(GameMenuState::InGame);
+                        game_state.set(GameMenuState::InGame);
                     }
                     MenuButtonAction::SaveGame => {
-                        info!("Opening save game dialog from pause menu");
-                        // Set context for save dialog
-                        save_load_context.operation_type =
-                            crate::menu::save_load::SaveLoadOperation::Save;
-                        save_load_context.return_to_pause_menu = true;
-                        // Transition to save/load UI
-                        save_load_state.set(crate::menu::save_load::SaveLoadUiState::Active);
+                        // Show save game UI
+                        info!("Opening save game dialog");
+                        save_load_context.from_pause_menu = true;
+                        save_load_state.set(SaveLoadUiState::SaveGame);
                     }
                     MenuButtonAction::LoadGame => {
-                        info!("Opening load game dialog from pause menu");
-                        // Set context for load dialog
-                        save_load_context.operation_type =
-                            crate::menu::save_load::SaveLoadOperation::Load;
-                        save_load_context.return_to_pause_menu = true;
-                        // Transition to save/load UI
-                        save_load_state.set(crate::menu::save_load::SaveLoadUiState::Active);
-                    }
-                    MenuButtonAction::Settings => {
-                        info!("Opening settings from pause menu");
-                        next_state.set(GameMenuState::Settings);
+                        // Show load game UI
+                        info!("Opening load game dialog");
+                        save_load_context.from_pause_menu = true;
+                        save_load_state.set(SaveLoadUiState::LoadGame);
                     }
                     MenuButtonAction::MainMenu => {
-                        info!("Returning to main menu from pause menu");
-                        next_state.set(GameMenuState::MainMenu);
+                        // Go back to the main menu
+                        game_state.set(GameMenuState::MainMenu);
                     }
-                    MenuButtonAction::QuitGame => {
-                        info!("Quitting game from pause menu");
-                        exit.send(bevy::app::AppExit);
+                    MenuButtonAction::Quit => {
+                        // Exit the game
+                        app_exit_events.send(AppExit::default());
                     }
-                    _ => {
-                        warn!("Unhandled menu button action in pause menu: {:?}", action);
-                    }
+                    _ => {}
                 }
             }
             Interaction::Hovered => {
-                *color = HOVERED_BUTTON_COLOR.into();
+                *background_color = HOVERED_BUTTON.into();
             }
             Interaction::None => {
-                *color = NORMAL_BUTTON_COLOR.into();
+                *background_color = NORMAL_BUTTON.into();
             }
         }
     }

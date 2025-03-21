@@ -1,55 +1,74 @@
 use crate::menu::{
     components::{MenuItem, MenuTextBundle},
-    styles::text_style_with_font,
+    styles::text_font_with_font,
 };
 use bevy::prelude::*;
-use bevy::ui::JustifyText;
+use bevy::text::JustifyText;
 
 /// Creates a Text2d component bundle with the specified text
-pub fn create_text_2d_bundle(
-    text: &str,
-    asset_server: &AssetServer,
-    font_size: f32,
-) -> impl Bundle {
-    (
-        Text::from_section(text, text_style_with_font(asset_server, font_size)),
-        Text2d,
-        Name::new(format!("{} Text", text)),
-    )
+#[derive(Bundle)]
+pub struct CustomText2dBundle {
+    /// 2D text marker component
+    pub text_2d_marker: Text2d,
+    /// Text content
+    pub text: Text,
+    /// Font configuration
+    pub font: TextFont,
+    /// Text color
+    pub color: TextColor,
+    /// Name component
+    pub name: Name,
+}
+
+impl CustomText2dBundle {
+    /// Create a new Text2d bundle with the given text
+    pub fn new(text: &str, asset_server: &AssetServer, font_size: f32) -> Self {
+        Self {
+            text_2d_marker: Text2d::default(),
+            text: Text::new(text),
+            font: TextFont {
+                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                font_size,
+                ..default()
+            },
+            color: TextColor(Color::WHITE),
+            name: Name::new(format!("{} Text", text)),
+        }
+    }
 }
 
 /// Creates a menu text bundle with standard styling
-pub fn create_menu_text(text: &str, asset_server: &AssetServer, z_index: i32) -> MenuTextBundle {
+pub fn create_menu_text(text: &str, _asset_server: &AssetServer, _z_index: i32) -> MenuTextBundle {
     MenuTextBundle {
-        text: Text::from_section(text, text_style_with_font(asset_server, 24.0)),
+        text: Text::new(text),
         text_layout: TextLayout::default(),
         menu_item: MenuItem,
         visibility: Visibility::Visible,
         inherited_visibility: InheritedVisibility::default(),
         view_visibility: ViewVisibility::default(),
-        z_index: ZIndex::Global(z_index),
+        z_index: ZIndex::default(),
     }
 }
 
-/// Creates a menu text bundle with justified text
+/// Creates a menu text bundle with justification
 pub fn create_menu_text_justified(
     text: &str,
-    asset_server: &AssetServer,
-    z_index: i32,
+    _asset_server: &AssetServer,
+    _z_index: i32,
     justify: JustifyText,
 ) -> MenuTextBundle {
     MenuTextBundle {
-        text: Text::from_section(text, text_style_with_font(asset_server, 24.0)),
+        text: Text::new(text),
         text_layout: TextLayout::new_with_justify(justify),
         menu_item: MenuItem,
         visibility: Visibility::Visible,
         inherited_visibility: InheritedVisibility::default(),
         view_visibility: ViewVisibility::default(),
-        z_index: ZIndex::Global(z_index),
+        z_index: ZIndex::default(),
     }
 }
 
-/// Bundle for text components in menu buttons
+/// Bundle for menu button text
 #[derive(Bundle)]
 pub struct MenuButtonTextBundle {
     /// Text component
@@ -60,8 +79,8 @@ pub struct MenuButtonTextBundle {
     pub color: TextColor,
     /// Layout component
     pub layout: TextLayout,
-    /// Text2d component
-    pub text_2d: Text2d,
+    /// Text2d component for 2D rendering
+    pub text_2d_marker: Text2d,
     /// Name component
     pub name: Name,
     /// Menu item marker
@@ -72,29 +91,26 @@ pub struct MenuButtonTextBundle {
     pub inherited_visibility: InheritedVisibility,
     /// View visibility component
     pub view_visibility: ViewVisibility,
-    /// Z-index for layering
-    pub z_index: ZIndex,
 }
 
 impl MenuButtonTextBundle {
     /// Create a new menu button text bundle
-    pub fn new(asset_server: &AssetServer, text_str: &str, z_index: i32) -> Self {
+    pub fn new(asset_server: &AssetServer, text_str: &str, _z_index: i32) -> Self {
         Self {
-            text: Text::new(text_str.to_string()),
+            text: Text::new(text_str),
             font: TextFont {
                 font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                font_size: 30.0,
+                font_size: 24.0,
                 ..default()
             },
             color: TextColor(Color::WHITE),
-            layout: TextLayout::new_with_justify(JustifyText::Center),
-            text_2d: Text2d,
+            layout: TextLayout::default(),
+            text_2d_marker: Text2d::default(),
             name: Name::new(format!("{} Button Text", text_str)),
             menu_item: MenuItem,
             visibility: Visibility::Visible,
             inherited_visibility: InheritedVisibility::default(),
             view_visibility: ViewVisibility::default(),
-            z_index: ZIndex::Global(z_index),
         }
     }
 }

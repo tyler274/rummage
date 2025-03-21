@@ -48,7 +48,7 @@ pub fn create_main_menu_button() -> (Button, Node, BackgroundColor) {
     )
 }
 
-/// Bundle for text components in menu buttons
+/// Button style bundle for menu buttons with text
 #[derive(Bundle)]
 pub struct MenuButtonTextBundle {
     /// Text component
@@ -60,7 +60,7 @@ pub struct MenuButtonTextBundle {
     /// Layout component
     pub layout: TextLayout,
     /// Text2d component
-    pub text_2d: Text2d,
+    pub text_2d_marker: Text2d,
     /// Name component
     pub name: Name,
     /// Menu item marker
@@ -75,7 +75,7 @@ pub struct MenuButtonTextBundle {
     pub z_index: ZIndex,
 }
 
-/// Creates text for a menu button with consistent styling, now returning a Bundle
+/// Creates a menu button text bundle with standard styling
 pub fn create_main_menu_button_text_bundle(
     asset_server: &AssetServer,
     text_str: &str,
@@ -83,20 +83,16 @@ pub fn create_main_menu_button_text_bundle(
 ) -> MenuButtonTextBundle {
     MenuButtonTextBundle {
         text: Text::new(text_str.to_string()),
-        font: TextFont {
-            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-            font_size: 30.0,
-            ..default()
-        },
-        color: TextColor(Color::WHITE),
-        layout: TextLayout::new_with_justify(JustifyText::Center),
-        text_2d: Text2d,
+        font: TextFont::default(),
+        color: TextColor::default(),
+        layout: TextLayout::default(),
+        text_2d_marker: Text2d::default(),
         name: Name::new(format!("{} Button Text", text_str)),
         menu_item: MenuItem,
         visibility: Visibility::Visible,
         inherited_visibility: InheritedVisibility::default(),
         view_visibility: ViewVisibility::default(),
-        z_index: ZIndex::Global(z_index),
+        z_index: ZIndex::default(),
     }
 }
 

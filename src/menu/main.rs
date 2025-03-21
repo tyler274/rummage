@@ -1,42 +1,44 @@
-use crate::menu::state::MenuState;
-use crate::menu::systems::main_menu::{
-    background::setup_menu_background, interactions::handle_main_menu_interactions,
-    setup::setup_main_menu, states::MultiplayerState,
+use crate::menu::{
+    components::{MenuVisibilityState, NeedsMainMenuSetup},
+    state::GameMenuState,
+    systems::main_menu_setup::setup_main_menu as system_setup_main_menu,
 };
 use bevy::prelude::*;
 
-/// Plugin for handling the main menu functionality
+#[derive(Resource, Default)]
+pub struct MultiplayerState {
+    pub is_multiplayer: bool,
+}
+
+/// Plugin for main menu functionality
 pub struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
         app
-            // Register multiplayer state
-            .init_state::<MultiplayerState>()
-            // Add main menu systems
-            .add_systems(
-                OnEnter(MenuState::MainMenu),
-                (setup_main_menu, setup_menu_background),
-            )
+            // Register resources
+            .init_resource::<MultiplayerState>()
+            // Register systems
+            .add_systems(OnEnter(GameMenuState::MainMenu), system_setup_main_menu)
             .add_systems(
                 Update,
-                handle_main_menu_interactions.run_if(in_state(MenuState::MainMenu)),
+                check_main_menu_setup.run_if(in_state(GameMenuState::MainMenu)),
             );
 
-        info!("MainMenuPlugin initialized");
+        info!("Main menu plugin registered");
     }
 }
 
-/// Set up the main menu UI
-#[allow(dead_code)]
-pub fn setup_main_menu(_commands: Commands) {
-    // Implementation for setting up main menu UI will go here
-    // This is currently a placeholder function
-}
-
-/// Handle main menu actions
-#[allow(dead_code)]
-pub fn handle_main_menu_action() {
-    // Implementation for main menu action handling will go here
-    // This is currently a placeholder function
+/// System to check if main menu needs to be set up
+pub fn check_main_menu_setup(
+    mut commands: Commands,
+    menu_setup: Res<NeedsMainMenuSetup>,
+    visibility: Res<MenuVisibilityState>,
+) {
+    // If the menu needs to be set up and it's supposed to be visible
+    if menu_setup.0 && visibility.visible_items > 0 {
+        // Trigger the setup
+        info!("Main menu needs setup, dispatching setup event");
+        commands.insert_resource(NeedsMainMenuSetup(false));
+    }
 }

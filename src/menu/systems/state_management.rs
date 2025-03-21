@@ -1,13 +1,14 @@
+use crate::menu::components::MenuCamera;
+use crate::menu::state::StateTransitionContext;
 use crate::menu::{
-    components::MenuItem,
-    main_menu::setup_main_menu,
-    settings::SettingsMenuState,
-    state::{GameMenuState, StateTransitionContext},
+    components::MenuItem, save_load::resources::SaveExists, settings::systems::setup_main_settings,
+    state::GameMenuState, systems::pause_menu::setup::setup_pause_menu,
 };
-use bevy::prelude::*;
+use bevy::utils::warn;
+use bevy::{prelude::*, window::PrimaryWindow};
 
-/// Resource to track when we need to set up the main menu
-#[derive(Resource, Default)]
+/// Resource indicating that the main menu needs to be set up
+#[derive(Resource)]
 pub struct NeedsMainMenuSetup(pub bool);
 
 /// Set up the transition context for settings menu
@@ -65,40 +66,58 @@ pub fn setup_settings_transition(
 /// Monitor state transitions and handle diagnostics
 pub fn monitor_state_transitions(
     state: Res<State<GameMenuState>>,
-    _next_state: ResMut<NextState<GameMenuState>>,
+    mut next_state: ResMut<NextState<GameMenuState>>,
     mut last_state: Local<Option<GameMenuState>>,
     menu_items: Query<Entity, With<MenuItem>>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    menu_cameras: Query<Entity, With<MenuCamera>>,
+    save_exists: Option<Res<SaveExists>>,
 ) {
-    // If the state changed, log it
-    if last_state.is_none() || *last_state.as_ref().unwrap() != *state.get() {
-        if let Some(old_state) = last_state.as_ref() {
-            info!("State changed from {:?} to {:?}", old_state, state.get());
-        } else {
-            info!("Initial state: {:?}", state.get());
-        }
+    // Check if state has changed
+    if last_state.is_none() || last_state.unwrap() != *state.get() {
+        info!(
+            "Game menu state changed from {:?} to {:?}",
+            last_state,
+            state.get()
+        );
         *last_state = Some(*state.get());
 
-        // If we're in MainMenu but have no menu items, force setup
-        if *state.get() == GameMenuState::MainMenu {
-            let count = menu_items.iter().count();
-            if count == 0 {
-                info!("We're in MainMenu state but have no menu items! Forcing setup...");
-                // Recursively despawn any leftover items first
-                for entity in menu_items.iter() {
-                    commands.entity(entity).despawn_recursive();
-                }
+        match state.get() {
+            GameMenuState::MainMenu => {
+                // Set up main menu if necessary (e.g., on first run or after game)
+                if menu_items.iter().count() == 0 {
+                    info!("No menu items found for main menu, setting up");
+                    commands.insert_resource(SaveExists(false));
 
-                // Then run setup
-                setup_main_menu(commands, asset_server, menu_items);
-            } else {
-                info!("In MainMenu state with {} menu items", count);
+                    // Ensure menu camera exists before setting up UI
+                    if menu_cameras.iter().count() == 0 {
+                        warn!("No menu camera found for UI, creating one...");
+                        commands.spawn((Camera2d::default(), MenuCamera, Name::new("Menu Camera")));
+                    }
 
-                // Force visibility on all menu items even if they exist
-                for entity in menu_items.iter() {
-                    commands.entity(entity).insert(Visibility::Visible);
+                    // Set up the main menu directly
+                    let save_exists_res = save_exists
+                        .unwrap_or(Res::<SaveExists>::clone_from(&Res::new(SaveExists(false))));
+                    crate::menu::systems::main_menu::setup::setup_main_menu(
+                        commands,
+                        asset_server,
+                        menu_cameras,
+                        save_exists_res,
+                    );
                 }
+            }
+            GameMenuState::Settings => {
+                // Log when entering settings
+                info!("Entering settings state");
+            }
+            GameMenuState::PausedGame => {
+                // Log when entering paused game state
+                info!("Entering paused game state");
+            }
+            _ => {
+                // Log when entering other states
+                info!("Entering state: {:?}", state.get());
             }
         }
     }
@@ -117,7 +136,7 @@ pub fn check_menu_items_exist(
         if count == 0 {
             info!("No menu items found in MainMenu state! Scheduling setup...");
 
-            // Since we can't directly call setup_main_menu here because of the borrowing issues,
+            // Since we can't directly call setup here because of the borrowing issues,
             // we'll set a flag in a resource to trigger the setup in another system
             commands.insert_resource(NeedsMainMenuSetup(true));
         }
@@ -128,23 +147,27 @@ pub fn check_menu_items_exist(
 pub fn perform_main_menu_setup_if_needed(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    menu_items: Query<Entity, With<MenuItem>>,
+    menu_cameras: Query<Entity, With<MenuCamera>>,
     setup_flag: Option<Res<NeedsMainMenuSetup>>,
     mut next_state: ResMut<NextState<GameMenuState>>,
+    save_exists: Option<Res<SaveExists>>,
 ) {
-    // Only proceed if the flag resource exists and is set to true
     if let Some(flag) = setup_flag {
         if flag.0 {
-            // Remove the flag first
+            info!("Setting up main menu as requested");
             commands.remove_resource::<NeedsMainMenuSetup>();
 
-            // Set up the main menu
-            info!("Setting up main menu from dedicated system");
-            setup_main_menu(commands, asset_server, menu_items);
+            // Set up the main menu directly
+            let save_exists_res =
+                save_exists.unwrap_or(Res::<SaveExists>::clone_from(&Res::new(SaveExists(false))));
+            crate::menu::systems::main_menu::setup::setup_main_menu(
+                commands,
+                asset_server,
+                menu_cameras,
+                save_exists_res,
+            );
 
-            // Force state refresh to trigger OnEnter systems
-            let current_state = GameMenuState::MainMenu;
-            next_state.set(current_state);
+            next_state.set(GameMenuState::MainMenu);
         }
     }
 }
