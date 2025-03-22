@@ -1,6 +1,6 @@
 use crate::menu::{
     camera::MenuCamera,
-    components::{MenuItem, MenuRoot},
+    components::MenuRoot,
     logo::{create_english_text, create_hebrew_text},
     star_of_david::{StarOfDavid, create_star_of_david},
 };
@@ -8,7 +8,7 @@ use bevy::prelude::*;
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, UiRect, Val};
 
 /// Sets up the main menu star animation and logo
-pub fn setup_main_menu_star(commands: &mut Commands, asset_server: &AssetServer) {
+pub fn setup_main_menu_star(_commands: &mut Commands, _asset_server: &AssetServer) {
     info!("Setting up main menu star");
 
     // Query for menu camera - we'll let the logo plugin handle attaching to camera

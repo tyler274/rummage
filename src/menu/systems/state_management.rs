@@ -70,6 +70,7 @@ pub fn monitor_state_transitions(
     asset_server: Res<AssetServer>,
     menu_cameras: Query<Entity, With<MenuCamera>>,
     existing_roots: Query<Entity, With<MenuRoot>>,
+    all_cameras: Query<&Camera>,
     save_exists: Option<ResMut<SaveExists>>,
 ) {
     // Check if state has changed
@@ -102,6 +103,7 @@ pub fn monitor_state_transitions(
                             asset_server,
                             menu_cameras,
                             existing_roots,
+                            all_cameras,
                             save_exists_res,
                         );
                     } else {
@@ -153,13 +155,19 @@ pub fn perform_main_menu_setup_if_needed(
     asset_server: Res<AssetServer>,
     menu_cameras: Query<Entity, With<MenuCamera>>,
     existing_roots: Query<Entity, With<MenuRoot>>,
+    all_cameras: Query<&Camera>,
     setup_flag: Option<Res<NeedsMainMenuSetup>>,
     mut next_state: ResMut<NextState<GameMenuState>>,
     save_exists: Option<ResMut<SaveExists>>,
 ) {
+    // Even if setup_flag is None, log a message
+    if setup_flag.is_none() {
+        info!("No NeedsMainMenuSetup flag found, considering setting it up");
+    }
+
     if let Some(flag) = setup_flag {
         if flag.0 {
-            info!("Setting up main menu as requested");
+            info!("Setting up main menu as requested by NeedsMainMenuSetup flag");
             commands.remove_resource::<NeedsMainMenuSetup>();
 
             if let Some(save_exists_res) = save_exists {
@@ -169,15 +177,18 @@ pub fn perform_main_menu_setup_if_needed(
                     asset_server,
                     menu_cameras,
                     existing_roots,
+                    all_cameras,
                     save_exists_res,
                 );
             } else {
                 // Insert the resource and defer setup to next frame
+                info!("SaveExists resource not available, creating it and deferring setup");
                 commands.insert_resource(SaveExists(false));
                 commands.insert_resource(NeedsMainMenuSetup(true));
                 return;
             }
 
+            info!("Main menu setup complete, ensuring MainMenu state is set");
             next_state.set(GameMenuState::MainMenu);
         }
     }
