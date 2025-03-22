@@ -3,7 +3,7 @@ use bevy::text::JustifyText;
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, UiRect, Val};
 
 use super::super::components::{MainMenuButton, MainMenuContainer};
-use crate::menu::components::{MenuButtonAction, MenuItem, MenuRoot};
+use crate::menu::components::{MenuButtonAction, MenuItem, MenuRoot, ZLayers};
 use crate::menu::styles::button_styles::create_main_menu_button;
 
 /// Creates text components for a menu button
@@ -50,7 +50,7 @@ pub struct MenuButtonBundle {
 
 impl MenuButtonBundle {
     /// Create a new main menu button
-    pub fn new(button_name: &str, z_index: i32) -> Self {
+    pub fn new(button_name: &str) -> Self {
         let (button, node, background) = create_main_menu_button();
         Self {
             button,
@@ -62,7 +62,7 @@ impl MenuButtonBundle {
             visibility: Visibility::Inherited,
             inherited_visibility: InheritedVisibility::default(),
             view_visibility: ViewVisibility::default(),
-            z_index: ZIndex(z_index),
+            z_index: ZLayers::MenuButtons.into(),
         }
     }
 }
@@ -107,7 +107,7 @@ impl MenuContainerBundle {
             visibility: Visibility::Inherited,
             inherited_visibility: InheritedVisibility::default(),
             view_visibility: ViewVisibility::default(),
-            z_index: ZIndex(10),
+            z_index: ZLayers::MenuContainer.into(),
         }
     }
 }
@@ -154,7 +154,7 @@ impl MenuRootBundle {
             visibility: Visibility::Inherited,
             inherited_visibility: InheritedVisibility::default(),
             view_visibility: ViewVisibility::default(),
-            z_index: ZIndex(1),
+            z_index: ZLayers::Background.into(),
         }
     }
 }
@@ -179,7 +179,7 @@ pub fn create_main_menu_buttons(
                 },
                 TextColor(Color::WHITE),
                 MenuItem,
-                ZIndex(15),
+                ZLayers::MenuButtonText.into(),
                 Name::new("Main Menu Title"),
             ));
 
@@ -193,7 +193,7 @@ pub fn create_main_menu_buttons(
                 },
                 BackgroundColor(Color::srgba(0.9, 0.9, 0.9, 0.2)),
                 MenuItem,
-                ZIndex(15),
+                ZLayers::MenuButtons.into(),
                 Name::new("Title Divider"),
             ));
 
@@ -226,7 +226,7 @@ fn spawn_menu_button(
     // Create the button entity
     parent
         .spawn((
-            MenuButtonBundle::new(&format!("{} Button", text), 15),
+            MenuButtonBundle::new(&format!("{} Button", text)),
             action, // Store the action with the button
         ))
         .with_children(|parent| {
@@ -241,6 +241,7 @@ fn spawn_menu_button(
                 TextColor(Color::WHITE),
                 TextLayout::new_with_justify(JustifyText::Center),
                 MenuItem,
+                ZLayers::MenuButtonText.into(),
                 Name::new(format!("{} Text", text)),
             ));
         });

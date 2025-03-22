@@ -5,7 +5,7 @@ use bevy::ui::{AlignItems, FlexDirection, JustifyContent, PositionType, Val};
 use crate::{
     camera::components::MenuCamera,
     menu::{
-        components::{MenuItem, MenuRoot},
+        components::{MenuItem, MenuRoot, ZLayers},
         save_load::SaveExists,
         save_load::resources::check_save_exists,
     },
@@ -82,6 +82,7 @@ pub fn setup_main_menu(
         ImageNode::new(asset_server.load("images/menu_background.jpeg")),
         MainMenuBackground,
         MenuItem,
+        ZLayers::Background.into(),
         Name::new("Menu Background"),
     ));
 

@@ -55,6 +55,42 @@ pub enum MenuButtonAction {
     Credits,
 }
 
+/// Z-index layers for menu element ordering
+#[derive(Debug, Clone, Copy)]
+pub enum ZLayers {
+    /// Background layer (lowest)
+    Background = 0,
+    /// Background decorations
+    BackgroundDecoration = 5,
+    /// Logo icon layer
+    LogoIcon = 10,
+    /// Logo text layer
+    LogoText = 15,
+    /// Menu container layer
+    MenuContainer = 20,
+    /// Menu buttons layer
+    MenuButtons = 25,
+    /// Menu button text layer
+    MenuButtonText = 30,
+    /// Foreground decorations
+    ForegroundDecoration = 35,
+    /// Overlay elements (highest)
+    Overlay = 40,
+}
+
+impl ZLayers {
+    /// Convert to ZIndex component
+    pub fn to_z_index(self) -> ZIndex {
+        ZIndex(self as i32)
+    }
+}
+
+impl From<ZLayers> for ZIndex {
+    fn from(layer: ZLayers) -> Self {
+        ZIndex(layer as i32)
+    }
+}
+
 /// Bundle for menu items that combines commonly used components
 #[derive(Bundle)]
 pub struct MenuItemBundle {
