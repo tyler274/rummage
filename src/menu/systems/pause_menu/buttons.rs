@@ -26,6 +26,7 @@ pub fn spawn_menu_button(
             MenuItem,
             action,
             AppLayer::Menu.layer(),
+            ZLayers::MenuButtons.into(),
         ))
         .with_children(|parent| {
             parent.spawn((
@@ -39,6 +40,7 @@ pub fn spawn_menu_button(
                 TextColor(Color::WHITE),
                 MenuItem,
                 AppLayer::Menu.layer(),
+                ZLayers::MenuButtonText.into(),
             ));
         });
 }
@@ -59,6 +61,7 @@ pub fn create_pause_menu_buttons(commands: &mut Commands, asset_server: &AssetSe
             BackgroundColor(NORMAL_BUTTON.into()),
             MenuButtonAction::Resume,
             MenuItem,
+            ZLayers::MenuButtons.into(),
         ))
         .with_children(|parent| {
             parent.spawn((
@@ -70,6 +73,8 @@ pub fn create_pause_menu_buttons(commands: &mut Commands, asset_server: &AssetSe
                 },
                 TextColor(Color::WHITE),
                 TextLayout::new_with_justify(JustifyText::Center),
+                MenuItem,
+                ZLayers::MenuButtonText.into(),
             ));
         });
 }
