@@ -10,6 +10,7 @@ impl Plugin for SaveLoadUiPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<SaveLoadUiState>()
             .init_resource::<SaveLoadUiContext>()
+            .init_resource::<SaveExists>()
             // Setup UI when entering the appropriate SaveLoadUiState
             .add_systems(OnEnter(SaveLoadUiState::SaveGame), setup_save_dialog)
             .add_systems(OnEnter(SaveLoadUiState::LoadGame), setup_load_dialog)
@@ -23,5 +24,7 @@ impl Plugin for SaveLoadUiPlugin {
                     *state.get() != SaveLoadUiState::Hidden
                 }),
             );
+
+        info!("Save/Load UI plugin registered with SaveExists resource");
     }
 }

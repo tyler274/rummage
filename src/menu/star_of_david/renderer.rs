@@ -2,6 +2,7 @@ use crate::camera::components::AppLayer;
 use bevy::prelude::*;
 
 /// Creates a container for the logo group (Star of David + text)
+/// This function matches the layout used in the LogoPlugin
 pub fn create_logo() -> impl Bundle {
     (
         Node {
@@ -15,6 +16,5 @@ pub fn create_logo() -> impl Bundle {
         },
         BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.0)),
         AppLayer::Menu.layer(), // Top-level element needs explicit RenderLayers
-        Interaction::None,
     )
 }

@@ -33,7 +33,7 @@ impl Plugin for MenuPlugin {
             .insert_resource(GameMenuState::MainMenu)
             .insert_resource(StateTransitionContext::default())
             .init_resource::<MenuVisibilityState>()
-            .init_resource::<NeedsMainMenuSetup>()
+            .insert_resource(NeedsMainMenuSetup(true))
             .init_resource::<UiHierarchyChecked>()
             // Setup plugins
             .add_plugins((

@@ -55,11 +55,11 @@ impl MenuButtonBundle {
         Self {
             button,
             node,
-            background,
+            background: BackgroundColor(Color::rgba(0.3, 0.3, 0.8, 0.9)),
             name: Name::new(button_name.to_string()),
             menu_item: MenuItem,
             main_menu_button: MainMenuButton,
-            visibility: Visibility::Inherited,
+            visibility: Visibility::Visible,
             inherited_visibility: InheritedVisibility::default(),
             view_visibility: ViewVisibility::default(),
             z_index: ZLayers::MenuButtons.into(),
@@ -177,8 +177,9 @@ pub fn create_main_menu_buttons(
                     font_size: 60.0,
                     ..default()
                 },
-                TextColor(Color::WHITE),
+                TextColor(Color::rgba(1.0, 1.0, 1.0, 1.0)),
                 MenuItem,
+                Visibility::Visible,
                 Into::<ZIndex>::into(ZLayers::MenuButtonText),
                 Name::new("Main Menu Title"),
             ));
@@ -191,8 +192,9 @@ pub fn create_main_menu_buttons(
                     margin: UiRect::vertical(Val::Px(20.0)),
                     ..default()
                 },
-                BackgroundColor(Color::srgba(0.9, 0.9, 0.9, 0.2)),
+                BackgroundColor(Color::rgba(0.9, 0.9, 0.9, 0.8)),
                 MenuItem,
+                Visibility::Visible,
                 Into::<ZIndex>::into(ZLayers::MenuButtons),
                 Name::new("Title Divider"),
             ));
@@ -238,9 +240,10 @@ fn spawn_menu_button(
                     font_size: 30.0,
                     ..default()
                 },
-                TextColor(Color::WHITE),
+                TextColor(Color::rgba(1.0, 1.0, 1.0, 1.0)),
                 TextLayout::new_with_justify(JustifyText::Center),
                 MenuItem,
+                Visibility::Visible,
                 Into::<ZIndex>::into(ZLayers::MenuButtonText),
                 Name::new(format!("{} Text", text)),
             ));

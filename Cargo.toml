@@ -17,6 +17,7 @@ bevy = { version = "0.15.3", features = [
     "dynamic_linking",
     "serialize",
 ] }
+bevy-inspector-egui = "0.30.0"
 bevy-persistent = { version = "0.7.0", features = ["bincode", "toml"] }
 # bevy_prng = { git = "https://github.com/Bluefinger/bevy_rand", branch = "main", features = [
 #     "wyrand",

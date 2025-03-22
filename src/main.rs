@@ -28,6 +28,9 @@ use plugins::MainRummagePlugin;
 use snapshot::SnapshotDisabled;
 use tracing::DiagnosticsPlugin;
 
+#[cfg(debug_assertions)]
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
+
 fn main() {
     println!("Starting Rummage application...");
 
@@ -40,16 +43,10 @@ fn main() {
         DefaultPlugins
             .set(WindowPlugin {
                 primary_window: Some(Window {
-                    title: "Rummage".to_string(),
-                    resolution: WindowResolution::new(1920.0, 1080.0)
-                        .with_scale_factor_override(1.0),
-                    present_mode: bevy::window::PresentMode::AutoNoVsync,
+                    title: "Rummage - Commander Card Game".to_string(),
+                    resolution: (1280.0, 720.0).into(),
+                    position: WindowPosition::Centered(MonitorSelection::Current),
                     resizable: true,
-                    resize_constraints: bevy::window::WindowResizeConstraints {
-                        min_width: 960.0,  // Half of 1920
-                        min_height: 540.0, // Half of 1080
-                        ..default()
-                    },
                     ..default()
                 }),
                 ..default()
@@ -95,6 +92,10 @@ fn main() {
     // Add the SnapshotDisabled resource if the snapshot feature is enabled
     #[cfg(feature = "snapshot")]
     app.insert_resource(SnapshotDisabled::enabled()); // Enable snapshots
+
+    // Add inspector plugin in debug builds
+    #[cfg(debug_assertions)]
+    app.add_plugins(WorldInspectorPlugin::new());
 
     app.add_systems(FixedUpdate, utils::handle_exit).run();
 }

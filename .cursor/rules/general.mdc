@@ -3,7 +3,7 @@ description:
 globs: 
 alwaysApply: true
 ---
-1. Using Bevy 0.15.x APIs that aren't deprecated, we are implementing a robust unit and integrated end to end tested Magic the Gathering Commander format game engine.
+1. Using Bevy 0.15.x APIs that aren't deprecated [deprecated_apis.md](mdc:docs/development/bevy_guide/deprecated_apis.md), we are implementing a robust unit and integrated end to end tested Magic the Gathering Commander format game engine.
 2. Text2dBundle, SpriteBundle, NodeBundle, Camera2dBundle, SpatialBundle etc are deprecated for Text2d, Sprite, Node, and Camera2d respectively.
 3. Use bevy_persistent for all persistent data operations.
 4. Use bevy_replicon for networking. 
