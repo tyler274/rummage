@@ -10,15 +10,34 @@ pub fn setup_menu_camera(
     cameras: Query<(Entity, Option<&Camera>), With<MenuCamera>>,
     all_cameras: Query<&Camera>,
 ) {
-    // Check if a menu camera already exists to avoid duplicates
+    // Check if a menu camera already exists
+    // Instead of removing existing cameras, we'll update their order
     if !cameras.is_empty() {
-        info!("Menu camera already exists, cleaning up to prevent ambiguities");
-        for (entity, _) in cameras.iter() {
-            commands.entity(entity).despawn_recursive();
+        info!("Menu camera already exists, will update camera order");
+
+        // Find the highest camera order from all existing cameras
+        let mut highest_order = 0;
+        for camera in all_cameras.iter() {
+            if camera.order > highest_order {
+                highest_order = camera.order;
+            }
         }
+
+        // Update all menu cameras to ensure unique orders
+        for (entity, _) in cameras.iter() {
+            let new_order = highest_order + 1;
+            info!("Updating menu camera order to {}", new_order);
+            commands.entity(entity).insert(Camera {
+                order: new_order,
+                ..default()
+            });
+            highest_order = new_order; // Increment for next camera if multiple exist
+        }
+
+        return;
     }
 
-    info!("Setting up menu camera");
+    info!("Setting up new menu camera");
 
     // Find the highest camera order from all existing cameras
     let mut highest_order = 0;
@@ -29,10 +48,11 @@ pub fn setup_menu_camera(
     }
 
     // Create a new camera with a higher order
+    let new_order = highest_order + 1;
     commands.spawn((
         Camera2d::default(),
         Camera {
-            order: highest_order + 1,
+            order: new_order,
             ..default()
         },
         MenuCamera,
@@ -51,7 +71,7 @@ pub fn setup_menu_camera(
         ZIndex::default(),
     ));
 
-    info!("Menu camera created with order {}", highest_order + 1);
+    info!("Menu camera created with order {}", new_order);
 }
 
 /// Cleans up the menu camera

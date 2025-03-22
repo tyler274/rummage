@@ -11,79 +11,9 @@ use bevy::ui::{AlignItems, FlexDirection, JustifyContent, UiRect, Val};
 pub fn setup_main_menu_star(commands: &mut Commands, asset_server: &AssetServer) {
     info!("Setting up main menu star");
 
-    // Create the star container
-    commands
-        .spawn((
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Percent(25.0),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                ..default()
-            },
-            BackgroundColor(Color::NONE),
-            StarOfDavid,
-            MenuItem,
-            Name::new("Main Menu Star Container"),
-        ))
-        .with_children(|parent| {
-            // Add the star image
-            parent.spawn((
-                Node {
-                    width: Val::Px(150.0),
-                    height: Val::Px(150.0),
-                    ..default()
-                },
-                BackgroundColor(Color::NONE),
-                StarOfDavid,
-                MenuItem,
-                ImageNode::new(asset_server.load("textures/star_of_david.png")),
-                Name::new("Star of David Image"),
-            ));
-
-            // Add the logo text below the star
-            parent
-                .spawn((
-                    Node {
-                        margin: UiRect::top(Val::Px(150.0)),
-                        flex_direction: FlexDirection::Column,
-                        align_items: AlignItems::Center,
-                        ..default()
-                    },
-                    BackgroundColor(Color::NONE),
-                    MenuItem,
-                    Name::new("Logo Text Container"),
-                ))
-                .with_children(|text_container| {
-                    // Hebrew text
-                    text_container.spawn((
-                        Text::new("רומאז׳"),
-                        TextFont {
-                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                            font_size: 48.0,
-                            ..default()
-                        },
-                        TextColor(Color::srgb(0.9, 0.9, 0.9)),
-                        TextLayout::new_with_justify(JustifyText::Center),
-                        MenuItem,
-                        Name::new("Hebrew Logo Text"),
-                    ));
-
-                    // English text
-                    text_container.spawn((
-                        Text::new("RUMMAGE"),
-                        TextFont {
-                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                            font_size: 36.0,
-                            ..default()
-                        },
-                        TextColor(Color::srgb(0.8, 0.8, 0.8)),
-                        TextLayout::new_with_justify(JustifyText::Center),
-                        MenuItem,
-                        Name::new("English Logo Text"),
-                    ));
-                });
-        });
+    // Query for menu camera - we'll let the logo plugin handle attaching to camera
+    // This function is now deprecated in favor of the logo plugin
+    warn!("setup_main_menu_star is deprecated, use LogoPlugin instead");
 }
 
 /// Setup Star of David for pause menu

@@ -7,7 +7,7 @@ use crate::menu::{
     components::{MenuItem, MenuRoot},
     save_load::SaveExists,
     save_load::resources::check_save_exists,
-    systems::{logo::setup_main_menu_star, main_menu::buttons::create_main_menu_buttons},
+    systems::main_menu::buttons::create_main_menu_buttons,
 };
 
 /// Sets up the main menu interface with buttons and layout
@@ -16,13 +16,27 @@ pub fn setup_main_menu(
     asset_server: Res<AssetServer>,
     menu_cameras: Query<Entity, With<MenuCamera>>,
     existing_roots: Query<Entity, With<MenuRoot>>,
+    all_cameras: Query<&Camera>,
     save_exists: ResMut<SaveExists>,
 ) {
     info!("Setting up main menu interface");
 
+    // Find the highest camera order from all existing cameras
+    let mut highest_order = 0;
+    for camera in all_cameras.iter() {
+        if camera.order > highest_order {
+            highest_order = camera.order;
+        }
+    }
+
     // Get or create the menu camera
     let camera_entity = if let Some(camera) = menu_cameras.iter().next() {
         info!("Using existing menu camera: {:?}", camera);
+        // Update the camera order to ensure it's unique
+        commands.entity(camera).insert(Camera {
+            order: highest_order + 1,
+            ..default()
+        });
         camera
     } else {
         info!("No menu camera found, creating one");
@@ -30,14 +44,29 @@ pub fn setup_main_menu(
             .spawn((
                 Camera2d::default(),
                 Camera {
-                    order: 1, // Ensure this has a distinct order
+                    order: highest_order + 1, // Ensure this has a unique order
                     ..default()
                 },
                 MenuCamera,
                 Name::new("Menu Camera"),
+                // Add essential UI components to make it a valid UI parent
+                Node {
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
+                    ..default()
+                },
+                ViewVisibility::default(),
+                InheritedVisibility::default(),
+                Visibility::Visible,
+                ZIndex::default(),
             ))
             .id()
     };
+
+    info!(
+        "Menu camera created/updated with order {}",
+        highest_order + 1
+    );
 
     // Clean up any existing menu items with MenuRoot
     for entity in existing_roots.iter() {
@@ -59,8 +88,7 @@ pub fn setup_main_menu(
         Name::new("Menu Background"),
     ));
 
-    // Setup Star of David
-    setup_main_menu_star(&mut commands, &asset_server);
+    // Note: Star of David and logo setup is now handled by the LogoPlugin
 
     // Check if save exists and store the value
     let has_save = {
