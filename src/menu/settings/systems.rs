@@ -41,6 +41,7 @@ pub fn setup_main_settings(mut commands: Commands, context: Res<StateTransitionC
         MenuItem,
         SettingsMenuItem,
         Name::new("Settings Menu Input Blocker"),
+        ZIndex::from(crate::menu::components::ZLayers::Overlay),
     ));
 
     let root_entity = commands
@@ -59,6 +60,7 @@ pub fn setup_main_settings(mut commands: Commands, context: Res<StateTransitionC
             MainSettingsScreen,
             AppLayer::Menu.layer(),
             Name::new("Settings Root Node"),
+            ZIndex::from(crate::menu::components::ZLayers::Background),
         ))
         .with_children(|parent| {
             // Title
@@ -66,13 +68,16 @@ pub fn setup_main_settings(mut commands: Commands, context: Res<StateTransitionC
                 .spawn((
                     Text::new("SETTINGS"),
                     TextFont {
-                        font_size: 40.0,
+                        font_size: 35.0,
                         ..default()
                     },
                     TextLayout::new_with_justify(JustifyText::Center),
                     TextColor(TEXT_COLOR),
+                    MenuItem,
+                    SettingsMenuItem,
                     AppLayer::Menu.layer(),
-                    Name::new("Settings Title"),
+                    ZIndex::from(crate::menu::components::ZLayers::MenuButtonText),
+                    Name::new("Settings Menu Title"),
                 ))
                 .id();
 
@@ -93,6 +98,9 @@ pub fn setup_main_settings(mut commands: Commands, context: Res<StateTransitionC
                     BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
                     AppLayer::Menu.layer(),
                     Name::new("Settings Container"),
+                    MenuItem,
+                    SettingsMenuItem,
+                    ZIndex::from(crate::menu::components::ZLayers::MenuContainer),
                 ))
                 .with_children(|parent| {
                     spawn_settings_button(parent, "Video", SettingsButtonAction::VideoSettings);
@@ -649,6 +657,9 @@ fn spawn_settings_button(parent: &mut ChildBuilder, text: &str, action: Settings
             action,
             AppLayer::Menu.layer(),
             SettingsMenuItem,
+            MenuItem,
+            ZIndex::from(crate::menu::components::ZLayers::MenuButtons),
+            Name::new(format!("{} Button", text)),
         ))
         .with_children(|parent| {
             parent.spawn((
@@ -661,6 +672,8 @@ fn spawn_settings_button(parent: &mut ChildBuilder, text: &str, action: Settings
                 TextLayout::new_with_justify(JustifyText::Center),
                 AppLayer::Menu.layer(),
                 SettingsMenuItem,
+                MenuItem,
+                ZIndex::from(crate::menu::components::ZLayers::MenuButtonText),
             ));
         });
 }

@@ -172,18 +172,44 @@ pub fn ensure_menu_item_visibility(
 
 /// Fix visibility for menu items when it changes
 pub fn fix_visibility_for_changed_items(
-    mut items: Query<
+    mut items_with_global_z: Query<
         (&mut Visibility, &GlobalZIndex, &Name),
         (With<MenuItem>, Changed<Visibility>),
     >,
+    mut items_with_z: Query<
+        (&mut Visibility, &ZIndex, &Name),
+        (With<MenuItem>, Changed<Visibility>, Without<GlobalZIndex>),
+    >,
 ) {
-    let item_count = items.iter().count();
-    if item_count > 0 {
-        debug!("Fixing visibility for {} changed menu items", item_count);
+    let global_z_count = items_with_global_z.iter().count();
+    let z_count = items_with_z.iter().count();
 
-        for (mut visibility, z_index, name) in items.iter_mut() {
+    if global_z_count > 0 || z_count > 0 {
+        debug!(
+            "Fixing visibility for {} changed menu items (GlobalZIndex: {}, ZIndex: {})",
+            global_z_count + z_count,
+            global_z_count,
+            z_count
+        );
+
+        // Process items with GlobalZIndex
+        for (mut visibility, z_index, name) in items_with_global_z.iter_mut() {
             if *visibility != Visibility::Visible && z_index.0 > 0 {
-                debug!("Forcing menu item '{}' to be visible", name);
+                debug!(
+                    "Forcing menu item '{}' with GlobalZIndex {} to be visible",
+                    name, z_index.0
+                );
+                *visibility = Visibility::Visible;
+            }
+        }
+
+        // Process items with ZIndex
+        for (mut visibility, z_index, name) in items_with_z.iter_mut() {
+            if *visibility != Visibility::Visible && z_index.0 > 0 {
+                debug!(
+                    "Forcing menu item '{}' with ZIndex {} to be visible",
+                    name, z_index.0
+                );
                 *visibility = Visibility::Visible;
             }
         }
