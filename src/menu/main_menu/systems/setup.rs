@@ -82,7 +82,7 @@ pub fn setup_main_menu(
         ImageNode::new(asset_server.load("images/menu_background.jpeg")),
         MainMenuBackground,
         MenuItem,
-        ZLayers::Background.into(),
+        Into::<ZIndex>::into(ZLayers::Background),
         Name::new("Menu Background"),
     ));
 

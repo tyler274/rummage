@@ -179,7 +179,7 @@ pub fn create_main_menu_buttons(
                 },
                 TextColor(Color::WHITE),
                 MenuItem,
-                ZLayers::MenuButtonText.into(),
+                Into::<ZIndex>::into(ZLayers::MenuButtonText),
                 Name::new("Main Menu Title"),
             ));
 
@@ -193,7 +193,7 @@ pub fn create_main_menu_buttons(
                 },
                 BackgroundColor(Color::srgba(0.9, 0.9, 0.9, 0.2)),
                 MenuItem,
-                ZLayers::MenuButtons.into(),
+                Into::<ZIndex>::into(ZLayers::MenuButtons),
                 Name::new("Title Divider"),
             ));
 
@@ -241,7 +241,7 @@ fn spawn_menu_button(
                 TextColor(Color::WHITE),
                 TextLayout::new_with_justify(JustifyText::Center),
                 MenuItem,
-                ZLayers::MenuButtonText.into(),
+                Into::<ZIndex>::into(ZLayers::MenuButtonText),
                 Name::new(format!("{} Text", text)),
             ));
         });
