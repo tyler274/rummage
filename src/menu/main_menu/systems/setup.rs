@@ -1,3 +1,4 @@
+use bevy::audio::PlaybackSettings;
 use bevy::prelude::*;
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, PositionType, Val};
 
@@ -10,7 +11,7 @@ use crate::{
     },
 };
 
-use super::super::components::MainMenuBackground;
+use super::super::components::{MainMenuBackground, MainMenuMusic};
 use super::buttons::create_main_menu_buttons;
 
 /// Sets up the main menu interface with buttons and layout
@@ -19,6 +20,7 @@ pub fn setup_main_menu(
     asset_server: Res<AssetServer>,
     existing_menu_items: Query<Entity, With<MenuCamera>>,
     existing_roots: Query<Entity, With<MenuRoot>>,
+    all_cameras: Query<&Camera>,
     save_exists: ResMut<SaveExists>,
 ) {
     info!("Setting up main menu interface");
@@ -31,8 +33,36 @@ pub fn setup_main_menu(
             menu_items_count
         );
     } else {
-        // Spawn camera if none exists
-        commands.spawn((Camera2d::default(), MenuCamera, Name::new("Menu Camera")));
+        // Find the highest camera order
+        let mut highest_order = 0;
+        for camera in all_cameras.iter() {
+            if camera.order > highest_order {
+                highest_order = camera.order;
+            }
+        }
+
+        // Spawn camera with proper order if none exists
+        commands.spawn((
+            Camera2d::default(),
+            Camera {
+                order: highest_order + 1,
+                ..default()
+            },
+            MenuCamera,
+            Name::new("Menu Camera"),
+            // Add essential UI components to make it a valid UI parent
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                ..default()
+            },
+            ViewVisibility::default(),
+            InheritedVisibility::default(),
+            Visibility::Visible,
+            ZIndex::default(),
+        ));
+
+        info!("Created menu camera with order {}", highest_order + 1);
     }
 
     // Clean up any existing menu items with MenuRoot
@@ -49,14 +79,25 @@ pub fn setup_main_menu(
             ..default()
         },
         BackgroundColor(Color::srgba(0.1, 0.1, 0.15, 1.0)),
-        ImageNode::new(asset_server.load("textures/menu_background.png")),
+        ImageNode::new(asset_server.load("images/menu_background.jpeg")),
         MainMenuBackground,
         MenuItem,
         Name::new("Menu Background"),
     ));
 
-    // Setup Star of David
-    // TODO: Fix star of david setup after refactoring
+    // Set up background music
+    commands.spawn((
+        AudioPlayer::new(asset_server.load("music/negev_hava_nagila.ogg")),
+        PlaybackSettings {
+            mode: bevy::audio::PlaybackMode::Loop,
+            ..default()
+        },
+        MainMenuMusic,
+        MenuItem,
+        Name::new("Main Menu Music"),
+    ));
+
+    // Note: Star of David and logo setup is now handled by the LogoPlugin
 
     // Create the main container
     let container = commands

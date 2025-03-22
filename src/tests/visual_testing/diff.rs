@@ -952,8 +952,15 @@ mod tests {
 // Setup functions to support the tests
 #[allow(dead_code)]
 fn setup_test_scene(mut commands: Commands) {
-    // Set up camera
-    commands.spawn(Camera2d::default());
+    // Set up camera with explicit order to avoid ambiguities
+    commands.spawn((
+        Camera2d::default(),
+        Camera {
+            order: 1,
+            ..default()
+        },
+        Name::new("Test Scene Camera"),
+    ));
 
     // Set up a test card
     // Placeholder - would add the actual card entity setup here
@@ -962,8 +969,15 @@ fn setup_test_scene(mut commands: Commands) {
 // Set up a scene for UI testing
 #[allow(dead_code)]
 fn setup_ui_test_scene(mut commands: Commands) {
-    // Set up camera
-    commands.spawn(Camera2d::default());
+    // Set up camera with explicit order to avoid ambiguities
+    commands.spawn((
+        Camera2d::default(),
+        Camera {
+            order: 1,
+            ..default()
+        },
+        Name::new("UI Test Camera"),
+    ));
 
     // Set up UI elements
     // Placeholder - would add UI element setup here
@@ -972,8 +986,15 @@ fn setup_ui_test_scene(mut commands: Commands) {
 // Set up an animation test scene
 #[allow(dead_code)]
 fn setup_animation_test(mut commands: Commands) {
-    // Set up camera
-    commands.spawn(Camera2d::default());
+    // Set up camera with explicit order to avoid ambiguities
+    commands.spawn((
+        Camera2d::default(),
+        Camera {
+            order: 1,
+            ..default()
+        },
+        Name::new("Animation Test Camera"),
+    ));
 
     // Set up animation elements
     // Placeholder - would add animation setup here

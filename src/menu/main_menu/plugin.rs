@@ -24,7 +24,7 @@ impl Plugin for MainMenuPlugin {
             // Register resources
             .init_resource::<MultiplayerState>()
             // Register systems
-            .add_systems(OnEnter(GameMenuState::MainMenu), setup_main_menu)
+            .add_systems(OnEnter(GameMenuState::MainMenu), setup_main_menu_adapter)
             .add_systems(
                 Update,
                 (
@@ -36,6 +36,25 @@ impl Plugin for MainMenuPlugin {
 
         info!("Main menu plugin registered");
     }
+}
+
+/// Adapter to call setup_main_menu with all the necessary parameters including all_cameras
+pub fn setup_main_menu_adapter(
+    commands: Commands,
+    asset_server: Res<AssetServer>,
+    menu_cameras: Query<Entity, With<crate::camera::components::MenuCamera>>,
+    existing_roots: Query<Entity, With<crate::menu::components::MenuRoot>>,
+    all_cameras: Query<&Camera>,
+    save_exists: ResMut<crate::menu::save_load::SaveExists>,
+) {
+    setup_main_menu(
+        commands,
+        asset_server,
+        menu_cameras,
+        existing_roots,
+        all_cameras,
+        save_exists,
+    );
 }
 
 /// System to check if main menu needs to be set up

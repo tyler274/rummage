@@ -91,8 +91,41 @@ pub fn monitor_state_transitions(
 
                     // Ensure menu camera exists before setting up UI
                     if menu_cameras.iter().count() == 0 {
-                        info!("No menu camera found for UI, creating one...");
-                        commands.spawn((Camera2d::default(), MenuCamera, Name::new("Menu Camera")));
+                        info!("No menu camera found for UI, creating one with proper order...");
+
+                        // Find highest current camera order
+                        let mut highest_order = 0;
+                        for camera in all_cameras.iter() {
+                            if camera.order > highest_order {
+                                highest_order = camera.order;
+                            }
+                        }
+
+                        // Create camera with next order and proper UI components
+                        commands.spawn((
+                            Camera2d::default(),
+                            Camera {
+                                order: highest_order + 1,
+                                ..default()
+                            },
+                            MenuCamera,
+                            Name::new("Menu Camera"),
+                            // Add essential UI components to make it a valid UI parent
+                            Node {
+                                width: Val::Percent(100.0),
+                                height: Val::Percent(100.0),
+                                ..default()
+                            },
+                            ViewVisibility::default(),
+                            InheritedVisibility::default(),
+                            Visibility::Visible,
+                            ZIndex::default(),
+                        ));
+
+                        info!(
+                            "Created emergency menu camera with order {}",
+                            highest_order + 1
+                        );
                     }
 
                     // Get the save exists resource

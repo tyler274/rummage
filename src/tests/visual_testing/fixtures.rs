@@ -5,8 +5,15 @@ use bevy::prelude::*;
 
 /// Sets up a basic test scene with camera
 pub fn setup_test_scene(mut commands: Commands) {
-    // Set up camera
-    commands.spawn(Camera2d::default());
+    // Set up camera with explicit order to avoid ambiguities
+    commands.spawn((
+        Camera2d::default(),
+        Camera {
+            order: 1,
+            ..default()
+        },
+        Name::new("Test Scene Camera"),
+    ));
 
     // Set up a test card entity
     // Placeholder - would add the actual card entity setup here
@@ -16,8 +23,15 @@ pub fn setup_test_scene(mut commands: Commands) {
 
 /// Sets up UI test scene
 pub fn setup_ui_test_scene(mut commands: Commands) {
-    // Set up camera
-    commands.spawn(Camera2d::default());
+    // Set up camera with explicit order to avoid ambiguities
+    commands.spawn((
+        Camera2d::default(),
+        Camera {
+            order: 1,
+            ..default()
+        },
+        Name::new("UI Test Camera"),
+    ));
 
     // Set up UI elements for testing
     // Placeholder - would set up various UI elements for testing
@@ -27,8 +41,15 @@ pub fn setup_ui_test_scene(mut commands: Commands) {
 
 /// Sets up animation test
 pub fn setup_animation_test(mut commands: Commands) {
-    // Set up camera
-    commands.spawn(Camera2d::default());
+    // Set up camera with explicit order to avoid ambiguities
+    commands.spawn((
+        Camera2d::default(),
+        Camera {
+            order: 1,
+            ..default()
+        },
+        Name::new("Animation Test Camera"),
+    ));
 
     // Set up animated entities
     // Placeholder - would set up entities with animations
