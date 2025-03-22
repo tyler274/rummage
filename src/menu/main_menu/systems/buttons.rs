@@ -51,11 +51,11 @@ pub struct MenuButtonBundle {
 impl MenuButtonBundle {
     /// Create a new main menu button
     pub fn new(button_name: &str) -> Self {
-        let (button, node, background) = create_main_menu_button();
+        let (button, node, _background) = create_main_menu_button();
         Self {
             button,
             node,
-            background: BackgroundColor(Color::rgba(0.3, 0.3, 0.8, 0.9)),
+            background: BackgroundColor(Color::srgba(0.3, 0.3, 0.8, 0.9)),
             name: Name::new(button_name.to_string()),
             menu_item: MenuItem,
             main_menu_button: MainMenuButton,
@@ -177,7 +177,7 @@ pub fn create_main_menu_buttons(
                     font_size: 60.0,
                     ..default()
                 },
-                TextColor(Color::rgba(1.0, 1.0, 1.0, 1.0)),
+                TextColor(Color::srgba(1.0, 1.0, 1.0, 1.0)),
                 MenuItem,
                 Visibility::Visible,
                 Into::<ZIndex>::into(ZLayers::MenuButtonText),
@@ -192,7 +192,7 @@ pub fn create_main_menu_buttons(
                     margin: UiRect::vertical(Val::Px(20.0)),
                     ..default()
                 },
-                BackgroundColor(Color::rgba(0.9, 0.9, 0.9, 0.8)),
+                BackgroundColor(Color::srgba(0.9, 0.9, 0.9, 0.8)),
                 MenuItem,
                 Visibility::Visible,
                 Into::<ZIndex>::into(ZLayers::MenuButtons),
@@ -240,7 +240,7 @@ fn spawn_menu_button(
                     font_size: 30.0,
                     ..default()
                 },
-                TextColor(Color::rgba(1.0, 1.0, 1.0, 1.0)),
+                TextColor(Color::srgba(1.0, 1.0, 1.0, 1.0)),
                 TextLayout::new_with_justify(JustifyText::Center),
                 MenuItem,
                 Visibility::Visible,

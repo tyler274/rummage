@@ -111,11 +111,11 @@ pub fn setup_main_menu(
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            BackgroundColor(Color::rgba(0.0, 0.0, 0.0, 0.3)), // Semi-transparent overlay
+            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.3)), // Semi-transparent overlay
             MenuRoot,
-            MenuItem,                      // Add MenuItem marker for visibility systems
-            Visibility::Visible,           // Force visibility
-            ZLayers::MenuContainer.into(), // Add proper z-index
+            MenuItem,            // Add MenuItem marker for visibility systems
+            Visibility::Visible, // Force visibility
+            Into::<ZIndex>::into(ZLayers::MenuContainer), // Add proper z-index
             Name::new("Main Menu Root"),
         ))
         .id();
