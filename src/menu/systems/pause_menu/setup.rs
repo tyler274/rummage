@@ -26,7 +26,7 @@ pub fn setup_pause_menu(
         InputBlocker,
         AppLayer::Menu.layer(),
         Name::new("Pause Menu Input Blocker"),
-        ZLayers::Overlay.into(),
+        ZIndex::from(ZLayers::Overlay),
     ));
 
     // Spawn a pause menu root entity to help with cleanup
@@ -34,7 +34,7 @@ pub fn setup_pause_menu(
         MenuRoot,
         Name::new("Pause Menu Root"),
         AppLayer::Menu.layer(),
-        ZLayers::Background.into(),
+        ZIndex::from(ZLayers::Background),
     ));
 
     // Entity ID for the button container
@@ -54,7 +54,7 @@ pub fn setup_pause_menu(
             BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.5)),
             MenuItem,
             AppLayer::Menu.layer(),
-            ZLayers::Background.into(),
+            ZIndex::from(ZLayers::Background),
         ))
         .with_children(|parent| {
             // Pause menu container
@@ -75,7 +75,7 @@ pub fn setup_pause_menu(
                     BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
                     AppLayer::Menu.layer(),
                     MenuItem,
-                    ZLayers::MenuContainer.into(),
+                    ZIndex::from(ZLayers::MenuContainer),
                 ))
                 .with_children(|parent| {
                     // Logo container is now the first child above the PAUSED text
@@ -94,7 +94,7 @@ pub fn setup_pause_menu(
                         Name::new("Logo Position"),
                         MenuItem,
                         AppLayer::Menu.layer(),
-                        ZLayers::LogoIcon.into(),
+                        ZIndex::from(ZLayers::LogoIcon),
                     ));
 
                     // Title (now appears after the logo)
@@ -109,7 +109,7 @@ pub fn setup_pause_menu(
                         Name::new("Pause Menu Title"),
                         MenuItem,
                         AppLayer::Menu.layer(),
-                        ZLayers::MenuButtonText.into(),
+                        ZIndex::from(ZLayers::MenuButtonText),
                     ));
 
                     // Create a container for buttons to control spacing
@@ -127,7 +127,7 @@ pub fn setup_pause_menu(
                             },
                             MenuItem,
                             AppLayer::Menu.layer(),
-                            ZLayers::MenuContainer.into(),
+                            ZIndex::from(ZLayers::MenuContainer),
                         ))
                         .id();
 
@@ -196,7 +196,7 @@ pub fn setup_pause_menu(
                     BackgroundColor(NORMAL_BUTTON),
                     MenuButtonAction::Quit,
                     MenuItem,
-                    ZLayers::MenuButtons.into(),
+                    ZIndex::from(ZLayers::MenuButtons),
                 ))
                 .with_children(|parent| {
                     parent.spawn((
@@ -208,7 +208,7 @@ pub fn setup_pause_menu(
                         TextColor(Color::WHITE),
                         TextLayout::new_with_justify(JustifyText::Center),
                         MenuItem,
-                        ZLayers::MenuButtonText.into(),
+                        ZIndex::from(ZLayers::MenuButtonText),
                     ));
                 });
         });
