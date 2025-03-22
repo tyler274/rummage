@@ -2,7 +2,7 @@ use crate::camera::components::AppLayer;
 use bevy::prelude::*;
 
 /// Creates a container for the logo group (Star of David + text)
-fn create_logo() -> impl Bundle {
+pub fn create_logo() -> impl Bundle {
     (
         Node {
             width: Val::Px(300.0),

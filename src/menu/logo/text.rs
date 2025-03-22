@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy::text::JustifyText;
-use bevy::ui::{PositionType, UiRect, Val};
+use bevy::ui::{UiRect, Val};
 
 /// Creates the Hebrew text "Rummage" (רומאג')
 pub fn create_hebrew_text(asset_server: &AssetServer) -> impl Bundle {

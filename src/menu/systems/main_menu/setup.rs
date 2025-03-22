@@ -14,23 +14,30 @@ use crate::menu::{
 pub fn setup_main_menu(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    existing_menu_items: Query<Entity, With<MenuCamera>>,
+    menu_cameras: Query<Entity, With<MenuCamera>>,
     existing_roots: Query<Entity, With<MenuRoot>>,
     save_exists: ResMut<SaveExists>,
 ) {
     info!("Setting up main menu interface");
 
-    // Check for existing menu items first
-    let menu_items_count = existing_menu_items.iter().count();
-    if menu_items_count > 0 {
-        info!(
-            "Found {} existing menu cameras, they will be handled by camera systems",
-            menu_items_count
-        );
+    // Get or create the menu camera
+    let camera_entity = if let Some(camera) = menu_cameras.iter().next() {
+        info!("Using existing menu camera: {:?}", camera);
+        camera
     } else {
-        // Spawn camera if none exists
-        commands.spawn((Camera2d::default(), MenuCamera, Name::new("Menu Camera")));
-    }
+        info!("No menu camera found, creating one");
+        commands
+            .spawn((
+                Camera2d::default(),
+                Camera {
+                    order: 1, // Ensure this has a distinct order
+                    ..default()
+                },
+                MenuCamera,
+                Name::new("Menu Camera"),
+            ))
+            .id()
+    };
 
     // Clean up any existing menu items with MenuRoot
     for entity in existing_roots.iter() {
@@ -55,23 +62,6 @@ pub fn setup_main_menu(
     // Setup Star of David
     setup_main_menu_star(&mut commands, &asset_server);
 
-    // Create the main container
-    let container = commands
-        .spawn((
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                ..default()
-            },
-            BackgroundColor(Color::NONE),
-            MenuRoot,
-            Name::new("Main Menu Root"),
-        ))
-        .id();
-
     // Check if save exists and store the value
     let has_save = {
         let mut save_exists_ref = save_exists;
@@ -79,8 +69,27 @@ pub fn setup_main_menu(
         save_exists_ref.0
     };
 
-    // Add menu buttons as children to the container
-    commands.entity(container).with_children(|parent| {
-        create_main_menu_buttons(parent, &asset_server, has_save);
-    });
+    // Attach the main menu to the camera entity
+    commands
+        .entity(camera_entity)
+        .with_children(|camera_parent| {
+            // Create the main container
+            camera_parent
+                .spawn((
+                    Node {
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(100.0),
+                        flex_direction: FlexDirection::Column,
+                        align_items: AlignItems::Center,
+                        justify_content: JustifyContent::Center,
+                        ..default()
+                    },
+                    BackgroundColor(Color::NONE),
+                    MenuRoot,
+                    Name::new("Main Menu Root"),
+                ))
+                .with_children(|parent| {
+                    create_main_menu_buttons(parent, &asset_server, has_save);
+                });
+        });
 }

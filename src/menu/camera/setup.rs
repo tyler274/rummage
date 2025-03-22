@@ -8,22 +8,23 @@ pub struct MenuCamera;
 pub fn setup_menu_camera(
     mut commands: Commands,
     cameras: Query<(Entity, Option<&Camera>), With<MenuCamera>>,
+    all_cameras: Query<&Camera>,
 ) {
     // Check if a menu camera already exists to avoid duplicates
     if !cameras.is_empty() {
-        info!("Menu camera already exists, skipping creation");
-        return;
+        info!("Menu camera already exists, cleaning up to prevent ambiguities");
+        for (entity, _) in cameras.iter() {
+            commands.entity(entity).despawn_recursive();
+        }
     }
 
     info!("Setting up menu camera");
 
-    // Find the highest camera order from existing cameras
+    // Find the highest camera order from all existing cameras
     let mut highest_order = 0;
-    for (_, camera) in cameras.iter() {
-        if let Some(camera) = camera {
-            if camera.order > highest_order {
-                highest_order = camera.order;
-            }
+    for camera in all_cameras.iter() {
+        if camera.order > highest_order {
+            highest_order = camera.order;
         }
     }
 
