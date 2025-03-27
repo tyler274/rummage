@@ -24,6 +24,8 @@ impl Plugin for LogoPlugin {
         app
             // Add resource to track logo initialization
             .init_resource::<LogoInitTracker>()
+            // Add a startup system to ensure the logo is created before states are processed
+            .add_systems(Startup, setup_startup_logo)
             // Add the logo setup, but now only on entering the main menu, not on startup
             .add_systems(OnEnter(GameMenuState::MainMenu), setup_combined_logo)
             .add_systems(OnEnter(GameMenuState::PauseMenu), setup_pause_logo)
@@ -39,6 +41,98 @@ impl Plugin for LogoPlugin {
             .add_systems(OnEnter(GameMenuState::Settings), cleanup_logo);
 
         debug!("Logo plugin registered - combines Star of David with text");
+    }
+}
+
+/// Sets up the logo at application startup
+fn setup_startup_logo(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    menu_cameras: Query<Entity, With<MenuCamera>>,
+    existing_logos: Query<Entity, With<MenuDecorativeElement>>,
+) {
+    info!("Running startup logo setup");
+
+    // If no logos exist yet
+    if existing_logos.iter().count() == 0 {
+        // If there are no menu cameras, create one first
+        if menu_cameras.iter().count() == 0 {
+            info!("No menu camera found - creating one before logo setup");
+            let camera_entity = commands
+                .spawn((
+                    Camera2d::default(),
+                    Camera {
+                        order: 1, // Use order 1 for initial setup
+                        ..default()
+                    },
+                    MenuCamera,
+                    Name::new("Startup Menu Camera"),
+                    // Add essential UI components to make it a valid UI parent
+                    Node {
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(100.0),
+                        ..default()
+                    },
+                    // Full visibility components to ensure UI items inherit visibility properly
+                    ViewVisibility::default(),
+                    InheritedVisibility::VISIBLE,
+                    Visibility::Visible,
+                    // Standard ZIndex
+                    ZIndex::default(),
+                    // Add render layers for menu items
+                    crate::camera::components::AppLayer::menu_layers(),
+                ))
+                .id();
+
+            info!("Created startup menu camera entity: {:?}", camera_entity);
+
+            // Now add the logo to the camera we just created
+            commands.entity(camera_entity).with_children(|parent| {
+                parent
+                    .spawn((
+                        Node {
+                            width: Val::Percent(100.0),
+                            height: Val::Px(200.0),
+                            flex_direction: FlexDirection::Column,
+                            align_items: AlignItems::Center,
+                            justify_content: JustifyContent::FlexStart,
+                            position_type: PositionType::Absolute,
+                            top: Val::Px(20.0),
+                            ..default()
+                        },
+                        MenuDecorativeElement,
+                        MenuItem,
+                        AppLayer::Menu.layer(),
+                        Visibility::Visible,
+                        InheritedVisibility::VISIBLE,
+                        ZIndex::from(ZLayers::MenuButtons),
+                        Name::new("Startup Logo Container"),
+                    ))
+                    .with_children(|logo_parent| {
+                        // Spawn the Star of David as part of the logo
+                        logo_parent.spawn((create_star_of_david(), Name::new("Star of David")));
+
+                        // Add Hebrew text
+                        logo_parent.spawn((
+                            create_hebrew_text(&asset_server),
+                            Name::new("Hebrew Logo Text"),
+                        ));
+
+                        // Add English text
+                        logo_parent.spawn((
+                            create_english_text(&asset_server),
+                            Name::new("English Logo Text"),
+                        ));
+                    });
+            });
+            info!("Logo attached to startup camera");
+        } else {
+            // Use existing camera
+            info!("Using existing menu camera for startup logo");
+            setup_combined_logo(commands, asset_server, menu_cameras, existing_logos);
+        }
+    } else {
+        info!("Logo already exists at startup");
     }
 }
 
