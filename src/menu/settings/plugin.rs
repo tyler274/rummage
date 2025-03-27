@@ -14,12 +14,16 @@ pub struct SettingsPlugin;
 
 impl Plugin for SettingsPlugin {
     fn build(&self, app: &mut App) {
+        info!("Building SettingsPlugin...");
+        
         // Initialize all settings resources first
         app.init_resource::<VolumeSettings>()
             .init_resource::<GameplaySettings>()
             .init_resource::<GraphicsQuality>()
             .init_resource::<RummageSettings>();
 
+        info!("Settings resources initialized");
+        
         // Set up persistent settings using TOML
         match Persistent::<RummageSettings>::builder()
             .name("rummage_settings")
@@ -46,32 +50,46 @@ impl Plugin for SettingsPlugin {
             .add_systems(
                 OnEnter(SettingsMenuState::Main),
                 (
+                    // Ensure we set up the menu camera before spawning UI elements
+                    crate::menu::camera::setup::setup_menu_camera,
                     setup_main_settings,
                     |state: Res<State<SettingsMenuState>>, game_state: Res<State<GameMenuState>>| {
                         info!("ENTERED SettingsMenuState::Main - Current Settings State: {:?}, Game State: {:?}", 
                               state.get(), game_state.get());
                     }
-                ).run_if(in_state(GameMenuState::Settings))
+                )
             )
             // Settings state - Video settings
             .add_systems(
                 OnEnter(SettingsMenuState::Video),
-                setup_video_settings.run_if(in_state(GameMenuState::Settings))
+                (
+                    crate::menu::camera::setup::setup_menu_camera,
+                    setup_video_settings
+                )
             )
             // Settings state - Audio settings
             .add_systems(
                 OnEnter(SettingsMenuState::Audio),
-                setup_audio_settings.run_if(in_state(GameMenuState::Settings))
+                (
+                    crate::menu::camera::setup::setup_menu_camera,
+                    setup_audio_settings
+                )
             )
             // Settings state - Gameplay settings
             .add_systems(
                 OnEnter(SettingsMenuState::Gameplay),
-                setup_gameplay_settings.run_if(in_state(GameMenuState::Settings)),
+                (
+                    crate::menu::camera::setup::setup_menu_camera,
+                    setup_gameplay_settings
+                )
             )
             // Settings state - Controls settings
             .add_systems(
                 OnEnter(SettingsMenuState::Controls),
-                setup_controls_settings.run_if(in_state(GameMenuState::Settings)),
+                (
+                    crate::menu::camera::setup::setup_menu_camera,
+                    setup_controls_settings
+                )
             )
             // Settings interaction system
             .add_systems(
@@ -79,7 +97,7 @@ impl Plugin for SettingsPlugin {
                 (
                     settings_button_action,
                     volume_slider_interaction
-                ).run_if(in_state(GameMenuState::Settings)),
+                )
             )
             // Apply settings on startup
             .add_systems(Startup, apply_settings)
@@ -88,16 +106,16 @@ impl Plugin for SettingsPlugin {
             .add_systems(OnExit(SettingsMenuState::Video), save_settings)
             .add_systems(OnExit(SettingsMenuState::Gameplay), save_settings)
             // Cleanup systems for each settings state exit
-            .add_systems(OnExit(SettingsMenuState::Video), cleanup_settings_menu)
-            .add_systems(OnExit(SettingsMenuState::Audio), cleanup_settings_menu)
-            .add_systems(OnExit(SettingsMenuState::Gameplay), cleanup_settings_menu)
-            .add_systems(OnExit(SettingsMenuState::Controls), cleanup_settings_menu)
+            .add_systems(OnExit(SettingsMenuState::Video), cleanup_settings_menu.run_if(not(in_state(SettingsMenuState::Main))))
+            .add_systems(OnExit(SettingsMenuState::Audio), cleanup_settings_menu.run_if(not(in_state(SettingsMenuState::Main))))
+            .add_systems(OnExit(SettingsMenuState::Gameplay), cleanup_settings_menu.run_if(not(in_state(SettingsMenuState::Main))))
+            .add_systems(OnExit(SettingsMenuState::Controls), cleanup_settings_menu.run_if(not(in_state(SettingsMenuState::Main))))
             // Cleanup system for the main settings menu
             .add_systems(OnExit(GameMenuState::Settings), (
                 cleanup_settings_menu,
                 // Only clean up settings-specific menu items, not all menu items
-                |mut commands: Commands, menu_items: Query<(Entity, Option<&Name>), With<MenuItem>>| {
-                    for (entity, name) in menu_items.iter() {
+                |mut commands: Commands, menu_items: Query<(Entity, Option<&Name>, Option<&Children>), With<MenuItem>>| {
+                    for (entity, name, _) in menu_items.iter() {
                         // Only despawn settings-specific menu items by checking their names
                         let is_settings_item = name.map_or(false, |n| {
                             n.as_str().contains("Settings") || 
@@ -110,9 +128,27 @@ impl Plugin for SettingsPlugin {
                             info!("Cleaning up settings menu item: {:?} ({})", entity, name.unwrap_or(&Name::new("Unnamed")));
                             commands.entity(entity).despawn_recursive();
                         } else {
-                            // For non-settings items, just ensure they're visible
+                            // For non-settings items, just ensure they're visible, but only if they still exist
                             info!("Preserving non-settings menu item: {:?}", entity);
-                            commands.entity(entity).insert(Visibility::Visible);
+                            // Don't try to modify entities here - can cause errors if they're being despawned recursively
+                            // Just queue them for visibility update
+                        }
+                    }
+                    
+                    // Now in a separate step, handle visibility updates for remaining entities
+                    info!("Updating visibility for remaining menu entities");
+                },
+                // Run a separate system to update visibility after cleanup
+                |world: &mut World| {
+                    // Find all MenuItem entities that still exist
+                    let mut query = world.query_filtered::<Entity, With<MenuItem>>();
+                    let entities: Vec<Entity> = query.iter(world).collect();
+                    
+                    // Update visibility for each entity that exists
+                    for entity in entities {
+                        // The direct mutation approach avoids the CommandQueue issue
+                        if let Ok(mut entity_mut) = world.get_entity_mut(entity) {
+                            entity_mut.insert(Visibility::Visible);
                         }
                     }
                 },

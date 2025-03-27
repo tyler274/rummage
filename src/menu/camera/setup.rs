@@ -49,29 +49,36 @@ pub fn setup_menu_camera(
 
     // Create a new camera with a higher order
     let new_order = highest_order + 1;
-    commands.spawn((
-        Camera2d::default(),
-        Camera {
-            order: new_order,
-            ..default()
-        },
-        MenuCamera,
-        Name::new("Menu Camera"),
-        // Add essential UI components to make it a valid UI parent
-        Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            ..default()
-        },
-        // Full visibility components to ensure UI items inherit visibility properly
-        ViewVisibility::default(),
-        InheritedVisibility::default(),
-        Visibility::Visible,
-        // Give it a ZIndex for proper layering
-        ZIndex::default(),
-    ));
+    let camera_entity = commands
+        .spawn((
+            Camera2d::default(),
+            Camera {
+                order: new_order,
+                ..default()
+            },
+            MenuCamera,
+            Name::new("Menu Camera"),
+            // Add essential UI components to make it a valid UI parent
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                ..default()
+            },
+            // Full visibility components to ensure UI items inherit visibility properly
+            ViewVisibility::default(),
+            InheritedVisibility::VISIBLE,
+            Visibility::Visible,
+            // Standard ZIndex
+            ZIndex::default(),
+            // Add render layers for menu items
+            crate::camera::components::AppLayer::menu_layers(),
+        ))
+        .id();
 
-    info!("Menu camera created with order {}", new_order);
+    info!(
+        "Menu camera created with order {} and entity {:?}",
+        new_order, camera_entity
+    );
 }
 
 /// Cleans up the menu camera

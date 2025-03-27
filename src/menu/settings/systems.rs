@@ -28,21 +28,29 @@ pub fn setup_main_settings(mut commands: Commands, context: Res<StateTransitionC
         context.from_pause_menu, context.settings_origin
     );
 
+    // Enhanced debugging - log all existing UI entities
+    info!("DEBUG: Setup main settings menu - logging menu environment");
+
     // First, create a full-screen transparent input blocker
-    commands.spawn((
-        Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            position_type: PositionType::Absolute,
-            ..default()
-        },
-        AppLayer::Menu.layer(),
-        InputBlocker,
-        MenuItem,
-        SettingsMenuItem,
-        Name::new("Settings Menu Input Blocker"),
-        ZIndex::from(crate::menu::components::ZLayers::Overlay),
-    ));
+    let input_blocker = commands
+        .spawn((
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                position_type: PositionType::Absolute,
+                ..default()
+            },
+            AppLayer::Menu.layer(),
+            InputBlocker,
+            MenuItem,
+            SettingsMenuItem,
+            Name::new("Settings Menu Input Blocker"),
+            ZIndex::from(crate::menu::components::ZLayers::Overlay),
+            Visibility::Visible,
+        ))
+        .id();
+
+    info!("Spawned input blocker: {:?}", input_blocker);
 
     let root_entity = commands
         .spawn((
@@ -61,6 +69,8 @@ pub fn setup_main_settings(mut commands: Commands, context: Res<StateTransitionC
             AppLayer::Menu.layer(),
             Name::new("Settings Root Node"),
             ZIndex::from(crate::menu::components::ZLayers::Background),
+            Visibility::Visible,
+            InheritedVisibility::VISIBLE,
         ))
         .with_children(|parent| {
             // Title
@@ -78,6 +88,8 @@ pub fn setup_main_settings(mut commands: Commands, context: Res<StateTransitionC
                     AppLayer::Menu.layer(),
                     ZIndex::from(crate::menu::components::ZLayers::MenuButtonText),
                     Name::new("Settings Menu Title"),
+                    Visibility::Visible,
+                    InheritedVisibility::VISIBLE,
                 ))
                 .id();
 
@@ -101,6 +113,8 @@ pub fn setup_main_settings(mut commands: Commands, context: Res<StateTransitionC
                     MenuItem,
                     SettingsMenuItem,
                     ZIndex::from(crate::menu::components::ZLayers::MenuContainer),
+                    Visibility::Visible,
+                    InheritedVisibility::VISIBLE,
                 ))
                 .with_children(|parent| {
                     spawn_settings_button(parent, "Video", SettingsButtonAction::VideoSettings);
@@ -642,6 +656,7 @@ fn create_keybinding(parent: &mut ChildBuilder, action: &str, key: &str) {
 
 /// Creates a settings button with text
 fn spawn_settings_button(parent: &mut ChildBuilder, text: &str, action: SettingsButtonAction) {
+    info!("Spawning settings button: {}", text);
     parent
         .spawn((
             Button,
@@ -660,6 +675,8 @@ fn spawn_settings_button(parent: &mut ChildBuilder, text: &str, action: Settings
             MenuItem,
             ZIndex::from(crate::menu::components::ZLayers::MenuButtons),
             Name::new(format!("{} Button", text)),
+            Visibility::Visible,
+            InheritedVisibility::VISIBLE,
         ))
         .with_children(|parent| {
             parent.spawn((
@@ -674,6 +691,8 @@ fn spawn_settings_button(parent: &mut ChildBuilder, text: &str, action: Settings
                 SettingsMenuItem,
                 MenuItem,
                 ZIndex::from(crate::menu::components::ZLayers::MenuButtonText),
+                Visibility::Visible,
+                InheritedVisibility::VISIBLE,
             ));
         });
 }
@@ -759,43 +778,48 @@ pub fn settings_button_action(
     }
 }
 
-/// Cleans up settings menu entities
+/// Cleanup the settings menu entities
 pub fn cleanup_settings_menu(
     mut commands: Commands,
-    menu_query: Query<(Entity, Option<&Name>), With<SettingsMenuItem>>,
+    menu_query: Query<(Entity, Option<&Name>, Option<&MainSettingsScreen>), With<SettingsMenuItem>>,
     input_blockers: Query<Entity, With<crate::menu::input_blocker::InputBlocker>>,
+    current_settings_state: Res<State<SettingsMenuState>>,
 ) {
-    let count = menu_query.iter().count();
-    info!("Cleaning up {} settings menu items", count);
+    // Get the count for logging
+    let item_count = menu_query.iter().count();
+    info!(
+        "Cleaning up settings menu items. Current state: {:?}, Items: {}",
+        current_settings_state.get(),
+        item_count
+    );
 
-    for (entity, name) in menu_query.iter() {
-        if let Some(name) = name {
-            info!(
-                "Despawning settings menu entity: {:?} with name: {}",
-                entity,
-                name.as_str()
-            );
-        } else {
-            info!("Despawning settings menu entity without name: {:?}", entity);
-        }
+    // Special case for main settings menu - only clean up if we're not in the main settings state
+    // to prevent cleaning up the menu we just spawned
+    if *current_settings_state.get() == SettingsMenuState::Main {
+        info!("Skipping cleanup because we're in SettingsMenuState::Main");
+        return;
+    }
+
+    // Create a list of entities to despawn safely
+    let entities_to_despawn: Vec<(Entity, String)> = menu_query
+        .iter()
+        .filter_map(|(entity, name, _)| {
+            // Convert the name to a string for logging
+            let name_str = name.map_or("Unnamed".to_string(), |n| n.to_string());
+            Some((entity, name_str))
+        })
+        .collect();
+
+    // Now despawn each entity
+    for (entity, name) in entities_to_despawn {
+        info!("Despawning settings menu entity: {:?} ({})", entity, name);
         commands.entity(entity).despawn_recursive();
     }
 
-    // Explicitly clean up any input blockers
-    let blocker_count = input_blockers.iter().count();
-    if blocker_count > 0 {
-        info!(
-            "Cleaning up {} input blockers from settings menu",
-            blocker_count
-        );
-        for entity in input_blockers.iter() {
-            info!("Despawning input blocker: {:?}", entity);
-            commands.entity(entity).despawn_recursive();
-        }
-    }
-
-    if count == 0 {
-        warn!("No settings menu entities found to clean up");
+    // Clean up any input blockers that might remain
+    for blocker in input_blockers.iter() {
+        info!("Despawning input blocker: {:?}", blocker);
+        commands.entity(blocker).despawn_recursive();
     }
 }
 
