@@ -67,10 +67,10 @@ pub fn setup_main_settings(mut commands: Commands, context: Res<StateTransitionC
             SettingsMenuItem,
             MainSettingsScreen,
             AppLayer::Menu.layer(),
-            Name::new("Settings Root Node"),
-            ZIndex::from(crate::menu::components::ZLayers::Background),
             Visibility::Visible,
             InheritedVisibility::VISIBLE,
+            Name::new("Settings Root Node"),
+            ZIndex::from(crate::menu::components::ZLayers::Background),
         ))
         .with_children(|parent| {
             // Title
@@ -85,11 +85,10 @@ pub fn setup_main_settings(mut commands: Commands, context: Res<StateTransitionC
                     TextColor(TEXT_COLOR),
                     MenuItem,
                     SettingsMenuItem,
-                    AppLayer::Menu.layer(),
-                    ZIndex::from(crate::menu::components::ZLayers::MenuButtonText),
-                    Name::new("Settings Menu Title"),
                     Visibility::Visible,
                     InheritedVisibility::VISIBLE,
+                    Name::new("Settings Menu Title"),
+                    ZIndex::from(crate::menu::components::ZLayers::MenuButtonText),
                 ))
                 .id();
 
@@ -109,12 +108,12 @@ pub fn setup_main_settings(mut commands: Commands, context: Res<StateTransitionC
                     },
                     BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
                     AppLayer::Menu.layer(),
+                    Visibility::Visible,
+                    InheritedVisibility::VISIBLE,
                     Name::new("Settings Container"),
                     MenuItem,
                     SettingsMenuItem,
                     ZIndex::from(crate::menu::components::ZLayers::MenuContainer),
-                    Visibility::Visible,
-                    InheritedVisibility::VISIBLE,
                 ))
                 .with_children(|parent| {
                     spawn_settings_button(parent, "Video", SettingsButtonAction::VideoSettings);
@@ -165,6 +164,10 @@ pub fn setup_video_settings(
             SettingsMenuItem,
             VideoSettingsScreen,
             AppLayer::Menu.layer(),
+            Visibility::Visible,
+            InheritedVisibility::VISIBLE,
+            Name::new("Video Settings Root Node"),
+            ZIndex::from(crate::menu::components::ZLayers::Background),
         ))
         .with_children(|parent| {
             // Title
@@ -177,6 +180,12 @@ pub fn setup_video_settings(
                 TextLayout::new_with_justify(JustifyText::Center),
                 TextColor(TEXT_COLOR),
                 AppLayer::Menu.layer(),
+                MenuItem,
+                SettingsMenuItem,
+                Visibility::Visible,
+                InheritedVisibility::VISIBLE,
+                Name::new("Video Settings Title"),
+                ZIndex::from(crate::menu::components::ZLayers::MenuButtonText),
             ));
 
             // Settings container
@@ -193,6 +202,12 @@ pub fn setup_video_settings(
                     },
                     BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
                     AppLayer::Menu.layer(),
+                    Visibility::Visible,
+                    InheritedVisibility::VISIBLE,
+                    Name::new("Video Settings Container"),
+                    MenuItem,
+                    SettingsMenuItem,
+                    ZIndex::from(crate::menu::components::ZLayers::MenuContainer),
                 ))
                 .with_children(|parent| {
                     // Quality setting
@@ -207,6 +222,11 @@ pub fn setup_video_settings(
                                 ..default()
                             },
                             AppLayer::Menu.layer(),
+                            MenuItem,
+                            SettingsMenuItem,
+                            Visibility::Visible,
+                            InheritedVisibility::VISIBLE,
+                            Name::new("Graphics Quality Row"),
                         ))
                         .with_children(|parent| {
                             // Label
@@ -218,6 +238,11 @@ pub fn setup_video_settings(
                                 },
                                 TextColor(TEXT_COLOR),
                                 AppLayer::Menu.layer(),
+                                MenuItem,
+                                SettingsMenuItem,
+                                Visibility::Visible,
+                                InheritedVisibility::VISIBLE,
+                                Name::new("Graphics Quality Label"),
                             ));
 
                             // Value
@@ -235,6 +260,11 @@ pub fn setup_video_settings(
                                 },
                                 TextColor(TEXT_COLOR),
                                 AppLayer::Menu.layer(),
+                                MenuItem,
+                                SettingsMenuItem,
+                                Visibility::Visible,
+                                InheritedVisibility::VISIBLE,
+                                Name::new("Graphics Quality Value"),
                             ));
                         });
 
@@ -263,6 +293,10 @@ pub fn setup_audio_settings(mut commands: Commands, volume_settings: Option<Res<
             SettingsMenuItem,
             AudioSettingsScreen,
             AppLayer::Menu.layer(),
+            Visibility::Visible,
+            InheritedVisibility::VISIBLE,
+            Name::new("Audio Settings Root Node"),
+            ZIndex::from(crate::menu::components::ZLayers::Background),
         ))
         .with_children(|parent| {
             // Title
@@ -275,6 +309,12 @@ pub fn setup_audio_settings(mut commands: Commands, volume_settings: Option<Res<
                 TextLayout::new_with_justify(JustifyText::Center),
                 TextColor(TEXT_COLOR),
                 AppLayer::Menu.layer(),
+                MenuItem,
+                SettingsMenuItem,
+                Visibility::Visible,
+                InheritedVisibility::VISIBLE,
+                Name::new("Audio Settings Title"),
+                ZIndex::from(crate::menu::components::ZLayers::MenuButtonText),
             ));
 
             // Settings container
@@ -291,6 +331,12 @@ pub fn setup_audio_settings(mut commands: Commands, volume_settings: Option<Res<
                     },
                     BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
                     AppLayer::Menu.layer(),
+                    Visibility::Visible,
+                    InheritedVisibility::VISIBLE,
+                    Name::new("Audio Settings Container"),
+                    MenuItem,
+                    SettingsMenuItem,
+                    ZIndex::from(crate::menu::components::ZLayers::MenuContainer),
                 ))
                 .with_children(|parent| {
                     // Master volume setting
@@ -351,6 +397,11 @@ fn create_volume_slider(
                 margin: UiRect::all(Val::Px(10.0)),
                 ..default()
             },
+            MenuItem,
+            SettingsMenuItem,
+            Visibility::Visible,
+            InheritedVisibility::VISIBLE,
+            Name::new(format!("Volume Slider {}", label)),
             AppLayer::Menu.layer(),
         ))
         .with_children(|parent| {
@@ -362,26 +413,34 @@ fn create_volume_slider(
                     ..default()
                 },
                 TextColor(TEXT_COLOR),
+                MenuItem,
+                SettingsMenuItem,
+                Visibility::Visible,
+                InheritedVisibility::VISIBLE,
+                Name::new(format!("Volume Slider Label {}", label)),
                 AppLayer::Menu.layer(),
             ));
 
-            // Slider container
+            // Slider
             parent
                 .spawn((
+                    Button,
                     Node {
                         width: Val::Px(200.0),
-                        height: Val::Px(30.0),
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
+                        height: Val::Px(20.0),
                         ..default()
                     },
-                    Button { ..default() },
-                    BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
+                    BackgroundColor(Color::srgba(0.2, 0.2, 0.2, 0.8)),
                     volume_type,
+                    MenuItem,
+                    SettingsMenuItem,
+                    Visibility::Visible,
+                    InheritedVisibility::VISIBLE,
+                    Name::new(format!("Volume Slider Container {}", label)),
                     AppLayer::Menu.layer(),
                 ))
                 .with_children(|parent| {
-                    // Current value indicator
+                    // The filled part of the slider
                     parent.spawn((
                         Node {
                             width: Val::Percent(value as f32),
@@ -389,17 +448,17 @@ fn create_volume_slider(
                             ..default()
                         },
                         BackgroundColor(Color::srgba(0.4, 0.6, 0.8, 0.8)),
+                        MenuItem,
+                        SettingsMenuItem,
+                        Visibility::Visible,
+                        InheritedVisibility::VISIBLE,
+                        Name::new(format!("Volume Slider Indicator {}", label)),
                         AppLayer::Menu.layer(),
                     ));
                 });
 
-            // Value text
+            // Value as text
             parent.spawn((
-                Node {
-                    width: Val::Auto,
-                    height: Val::Auto,
-                    ..default()
-                },
                 Text::new(format!("{}%", value)),
                 TextFont {
                     font_size: 20.0,
@@ -407,6 +466,11 @@ fn create_volume_slider(
                 },
                 TextColor(TEXT_COLOR),
                 VolumeValueText(volume_type),
+                MenuItem,
+                SettingsMenuItem,
+                Visibility::Visible,
+                InheritedVisibility::VISIBLE,
+                Name::new(format!("Volume Slider Value {}", label)),
                 AppLayer::Menu.layer(),
             ));
         });
@@ -438,6 +502,10 @@ pub fn setup_gameplay_settings(
             SettingsMenuItem,
             GameplaySettingsScreen,
             AppLayer::Menu.layer(),
+            Visibility::Visible,
+            InheritedVisibility::VISIBLE,
+            Name::new("Gameplay Settings Root Node"),
+            ZIndex::from(crate::menu::components::ZLayers::Background),
         ))
         .with_children(|parent| {
             // Title
@@ -450,6 +518,12 @@ pub fn setup_gameplay_settings(
                 TextLayout::new_with_justify(JustifyText::Center),
                 TextColor(TEXT_COLOR),
                 AppLayer::Menu.layer(),
+                MenuItem,
+                SettingsMenuItem,
+                Visibility::Visible,
+                InheritedVisibility::VISIBLE,
+                Name::new("Gameplay Settings Title"),
+                ZIndex::from(crate::menu::components::ZLayers::MenuButtonText),
             ));
 
             // Settings container
@@ -466,6 +540,12 @@ pub fn setup_gameplay_settings(
                     },
                     BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
                     AppLayer::Menu.layer(),
+                    Visibility::Visible,
+                    InheritedVisibility::VISIBLE,
+                    Name::new("Gameplay Settings Container"),
+                    MenuItem,
+                    SettingsMenuItem,
+                    ZIndex::from(crate::menu::components::ZLayers::MenuContainer),
                 ))
                 .with_children(|parent| {
                     // Auto-pass setting
@@ -486,6 +566,11 @@ pub fn setup_gameplay_settings(
                                 ..default()
                             },
                             AppLayer::Menu.layer(),
+                            MenuItem,
+                            SettingsMenuItem,
+                            Visibility::Visible,
+                            InheritedVisibility::VISIBLE,
+                            Name::new("Animation Speed Row"),
                         ))
                         .with_children(|parent| {
                             // Label
@@ -497,6 +582,11 @@ pub fn setup_gameplay_settings(
                                 },
                                 TextColor(TEXT_COLOR),
                                 AppLayer::Menu.layer(),
+                                MenuItem,
+                                SettingsMenuItem,
+                                Visibility::Visible,
+                                InheritedVisibility::VISIBLE,
+                                Name::new("Animation Speed Label"),
                             ));
 
                             // Value
@@ -508,6 +598,11 @@ pub fn setup_gameplay_settings(
                                 },
                                 TextColor(TEXT_COLOR),
                                 AppLayer::Menu.layer(),
+                                MenuItem,
+                                SettingsMenuItem,
+                                Visibility::Visible,
+                                InheritedVisibility::VISIBLE,
+                                Name::new("Animation Speed Value"),
                             ));
                         });
 
@@ -530,6 +625,11 @@ fn create_toggle_setting(parent: &mut ChildBuilder, label: &str, value: bool) {
                 ..default()
             },
             AppLayer::Menu.layer(),
+            MenuItem,
+            SettingsMenuItem,
+            Visibility::Visible,
+            InheritedVisibility::VISIBLE,
+            Name::new("Toggle Setting"),
         ))
         .with_children(|parent| {
             // Label
@@ -541,6 +641,11 @@ fn create_toggle_setting(parent: &mut ChildBuilder, label: &str, value: bool) {
                 },
                 TextColor(TEXT_COLOR),
                 AppLayer::Menu.layer(),
+                MenuItem,
+                SettingsMenuItem,
+                Visibility::Visible,
+                InheritedVisibility::VISIBLE,
+                Name::new("Toggle Setting Label"),
             ));
 
             // Value
@@ -552,6 +657,11 @@ fn create_toggle_setting(parent: &mut ChildBuilder, label: &str, value: bool) {
                 },
                 TextColor(TEXT_COLOR),
                 AppLayer::Menu.layer(),
+                MenuItem,
+                SettingsMenuItem,
+                Visibility::Visible,
+                InheritedVisibility::VISIBLE,
+                Name::new("Toggle Setting Value"),
             ));
         });
 }
@@ -573,6 +683,10 @@ pub fn setup_controls_settings(mut commands: Commands) {
             SettingsMenuItem,
             ControlsSettingsScreen,
             AppLayer::Menu.layer(),
+            Visibility::Visible,
+            InheritedVisibility::VISIBLE,
+            Name::new("Controls Settings Root Node"),
+            ZIndex::from(crate::menu::components::ZLayers::Background),
         ))
         .with_children(|parent| {
             // Title
@@ -585,6 +699,12 @@ pub fn setup_controls_settings(mut commands: Commands) {
                 TextLayout::new_with_justify(JustifyText::Center),
                 TextColor(TEXT_COLOR),
                 AppLayer::Menu.layer(),
+                MenuItem,
+                SettingsMenuItem,
+                Visibility::Visible,
+                InheritedVisibility::VISIBLE,
+                Name::new("Controls Settings Title"),
+                ZIndex::from(crate::menu::components::ZLayers::MenuButtonText),
             ));
 
             // Settings container
@@ -601,6 +721,12 @@ pub fn setup_controls_settings(mut commands: Commands) {
                     },
                     BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
                     AppLayer::Menu.layer(),
+                    Visibility::Visible,
+                    InheritedVisibility::VISIBLE,
+                    Name::new("Controls Settings Container"),
+                    MenuItem,
+                    SettingsMenuItem,
+                    ZIndex::from(crate::menu::components::ZLayers::MenuContainer),
                 ))
                 .with_children(|parent| {
                     // Create some simple key bindings display
@@ -621,16 +747,21 @@ fn create_keybinding(parent: &mut ChildBuilder, action: &str, key: &str) {
         .spawn((
             Node {
                 width: Val::Percent(90.0),
-                height: Val::Px(40.0),
+                height: Val::Px(50.0),
                 justify_content: JustifyContent::SpaceBetween,
                 align_items: AlignItems::Center,
                 margin: UiRect::all(Val::Px(10.0)),
                 ..default()
             },
             AppLayer::Menu.layer(),
+            MenuItem,
+            SettingsMenuItem,
+            Visibility::Visible,
+            InheritedVisibility::VISIBLE,
+            Name::new(format!("Keybinding {}", action)),
         ))
         .with_children(|parent| {
-            // Action
+            // Action label
             parent.spawn((
                 Text::new(action),
                 TextFont {
@@ -639,9 +770,14 @@ fn create_keybinding(parent: &mut ChildBuilder, action: &str, key: &str) {
                 },
                 TextColor(TEXT_COLOR),
                 AppLayer::Menu.layer(),
+                MenuItem,
+                SettingsMenuItem,
+                Visibility::Visible,
+                InheritedVisibility::VISIBLE,
+                Name::new(format!("Keybinding Action {}", action)),
             ));
 
-            // Key
+            // Key label
             parent.spawn((
                 Text::new(key),
                 TextFont {
@@ -650,6 +786,11 @@ fn create_keybinding(parent: &mut ChildBuilder, action: &str, key: &str) {
                 },
                 TextColor(TEXT_COLOR),
                 AppLayer::Menu.layer(),
+                MenuItem,
+                SettingsMenuItem,
+                Visibility::Visible,
+                InheritedVisibility::VISIBLE,
+                Name::new(format!("Keybinding Key {}", key)),
             ));
         });
 }
@@ -674,9 +815,9 @@ fn spawn_settings_button(parent: &mut ChildBuilder, text: &str, action: Settings
             SettingsMenuItem,
             MenuItem,
             ZIndex::from(crate::menu::components::ZLayers::MenuButtons),
-            Name::new(format!("{} Button", text)),
             Visibility::Visible,
             InheritedVisibility::VISIBLE,
+            Name::new(format!("{} Button", text)),
         ))
         .with_children(|parent| {
             parent.spawn((
@@ -706,6 +847,7 @@ pub fn settings_button_action(
     mut next_state: ResMut<NextState<SettingsMenuState>>,
     mut game_state: ResMut<NextState<GameMenuState>>,
     mut context: ResMut<StateTransitionContext>,
+    current_settings_state: Res<State<SettingsMenuState>>,
 ) {
     for (interaction, action, mut color) in &mut interaction_query {
         match *interaction {
@@ -713,21 +855,41 @@ pub fn settings_button_action(
                 *color = BackgroundColor(PRESSED_BUTTON);
                 match action {
                     SettingsButtonAction::VideoSettings => {
+                        info!(
+                            "Transitioning from {:?} to Video settings submenu",
+                            current_settings_state.get()
+                        );
                         next_state.set(SettingsMenuState::Video);
                     }
                     SettingsButtonAction::AudioSettings => {
+                        info!(
+                            "Transitioning from {:?} to Audio settings submenu",
+                            current_settings_state.get()
+                        );
                         next_state.set(SettingsMenuState::Audio);
                     }
                     SettingsButtonAction::GameplaySettings => {
+                        info!(
+                            "Transitioning from {:?} to Gameplay settings submenu",
+                            current_settings_state.get()
+                        );
                         next_state.set(SettingsMenuState::Gameplay);
                     }
                     SettingsButtonAction::ControlsSettings => {
+                        info!(
+                            "Transitioning from {:?} to Controls settings submenu",
+                            current_settings_state.get()
+                        );
                         next_state.set(SettingsMenuState::Controls);
                     }
                     SettingsButtonAction::Back => {
                         // Return to the previous menu (main menu or pause menu)
                         if let Some(origin) = context.settings_origin {
-                            info!("Returning to origin state: {:?}", origin);
+                            info!(
+                                "Returning to origin state: {:?} from {:?}",
+                                origin,
+                                current_settings_state.get()
+                            );
 
                             // Always reset from_pause_menu flag if returning to main menu
                             if origin == GameMenuState::MainMenu {
@@ -764,6 +926,10 @@ pub fn settings_button_action(
                         }
                     }
                     SettingsButtonAction::BackToMainSettings => {
+                        info!(
+                            "Returning to main settings from {:?}",
+                            current_settings_state.get()
+                        );
                         next_state.set(SettingsMenuState::Main);
                     }
                 }
@@ -781,39 +947,112 @@ pub fn settings_button_action(
 /// Cleanup the settings menu entities
 pub fn cleanup_settings_menu(
     mut commands: Commands,
-    menu_query: Query<(Entity, Option<&Name>, Option<&MainSettingsScreen>), With<SettingsMenuItem>>,
+    main_settings_query: Query<Entity, With<MainSettingsScreen>>,
+    video_settings_query: Query<Entity, With<VideoSettingsScreen>>,
+    audio_settings_query: Query<Entity, With<AudioSettingsScreen>>,
+    gameplay_settings_query: Query<Entity, With<GameplaySettingsScreen>>,
+    controls_settings_query: Query<Entity, With<ControlsSettingsScreen>>,
     input_blockers: Query<Entity, With<crate::menu::input_blocker::InputBlocker>>,
     current_settings_state: Res<State<SettingsMenuState>>,
+    next_settings_state: Option<Res<NextState<SettingsMenuState>>>,
 ) {
-    // Get the count for logging
-    let item_count = menu_query.iter().count();
+    let current_state = current_settings_state.get();
+    let next_state = next_settings_state.as_ref().map(|s| s.0.clone());
+
     info!(
-        "Cleaning up settings menu items. Current state: {:?}, Items: {}",
-        current_settings_state.get(),
-        item_count
+        "Cleaning up settings menu items. Current state: {:?}, Next state: {:?}",
+        current_state, next_state
     );
 
-    // Special case for main settings menu - only clean up if we're not in the main settings state
-    // to prevent cleaning up the menu we just spawned
-    if *current_settings_state.get() == SettingsMenuState::Main {
-        info!("Skipping cleanup because we're in SettingsMenuState::Main");
+    // Special case when returning to main menu - preserve main settings screen entities
+    if next_state == Some(SettingsMenuState::Main)
+        || (*current_state == SettingsMenuState::Main && next_state.is_none())
+    {
+        // When transitioning to main settings, clean up any submenu entities
+        info!("When returning to main settings screen, only clean up submenus");
+
+        for entity in video_settings_query.iter() {
+            info!("Despawning video settings entity: {:?}", entity);
+            commands.entity(entity).despawn_recursive();
+        }
+
+        for entity in audio_settings_query.iter() {
+            info!("Despawning audio settings entity: {:?}", entity);
+            commands.entity(entity).despawn_recursive();
+        }
+
+        for entity in gameplay_settings_query.iter() {
+            info!("Despawning gameplay settings entity: {:?}", entity);
+            commands.entity(entity).despawn_recursive();
+        }
+
+        for entity in controls_settings_query.iter() {
+            info!("Despawning controls settings entity: {:?}", entity);
+            commands.entity(entity).despawn_recursive();
+        }
+    } else if *current_state == SettingsMenuState::Main {
+        // If we're transitioning from main settings to a submenu, don't clean up anything
+        info!("Transitioning from main settings to a submenu, preserving main settings entities");
         return;
-    }
+    } else if next_state.is_some() && next_state != Some(SettingsMenuState::Disabled) {
+        // Transitioning between submenus, clean up current submenu only
+        info!("Transitioning between submenus, cleaning up current submenu only");
 
-    // Create a list of entities to despawn safely
-    let entities_to_despawn: Vec<(Entity, String)> = menu_query
-        .iter()
-        .filter_map(|(entity, name, _)| {
-            // Convert the name to a string for logging
-            let name_str = name.map_or("Unnamed".to_string(), |n| n.to_string());
-            Some((entity, name_str))
-        })
-        .collect();
+        match current_state {
+            SettingsMenuState::Video => {
+                for entity in video_settings_query.iter() {
+                    info!("Despawning video settings entity: {:?}", entity);
+                    commands.entity(entity).despawn_recursive();
+                }
+            }
+            SettingsMenuState::Audio => {
+                for entity in audio_settings_query.iter() {
+                    info!("Despawning audio settings entity: {:?}", entity);
+                    commands.entity(entity).despawn_recursive();
+                }
+            }
+            SettingsMenuState::Gameplay => {
+                for entity in gameplay_settings_query.iter() {
+                    info!("Despawning gameplay settings entity: {:?}", entity);
+                    commands.entity(entity).despawn_recursive();
+                }
+            }
+            SettingsMenuState::Controls => {
+                for entity in controls_settings_query.iter() {
+                    info!("Despawning controls settings entity: {:?}", entity);
+                    commands.entity(entity).despawn_recursive();
+                }
+            }
+            _ => {}
+        }
+    } else {
+        // For transitions to Disabled or exiting settings entirely, clean up everything
+        info!("Exiting settings menu entirely, cleaning up all settings entities");
 
-    // Now despawn each entity
-    for (entity, name) in entities_to_despawn {
-        info!("Despawning settings menu entity: {:?} ({})", entity, name);
-        commands.entity(entity).despawn_recursive();
+        for entity in main_settings_query.iter() {
+            info!("Despawning main settings entity: {:?}", entity);
+            commands.entity(entity).despawn_recursive();
+        }
+
+        for entity in video_settings_query.iter() {
+            info!("Despawning video settings entity: {:?}", entity);
+            commands.entity(entity).despawn_recursive();
+        }
+
+        for entity in audio_settings_query.iter() {
+            info!("Despawning audio settings entity: {:?}", entity);
+            commands.entity(entity).despawn_recursive();
+        }
+
+        for entity in gameplay_settings_query.iter() {
+            info!("Despawning gameplay settings entity: {:?}", entity);
+            commands.entity(entity).despawn_recursive();
+        }
+
+        for entity in controls_settings_query.iter() {
+            info!("Despawning controls settings entity: {:?}", entity);
+            commands.entity(entity).despawn_recursive();
+        }
     }
 
     // Clean up any input blockers that might remain
