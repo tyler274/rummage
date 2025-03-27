@@ -16,6 +16,11 @@ impl Plugin for LogoPlugin {
             // Add the logo setup, but now only on entering the main menu, not on startup
             .add_systems(OnEnter(GameMenuState::MainMenu), setup_combined_logo)
             .add_systems(OnEnter(GameMenuState::PauseMenu), setup_pause_logo)
+            // Add a system to ensure the logo exists when in MainMenu
+            .add_systems(
+                Update,
+                ensure_logo_exists.run_if(in_state(GameMenuState::MainMenu)),
+            )
             // Cleanup on exit
             .add_systems(OnExit(GameMenuState::MainMenu), cleanup_logo)
             .add_systems(OnExit(GameMenuState::PauseMenu), cleanup_logo)
@@ -23,6 +28,20 @@ impl Plugin for LogoPlugin {
             .add_systems(OnEnter(GameMenuState::Settings), cleanup_logo);
 
         debug!("Logo plugin registered - combines Star of David with text");
+    }
+}
+
+/// System to ensure the logo exists when in the MainMenu state
+fn ensure_logo_exists(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    menu_cameras: Query<Entity, With<MenuCamera>>,
+    existing_logos: Query<Entity, With<MenuDecorativeElement>>,
+) {
+    // If there are no logos but we're in the MainMenu state, create one
+    if existing_logos.iter().count() == 0 && menu_cameras.iter().count() > 0 {
+        info!("No logo found in MainMenu state, creating one");
+        setup_combined_logo(commands, asset_server, menu_cameras, existing_logos);
     }
 }
 
