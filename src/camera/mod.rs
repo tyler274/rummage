@@ -15,8 +15,8 @@ use bevy::prelude::*;
 
 use crate::camera::config::CameraConfig;
 use crate::camera::systems::{
-    camera_movement, debug_draw_card_positions, handle_window_resize, set_initial_zoom,
-    setup_camera,
+    camera_movement, debug_draw_card_positions, handle_window_resize,
+    manage_game_camera_visibility, set_initial_zoom, setup_camera,
 };
 #[cfg(feature = "snapshot")]
 use crate::snapshot::SnapshotPlugin;
@@ -37,6 +37,7 @@ impl Plugin for CameraPlugin {
                 (
                     handle_window_resize,
                     camera_movement,
+                    manage_game_camera_visibility,
                     debug_draw_card_positions,
                 ),
             );

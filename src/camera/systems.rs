@@ -9,11 +9,42 @@ use crate::camera::{
     config::CameraConfig,
     state::CameraPanState,
 };
+use crate::menu::state::GameMenuState;
 
 /// Resource to track previously logged card positions to avoid redundant logging
 #[derive(Resource, Default)]
 pub struct CardPositionCache {
     positions: std::collections::HashMap<Entity, Vec3>,
+}
+
+/// Manages game camera visibility based on the current game state
+pub fn manage_game_camera_visibility(
+    mut game_cameras: Query<&mut Visibility, With<GameCamera>>,
+    game_state: Res<State<GameMenuState>>,
+) {
+    // Determine if the camera should be visible based on game state
+    let should_be_visible = matches!(
+        *game_state.get(),
+        GameMenuState::InGame | GameMenuState::PauseMenu
+    );
+
+    // Update camera visibility
+    for mut visibility in game_cameras.iter_mut() {
+        let new_visibility = if should_be_visible {
+            Visibility::Visible
+        } else {
+            Visibility::Hidden
+        };
+
+        if *visibility != new_visibility {
+            info!(
+                "Setting game camera visibility to {:?} in state {:?}",
+                new_visibility,
+                game_state.get()
+            );
+            *visibility = new_visibility;
+        }
+    }
 }
 
 /// Sets up the main game camera with proper scaling and projection.
