@@ -4,7 +4,7 @@ use crate::menu::components::{MenuItem, ZLayers};
 use crate::menu::decorations::MenuDecorativeElement;
 use crate::menu::logo::text::{create_english_text, create_hebrew_text};
 use crate::menu::star_of_david::create_star_of_david;
-use crate::menu::state::GameMenuState;
+use crate::menu::state::{GameMenuState, StateTransitionContext};
 use bevy::prelude::*;
 
 /// Resource to track logo initialization attempts
@@ -15,6 +15,10 @@ struct LogoInitTracker {
     /// Number of attempts made
     attempts: u32,
 }
+
+/// Component to mark the logo that should persist across settings transitions
+#[derive(Component)]
+struct PersistentLogo;
 
 /// Plugin for menu logo
 pub struct LogoPlugin;
@@ -34,11 +38,16 @@ impl Plugin for LogoPlugin {
                 Update,
                 ensure_logo_exists.run_if(in_state(GameMenuState::MainMenu)),
             )
-            // Cleanup on exit
-            .add_systems(OnExit(GameMenuState::MainMenu), cleanup_logo)
-            .add_systems(OnExit(GameMenuState::PauseMenu), cleanup_logo)
-            // Cleanup on entering settings to avoid duplicate logos
-            .add_systems(OnEnter(GameMenuState::Settings), cleanup_logo);
+            // Only hide logo when entering settings, rather than cleaning it up completely
+            .add_systems(OnEnter(GameMenuState::Settings), hide_logo_for_settings)
+            // Restore logo visibility when returning from settings
+            .add_systems(OnExit(GameMenuState::Settings), restore_logo_visibility)
+            // Cleanup only on major transitions
+            .add_systems(OnExit(GameMenuState::MainMenu), cleanup_non_persistent_logo)
+            .add_systems(
+                OnExit(GameMenuState::PauseMenu),
+                cleanup_non_persistent_logo,
+            );
 
         debug!("Logo plugin registered - combines Star of David with text");
     }
@@ -62,7 +71,7 @@ fn setup_startup_logo(
                 .spawn((
                     Camera2d::default(),
                     Camera {
-                        order: 1, // Use order 1 for initial setup
+                        order: 100, // Use a much higher order to avoid conflicts with default cameras
                         ..default()
                     },
                     MenuCamera,
@@ -84,7 +93,10 @@ fn setup_startup_logo(
                 ))
                 .id();
 
-            info!("Created startup menu camera entity: {:?}", camera_entity);
+            info!(
+                "Created startup menu camera entity: {:?} with order 100",
+                camera_entity
+            );
 
             // Now add the logo to the camera we just created
             commands.entity(camera_entity).with_children(|parent| {
@@ -101,6 +113,7 @@ fn setup_startup_logo(
                             ..default()
                         },
                         MenuDecorativeElement,
+                        PersistentLogo, // Mark as persistent logo
                         MenuItem,
                         AppLayer::Menu.layer(),
                         Visibility::Visible,
@@ -190,10 +203,21 @@ fn setup_combined_logo(
     menu_cameras: Query<Entity, With<MenuCamera>>,
     existing_logos: Query<Entity, With<MenuDecorativeElement>>,
 ) {
-    // First clean up any existing logos to avoid duplication
+    // Only clean up non-persistent logos to avoid duplication
     for entity in existing_logos.iter() {
-        commands.entity(entity).despawn_recursive();
-        debug!("Cleaned up existing logo entity");
+        if commands.get_entity(entity).is_some() {
+            // Only clean up if it's not a persistent logo
+            if commands
+                .get_entity(entity)
+                .unwrap()
+                .contains::<PersistentLogo>()
+            {
+                debug!("Keeping persistent logo entity: {:?}", entity);
+                continue;
+            }
+            commands.entity(entity).despawn_recursive();
+            debug!("Cleaned up non-persistent logo entity");
+        }
     }
 
     info!("Setting up combined logo with Star of David and text for main menu");
@@ -217,6 +241,7 @@ fn setup_combined_logo(
                         ..default()
                     },
                     MenuDecorativeElement,
+                    PersistentLogo, // Mark as persistent
                     MenuItem,
                     AppLayer::Menu.layer(),
                     Visibility::Visible,
@@ -246,23 +271,71 @@ fn setup_combined_logo(
     }
 }
 
-/// Cleans up the logo entities
-fn cleanup_logo(
-    mut commands: Commands,
-    logos: Query<Entity, With<MenuDecorativeElement>>,
+/// Hide logo when entering settings instead of destroying it
+fn hide_logo_for_settings(
+    mut logos: Query<&mut Visibility, With<MenuDecorativeElement>>,
+    mut transition_context: ResMut<StateTransitionContext>,
     current_state: Res<State<GameMenuState>>,
 ) {
+    // Store info about what state we're coming from
+    transition_context.settings_origin = Some(*current_state.get());
+    transition_context.returning_from_settings = false;
+
+    // Just hide the logo instead of removing it
+    let count = logos.iter().count();
+    if count > 0 {
+        info!("Hiding {} logo entities when entering settings", count);
+
+        for mut visibility in logos.iter_mut() {
+            *visibility = Visibility::Hidden;
+        }
+    }
+}
+
+/// Restore logo visibility when returning from settings
+fn restore_logo_visibility(
+    mut logos: Query<&mut Visibility, With<MenuDecorativeElement>>,
+    mut transition_context: ResMut<StateTransitionContext>,
+) {
+    // Mark that we're returning from settings
+    transition_context.returning_from_settings = true;
+
+    // Restore visibility
     let count = logos.iter().count();
     if count > 0 {
         info!(
-            "Cleaning up {} logo entities from state: {:?}",
+            "Restoring visibility of {} logos when exiting settings",
+            count
+        );
+
+        for mut visibility in logos.iter_mut() {
+            *visibility = Visibility::Visible;
+        }
+    }
+}
+
+/// Cleans up only non-persistent logo entities
+fn cleanup_non_persistent_logo(
+    mut commands: Commands,
+    logos: Query<(Entity, Option<&PersistentLogo>), With<MenuDecorativeElement>>,
+    current_state: Res<State<GameMenuState>>,
+) {
+    let mut count = 0;
+
+    for (entity, persistent) in logos.iter() {
+        // Only clean up non-persistent logos
+        if persistent.is_none() {
+            commands.entity(entity).despawn_recursive();
+            count += 1;
+        }
+    }
+
+    if count > 0 {
+        info!(
+            "Cleaned up {} non-persistent logo entities from state: {:?}",
             count,
             current_state.get()
         );
-
-        for entity in logos.iter() {
-            commands.entity(entity).despawn_recursive();
-        }
     }
 }
 
@@ -273,10 +346,21 @@ fn setup_pause_logo(
     menu_cameras: Query<Entity, With<MenuCamera>>,
     existing_logos: Query<Entity, With<MenuDecorativeElement>>,
 ) {
-    // First clean up any existing logos to avoid duplication
+    // Only clean up non-persistent logos to avoid duplication
     for entity in existing_logos.iter() {
-        commands.entity(entity).despawn_recursive();
-        debug!("Cleaned up existing logo entity during pause menu setup");
+        if commands.get_entity(entity).is_some() {
+            // Only clean up if it's not a persistent logo
+            if commands
+                .get_entity(entity)
+                .unwrap()
+                .contains::<PersistentLogo>()
+            {
+                debug!("Keeping persistent logo entity: {:?}", entity);
+                continue;
+            }
+            commands.entity(entity).despawn_recursive();
+            debug!("Cleaned up non-persistent logo entity");
+        }
     }
 
     info!("Setting up logo for pause menu");
@@ -300,6 +384,7 @@ fn setup_pause_logo(
                         ..default()
                     },
                     MenuDecorativeElement,
+                    PersistentLogo, // Mark as persistent
                     MenuItem,
                     AppLayer::Menu.layer(),
                     Visibility::Visible,
