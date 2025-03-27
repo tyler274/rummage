@@ -12,7 +12,7 @@ pub struct LogoPlugin;
 
 impl Plugin for LogoPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, register_logo_components)
+        app
             // Add the logo setup on app start and when entering main menu
             .add_systems(Startup, setup_combined_logo)
             .add_systems(OnEnter(GameMenuState::MainMenu), setup_combined_logo)
@@ -25,12 +25,6 @@ impl Plugin for LogoPlugin {
 
         debug!("Logo plugin registered - combines Star of David with text");
     }
-}
-
-/// Register logo-related components to ensure they're available at startup
-fn register_logo_components(mut app: ResMut<App>) {
-    app.register_type::<MenuDecorativeElement>();
-    debug!("Logo components registered");
 }
 
 /// Sets up the combined logo with Star of David and text for the main menu

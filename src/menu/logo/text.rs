@@ -1,4 +1,3 @@
-use crate::camera::components::AppLayer;
 use crate::menu::components::{MenuItem, ZLayers};
 use bevy::prelude::*;
 use bevy::text::JustifyText;
