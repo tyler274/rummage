@@ -1,10 +1,12 @@
+use super::common::*;
+use crate::camera::components::AppLayer;
+use crate::menu::components::MenuItem;
+use crate::menu::settings::components::*;
+use crate::menu::settings::state::SettingsMenuState;
+use crate::menu::styles::*;
 use bevy::audio::Volume;
 use bevy::prelude::*;
 use bevy_persistent::prelude::*;
-
-use super::common::*;
-use crate::menu::settings::components::*;
-use crate::menu::settings::state::SettingsMenuState;
 
 /// Volume slider type to identify which volume is being adjusted
 #[derive(Component, Clone, Copy, Debug)]
@@ -18,154 +20,117 @@ pub enum VolumeType {
 #[derive(Component)]
 pub struct VolumeValueText(pub VolumeType);
 
-/// Sets up the audio settings screen
-pub fn setup_audio_settings(mut commands: Commands, volume_settings: Option<Res<VolumeSettings>>) {
-    let volume = volume_settings.map(|v| v.clone()).unwrap_or_default();
+/// Volume slider component
+#[derive(Component)]
+pub struct VolumeSlider;
 
-    info!("Setting up audio settings screen");
+/// Sets up the audio settings menu
+pub fn setup_audio_settings(mut commands: Commands) {
+    info!("Setting up audio settings menu");
 
-    // Create root node with red tint for audio settings
     let root_entity = spawn_settings_root(
         &mut commands,
-        Color::srgba(0.3, 0.1, 0.2, 0.95),
+        Color::srgba(0.0, 0.0, 0.0, 0.7),
         "Audio Settings",
     );
 
-    commands.entity(root_entity).insert(AudioSettingsScreen);
+    // Store root_entity for later use
+    let mut root = commands.entity(root_entity);
 
-    commands.entity(root_entity).with_children(|parent| {
-        // Title
-        spawn_settings_title(parent, "AUDIO SETTINGS");
+    // Create a new scope for the first with_children call
+    root.with_children(|parent| {
+        spawn_settings_title(parent, "Audio Settings");
 
-        // Settings container
-        let container = spawn_settings_container(parent);
+        let _container = spawn_settings_container(parent);
 
-        commands.entity(container).with_children(|parent| {
-            // Volume sliders
-            create_volume_slider(
-                parent,
-                "Master Volume:",
-                (volume.master * 100.0) as i32,
-                VolumeType::Master,
-            );
-            create_volume_slider(
-                parent,
-                "Music Volume:",
-                (volume.music * 100.0) as i32,
-                VolumeType::Music,
-            );
-            create_volume_slider(
-                parent,
-                "SFX Volume:",
-                (volume.sfx * 100.0) as i32,
-                VolumeType::Sfx,
-            );
-
-            // Back button
-            spawn_settings_button(parent, "Back", SettingsButtonAction::BackToMainSettings);
-        });
-    });
-
-    info!(
-        "Audio settings screen setup complete - root entity: {:?}",
-        root_entity
-    );
-}
-
-/// Creates a volume slider control
-fn create_volume_slider(
-    parent: &mut ChildBuilder,
-    label: &str,
-    value: i32,
-    volume_type: VolumeType,
-) {
-    parent
-        .spawn((
-            Node {
-                width: Val::Percent(90.0),
-                height: Val::Px(50.0),
-                justify_content: JustifyContent::SpaceBetween,
-                align_items: AlignItems::Center,
-                margin: UiRect::all(Val::Px(10.0)),
-                ..default()
-            },
-            MenuItem,
-            SettingsMenuItem,
-            Visibility::Visible,
-            InheritedVisibility::VISIBLE,
-            Name::new(format!("Volume Slider {}", label)),
-            AppLayer::Menu.layer(),
-        ))
-        .with_children(|parent| {
-            // Label
-            parent.spawn((
-                Text::new(label),
-                TextFont {
-                    font_size: 20.0,
+        // Volume slider
+        parent
+            .spawn((
+                Node {
+                    width: Val::Px(300.0),
+                    height: Val::Px(50.0),
+                    justify_content: JustifyContent::SpaceBetween,
+                    align_items: AlignItems::Center,
+                    margin: UiRect::all(Val::Px(10.0)),
                     ..default()
                 },
-                TextColor(TEXT_COLOR),
                 MenuItem,
                 SettingsMenuItem,
+                AppLayer::Menu.layer(),
                 Visibility::Visible,
                 InheritedVisibility::VISIBLE,
-                Name::new(format!("Volume Slider Label {}", label)),
-                AppLayer::Menu.layer(),
-            ));
-
-            // Slider
-            parent
-                .spawn((
-                    Button,
-                    Node {
-                        width: Val::Px(200.0),
-                        height: Val::Px(20.0),
+                Name::new("Volume Slider Container"),
+            ))
+            .with_children(|parent| {
+                // Label
+                parent.spawn((
+                    Text::new("Master Volume"),
+                    TextFont {
+                        font_size: 20.0,
                         ..default()
                     },
-                    BackgroundColor(Color::srgba(0.2, 0.2, 0.2, 0.8)),
-                    volume_type,
+                    TextColor(TEXT_COLOR),
                     MenuItem,
                     SettingsMenuItem,
+                    AppLayer::Menu.layer(),
                     Visibility::Visible,
                     InheritedVisibility::VISIBLE,
-                    Name::new(format!("Volume Slider Container {}", label)),
-                    AppLayer::Menu.layer(),
-                ))
-                .with_children(|parent| {
-                    // The filled part of the slider
-                    parent.spawn((
+                    Name::new("Volume Label"),
+                ));
+
+                // Slider
+                parent
+                    .spawn((
                         Node {
-                            width: Val::Percent(value as f32),
-                            height: Val::Percent(100.0),
+                            width: Val::Px(150.0),
+                            height: Val::Px(20.0),
                             ..default()
                         },
-                        BackgroundColor(Color::srgba(0.4, 0.6, 0.8, 0.8)),
                         MenuItem,
                         SettingsMenuItem,
+                        AppLayer::Menu.layer(),
                         Visibility::Visible,
                         InheritedVisibility::VISIBLE,
-                        Name::new(format!("Volume Slider Indicator {}", label)),
-                        AppLayer::Menu.layer(),
-                    ));
-                });
+                        Name::new("Volume Slider"),
+                        VolumeSlider,
+                    ))
+                    .with_children(|parent| {
+                        parent.spawn((
+                            Node {
+                                width: Val::Percent(50.0),
+                                height: Val::Percent(100.0),
+                                ..default()
+                            },
+                            BackgroundColor(Color::WHITE),
+                            MenuItem,
+                            SettingsMenuItem,
+                            AppLayer::Menu.layer(),
+                            Visibility::Visible,
+                            InheritedVisibility::VISIBLE,
+                            Name::new("Volume Slider Fill"),
+                        ));
+                    });
 
-            // Value as text
-            parent.spawn((
-                Text::new(format!("{}%", value)),
-                TextFont {
-                    font_size: 20.0,
-                    ..default()
-                },
-                TextColor(TEXT_COLOR),
-                VolumeValueText(volume_type),
-                MenuItem,
-                SettingsMenuItem,
-                Visibility::Visible,
-                InheritedVisibility::VISIBLE,
-                Name::new(format!("Volume Slider Value {}", label)),
-                AppLayer::Menu.layer(),
-            ));
-        });
+                // Value text
+                parent.spawn((
+                    Text::new("50%"),
+                    TextFont {
+                        font_size: 20.0,
+                        ..default()
+                    },
+                    TextColor(TEXT_COLOR),
+                    MenuItem,
+                    SettingsMenuItem,
+                    AppLayer::Menu.layer(),
+                    Visibility::Visible,
+                    InheritedVisibility::VISIBLE,
+                    Name::new("Volume Value"),
+                ));
+            });
+
+        // Back button
+        spawn_settings_button(parent, "Back", SettingsButtonAction::NavigateToMain);
+    });
 }
 
 /// System to handle interactions with volume sliders

@@ -1,9 +1,9 @@
-mod audio;
-mod common;
-mod controls;
-mod gameplay;
-mod main;
-mod video;
+pub mod audio;
+pub mod common;
+pub mod controls;
+pub mod gameplay;
+pub mod main;
+pub mod video;
 
 pub use audio::*;
 pub use common::*;

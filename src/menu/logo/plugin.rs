@@ -13,8 +13,7 @@ pub struct LogoPlugin;
 impl Plugin for LogoPlugin {
     fn build(&self, app: &mut App) {
         app
-            // Add the logo setup on app start and when entering main menu
-            .add_systems(Startup, setup_combined_logo)
+            // Add the logo setup, but now only on entering the main menu, not on startup
             .add_systems(OnEnter(GameMenuState::MainMenu), setup_combined_logo)
             .add_systems(OnEnter(GameMenuState::PauseMenu), setup_pause_logo)
             // Cleanup on exit

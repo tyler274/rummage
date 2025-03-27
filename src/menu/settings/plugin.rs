@@ -8,7 +8,16 @@ use bevy::prelude::*;
 use bevy_persistent::prelude::*;
 
 use super::components::*;
-use super::systems::*;
+use super::state::*;
+use super::systems::{
+    audio::{setup_audio_settings, volume_slider_interaction},
+    cleanup_settings_menu,
+    controls::setup_controls_settings,
+    gameplay::setup_gameplay_settings,
+    main::{settings_button_action, setup_main_settings},
+    video::setup_video_settings,
+};
+use crate::game_engine::state::GameState;
 use crate::menu::components::MenuItem;
 
 /// Plugin that sets up the settings menu system

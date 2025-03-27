@@ -1,51 +1,38 @@
 use super::common::*;
+use crate::camera::components::AppLayer;
+use crate::menu::components::MenuItem;
 use crate::menu::settings::components::*;
+use crate::menu::settings::state::SettingsMenuState;
+use crate::menu::styles::*;
 use bevy::prelude::*;
 
-/// Sets up the gameplay settings screen
-pub fn setup_gameplay_settings(
-    mut commands: Commands,
-    gameplay_settings: Option<Res<GameplaySettings>>,
-) {
-    let settings = gameplay_settings.map(|s| s.clone()).unwrap_or_default();
+/// Sets up the gameplay settings menu
+pub fn setup_gameplay_settings(mut commands: Commands) {
+    info!("Setting up gameplay settings menu");
 
-    info!("Setting up gameplay settings screen");
-
-    // Create root node with green tint for gameplay settings
     let root_entity = spawn_settings_root(
         &mut commands,
-        Color::srgba(0.2, 0.3, 0.1, 0.95),
+        Color::srgba(0.0, 0.0, 0.0, 0.7),
         "Gameplay Settings",
     );
 
-    commands.entity(root_entity).insert(GameplaySettingsScreen);
+    // Store root_entity for later use
+    let mut root = commands.entity(root_entity);
 
-    commands.entity(root_entity).with_children(|parent| {
-        // Title
-        spawn_settings_title(parent, "GAMEPLAY SETTINGS");
+    // Create a new scope for the first with_children call
+    root.with_children(|parent| {
+        spawn_settings_title(parent, "Gameplay Settings");
 
-        // Settings container
-        let container = spawn_settings_container(parent);
+        let _container = spawn_settings_container(parent);
 
-        commands.entity(container).with_children(|parent| {
-            // Auto-pass setting
-            create_toggle_setting(parent, "Auto-Pass Priority:", settings.auto_pass);
+        // Add gameplay settings here
+        create_toggle_setting(parent, "Show Card Tooltips", true);
+        create_toggle_setting(parent, "Auto-Pass Priority", false);
+        create_toggle_setting(parent, "Stack Auto-Ordering", true);
 
-            // Show tooltips setting
-            create_toggle_setting(parent, "Show Card Tooltips:", settings.show_tooltips);
-
-            // Animation speed setting
-            create_animation_speed_setting(parent, settings.animation_speed);
-
-            // Back button
-            spawn_settings_button(parent, "Back", SettingsButtonAction::BackToMainSettings);
-        });
+        // Back button
+        spawn_settings_button(parent, "Back", SettingsButtonAction::NavigateToMain);
     });
-
-    info!(
-        "Gameplay settings screen setup complete - root entity: {:?}",
-        root_entity
-    );
 }
 
 /// Creates an animation speed setting display

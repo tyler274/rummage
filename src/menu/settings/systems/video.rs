@@ -1,45 +1,38 @@
 use super::common::*;
+use crate::camera::components::AppLayer;
+use crate::menu::components::MenuItem;
 use crate::menu::settings::components::*;
+use crate::menu::settings::state::SettingsMenuState;
+use crate::menu::styles::*;
 use bevy::prelude::*;
 
-/// Sets up the video settings screen
-pub fn setup_video_settings(
-    mut commands: Commands,
-    graphics_quality: Option<Res<GraphicsQuality>>,
-) {
-    let quality = graphics_quality.map(|q| q.clone()).unwrap_or_default();
+/// Sets up the video settings menu
+pub fn setup_video_settings(mut commands: Commands) {
+    info!("Setting up video settings menu");
 
-    info!("Setting up video settings screen");
-
-    // Create root node with blue tint for video settings
     let root_entity = spawn_settings_root(
         &mut commands,
-        Color::srgba(0.1, 0.2, 0.3, 0.95),
+        Color::srgba(0.0, 0.0, 0.0, 0.7),
         "Video Settings",
     );
 
-    commands.entity(root_entity).insert(VideoSettingsScreen);
+    // Store root_entity for later use
+    let mut root = commands.entity(root_entity);
 
-    commands.entity(root_entity).with_children(|parent| {
-        // Title
-        spawn_settings_title(parent, "VIDEO SETTINGS");
+    // Create a new scope for the first with_children call
+    root.with_children(|parent| {
+        spawn_settings_title(parent, "Video Settings");
 
-        // Settings container
-        let container = spawn_settings_container(parent);
+        let _container = spawn_settings_container(parent);
 
-        commands.entity(container).with_children(|parent| {
-            // Quality setting
-            create_graphics_quality_setting(parent, &quality);
+        // Add video settings here
+        create_toggle_setting(parent, "Fullscreen", true);
+        create_toggle_setting(parent, "VSync", true);
+        create_toggle_setting(parent, "Motion Blur", false);
 
-            // Back button
-            spawn_settings_button(parent, "Back", SettingsButtonAction::BackToMainSettings);
-        });
+        // Back button
+        spawn_settings_button(parent, "Back", SettingsButtonAction::NavigateToMain);
     });
-
-    info!(
-        "Video settings screen setup complete - root entity: {:?}",
-        root_entity
-    );
 }
 
 /// Creates a graphics quality setting display

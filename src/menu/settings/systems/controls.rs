@@ -1,43 +1,37 @@
 use super::common::*;
+use crate::camera::components::AppLayer;
+use crate::menu::components::MenuItem;
 use crate::menu::settings::components::*;
+use crate::menu::settings::state::SettingsMenuState;
+use crate::menu::styles::*;
 use bevy::prelude::*;
 
-/// Sets up the controls settings screen
+/// Sets up the controls settings menu
 pub fn setup_controls_settings(mut commands: Commands) {
-    info!("Setting up controls settings screen");
+    info!("Setting up controls settings menu");
 
-    // Create root node with purple tint for controls settings
     let root_entity = spawn_settings_root(
         &mut commands,
-        Color::srgba(0.3, 0.2, 0.3, 0.95),
+        Color::srgba(0.0, 0.0, 0.0, 0.7),
         "Controls Settings",
     );
 
-    commands.entity(root_entity).insert(ControlsSettingsScreen);
+    // Store root_entity for later use
+    let mut root = commands.entity(root_entity);
 
-    commands.entity(root_entity).with_children(|parent| {
-        // Title
-        spawn_settings_title(parent, "CONTROLS SETTINGS");
+    // Create a new scope for the first with_children call
+    root.with_children(|parent| {
+        spawn_settings_title(parent, "Controls Settings");
 
-        // Settings container
-        let container = spawn_settings_container(parent);
+        let _container = spawn_settings_container(parent);
 
-        commands.entity(container).with_children(|parent| {
-            // Create keybinding displays
-            create_keybinding(parent, "Pause Game:", "ESC");
-            create_keybinding(parent, "Select Card:", "Left Click");
-            create_keybinding(parent, "Card Info:", "Right Click");
-            create_keybinding(parent, "Zoom Camera:", "Mouse Wheel");
+        // Add controls settings here
+        create_toggle_setting(parent, "Invert Mouse Y", false);
+        create_toggle_setting(parent, "Mouse Acceleration", true);
 
-            // Back button
-            spawn_settings_button(parent, "Back", SettingsButtonAction::BackToMainSettings);
-        });
+        // Back button
+        spawn_settings_button(parent, "Back", SettingsButtonAction::NavigateToMain);
     });
-
-    info!(
-        "Controls settings screen setup complete - root entity: {:?}",
-        root_entity
-    );
 }
 
 /// Creates a keybinding display

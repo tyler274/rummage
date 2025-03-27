@@ -28,18 +28,18 @@ pub struct ControlsSettingsScreen;
 /// Settings button actions for navigating between settings screens
 #[derive(Component, Clone, Copy, Debug)]
 pub enum SettingsButtonAction {
-    /// Show video settings
-    VideoSettings,
-    /// Show audio settings
-    AudioSettings,
-    /// Show gameplay settings
-    GameplaySettings,
-    /// Show controls settings
-    ControlsSettings,
-    /// Return to previous menu (either main menu or pause menu)
-    Back,
-    /// Return to main settings screen
-    BackToMainSettings,
+    /// Navigate to video settings
+    NavigateToVideo,
+    /// Navigate to audio settings
+    NavigateToAudio,
+    /// Navigate to gameplay settings
+    NavigateToGameplay,
+    /// Navigate to controls settings
+    NavigateToControls,
+    /// Navigate to main settings
+    NavigateToMain,
+    /// Exit settings menu
+    ExitSettings,
 }
 
 /// Volume settings resource
