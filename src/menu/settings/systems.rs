@@ -881,6 +881,7 @@ pub fn settings_button_action(
     mut context: ResMut<StateTransitionContext>,
     current_settings_state: Res<State<SettingsMenuState>>,
     current_game_state: Res<State<GameMenuState>>,
+    visible_entities: Query<(Entity, &Name, &Visibility), With<MenuItem>>,
 ) {
     for (interaction, action, mut color) in &mut interaction_query {
         match *interaction {
@@ -891,6 +892,15 @@ pub fn settings_button_action(
                     current_game_state.get(),
                     current_settings_state.get()
                 );
+
+                // Log all visible menu entities for debugging
+                info!("Visible menu entities at button press:");
+                for (entity, name, visibility) in visible_entities.iter() {
+                    info!(
+                        "Entity {:?} - '{}' - visibility: {:?}",
+                        entity, name, visibility
+                    );
+                }
 
                 match action {
                     SettingsButtonAction::VideoSettings => {
