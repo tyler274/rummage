@@ -99,6 +99,7 @@ impl MenuContainerBundle {
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
                 padding: UiRect::all(Val::Px(20.0)),
+                margin: UiRect::top(Val::Px(120.0)), // Add margin to make space for the logo
                 ..default()
             },
             name: Name::new("Main Menu Buttons Container"),
@@ -169,21 +170,6 @@ pub fn create_main_menu_buttons(
     parent
         .spawn(MenuContainerBundle::button_container())
         .with_children(|parent| {
-            // Title
-            parent.spawn((
-                Text::new("Rummage"),
-                TextFont {
-                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                    font_size: 60.0,
-                    ..default()
-                },
-                TextColor(Color::srgba(1.0, 1.0, 1.0, 1.0)),
-                MenuItem,
-                Visibility::Visible,
-                Into::<ZIndex>::into(ZLayers::MenuButtonText),
-                Name::new("Main Menu Title"),
-            ));
-
             // Subtitle - Divider
             parent.spawn((
                 Node {

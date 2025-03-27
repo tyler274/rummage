@@ -12,13 +12,25 @@ pub struct LogoPlugin;
 
 impl Plugin for LogoPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameMenuState::MainMenu), setup_combined_logo)
+        app.add_systems(Startup, register_logo_components)
+            // Add the logo setup on app start and when entering main menu
+            .add_systems(Startup, setup_combined_logo)
+            .add_systems(OnEnter(GameMenuState::MainMenu), setup_combined_logo)
             .add_systems(OnEnter(GameMenuState::PauseMenu), setup_pause_logo)
+            // Cleanup on exit
             .add_systems(OnExit(GameMenuState::MainMenu), cleanup_logo)
-            .add_systems(OnExit(GameMenuState::PauseMenu), cleanup_logo);
+            .add_systems(OnExit(GameMenuState::PauseMenu), cleanup_logo)
+            // Cleanup on entering settings to avoid duplicate logos
+            .add_systems(OnEnter(GameMenuState::Settings), cleanup_logo);
 
         debug!("Logo plugin registered - combines Star of David with text");
     }
+}
+
+/// Register logo-related components to ensure they're available at startup
+fn register_logo_components(mut app: ResMut<App>) {
+    app.register_type::<MenuDecorativeElement>();
+    debug!("Logo components registered");
 }
 
 /// Sets up the combined logo with Star of David and text for the main menu
@@ -26,7 +38,14 @@ fn setup_combined_logo(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     menu_cameras: Query<Entity, With<MenuCamera>>,
+    existing_logos: Query<Entity, With<MenuDecorativeElement>>,
 ) {
+    // First clean up any existing logos to avoid duplication
+    for entity in existing_logos.iter() {
+        commands.entity(entity).despawn_recursive();
+        debug!("Cleaned up existing logo entity");
+    }
+
     info!("Setting up combined logo with Star of David and text for main menu");
 
     // Find the menu camera to attach to
@@ -78,12 +97,22 @@ fn setup_combined_logo(
 }
 
 /// Cleans up the logo entities
-fn cleanup_logo(mut commands: Commands, logos: Query<Entity, With<MenuDecorativeElement>>) {
+fn cleanup_logo(
+    mut commands: Commands,
+    logos: Query<Entity, With<MenuDecorativeElement>>,
+    current_state: Res<State<GameMenuState>>,
+) {
     let count = logos.iter().count();
-    info!("Cleaning up {} logo entities", count);
+    if count > 0 {
+        info!(
+            "Cleaning up {} logo entities from state: {:?}",
+            count,
+            current_state.get()
+        );
 
-    for entity in logos.iter() {
-        commands.entity(entity).despawn_recursive();
+        for entity in logos.iter() {
+            commands.entity(entity).despawn_recursive();
+        }
     }
 }
 
@@ -92,7 +121,14 @@ fn setup_pause_logo(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     menu_cameras: Query<Entity, With<MenuCamera>>,
+    existing_logos: Query<Entity, With<MenuDecorativeElement>>,
 ) {
+    // First clean up any existing logos to avoid duplication
+    for entity in existing_logos.iter() {
+        commands.entity(entity).despawn_recursive();
+        debug!("Cleaned up existing logo entity during pause menu setup");
+    }
+
     info!("Setting up logo for pause menu");
 
     // Find the menu camera for attachment
