@@ -1,3 +1,9 @@
+mod systems;
+pub use systems::*;
+
+// Re-export all the systems from the submodules
+pub use systems::{audio::*, common::*, controls::*, gameplay::*, main::*, video::*};
+
 use bevy::prelude::*;
 use bevy::text::JustifyText;
 use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
