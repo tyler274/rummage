@@ -17,6 +17,7 @@ use crate::{
         star_of_david::StarOfDavidPlugin,
         state::GameMenuState,
         state::StateTransitionContext,
+        state_transitions::setup_settings_transition,
         visibility::VisibilityPlugin,
     },
 };
@@ -35,6 +36,8 @@ impl Plugin for MenuPlugin {
             .init_resource::<MenuVisibilityState>()
             .insert_resource(NeedsMainMenuSetup(true))
             .init_resource::<UiHierarchyChecked>()
+            // Setup state transitions
+            .add_systems(OnEnter(GameMenuState::Settings), setup_settings_transition)
             // Setup plugins
             .add_plugins((
                 CleanupPlugin,

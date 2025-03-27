@@ -26,7 +26,7 @@ pub enum MenuState {
     InGame,
 
     /// The state for paused game
-    PausedGame,
+    PauseMenu,
 }
 
 /// Type alias for backward compatibility during refactoring

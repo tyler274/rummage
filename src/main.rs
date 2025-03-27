@@ -20,7 +20,6 @@ use bevy::audio::AudioPlugin;
 use bevy::log::Level;
 use bevy::prelude::*;
 use bevy::time::Fixed;
-use bevy::window::WindowResolution;
 use camera::CameraPlugin;
 use menu::MenuPlugin;
 use plugins::MainRummagePlugin;

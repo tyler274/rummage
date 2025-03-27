@@ -1,6 +1,6 @@
 use crate::menu::{
     components::MenuButtonAction, save_load::SaveLoadUiContext, save_load::SaveLoadUiState,
-    state::GameMenuState,
+    settings::state::SettingsMenuState, state::GameMenuState, state::StateTransitionContext,
 };
 use bevy::prelude::*;
 
@@ -11,6 +11,8 @@ pub fn handle_main_menu_interactions(
         (Changed<Interaction>, With<Button>),
     >,
     mut next_state: ResMut<NextState<GameMenuState>>,
+    mut settings_state: ResMut<NextState<SettingsMenuState>>,
+    mut context: ResMut<StateTransitionContext>,
     mut exit: EventWriter<bevy::app::AppExit>,
     mut save_load_state: ResMut<NextState<SaveLoadUiState>>,
     mut save_load_context: ResMut<SaveLoadUiContext>,
@@ -31,7 +33,25 @@ pub fn handle_main_menu_interactions(
                     }
                     MenuButtonAction::Settings => {
                         info!("Settings button pressed");
+                        // Save our origin for when we return
+                        context.settings_origin = Some(GameMenuState::MainMenu);
+                        // Reset from_pause_menu flag when coming from main menu
+                        context.from_pause_menu = false;
+                        
+                        // Force reset states to ensure proper transitions
+                        settings_state.set(SettingsMenuState::Disabled);
+                        
+                        // First change to settings menu state
+                        settings_state.set(SettingsMenuState::Main);
+                        info!("Set SettingsMenuState to Main");
+                        
+                        // Then transition to the settings game state
                         next_state.set(GameMenuState::Settings);
+                        info!("Set GameMenuState to Settings");
+                        
+                        info!(
+                            "State transition for settings setup complete: origin=MainMenu, settings_state=Main, game_state=Settings"
+                        );
                     }
                     MenuButtonAction::Multiplayer => {
                         info!("Multiplayer button pressed");

@@ -9,12 +9,15 @@ pub fn setup_settings_transition(
     mut context: ResMut<StateTransitionContext>,
     current_state: Res<State<GameMenuState>>,
     mut settings_state: ResMut<NextState<SettingsMenuState>>,
+    settings_current: Res<State<SettingsMenuState>>,
 ) {
     info!(
         "Setting up settings transition from state: {:?}, from_pause_menu: {}",
         current_state.get(),
         context.from_pause_menu
     );
+
+    info!("Current SettingsMenuState: {:?}", settings_current.get());
 
     // Always reset from_pause_menu flag when transitioning from MainMenu
     if *current_state.get() == GameMenuState::MainMenu {
@@ -52,8 +55,14 @@ pub fn setup_settings_transition(
     }
 
     // Ensure we're showing the main settings screen when entering settings
-    info!("Setting SettingsMenuState to Main");
+    info!(
+        "Setting SettingsMenuState to Main (was {:?})",
+        settings_current.get()
+    );
     settings_state.set(SettingsMenuState::Main);
+
+    // Log that we're about to exit this function
+    info!("Completed settings transition setup, SettingsMenuState should now be Main");
 }
 
 /// Starts the game loading process
