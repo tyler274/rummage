@@ -37,7 +37,8 @@ pub fn setup_menu_camera(
         return;
     }
 
-    info!("Setting up new menu camera");
+    info!("Setting up new menu camera (none found in the query)");
+    info!("Total cameras in scene: {}", all_cameras.iter().count());
 
     // Find the highest camera order from all existing cameras
     let mut highest_order = 0;

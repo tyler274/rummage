@@ -7,12 +7,23 @@ use crate::menu::star_of_david::create_star_of_david;
 use crate::menu::state::GameMenuState;
 use bevy::prelude::*;
 
+/// Resource to track logo initialization attempts
+#[derive(Resource, Default)]
+struct LogoInitTracker {
+    /// Timer for delayed attempts
+    timer: Option<Timer>,
+    /// Number of attempts made
+    attempts: u32,
+}
+
 /// Plugin for menu logo
 pub struct LogoPlugin;
 
 impl Plugin for LogoPlugin {
     fn build(&self, app: &mut App) {
         app
+            // Add resource to track logo initialization
+            .init_resource::<LogoInitTracker>()
             // Add the logo setup, but now only on entering the main menu, not on startup
             .add_systems(OnEnter(GameMenuState::MainMenu), setup_combined_logo)
             .add_systems(OnEnter(GameMenuState::PauseMenu), setup_pause_logo)
@@ -37,11 +48,44 @@ fn ensure_logo_exists(
     asset_server: Res<AssetServer>,
     menu_cameras: Query<Entity, With<MenuCamera>>,
     existing_logos: Query<Entity, With<MenuDecorativeElement>>,
+    time: Res<Time>,
+    mut init_tracker: ResMut<LogoInitTracker>,
 ) {
-    // If there are no logos but we're in the MainMenu state, create one
-    if existing_logos.iter().count() == 0 && menu_cameras.iter().count() > 0 {
-        info!("No logo found in MainMenu state, creating one");
-        setup_combined_logo(commands, asset_server, menu_cameras, existing_logos);
+    // If we already have a logo, reset the tracker and return
+    if existing_logos.iter().count() > 0 {
+        init_tracker.timer = None;
+        init_tracker.attempts = 0;
+        return;
+    }
+
+    // If there's no logo but we have a menu camera, try to create it with a timer
+    if menu_cameras.iter().count() > 0 {
+        // Initialize timer if not already set
+        if init_tracker.timer.is_none() {
+            init_tracker.timer = Some(Timer::from_seconds(0.2, TimerMode::Repeating));
+            info!("Starting logo initialization timer");
+        }
+
+        // Tick the timer
+        if let Some(ref mut timer) = init_tracker.timer {
+            timer.tick(time.delta());
+
+            // Try to initialize on timer completion
+            if timer.just_finished() {
+                init_tracker.attempts += 1;
+                info!(
+                    "Attempting logo initialization (attempt {})",
+                    init_tracker.attempts
+                );
+                setup_combined_logo(commands, asset_server, menu_cameras, existing_logos);
+
+                // After 5 attempts, stop trying
+                if init_tracker.attempts >= 5 {
+                    warn!("Giving up on logo initialization after 5 attempts");
+                    init_tracker.timer = None;
+                }
+            }
+        }
     }
 }
 
