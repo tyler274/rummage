@@ -99,50 +99,14 @@ fn setup_startup_logo(
             );
 
             // Now add the logo to the camera we just created
-            commands.entity(camera_entity).with_children(|parent| {
-                parent
-                    .spawn((
-                        Node {
-                            width: Val::Percent(100.0),
-                            height: Val::Px(200.0),
-                            flex_direction: FlexDirection::Column,
-                            align_items: AlignItems::Center,
-                            justify_content: JustifyContent::FlexStart,
-                            position_type: PositionType::Absolute,
-                            top: Val::Px(20.0),
-                            ..default()
-                        },
-                        MenuDecorativeElement,
-                        PersistentLogo, // Mark as persistent logo
-                        MenuItem,
-                        AppLayer::Menu.layer(),
-                        Visibility::Visible,
-                        InheritedVisibility::VISIBLE,
-                        ZIndex::from(ZLayers::MenuButtons),
-                        Name::new("Startup Logo Container"),
-                    ))
-                    .with_children(|logo_parent| {
-                        // Spawn the Star of David as part of the logo
-                        logo_parent.spawn((create_star_of_david(), Name::new("Star of David")));
-
-                        // Add Hebrew text
-                        logo_parent.spawn((
-                            create_hebrew_text(&asset_server),
-                            Name::new("Hebrew Logo Text"),
-                        ));
-
-                        // Add English text
-                        logo_parent.spawn((
-                            create_english_text(&asset_server),
-                            Name::new("English Logo Text"),
-                        ));
-                    });
-            });
+            create_logo_on_camera(commands, asset_server, camera_entity, "Startup");
             info!("Logo attached to startup camera");
         } else {
             // Use existing camera
             info!("Using existing menu camera for startup logo");
-            setup_combined_logo(commands, asset_server, menu_cameras, existing_logos);
+            if let Some(camera_entity) = menu_cameras.iter().next() {
+                create_logo_on_camera(commands, asset_server, camera_entity, "Startup");
+            }
         }
     } else {
         info!("Logo already exists at startup");
@@ -184,7 +148,10 @@ fn ensure_logo_exists(
                     "Attempting logo initialization (attempt {})",
                     init_tracker.attempts
                 );
-                setup_combined_logo(commands, asset_server, menu_cameras, existing_logos);
+
+                if let Some(camera_entity) = menu_cameras.iter().next() {
+                    create_logo_on_camera(commands, asset_server, camera_entity, "Timer");
+                }
 
                 // After 5 attempts, stop trying
                 if init_tracker.attempts >= 5 {
@@ -203,21 +170,10 @@ fn setup_combined_logo(
     menu_cameras: Query<Entity, With<MenuCamera>>,
     existing_logos: Query<Entity, With<MenuDecorativeElement>>,
 ) {
-    // Only clean up non-persistent logos to avoid duplication
-    for entity in existing_logos.iter() {
-        if commands.get_entity(entity).is_some() {
-            // Only clean up if it's not a persistent logo
-            if commands
-                .get_entity(entity)
-                .unwrap()
-                .contains::<PersistentLogo>()
-            {
-                debug!("Keeping persistent logo entity: {:?}", entity);
-                continue;
-            }
-            commands.entity(entity).despawn_recursive();
-            debug!("Cleaned up non-persistent logo entity");
-        }
+    // If we already have logos, don't create more
+    if existing_logos.iter().count() > 0 {
+        info!("Logos already exist, not creating new ones");
+        return;
     }
 
     info!("Setting up combined logo with Star of David and text for main menu");
@@ -225,50 +181,62 @@ fn setup_combined_logo(
     // Find the menu camera to attach to
     if let Some(camera_entity) = menu_cameras.iter().next() {
         info!("Attaching logo to menu camera: {:?}", camera_entity);
-
-        // Attach logo to camera entity with explicit positioning
-        commands.entity(camera_entity).with_children(|parent| {
-            parent
-                .spawn((
-                    Node {
-                        width: Val::Percent(100.0),
-                        height: Val::Px(200.0),
-                        flex_direction: FlexDirection::Column,
-                        align_items: AlignItems::Center,
-                        justify_content: JustifyContent::FlexStart,
-                        position_type: PositionType::Absolute,
-                        top: Val::Px(20.0),
-                        ..default()
-                    },
-                    MenuDecorativeElement,
-                    PersistentLogo, // Mark as persistent
-                    MenuItem,
-                    AppLayer::Menu.layer(),
-                    Visibility::Visible,
-                    InheritedVisibility::VISIBLE,
-                    ZIndex::from(ZLayers::MenuButtons),
-                    Name::new("Main Menu Logo Container"),
-                ))
-                .with_children(|logo_parent| {
-                    // Spawn the Star of David as part of the logo
-                    logo_parent.spawn((create_star_of_david(), Name::new("Star of David")));
-
-                    // Add Hebrew text
-                    logo_parent.spawn((
-                        create_hebrew_text(&asset_server),
-                        Name::new("Hebrew Logo Text"),
-                    ));
-
-                    // Add English text
-                    logo_parent.spawn((
-                        create_english_text(&asset_server),
-                        Name::new("English Logo Text"),
-                    ));
-                });
-        });
+        create_logo_on_camera(commands, asset_server, camera_entity, "Main Menu");
     } else {
         warn!("No menu camera found, cannot attach logo!");
     }
+}
+
+/// Creates a logo on the specified camera entity
+fn create_logo_on_camera(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    camera_entity: Entity,
+    prefix: &str,
+) {
+    // Attach logo to camera entity with explicit positioning
+    commands.entity(camera_entity).with_children(|parent| {
+        parent
+            .spawn((
+                Node {
+                    width: Val::Percent(100.0),
+                    height: Val::Px(200.0),
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::FlexStart,
+                    position_type: PositionType::Absolute,
+                    top: Val::Px(20.0),
+                    ..default()
+                },
+                MenuDecorativeElement,
+                PersistentLogo, // Mark as persistent
+                MenuItem,
+                AppLayer::Menu.layer(),
+                Visibility::Visible,
+                InheritedVisibility::VISIBLE,
+                ZIndex::from(ZLayers::MenuButtons),
+                Name::new(format!("{} Logo Container", prefix)),
+            ))
+            .with_children(|logo_parent| {
+                // Spawn the Star of David as part of the logo
+                logo_parent.spawn((
+                    create_star_of_david(),
+                    Name::new(format!("{} Star of David", prefix)),
+                ));
+
+                // Add Hebrew text
+                logo_parent.spawn((
+                    create_hebrew_text(&asset_server),
+                    Name::new(format!("{} Hebrew Logo Text", prefix)),
+                ));
+
+                // Add English text
+                logo_parent.spawn((
+                    create_english_text(&asset_server),
+                    Name::new(format!("{} English Logo Text", prefix)),
+                ));
+            });
+    });
 }
 
 /// Hide logo when entering settings instead of destroying it
@@ -346,21 +314,10 @@ fn setup_pause_logo(
     menu_cameras: Query<Entity, With<MenuCamera>>,
     existing_logos: Query<Entity, With<MenuDecorativeElement>>,
 ) {
-    // Only clean up non-persistent logos to avoid duplication
-    for entity in existing_logos.iter() {
-        if commands.get_entity(entity).is_some() {
-            // Only clean up if it's not a persistent logo
-            if commands
-                .get_entity(entity)
-                .unwrap()
-                .contains::<PersistentLogo>()
-            {
-                debug!("Keeping persistent logo entity: {:?}", entity);
-                continue;
-            }
-            commands.entity(entity).despawn_recursive();
-            debug!("Cleaned up non-persistent logo entity");
-        }
+    // If we already have logos, don't create more
+    if existing_logos.iter().count() > 0 {
+        info!("Logos already exist for pause menu, not creating new ones");
+        return;
     }
 
     info!("Setting up logo for pause menu");
@@ -368,47 +325,7 @@ fn setup_pause_logo(
     // Find the menu camera for attachment
     if let Some(camera_entity) = menu_cameras.iter().next() {
         info!("Attaching pause logo to camera: {:?}", camera_entity);
-
-        // Attach to camera entity
-        commands.entity(camera_entity).with_children(|parent| {
-            parent
-                .spawn((
-                    Node {
-                        width: Val::Percent(100.0),
-                        height: Val::Px(200.0),
-                        flex_direction: FlexDirection::Column,
-                        align_items: AlignItems::Center,
-                        justify_content: JustifyContent::FlexStart,
-                        position_type: PositionType::Absolute,
-                        top: Val::Px(20.0),
-                        ..default()
-                    },
-                    MenuDecorativeElement,
-                    PersistentLogo, // Mark as persistent
-                    MenuItem,
-                    AppLayer::Menu.layer(),
-                    Visibility::Visible,
-                    InheritedVisibility::VISIBLE,
-                    ZIndex::from(ZLayers::MenuButtons),
-                    Name::new("Pause Menu Logo Container"),
-                ))
-                .with_children(|logo_parent| {
-                    // Spawn the Star of David
-                    logo_parent.spawn((create_star_of_david(), Name::new("Pause Star of David")));
-
-                    // Add Hebrew text
-                    logo_parent.spawn((
-                        create_hebrew_text(&asset_server),
-                        Name::new("Pause Hebrew Text"),
-                    ));
-
-                    // Add English text
-                    logo_parent.spawn((
-                        create_english_text(&asset_server),
-                        Name::new("Pause English Text"),
-                    ));
-                });
-        });
+        create_logo_on_camera(commands, asset_server, camera_entity, "Pause Menu");
     } else {
         warn!("No menu camera found, cannot attach pause logo!");
     }
