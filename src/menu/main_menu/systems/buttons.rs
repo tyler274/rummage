@@ -169,6 +169,21 @@ pub fn create_main_menu_buttons(
     parent
         .spawn(MenuContainerBundle::button_container())
         .with_children(|parent| {
+            // Title
+            parent.spawn((
+                Text::new("Rummage"),
+                TextFont {
+                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font_size: 60.0,
+                    ..default()
+                },
+                TextColor(Color::srgba(1.0, 1.0, 1.0, 1.0)),
+                MenuItem,
+                Visibility::Visible,
+                Into::<ZIndex>::into(ZLayers::MenuButtonText),
+                Name::new("Main Menu Title"),
+            ));
+
             // Subtitle - Divider
             parent.spawn((
                 Node {

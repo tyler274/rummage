@@ -33,16 +33,18 @@ fn setup_combined_logo(
     if let Some(camera_entity) = menu_cameras.iter().next() {
         info!("Attaching logo to menu camera: {:?}", camera_entity);
 
-        // Attach logo to camera entity
+        // Attach logo to camera entity with explicit positioning
         commands.entity(camera_entity).with_children(|parent| {
             parent
                 .spawn((
                     Node {
-                        width: Val::Px(300.0),
-                        height: Val::Px(400.0),
+                        width: Val::Percent(100.0),
+                        height: Val::Px(200.0),
                         flex_direction: FlexDirection::Column,
                         align_items: AlignItems::Center,
-                        justify_content: JustifyContent::Center,
+                        justify_content: JustifyContent::FlexStart,
+                        position_type: PositionType::Absolute,
+                        top: Val::Px(20.0),
                         ..default()
                     },
                     MenuDecorativeElement,
@@ -50,25 +52,23 @@ fn setup_combined_logo(
                     AppLayer::Menu.layer(),
                     Visibility::Visible,
                     InheritedVisibility::VISIBLE,
-                    ViewVisibility::default(),
-                    ZIndex::from(ZLayers::MenuContainer),
+                    ZIndex::from(ZLayers::MenuButtons),
                     Name::new("Main Menu Logo Container"),
                 ))
                 .with_children(|logo_parent| {
                     // Spawn the Star of David as part of the logo
-                    logo_parent
-                        .spawn((create_star_of_david(), Name::new("Main Menu Star of David")));
+                    logo_parent.spawn((create_star_of_david(), Name::new("Star of David")));
 
                     // Add Hebrew text
                     logo_parent.spawn((
                         create_hebrew_text(&asset_server),
-                        Name::new("Main Menu Hebrew Text"),
+                        Name::new("Hebrew Logo Text"),
                     ));
 
                     // Add English text
                     logo_parent.spawn((
                         create_english_text(&asset_server),
-                        Name::new("Main Menu English Text"),
+                        Name::new("English Logo Text"),
                     ));
                 });
         });
@@ -104,11 +104,13 @@ fn setup_pause_logo(
             parent
                 .spawn((
                     Node {
-                        width: Val::Px(300.0),
-                        height: Val::Px(400.0),
+                        width: Val::Percent(100.0),
+                        height: Val::Px(200.0),
                         flex_direction: FlexDirection::Column,
                         align_items: AlignItems::Center,
-                        justify_content: JustifyContent::Center,
+                        justify_content: JustifyContent::FlexStart,
+                        position_type: PositionType::Absolute,
+                        top: Val::Px(20.0),
                         ..default()
                     },
                     MenuDecorativeElement,
@@ -116,8 +118,7 @@ fn setup_pause_logo(
                     AppLayer::Menu.layer(),
                     Visibility::Visible,
                     InheritedVisibility::VISIBLE,
-                    ViewVisibility::default(),
-                    ZIndex::from(ZLayers::MenuContainer),
+                    ZIndex::from(ZLayers::MenuButtons),
                     Name::new("Pause Menu Logo Container"),
                 ))
                 .with_children(|logo_parent| {
