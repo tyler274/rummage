@@ -43,7 +43,7 @@ pub fn handle_save_load_buttons(
 
                         // Return to appropriate state
                         if context.from_pause_menu {
-                            game_state.set(GameMenuState::PausedGame);
+                            game_state.set(GameMenuState::PauseMenu);
                         } else {
                             game_state.set(GameMenuState::MainMenu);
                         }
@@ -70,7 +70,7 @@ pub fn handle_save_load_buttons(
 
                         // Return to appropriate state
                         if context.from_pause_menu {
-                            game_state.set(GameMenuState::PausedGame);
+                            game_state.set(GameMenuState::PauseMenu);
                         } else {
                             game_state.set(GameMenuState::MainMenu);
                         }

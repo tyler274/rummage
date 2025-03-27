@@ -155,7 +155,7 @@ pub fn ensure_menu_item_visibility(
 ) {
     let should_be_visible = matches!(
         state.get(),
-        GameMenuState::MainMenu | GameMenuState::PausedGame | GameMenuState::Settings
+        GameMenuState::MainMenu | GameMenuState::PauseMenu | GameMenuState::Settings
     );
 
     for (mut visibility, name) in menu_items.iter_mut() {

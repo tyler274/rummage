@@ -15,10 +15,10 @@ use crate::{
         save_load::SaveLoadUiPlugin,
         settings::SettingsPlugin,
         star_of_david::StarOfDavidPlugin,
-        state::GameMenuState,
         state::StateTransitionContext,
+        state::{AppState, GameMenuState},
         state_transitions::setup_settings_transition,
-        visibility::VisibilityPlugin,
+        visibility::MenuVisibilityPlugin,
     },
 };
 
@@ -28,9 +28,11 @@ pub struct MenuPlugin;
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app
-            // Register the menu states
+            // Register the states
+            .init_state::<AppState>()
             .init_state::<GameMenuState>()
             // Register resources
+            .insert_resource(AppState::Menu)
             .insert_resource(GameMenuState::MainMenu)
             .insert_resource(StateTransitionContext::default())
             .init_resource::<MenuVisibilityState>()
@@ -41,7 +43,7 @@ impl Plugin for MenuPlugin {
             // Setup plugins
             .add_plugins((
                 CleanupPlugin,
-                VisibilityPlugin,
+                MenuVisibilityPlugin,
                 BackgroundsPlugin,
                 SettingsPlugin,
                 MainMenuPlugin,

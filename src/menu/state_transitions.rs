@@ -26,10 +26,10 @@ pub fn setup_settings_transition(
         // Explicitly set the settings origin to MainMenu
         info!("Explicitly setting settings_origin to MainMenu");
         context.settings_origin = Some(GameMenuState::MainMenu);
-    } else if context.from_pause_menu || *current_state.get() == GameMenuState::PausedGame {
-        // If the flag is set or we're coming from the pause menu, set the origin to PausedGame
+    } else if context.from_pause_menu || *current_state.get() == GameMenuState::PauseMenu {
+        // If the flag is set or we're coming from the pause menu, set the origin to PauseMenu
         info!("Detected transition from pause menu");
-        context.settings_origin = Some(GameMenuState::PausedGame);
+        context.settings_origin = Some(GameMenuState::PauseMenu);
     } else {
         // Fall back to checking the current state
         match current_state.get() {

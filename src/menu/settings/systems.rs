@@ -881,7 +881,6 @@ pub fn settings_button_action(
     mut context: ResMut<StateTransitionContext>,
     current_settings_state: Res<State<SettingsMenuState>>,
     current_game_state: Res<State<GameMenuState>>,
-    visible_entities: Query<(Entity, &Name, &Visibility), With<MenuItem>>,
 ) {
     for (interaction, action, mut color) in &mut interaction_query {
         match *interaction {
@@ -893,104 +892,41 @@ pub fn settings_button_action(
                     current_settings_state.get()
                 );
 
-                // Log all visible menu entities for debugging
-                info!("Visible menu entities at button press:");
-                for (entity, name, visibility) in visible_entities.iter() {
-                    info!(
-                        "Entity {:?} - '{}' - visibility: {:?}",
-                        entity, name, visibility
-                    );
-                }
-
                 match action {
                     SettingsButtonAction::VideoSettings => {
-                        info!(
-                            "Transitioning from {:?} to Video settings submenu (Game state: {:?})",
-                            current_settings_state.get(),
-                            current_game_state.get()
-                        );
+                        info!("Transitioning to Video settings submenu");
                         next_state.set(SettingsMenuState::Video);
-                        // Explicitly ensure we're in Settings game state
-                        game_state.set(GameMenuState::Settings);
                     }
                     SettingsButtonAction::AudioSettings => {
-                        info!(
-                            "Transitioning from {:?} to Audio settings submenu (Game state: {:?})",
-                            current_settings_state.get(),
-                            current_game_state.get()
-                        );
+                        info!("Transitioning to Audio settings submenu");
                         next_state.set(SettingsMenuState::Audio);
-                        // Explicitly ensure we're in Settings game state
-                        game_state.set(GameMenuState::Settings);
                     }
                     SettingsButtonAction::GameplaySettings => {
-                        info!(
-                            "Transitioning from {:?} to Gameplay settings submenu (Game state: {:?})",
-                            current_settings_state.get(),
-                            current_game_state.get()
-                        );
+                        info!("Transitioning to Gameplay settings submenu");
                         next_state.set(SettingsMenuState::Gameplay);
-                        // Explicitly ensure we're in Settings game state
-                        game_state.set(GameMenuState::Settings);
                     }
                     SettingsButtonAction::ControlsSettings => {
-                        info!(
-                            "Transitioning from {:?} to Controls settings submenu (Game state: {:?})",
-                            current_settings_state.get(),
-                            current_game_state.get()
-                        );
+                        info!("Transitioning to Controls settings submenu");
                         next_state.set(SettingsMenuState::Controls);
-                        // Explicitly ensure we're in Settings game state
-                        game_state.set(GameMenuState::Settings);
                     }
                     SettingsButtonAction::Back => {
                         // Return to the previous menu (main menu or pause menu)
                         if let Some(origin) = context.settings_origin {
-                            info!(
-                                "Returning to origin state: {:?} from {:?}",
-                                origin,
-                                current_settings_state.get()
-                            );
-
-                            // Always reset from_pause_menu flag if returning to main menu
-                            if origin == GameMenuState::MainMenu {
-                                info!(
-                                    "Resetting from_pause_menu flag because we're returning to main menu"
-                                );
-                                context.from_pause_menu = false;
-                            } else if origin == GameMenuState::PausedGame {
-                                // Ensure the flag is set if returning to the pause menu
-                                info!(
-                                    "Setting from_pause_menu flag because we're returning to pause menu"
-                                );
-                                context.from_pause_menu = true;
-                            }
-
+                            info!("Returning to origin state: {:?}", origin);
                             // First set the settings menu state to disabled to trigger cleanup
                             next_state.set(SettingsMenuState::Disabled);
-
-                            // Log transition for debugging
-                            info!("Transitioning from Settings to {:?}", origin);
-
                             // Then set the game menu state to the origin state
                             game_state.set(origin);
+                            context.settings_origin = None;
                         } else {
                             // Default to main menu if origin is not set
                             info!("No origin state found, defaulting to MainMenu");
-                            context.from_pause_menu = false;
                             next_state.set(SettingsMenuState::Disabled);
-
-                            // Log transition for debugging
-                            info!("Transitioning from Settings to MainMenu (default)");
-
                             game_state.set(GameMenuState::MainMenu);
                         }
                     }
                     SettingsButtonAction::BackToMainSettings => {
-                        info!(
-                            "Returning to main settings from {:?}",
-                            current_settings_state.get()
-                        );
+                        info!("Returning to main settings");
                         next_state.set(SettingsMenuState::Main);
                     }
                 }
@@ -1008,265 +944,47 @@ pub fn settings_button_action(
 /// Cleanup the settings menu entities
 pub fn cleanup_settings_menu(
     mut commands: Commands,
-    main_settings_query: Query<Entity, With<MainSettingsScreen>>,
-    video_settings_query: Query<Entity, With<VideoSettingsScreen>>,
-    audio_settings_query: Query<Entity, With<AudioSettingsScreen>>,
-    gameplay_settings_query: Query<Entity, With<GameplaySettingsScreen>>,
-    controls_settings_query: Query<Entity, With<ControlsSettingsScreen>>,
-    input_blockers: Query<Entity, With<crate::menu::input_blocker::InputBlocker>>,
+    settings_entities: Query<(Entity, &Name), With<MenuItem>>,
     current_settings_state: Res<State<SettingsMenuState>>,
-    current_game_state: Res<State<GameMenuState>>,
 ) {
-    let current_state = current_settings_state.get();
-    let current_game = current_game_state.get();
-
     info!(
-        "Cleaning up settings menu items. Current settings state: {:?}, Current game state: {:?}",
-        current_state, current_game
+        "Starting settings menu cleanup for state: {:?}",
+        current_settings_state.get()
     );
 
-    // When in the game state is not Settings, we need to clean up everything
-    if *current_game != GameMenuState::Settings {
-        info!("Game state is not Settings, cleaning up all settings entities");
-        clean_up_all_settings_entities(
-            &mut commands,
-            &main_settings_query,
-            &video_settings_query,
-            &audio_settings_query,
-            &gameplay_settings_query,
-            &controls_settings_query,
-        );
-        return;
-    }
+    // Only clean up entities that belong to the current state
+    let entities_to_remove: Vec<(Entity, String)> = settings_entities
+        .iter()
+        .filter(|(_, name)| {
+            let name_str = name.to_string();
+            match *current_settings_state.get() {
+                SettingsMenuState::Video => name_str.contains("Video"),
+                SettingsMenuState::Audio => name_str.contains("Audio"),
+                SettingsMenuState::Gameplay => name_str.contains("Gameplay"),
+                SettingsMenuState::Controls => name_str.contains("Controls"),
+                SettingsMenuState::Main => {
+                    name_str.contains("Settings")
+                        && !name_str.contains("Video")
+                        && !name_str.contains("Audio")
+                        && !name_str.contains("Gameplay")
+                        && !name_str.contains("Controls")
+                }
+                SettingsMenuState::Disabled => true, // Clean up everything in disabled state
+            }
+        })
+        .map(|(entity, name)| (entity, name.to_string()))
+        .collect();
 
-    // Based on the current state, decide what to clean up
-    match *current_state {
-        SettingsMenuState::Main => {
-            // If we're in the main settings state, don't clean up the main settings UI
-            // This is called when transitioning to submenus, and we want to keep the main menu
-            info!("In main settings state - preserving main settings UI");
-            // Make sure no submenus are present
-            clean_up_submenu_entities(
-                &mut commands,
-                &video_settings_query,
-                &audio_settings_query,
-                &gameplay_settings_query,
-                &controls_settings_query,
-            );
-        }
-        SettingsMenuState::Video => {
-            // Other submenus should be cleaned up, but preserve Video
-            info!(
-                "In Video settings - preserving video settings entities, cleaning up other submenus"
-            );
-            clean_up_submenu_except_video(
-                &mut commands,
-                &audio_settings_query,
-                &gameplay_settings_query,
-                &controls_settings_query,
-            );
-        }
-        SettingsMenuState::Audio => {
-            // Other submenus should be cleaned up, but preserve Audio
-            info!(
-                "In Audio settings - preserving audio settings entities, cleaning up other submenus"
-            );
-            clean_up_submenu_except_audio(
-                &mut commands,
-                &video_settings_query,
-                &gameplay_settings_query,
-                &controls_settings_query,
-            );
-        }
-        SettingsMenuState::Gameplay => {
-            // Other submenus should be cleaned up, but preserve Gameplay
-            info!(
-                "In Gameplay settings - preserving gameplay settings entities, cleaning up other submenus"
-            );
-            clean_up_submenu_except_gameplay(
-                &mut commands,
-                &video_settings_query,
-                &audio_settings_query,
-                &controls_settings_query,
-            );
-        }
-        SettingsMenuState::Controls => {
-            // Other submenus should be cleaned up, but preserve Controls
-            info!(
-                "In Controls settings - preserving controls settings entities, cleaning up other submenus"
-            );
-            clean_up_submenu_except_controls(
-                &mut commands,
-                &video_settings_query,
-                &audio_settings_query,
-                &gameplay_settings_query,
-            );
-        }
-        SettingsMenuState::Disabled => {
-            // When transitioning to disabled state, clean up everything
-            info!("Disabled state - cleaning up all settings entities");
-            clean_up_all_settings_entities(
-                &mut commands,
-                &main_settings_query,
-                &video_settings_query,
-                &audio_settings_query,
-                &gameplay_settings_query,
-                &controls_settings_query,
-            );
-        }
-    }
+    let num_entities = entities_to_remove.len();
+    info!("Found {} entities to remove", num_entities);
 
-    // Clean up any input blockers that might remain
-    for blocker in input_blockers.iter() {
-        info!("Despawning input blocker: {:?}", blocker);
-        commands.entity(blocker).despawn_recursive();
-    }
-}
-
-/// Helper function to clean up all submenu entities
-fn clean_up_submenu_entities(
-    commands: &mut Commands,
-    video_settings_query: &Query<Entity, With<VideoSettingsScreen>>,
-    audio_settings_query: &Query<Entity, With<AudioSettingsScreen>>,
-    gameplay_settings_query: &Query<Entity, With<GameplaySettingsScreen>>,
-    controls_settings_query: &Query<Entity, With<ControlsSettingsScreen>>,
-) {
-    for entity in video_settings_query.iter() {
-        info!("Despawning video settings entity: {:?}", entity);
+    // Remove the entities
+    for (entity, name) in entities_to_remove {
+        info!("Despawning entity: '{}'", name);
         commands.entity(entity).despawn_recursive();
     }
 
-    for entity in audio_settings_query.iter() {
-        info!("Despawning audio settings entity: {:?}", entity);
-        commands.entity(entity).despawn_recursive();
-    }
-
-    for entity in gameplay_settings_query.iter() {
-        info!("Despawning gameplay settings entity: {:?}", entity);
-        commands.entity(entity).despawn_recursive();
-    }
-
-    for entity in controls_settings_query.iter() {
-        info!("Despawning controls settings entity: {:?}", entity);
-        commands.entity(entity).despawn_recursive();
-    }
-}
-
-/// Helper function to clean up all settings entities
-fn clean_up_all_settings_entities(
-    commands: &mut Commands,
-    main_settings_query: &Query<Entity, With<MainSettingsScreen>>,
-    video_settings_query: &Query<Entity, With<VideoSettingsScreen>>,
-    audio_settings_query: &Query<Entity, With<AudioSettingsScreen>>,
-    gameplay_settings_query: &Query<Entity, With<GameplaySettingsScreen>>,
-    controls_settings_query: &Query<Entity, With<ControlsSettingsScreen>>,
-) {
-    // Clean up main settings
-    for entity in main_settings_query.iter() {
-        info!("Despawning main settings entity: {:?}", entity);
-        commands.entity(entity).despawn_recursive();
-    }
-
-    // Clean up all submenu settings
-    clean_up_submenu_entities(
-        commands,
-        video_settings_query,
-        audio_settings_query,
-        gameplay_settings_query,
-        controls_settings_query,
-    );
-}
-
-/// Helper function to clean up all submenu entities except video
-fn clean_up_submenu_except_video(
-    commands: &mut Commands,
-    audio_settings_query: &Query<Entity, With<AudioSettingsScreen>>,
-    gameplay_settings_query: &Query<Entity, With<GameplaySettingsScreen>>,
-    controls_settings_query: &Query<Entity, With<ControlsSettingsScreen>>,
-) {
-    for entity in audio_settings_query.iter() {
-        info!("Despawning audio settings entity: {:?}", entity);
-        commands.entity(entity).despawn_recursive();
-    }
-
-    for entity in gameplay_settings_query.iter() {
-        info!("Despawning gameplay settings entity: {:?}", entity);
-        commands.entity(entity).despawn_recursive();
-    }
-
-    for entity in controls_settings_query.iter() {
-        info!("Despawning controls settings entity: {:?}", entity);
-        commands.entity(entity).despawn_recursive();
-    }
-}
-
-/// Helper function to clean up all submenu entities except audio
-fn clean_up_submenu_except_audio(
-    commands: &mut Commands,
-    video_settings_query: &Query<Entity, With<VideoSettingsScreen>>,
-    gameplay_settings_query: &Query<Entity, With<GameplaySettingsScreen>>,
-    controls_settings_query: &Query<Entity, With<ControlsSettingsScreen>>,
-) {
-    for entity in video_settings_query.iter() {
-        info!("Despawning video settings entity: {:?}", entity);
-        commands.entity(entity).despawn_recursive();
-    }
-
-    for entity in gameplay_settings_query.iter() {
-        info!("Despawning gameplay settings entity: {:?}", entity);
-        commands.entity(entity).despawn_recursive();
-    }
-
-    for entity in controls_settings_query.iter() {
-        info!("Despawning controls settings entity: {:?}", entity);
-        commands.entity(entity).despawn_recursive();
-    }
-}
-
-/// Helper function to clean up all submenu entities except gameplay
-fn clean_up_submenu_except_gameplay(
-    commands: &mut Commands,
-    video_settings_query: &Query<Entity, With<VideoSettingsScreen>>,
-    audio_settings_query: &Query<Entity, With<AudioSettingsScreen>>,
-    controls_settings_query: &Query<Entity, With<ControlsSettingsScreen>>,
-) {
-    for entity in video_settings_query.iter() {
-        info!("Despawning video settings entity: {:?}", entity);
-        commands.entity(entity).despawn_recursive();
-    }
-
-    for entity in audio_settings_query.iter() {
-        info!("Despawning audio settings entity: {:?}", entity);
-        commands.entity(entity).despawn_recursive();
-    }
-
-    for entity in controls_settings_query.iter() {
-        info!("Despawning controls settings entity: {:?}", entity);
-        commands.entity(entity).despawn_recursive();
-    }
-}
-
-/// Helper function to clean up all submenu entities except controls
-fn clean_up_submenu_except_controls(
-    commands: &mut Commands,
-    video_settings_query: &Query<Entity, With<VideoSettingsScreen>>,
-    audio_settings_query: &Query<Entity, With<AudioSettingsScreen>>,
-    gameplay_settings_query: &Query<Entity, With<GameplaySettingsScreen>>,
-) {
-    for entity in video_settings_query.iter() {
-        info!("Despawning video settings entity: {:?}", entity);
-        commands.entity(entity).despawn_recursive();
-    }
-
-    for entity in audio_settings_query.iter() {
-        info!("Despawning audio settings entity: {:?}", entity);
-        commands.entity(entity).despawn_recursive();
-    }
-
-    for entity in gameplay_settings_query.iter() {
-        info!("Despawning gameplay settings entity: {:?}", entity);
-        commands.entity(entity).despawn_recursive();
-    }
+    info!("Completed cleanup of {} entities", num_entities);
 }
 
 /// System to handle interactions with volume sliders

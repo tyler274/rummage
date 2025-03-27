@@ -34,18 +34,22 @@ fn setup_mock_window(mut commands: Commands) {
 }
 
 // Common helper function to track state changes
-fn track_state_change(old_state: GameMenuState, new_state: GameMenuState, tracker: &mut StateTracker) {
+fn track_state_change(
+    old_state: GameMenuState,
+    new_state: GameMenuState,
+    tracker: &mut StateTracker,
+) {
     // Handle exit events first
     match old_state {
         GameMenuState::MainMenu => tracker.main_menu_exited = true,
-        GameMenuState::PausedGame => tracker.paused_exited = true,
+        GameMenuState::PauseMenu => tracker.paused_exited = true,
         _ => {}
     }
 
     // Then handle enter events
     match new_state {
         GameMenuState::InGame => tracker.in_game_entered = true,
-        GameMenuState::PausedGame => tracker.paused_entered = true,
+        GameMenuState::PauseMenu => tracker.paused_entered = true,
         _ => {}
     }
 }
@@ -87,28 +91,28 @@ fn test_pause_unpause() {
 
     // Manually track transitions in test
     let in_game_state = GameMenuState::InGame;
-    let paused_state = GameMenuState::PausedGame;
+    let paused_state = GameMenuState::PauseMenu;
 
     let mut tracker = app.world_mut().resource_mut::<StateTracker>();
 
-    // Track InGame -> PausedGame transition (pause)
+    // Track InGame -> PauseMenu transition (pause)
     track_state_change(in_game_state, paused_state, &mut tracker);
 
     // Verify pause state transitions
     assert!(
         tracker.paused_entered,
-        "PausedGame enter event not triggered"
+        "PauseMenu enter event not triggered"
     );
 
     // Reset both trackers to avoid false positives
     tracker.paused_entered = false;
     tracker.paused_exited = false;
 
-    // Track PausedGame -> InGame transition (unpause)
+    // Track PauseMenu -> InGame transition (unpause)
     track_state_change(paused_state, in_game_state, &mut tracker);
 
     // Verify unpause state transitions
-    assert!(tracker.paused_exited, "PausedGame exit event not triggered");
+    assert!(tracker.paused_exited, "PauseMenu exit event not triggered");
 }
 
 #[test]
@@ -117,11 +121,11 @@ fn test_return_to_main_menu() {
 
     // Manually track transitions in test
     let main_menu_state = GameMenuState::MainMenu;
-    let paused_state = GameMenuState::PausedGame;
+    let paused_state = GameMenuState::PauseMenu;
 
     let mut tracker = app.world_mut().resource_mut::<StateTracker>();
 
-    // Track PausedGame -> MainMenu transition
+    // Track PauseMenu -> MainMenu transition
     track_state_change(paused_state, main_menu_state, &mut tracker);
 
     // Check effects happened
@@ -137,7 +141,7 @@ fn test_state_cycle() {
     let initial_state = GameMenuState::MainMenu;
     let loading_state = GameMenuState::Loading;
     let in_game_state = GameMenuState::InGame;
-    let paused_state = GameMenuState::PausedGame;
+    let paused_state = GameMenuState::PauseMenu;
 
     // MainMenu -> Loading -> InGame
     track_state_change(initial_state, loading_state, &mut tracker);
@@ -145,11 +149,11 @@ fn test_state_cycle() {
     assert!(tracker.main_menu_exited, "MainMenu exit should be tracked");
     assert!(tracker.in_game_entered, "InGame enter should be tracked");
 
-    // InGame -> PausedGame
+    // InGame -> PauseMenu
     track_state_change(in_game_state, paused_state, &mut tracker);
-    assert!(tracker.paused_entered, "PausedGame enter should be tracked");
+    assert!(tracker.paused_entered, "PauseMenu enter should be tracked");
 
-    // PausedGame -> MainMenu
+    // PauseMenu -> MainMenu
     track_state_change(paused_state, initial_state, &mut tracker);
-    assert!(tracker.paused_exited, "PausedGame exit should be tracked");
+    assert!(tracker.paused_exited, "PauseMenu exit should be tracked");
 }

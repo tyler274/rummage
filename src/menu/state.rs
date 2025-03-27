@@ -1,5 +1,17 @@
 use bevy::prelude::*;
 
+/// The main application states
+#[derive(States, Debug, Hash, Eq, PartialEq, Clone, Copy, Default, Resource)]
+pub enum AppState {
+    /// The menu state
+    #[default]
+    Menu,
+    /// The in-game state
+    InGame,
+    /// The paused state
+    Paused,
+}
+
 /// The different menu states in the game
 #[derive(States, Debug, Hash, Eq, PartialEq, Clone, Copy, Default, Resource)]
 pub enum MenuState {

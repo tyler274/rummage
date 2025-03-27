@@ -1,4 +1,7 @@
-use crate::menu::state::{GameMenuState, StateTransitionContext};
+use crate::menu::{
+    settings::SettingsMenuState,
+    state::{AppState, GameMenuState, StateTransitionContext},
+};
 use bevy::prelude::*;
 
 /// Handles keyboard input when in the pause menu, specifically ESC to toggle pause
@@ -54,12 +57,21 @@ pub fn esc_key_system(
             if *menu_state.get() == GameMenuState::Settings {
                 if *settings_state.get() != SettingsMenuState::Main {
                     info!(
+                        "ESC key pressed - current app state: {:?}, menu state: {:?}, settings state: {:?}",
+                        app_state.get(),
+                        menu_state.get(),
+                        settings_state.get()
+                    );
+                    info!(
                         "Returning to main settings from submenu while in menu: {:?}",
                         settings_state.get()
                     );
                     next_settings_state.set(SettingsMenuState::Main);
                 } else {
                     info!("Returning to main menu from settings");
+                    // First set settings state to disabled to trigger cleanup
+                    next_settings_state.set(SettingsMenuState::Disabled);
+                    // Then transition to main menu
                     next_menu_state.set(GameMenuState::MainMenu);
                     // Mark that the main menu needs setup when returning from settings
                     info!("Setting MainMenuNeedsSetup flag to true");

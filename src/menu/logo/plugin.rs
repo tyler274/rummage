@@ -11,9 +11,9 @@ pub struct LogoPlugin;
 impl Plugin for LogoPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameMenuState::MainMenu), setup_combined_logo)
-            .add_systems(OnEnter(GameMenuState::PausedGame), setup_pause_logo)
+            .add_systems(OnEnter(GameMenuState::PauseMenu), setup_pause_logo)
             .add_systems(OnExit(GameMenuState::MainMenu), cleanup_logo)
-            .add_systems(OnExit(GameMenuState::PausedGame), cleanup_logo);
+            .add_systems(OnExit(GameMenuState::PauseMenu), cleanup_logo);
 
         debug!("Logo plugin registered - combines Star of David with text");
     }

@@ -1,13 +1,15 @@
-use crate::menu::state::StateTransitionContext;
+use crate::menu::{
+    components::NeedsMainMenuSetup,
+    settings::state::SettingsMenuState,
+    state::{GameMenuState, StateTransitionContext},
+};
+use bevy::audio::Volume;
 use bevy::prelude::*;
 use bevy_persistent::prelude::*;
 
-use crate::menu::components::MenuItem;
-use crate::menu::state::GameMenuState;
-
 use super::components::*;
-use super::state::SettingsMenuState;
 use super::systems::*;
+use crate::menu::components::MenuItem;
 
 /// Plugin that sets up the settings menu system
 pub struct SettingsPlugin;
@@ -15,15 +17,15 @@ pub struct SettingsPlugin;
 impl Plugin for SettingsPlugin {
     fn build(&self, app: &mut App) {
         info!("Building SettingsPlugin...");
-        
+
         // Initialize all settings resources first
         app.init_resource::<VolumeSettings>()
             .init_resource::<GameplaySettings>()
-            .init_resource::<GraphicsQuality>()
+            .init_resource::<CurrentGraphicsQuality>()
             .init_resource::<RummageSettings>();
 
         info!("Settings resources initialized");
-        
+
         // Set up persistent settings using TOML
         match Persistent::<RummageSettings>::builder()
             .name("rummage_settings")
@@ -46,163 +48,84 @@ impl Plugin for SettingsPlugin {
 
         // Register settings states
         app.init_state::<SettingsMenuState>()
-            // Settings state - Main screen
+            // Settings state - Main settings
             .add_systems(
                 OnEnter(SettingsMenuState::Main),
                 (
-                    // Ensure we set up the menu camera before spawning UI elements
                     crate::menu::camera::setup::setup_menu_camera,
+                    |mut commands: Commands| {
+                        // Add an input blocker to prevent clicks going through to other UI elements
+                        commands.spawn((
+                            Node {
+                                width: Val::Percent(100.0),
+                                height: Val::Percent(100.0),
+                                position_type: PositionType::Absolute,
+                                ..default()
+                            },
+                            crate::menu::components::MenuItem,
+                            crate::menu::settings::components::SettingsMenuItem,
+                            crate::menu::input_blocker::InputBlocker,
+                            Visibility::Visible,
+                            InheritedVisibility::VISIBLE,
+                            Name::new("Settings Menu Input Blocker"),
+                        ));
+                    },
                     setup_main_settings,
-                    |state: Res<State<SettingsMenuState>>, game_state: Res<State<GameMenuState>>, mut next_game_state: ResMut<NextState<GameMenuState>>| {
-                        info!("ENTERED SettingsMenuState::Main - Current Settings State: {:?}, Game State: {:?}", 
-                              state.get(), game_state.get());
-                        // Ensure we're in the Settings game state
-                        if *game_state.get() != GameMenuState::Settings {
+                    |mut game_state: ResMut<NextState<GameMenuState>>,
+                     current_game_state: Res<State<GameMenuState>>| {
+                        // Force the game state to remain in Settings when entering main settings
+                        if *current_game_state.get() != GameMenuState::Settings {
                             info!("Fixing GameMenuState to Settings for main settings");
-                            next_game_state.set(GameMenuState::Settings);
                         }
-                    }
-                )
+                        game_state.set(GameMenuState::Settings);
+                        info!("ENTERED SettingsMenuState::Main - Current Settings State: Main, Game State: Settings");
+                    },
+                ),
             )
             // Settings state - Video settings
             .add_systems(
                 OnEnter(SettingsMenuState::Video),
                 (
-                    crate::menu::camera::setup::setup_menu_camera,
-                    |mut commands: Commands| {
-                        // Add an input blocker to prevent clicks going through to other UI elements
-                        commands.spawn((
-                            Node {
-                                width: Val::Percent(100.0),
-                                height: Val::Percent(100.0),
-                                position_type: PositionType::Absolute,
-                                ..default()
-                            },
-                            crate::menu::components::MenuItem,
-                            crate::menu::settings::components::SettingsMenuItem,
-                            crate::menu::input_blocker::InputBlocker,
-                            Visibility::Visible,
-                            InheritedVisibility::VISIBLE,
-                            Name::new("Video Settings Input Blocker")
-                        ));
-                    },
                     setup_video_settings,
-                    |mut game_state: ResMut<NextState<GameMenuState>>, current_game_state: Res<State<GameMenuState>>| {
-                        // Force the game state to remain in Settings when entering Video submenu
-                        if *current_game_state.get() != GameMenuState::Settings {
-                            info!("Fixing GameMenuState to Settings for video settings");
-                        }
+                    |mut game_state: ResMut<NextState<GameMenuState>>| {
                         game_state.set(GameMenuState::Settings);
-                        info!("Entering Video settings - ensuring GameMenuState is Settings");
-                    }
-                ).run_if(in_state(GameMenuState::Settings))
+                    },
+                ),
             )
             // Settings state - Audio settings
             .add_systems(
                 OnEnter(SettingsMenuState::Audio),
                 (
-                    crate::menu::camera::setup::setup_menu_camera,
-                    |mut commands: Commands| {
-                        // Add an input blocker to prevent clicks going through to other UI elements
-                        commands.spawn((
-                            Node {
-                                width: Val::Percent(100.0),
-                                height: Val::Percent(100.0),
-                                position_type: PositionType::Absolute,
-                                ..default()
-                            },
-                            crate::menu::components::MenuItem,
-                            crate::menu::settings::components::SettingsMenuItem,
-                            crate::menu::input_blocker::InputBlocker,
-                            Visibility::Visible,
-                            InheritedVisibility::VISIBLE,
-                            Name::new("Audio Settings Input Blocker")
-                        ));
-                    },
                     setup_audio_settings,
-                    |mut game_state: ResMut<NextState<GameMenuState>>, current_game_state: Res<State<GameMenuState>>| {
-                        // Force the game state to remain in Settings when entering Audio submenu
-                        if *current_game_state.get() != GameMenuState::Settings {
-                            info!("Fixing GameMenuState to Settings for audio settings");
-                        }
+                    |mut game_state: ResMut<NextState<GameMenuState>>| {
                         game_state.set(GameMenuState::Settings);
-                        info!("Entering Audio settings - ensuring GameMenuState is Settings");
-                    }
-                ).run_if(in_state(GameMenuState::Settings))
+                    },
+                ),
             )
             // Settings state - Gameplay settings
             .add_systems(
                 OnEnter(SettingsMenuState::Gameplay),
                 (
-                    crate::menu::camera::setup::setup_menu_camera,
-                    |mut commands: Commands| {
-                        // Add an input blocker to prevent clicks going through to other UI elements
-                        commands.spawn((
-                            Node {
-                                width: Val::Percent(100.0),
-                                height: Val::Percent(100.0),
-                                position_type: PositionType::Absolute,
-                                ..default()
-                            },
-                            crate::menu::components::MenuItem,
-                            crate::menu::settings::components::SettingsMenuItem,
-                            crate::menu::input_blocker::InputBlocker,
-                            Visibility::Visible,
-                            InheritedVisibility::VISIBLE,
-                            Name::new("Gameplay Settings Input Blocker")
-                        ));
-                    },
                     setup_gameplay_settings,
-                    |mut game_state: ResMut<NextState<GameMenuState>>, current_game_state: Res<State<GameMenuState>>| {
-                        // Force the game state to remain in Settings when entering Gameplay submenu
-                        if *current_game_state.get() != GameMenuState::Settings {
-                            info!("Fixing GameMenuState to Settings for gameplay settings");
-                        }
+                    |mut game_state: ResMut<NextState<GameMenuState>>| {
                         game_state.set(GameMenuState::Settings);
-                        info!("Entering Gameplay settings - ensuring GameMenuState is Settings");
-                    }
-                ).run_if(in_state(GameMenuState::Settings))
+                    },
+                ),
             )
             // Settings state - Controls settings
             .add_systems(
                 OnEnter(SettingsMenuState::Controls),
                 (
-                    crate::menu::camera::setup::setup_menu_camera,
-                    |mut commands: Commands| {
-                        // Add an input blocker to prevent clicks going through to other UI elements
-                        commands.spawn((
-                            Node {
-                                width: Val::Percent(100.0),
-                                height: Val::Percent(100.0),
-                                position_type: PositionType::Absolute,
-                                ..default()
-                            },
-                            crate::menu::components::MenuItem,
-                            crate::menu::settings::components::SettingsMenuItem,
-                            crate::menu::input_blocker::InputBlocker,
-                            Visibility::Visible,
-                            InheritedVisibility::VISIBLE,
-                            Name::new("Controls Settings Input Blocker")
-                        ));
-                    },
                     setup_controls_settings,
-                    |mut game_state: ResMut<NextState<GameMenuState>>, current_game_state: Res<State<GameMenuState>>| {
-                        // Force the game state to remain in Settings when entering Controls submenu
-                        if *current_game_state.get() != GameMenuState::Settings {
-                            info!("Fixing GameMenuState to Settings for controls settings");
-                        }
+                    |mut game_state: ResMut<NextState<GameMenuState>>| {
                         game_state.set(GameMenuState::Settings);
-                        info!("Entering Controls settings - ensuring GameMenuState is Settings");
-                    }
-                ).run_if(in_state(GameMenuState::Settings))
+                    },
+                ),
             )
             // Settings interaction system
             .add_systems(
                 Update,
-                (
-                    settings_button_action,
-                    volume_slider_interaction
-                )
+                (settings_button_action, volume_slider_interaction),
             )
             // Apply settings on startup
             .add_systems(Startup, apply_settings)
@@ -210,148 +133,147 @@ impl Plugin for SettingsPlugin {
             .add_systems(OnExit(SettingsMenuState::Audio), save_settings)
             .add_systems(OnExit(SettingsMenuState::Video), save_settings)
             .add_systems(OnExit(SettingsMenuState::Gameplay), save_settings)
-            // Cleanup systems for each settings state exit
-            .add_systems(OnExit(SettingsMenuState::Video), cleanup_settings_menu
-                .run_if(not(in_state(GameMenuState::Settings)))
+            // Cleanup systems for each settings state
+            .add_systems(
+                OnExit(SettingsMenuState::Main),
+                cleanup_settings_menu.run_if(not(in_state(GameMenuState::Settings))),
             )
-            .add_systems(OnExit(SettingsMenuState::Audio), cleanup_settings_menu
-                .run_if(not(in_state(GameMenuState::Settings)))
+            .add_systems(
+                OnExit(SettingsMenuState::Video),
+                cleanup_settings_menu.run_if(not(in_state(GameMenuState::Settings))),
             )
-            .add_systems(OnExit(SettingsMenuState::Gameplay), cleanup_settings_menu
-                .run_if(not(in_state(GameMenuState::Settings)))
+            .add_systems(
+                OnExit(SettingsMenuState::Audio),
+                cleanup_settings_menu.run_if(not(in_state(GameMenuState::Settings))),
             )
-            .add_systems(OnExit(SettingsMenuState::Controls), cleanup_settings_menu
-                .run_if(not(in_state(GameMenuState::Settings)))
+            .add_systems(
+                OnExit(SettingsMenuState::Gameplay),
+                cleanup_settings_menu.run_if(not(in_state(GameMenuState::Settings))),
+            )
+            .add_systems(
+                OnExit(SettingsMenuState::Controls),
+                cleanup_settings_menu.run_if(not(in_state(GameMenuState::Settings))),
             )
             // Cleanup system for the main settings menu
-            .add_systems(OnExit(GameMenuState::Settings), (
-                settings_cleanup,
-                // Run a separate system to update visibility after cleanup
-                |world: &mut World| {
-                    info!("Running visibility update system");
-                    // Find all MenuItem entities that still exist
-                    let mut query = world.query_filtered::<Entity, With<MenuItem>>();
-                    let entities: Vec<Entity> = query.iter(world).collect();
-                    
-                    info!("Found {} menu entities to update visibility", entities.len());
-                    
-                    // Update visibility for each entity that exists
-                    for entity in entities {
-                        if let Ok(mut entity_mut) = world.get_entity_mut(entity) {
-                            // Get the name for logging if available
-                            let name_str = if let Some(name) = entity_mut.get::<Name>() {
-                                name.as_str().to_string()
-                            } else {
-                                "unnamed".to_string()
-                            };
-                            
-                            // Log what we're doing
-                            info!("Setting entity {} ({}) to Visible", entity.index(), name_str);
-                            
-                            // Update visibility
-                            entity_mut.insert(Visibility::Visible);
-                        }
-                    }
-                    
-                    info!("Finished updating visibility for remaining menu entities");
-                }
-            ).chain());
+            .add_systems(OnExit(GameMenuState::Settings), settings_cleanup);
+    }
+}
+
+#[derive(Resource, Clone)]
+pub struct CurrentGraphicsQuality {
+    pub quality: GraphicsQuality,
+}
+
+impl Default for CurrentGraphicsQuality {
+    fn default() -> Self {
+        Self {
+            quality: GraphicsQuality::Medium,
+        }
     }
 }
 
 /// Apply saved settings on startup
-fn apply_settings(
+pub fn apply_settings(
     persistent_settings: Option<Res<Persistent<RummageSettings>>>,
     mut volume_settings: ResMut<VolumeSettings>,
     mut gameplay_settings: ResMut<GameplaySettings>,
-    mut graphics_quality: ResMut<GraphicsQuality>,
+    mut graphics_quality: ResMut<CurrentGraphicsQuality>,
     mut global_volume: ResMut<bevy::prelude::GlobalVolume>,
 ) {
-    if let Some(persistent) = persistent_settings {
-        info!("Applying saved settings: {:?}", *persistent);
-
-        // Update all settings resources
-        *volume_settings = persistent.volume.clone();
-        *gameplay_settings = persistent.gameplay.clone();
-        *graphics_quality = persistent.graphics.clone();
-
+    if let Some(settings) = persistent_settings {
         // Apply volume settings
-        global_volume.volume = bevy::audio::Volume::new(volume_settings.master);
+        volume_settings.master = settings.volume.master;
+        volume_settings.music = settings.volume.music;
+        volume_settings.sfx = settings.volume.sfx;
+
+        // Apply gameplay settings
+        gameplay_settings.auto_pass = settings.gameplay.auto_pass;
+        gameplay_settings.show_tooltips = settings.gameplay.show_tooltips;
+        gameplay_settings.animation_speed = settings.gameplay.animation_speed;
+
+        // Apply graphics quality
+        graphics_quality.quality = settings.graphics.clone();
+
+        // Apply global volume
+        global_volume.volume = Volume::new(volume_settings.master);
+
+        info!("Applied settings from persistent storage");
     } else {
-        info!("No persistent settings available, using defaults");
-        global_volume.volume = bevy::audio::Volume::new(volume_settings.master);
+        info!("No persistent settings found, using defaults");
     }
 }
 
-/// Save all settings when exiting any settings menu
+/// Save current settings to persistent storage
 fn save_settings(
     persistent_settings: Option<ResMut<Persistent<RummageSettings>>>,
     volume_settings: Res<VolumeSettings>,
     gameplay_settings: Res<GameplaySettings>,
-    graphics_quality: Res<GraphicsQuality>,
+    graphics_quality: Res<CurrentGraphicsQuality>,
 ) {
-    if let Some(mut persistent) = persistent_settings {
-        let settings = RummageSettings {
-            volume: volume_settings.clone(),
-            gameplay: gameplay_settings.clone(),
-            graphics: graphics_quality.clone(),
-        };
-        info!("Saving settings: {:?}", settings);
-        if let Err(e) = persistent.set(settings) {
-            error!("Failed to save settings: {:?}", e);
-        }
+    if let Some(mut settings) = persistent_settings {
+        // Update settings with current values
+        settings.volume = volume_settings.clone();
+        settings.gameplay = gameplay_settings.clone();
+        settings.graphics = graphics_quality.quality.clone();
+
+        info!("Saving settings: {:?}", settings.as_ref());
     } else {
-        warn!("Cannot save settings: persistent storage not available");
+        warn!("No persistent settings resource found, settings not saved");
     }
 }
 
+/// Cleanup settings menu entities and handle state transitions
 fn settings_cleanup(
     mut commands: Commands,
     settings_entities: Query<(Entity, &Name), With<MenuItem>>,
     mut next_state: ResMut<NextState<GameMenuState>>,
     mut context: ResMut<StateTransitionContext>,
     current_state: Res<State<GameMenuState>>,
+    current_settings_state: Res<State<SettingsMenuState>>,
 ) {
-    // Cleanup settings menu entities
-    let mut removed_count = 0;
-    for (entity, name) in settings_entities.iter() {
-        let name_str = name.to_string();
-        // More precise targeting to avoid removing main menu items
-        if name_str.contains("Settings") 
-            || name_str.contains("Option") 
-            || name_str.contains("Slider") 
-            || name_str.contains("Checkbox") 
-            || name_str.contains("settings")
-            || name_str.contains("Audio Settings")
-            || name_str.contains("Video Settings")
-            || name_str.contains("Gameplay Settings")
-            || name_str.contains("Controls Settings")
-            || name_str.contains("Input Blocker")
-        {
-            info!("Despawning settings entity: '{}'", name_str);
-            commands.entity(entity).despawn_recursive();
-            removed_count += 1;
-        }
-    }
-    info!("Settings cleanup complete - removed {} entities", removed_count);
+    info!(
+        "Starting settings cleanup with current state: {:?}",
+        current_settings_state.get()
+    );
 
-    // Additional logging
-    if current_state.get() != &GameMenuState::Settings {
-        info!("State is not Settings during cleanup, it is: {:?}", current_state.get());
+    // First, collect all entities to remove to avoid any ordering issues
+    let entities_to_remove: Vec<(Entity, String)> = settings_entities
+        .iter()
+        .filter(|(_, name)| {
+            let name_str = name.to_string();
+            name_str.contains("Settings")
+                || name_str.contains("Option")
+                || name_str.contains("Slider")
+                || name_str.contains("Checkbox")
+                || name_str.contains("settings")
+                || name_str.contains("Input Blocker")
+        })
+        .map(|(entity, name)| (entity, name.to_string()))
+        .collect();
+
+    let num_entities = entities_to_remove.len();
+    info!("Found {} settings entities to remove", num_entities);
+
+    // Log what we're about to remove and remove them
+    for (entity, name) in entities_to_remove {
+        info!("Despawning settings entity: '{}'", name);
+        commands.entity(entity).despawn_recursive();
     }
-    
-    // Return to the origin state after settings
-    if let Some(origin) = context.origin_state {
-        info!("Returning to origin state from settings: {:?}", origin);
-        next_state.set(origin);
-        if origin == GameMenuState::MainMenu {
-            commands.insert_resource(MainMenuNeedsSetup(true));
-            info!("Set MainMenuNeedsSetup to true");
+
+    info!("Despawned {} settings menu entities", num_entities);
+
+    // Only handle state transitions if we're in the Disabled state
+    if *current_settings_state.get() == SettingsMenuState::Disabled {
+        // Return to the origin state after settings
+        if let Some(origin) = context.settings_origin {
+            info!("Returning to origin state: {:?}", origin);
+            next_state.set(origin);
+            if origin == GameMenuState::MainMenu {
+                // Mark that the main menu needs setup when returning from settings
+                info!("Setting NeedsMainMenuSetup flag to true");
+                commands.insert_resource(NeedsMainMenuSetup(true));
+            }
+            context.settings_origin = None;
         }
-    } else {
-        info!("No origin state found in context during settings cleanup");
     }
-    
-    // Reset the context after use
-    context.origin_state = None;
-} 
+}

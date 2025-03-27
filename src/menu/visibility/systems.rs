@@ -10,14 +10,16 @@ use bevy::prelude::*;
 /// Update menu visibility state resource
 pub fn update_menu_visibility_state(
     menu_items: Query<Entity, With<MenuItem>>,
-    visible_items: Query<(Entity, &Visibility), With<MenuItem>>,
+    visible_items: Query<(Entity, &Visibility, &InheritedVisibility), With<MenuItem>>,
     mut menu_state: ResMut<MenuVisibilityState>,
 ) {
     // Gather counts
     let total_items = menu_items.iter().count();
     let visible_items_count = visible_items
         .iter()
-        .filter(|(_, vis)| **vis == Visibility::Visible)
+        .filter(|(_, vis, inherited)| {
+            **vis == Visibility::Visible && **inherited == InheritedVisibility::VISIBLE
+        })
         .count();
 
     // Only update if there's a change
@@ -35,7 +37,7 @@ pub fn update_menu_visibility_state(
 /// Prints debug info about menu visibility state
 pub fn debug_menu_visibility(
     menu_state: Res<MenuVisibilityState>,
-    menu_cameras: Query<(Entity, &Visibility), With<MenuCamera>>,
+    menu_cameras: Query<(Entity, &Visibility, &InheritedVisibility), With<MenuCamera>>,
     mut log_state: Local<MenuVisibilityLogState>,
 ) {
     // Only log if something changed
@@ -47,8 +49,11 @@ pub fn debug_menu_visibility(
         );
 
         // Log camera visibility
-        for (entity, visibility) in menu_cameras.iter() {
-            debug!("Menu camera {:?} visibility: {:?}", entity, visibility);
+        for (entity, visibility, inherited) in menu_cameras.iter() {
+            debug!(
+                "Menu camera {:?} visibility: {:?}, inherited: {:?}",
+                entity, visibility, inherited
+            );
         }
 
         log_state.last_update = std::time::Instant::now();
@@ -113,7 +118,7 @@ pub fn update_menu_background(
 /// System to detect and report UI hierarchy issues
 pub fn detect_ui_hierarchy_issues(
     menu_items: Query<(Entity, &Parent, Option<&Name>, &Node), With<MenuItem>>,
-    parents: Query<Entity, (Without<Node>, Without<ViewVisibility>)>,
+    parents: Query<(Entity, Option<&Node>, Option<&ViewVisibility>)>,
     mut found_issues: Local<bool>,
 ) {
     // Only run this diagnostic once if issues are found
@@ -124,13 +129,15 @@ pub fn detect_ui_hierarchy_issues(
     // Check for menu items that have non-UI parent entities
     let mut issues = false;
     for (entity, parent, name, _) in menu_items.iter() {
-        if parents.contains(parent.get()) {
-            issues = true;
-            let name_str = name.map_or(String::from("unnamed"), |n| n.to_string());
-            warn!(
-                "UI hierarchy issue: Node {:?} ({}) is in a non-UI entity hierarchy",
-                entity, name_str
-            );
+        if let Ok((parent_entity, node, view_vis)) = parents.get(parent.get()) {
+            if node.is_none() || view_vis.is_none() {
+                issues = true;
+                let name_str = name.map_or(String::from("unnamed"), |n| n.to_string());
+                warn!(
+                    "UI hierarchy issue: Node {:?} ({}) has parent {:?} without proper UI components",
+                    entity, name_str, parent_entity
+                );
+            }
         }
     }
 
@@ -143,23 +150,26 @@ pub fn detect_ui_hierarchy_issues(
 
 /// Ensure menu items are visible in appropriate states
 pub fn ensure_menu_item_visibility(
-    mut menu_items: Query<(&mut Visibility, &Name), With<MenuItem>>,
+    mut menu_items: Query<(&mut Visibility, &mut InheritedVisibility, &Name), With<MenuItem>>,
     state: Res<State<GameMenuState>>,
 ) {
     let should_be_visible = matches!(
         state.get(),
-        GameMenuState::MainMenu | GameMenuState::PausedGame | GameMenuState::Settings
+        GameMenuState::MainMenu | GameMenuState::PauseMenu | GameMenuState::Settings
     );
 
-    for (mut visibility, name) in menu_items.iter_mut() {
-        if should_be_visible && *visibility != Visibility::Visible {
-            debug!(
-                "Setting menu item '{}' to Visible in state {:?}",
-                name,
-                state.get()
-            );
-            *visibility = Visibility::Visible;
-        } else if !should_be_visible && *visibility == Visibility::Visible {
+    for (mut visibility, mut inherited, name) in menu_items.iter_mut() {
+        if should_be_visible {
+            if *visibility != Visibility::Visible || *inherited != InheritedVisibility::VISIBLE {
+                debug!(
+                    "Setting menu item '{}' to Visible in state {:?}",
+                    name,
+                    state.get()
+                );
+                *visibility = Visibility::Visible;
+                *inherited = InheritedVisibility::VISIBLE;
+            }
+        } else if *visibility == Visibility::Visible {
             debug!(
                 "Setting menu item '{}' to Hidden in state {:?}",
                 name,
@@ -173,11 +183,16 @@ pub fn ensure_menu_item_visibility(
 /// Fix visibility for menu items when it changes
 pub fn fix_visibility_for_changed_items(
     mut items_with_global_z: Query<
-        (&mut Visibility, &GlobalZIndex, &Name),
+        (
+            &mut Visibility,
+            &mut InheritedVisibility,
+            &GlobalZIndex,
+            &Name,
+        ),
         (With<MenuItem>, Changed<Visibility>),
     >,
     mut items_with_z: Query<
-        (&mut Visibility, &ZIndex, &Name),
+        (&mut Visibility, &mut InheritedVisibility, &ZIndex, &Name),
         (With<MenuItem>, Changed<Visibility>, Without<GlobalZIndex>),
     >,
 ) {
@@ -193,24 +208,26 @@ pub fn fix_visibility_for_changed_items(
         );
 
         // Process items with GlobalZIndex
-        for (mut visibility, z_index, name) in items_with_global_z.iter_mut() {
+        for (mut visibility, mut inherited, z_index, name) in items_with_global_z.iter_mut() {
             if *visibility != Visibility::Visible && z_index.0 > 0 {
                 debug!(
                     "Forcing menu item '{}' with GlobalZIndex {} to be visible",
                     name, z_index.0
                 );
                 *visibility = Visibility::Visible;
+                *inherited = InheritedVisibility::VISIBLE;
             }
         }
 
         // Process items with ZIndex
-        for (mut visibility, z_index, name) in items_with_z.iter_mut() {
+        for (mut visibility, mut inherited, z_index, name) in items_with_z.iter_mut() {
             if *visibility != Visibility::Visible && z_index.0 > 0 {
                 debug!(
                     "Forcing menu item '{}' with ZIndex {} to be visible",
                     name, z_index.0
                 );
                 *visibility = Visibility::Visible;
+                *inherited = InheritedVisibility::VISIBLE;
             }
         }
     }
@@ -218,7 +235,10 @@ pub fn fix_visibility_for_changed_items(
 
 /// Force visibility for menu items on startup
 pub fn force_startup_visibility(
-    mut menu_items: Query<(&mut Visibility, Option<&Name>), With<MenuItem>>,
+    mut menu_items: Query<
+        (&mut Visibility, &mut InheritedVisibility, Option<&Name>),
+        With<MenuItem>,
+    >,
 ) {
     let item_count = menu_items.iter().count();
     debug!(
@@ -226,21 +246,22 @@ pub fn force_startup_visibility(
         item_count
     );
 
-    for (mut visibility, name) in menu_items.iter_mut() {
-        if *visibility != Visibility::Visible {
+    for (mut visibility, mut inherited, name) in menu_items.iter_mut() {
+        if *visibility != Visibility::Visible || *inherited != InheritedVisibility::VISIBLE {
             if let Some(name) = name {
                 debug!("Forcing '{}' to be visible on startup", name);
             } else {
                 debug!("Forcing unnamed menu item to be visible on startup");
             }
             *visibility = Visibility::Visible;
+            *inherited = InheritedVisibility::VISIBLE;
         }
     }
 }
 
 /// Force visibility for hidden menu items in MainMenu state
 pub fn force_main_menu_items_visibility(
-    menu_items: Query<(Entity, &Visibility), With<MenuItem>>,
+    menu_items: Query<(Entity, &Visibility, &InheritedVisibility), With<MenuItem>>,
     mut commands: Commands,
     game_state: Res<State<GameMenuState>>,
 ) {
@@ -252,7 +273,9 @@ pub fn force_main_menu_items_visibility(
     let count = menu_items.iter().count();
     let hidden_count = menu_items
         .iter()
-        .filter(|(_, visibility)| **visibility != Visibility::Visible)
+        .filter(|(_, visibility, inherited)| {
+            **visibility != Visibility::Visible || **inherited != InheritedVisibility::VISIBLE
+        })
         .count();
 
     if hidden_count > 0 {
@@ -262,9 +285,11 @@ pub fn force_main_menu_items_visibility(
         );
 
         // Force visibility for any menu items that aren't visible
-        for (entity, visibility) in menu_items.iter() {
-            if *visibility != Visibility::Visible {
-                commands.entity(entity).insert(Visibility::Visible);
+        for (entity, visibility, inherited) in menu_items.iter() {
+            if *visibility != Visibility::Visible || *inherited != InheritedVisibility::VISIBLE {
+                commands
+                    .entity(entity)
+                    .insert((Visibility::Visible, InheritedVisibility::VISIBLE));
             }
         }
     }
@@ -272,16 +297,20 @@ pub fn force_main_menu_items_visibility(
 
 /// Fix visibility for changed menu items in the main menu
 pub fn fix_changed_main_menu_visibility(
-    mut menu_items: Query<(&mut Visibility, &Name), (With<MenuItem>, Changed<Visibility>)>,
+    mut menu_items: Query<
+        (&mut Visibility, &mut InheritedVisibility, &Name),
+        (With<MenuItem>, Changed<Visibility>),
+    >,
 ) {
     let changed_count = menu_items.iter().count();
     if changed_count > 0 {
         debug!("Fixing visibility for {} changed menu items", changed_count);
 
-        for (mut visibility, name) in menu_items.iter_mut() {
-            if *visibility != Visibility::Visible {
+        for (mut visibility, mut inherited, name) in menu_items.iter_mut() {
+            if *visibility != Visibility::Visible || *inherited != InheritedVisibility::VISIBLE {
                 debug!("Forcing menu item '{}' to be visible", name);
                 *visibility = Visibility::Visible;
+                *inherited = InheritedVisibility::VISIBLE;
             }
         }
     }

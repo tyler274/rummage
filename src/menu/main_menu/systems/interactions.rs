@@ -37,18 +37,15 @@ pub fn handle_main_menu_interactions(
                         context.settings_origin = Some(GameMenuState::MainMenu);
                         // Reset from_pause_menu flag when coming from main menu
                         context.from_pause_menu = false;
-                        
-                        // Force reset states to ensure proper transitions
-                        settings_state.set(SettingsMenuState::Disabled);
-                        
-                        // First change to settings menu state
-                        settings_state.set(SettingsMenuState::Main);
-                        info!("Set SettingsMenuState to Main");
-                        
-                        // Then transition to the settings game state
+
+                        // First transition to the settings game state
                         next_state.set(GameMenuState::Settings);
                         info!("Set GameMenuState to Settings");
-                        
+
+                        // Then set settings menu state to main
+                        settings_state.set(SettingsMenuState::Main);
+                        info!("Set SettingsMenuState to Main");
+
                         info!(
                             "State transition for settings setup complete: origin=MainMenu, settings_state=Main, game_state=Settings"
                         );

@@ -11,7 +11,7 @@ impl Plugin for CleanupPlugin {
             super::main_menu::cleanup_main_menu,
         )
         .add_systems(
-            OnExit(GameMenuState::PausedGame),
+            OnExit(GameMenuState::PauseMenu),
             super::pause_menu::cleanup_pause_menu,
         )
         .add_systems(OnExit(GameMenuState::InGame), super::game::cleanup_game);

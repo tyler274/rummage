@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::menu::{state::MenuState, camera::setup::MenuCamera};
+use crate::menu::{camera::setup::MenuCamera, state::MenuState};
 
 /// Manages the visibility of the menu camera based on game states
 pub fn manage_camera_visibility(
@@ -10,10 +10,7 @@ pub fn manage_camera_visibility(
     // Determine if the camera should be visible based on state
     let should_be_visible = matches!(
         *state.get(),
-        MenuState::MainMenu
-            | MenuState::PausedGame
-            | MenuState::Settings
-            | MenuState::Credits
+        MenuState::MainMenu | MenuState::PauseMenu | MenuState::Settings | MenuState::Credits
     );
 
     // Update camera visibility
@@ -41,4 +38,4 @@ pub fn set_menu_camera_zoom(mut cameras: Query<&mut OrthographicProjection, With
         projection.scale = 1.0;
         info!("Set menu camera zoom to 1.0");
     }
-} 
+}
