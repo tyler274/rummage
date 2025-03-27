@@ -1,3 +1,5 @@
+use crate::camera::components::AppLayer;
+use crate::menu::components::{MenuItem, ZLayers};
 use bevy::prelude::*;
 
 use super::components::StarOfDavid;
@@ -21,7 +23,11 @@ pub fn create_star_of_david() -> impl Bundle {
         BackgroundColor(Color::NONE),
         // Add standard UI components
         Visibility::Visible,
-        InheritedVisibility::default(),
+        InheritedVisibility::VISIBLE,
         ViewVisibility::default(),
+        // Add menu layer and components
+        AppLayer::Menu.layer(),
+        MenuItem,
+        ZIndex::from(ZLayers::MenuButtonText),
     )
 }

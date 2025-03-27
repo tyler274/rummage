@@ -1,4 +1,6 @@
+use crate::camera::components::AppLayer;
 use crate::menu::camera::MenuCamera;
+use crate::menu::components::{MenuItem, ZLayers};
 use crate::menu::decorations::MenuDecorativeElement;
 use crate::menu::logo::text::{create_english_text, create_hebrew_text};
 use crate::menu::star_of_david::create_star_of_david;
@@ -44,6 +46,12 @@ fn setup_combined_logo(
                         ..default()
                     },
                     MenuDecorativeElement,
+                    MenuItem,
+                    AppLayer::Menu.layer(),
+                    Visibility::Visible,
+                    InheritedVisibility::VISIBLE,
+                    ViewVisibility::default(),
+                    ZIndex::from(ZLayers::MenuContainer),
                     Name::new("Main Menu Logo Container"),
                 ))
                 .with_children(|logo_parent| {
@@ -104,6 +112,12 @@ fn setup_pause_logo(
                         ..default()
                     },
                     MenuDecorativeElement,
+                    MenuItem,
+                    AppLayer::Menu.layer(),
+                    Visibility::Visible,
+                    InheritedVisibility::VISIBLE,
+                    ViewVisibility::default(),
+                    ZIndex::from(ZLayers::MenuContainer),
                     Name::new("Pause Menu Logo Container"),
                 ))
                 .with_children(|logo_parent| {

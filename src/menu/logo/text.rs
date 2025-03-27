@@ -1,3 +1,5 @@
+use crate::camera::components::AppLayer;
+use crate::menu::components::{MenuItem, ZLayers};
 use bevy::prelude::*;
 use bevy::text::JustifyText;
 use bevy::ui::{UiRect, Val};
@@ -25,6 +27,11 @@ pub fn create_hebrew_text(asset_server: &AssetServer) -> impl Bundle {
         TextColor(Color::srgb(0.85, 0.65, 0.13)),
         BackgroundColor(Color::NONE),
         Interaction::None,
+        AppLayer::Menu.layer(),
+        MenuItem,
+        Visibility::Visible,
+        InheritedVisibility::VISIBLE,
+        ZIndex::from(ZLayers::MenuButtonText),
     )
 }
 
@@ -48,5 +55,10 @@ pub fn create_english_text(asset_server: &AssetServer) -> impl Bundle {
         TextColor(Color::srgb(0.85, 0.65, 0.13)),
         BackgroundColor(Color::NONE),
         Interaction::None,
+        AppLayer::Menu.layer(),
+        MenuItem,
+        Visibility::Visible,
+        InheritedVisibility::VISIBLE,
+        ZIndex::from(ZLayers::MenuButtonText),
     )
 }
