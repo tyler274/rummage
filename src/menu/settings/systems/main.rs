@@ -47,22 +47,47 @@ pub fn settings_button_action(
     >,
     mut next_state: ResMut<NextState<SettingsMenuState>>,
     mut game_menu_state: ResMut<NextState<GameMenuState>>,
+    current_state: Res<State<GameMenuState>>,
 ) {
     for (interaction, action) in interaction_query.iter_mut() {
         if *interaction == Interaction::Pressed {
             info!("Settings button pressed: {:?}", action);
             match action {
-                SettingsButtonAction::NavigateToVideo => next_state.set(SettingsMenuState::Video),
-                SettingsButtonAction::NavigateToAudio => next_state.set(SettingsMenuState::Audio),
+                SettingsButtonAction::NavigateToVideo => {
+                    next_state.set(SettingsMenuState::Video);
+                    // Ensure we stay in settings state
+                    if *current_state.get() != GameMenuState::Settings {
+                        game_menu_state.set(GameMenuState::Settings);
+                    }
+                }
+                SettingsButtonAction::NavigateToAudio => {
+                    next_state.set(SettingsMenuState::Audio);
+                    if *current_state.get() != GameMenuState::Settings {
+                        game_menu_state.set(GameMenuState::Settings);
+                    }
+                }
                 SettingsButtonAction::NavigateToGameplay => {
-                    next_state.set(SettingsMenuState::Gameplay)
+                    next_state.set(SettingsMenuState::Gameplay);
+                    if *current_state.get() != GameMenuState::Settings {
+                        game_menu_state.set(GameMenuState::Settings);
+                    }
                 }
                 SettingsButtonAction::NavigateToControls => {
-                    next_state.set(SettingsMenuState::Controls)
+                    next_state.set(SettingsMenuState::Controls);
+                    if *current_state.get() != GameMenuState::Settings {
+                        game_menu_state.set(GameMenuState::Settings);
+                    }
                 }
-                SettingsButtonAction::NavigateToMain => next_state.set(SettingsMenuState::Main),
+                SettingsButtonAction::NavigateToMain => {
+                    next_state.set(SettingsMenuState::Main);
+                    if *current_state.get() != GameMenuState::Settings {
+                        game_menu_state.set(GameMenuState::Settings);
+                    }
+                }
                 SettingsButtonAction::ExitSettings => {
+                    // First set settings state to disabled to trigger cleanup
                     next_state.set(SettingsMenuState::Disabled);
+                    // Then transition back to main menu
                     game_menu_state.set(GameMenuState::MainMenu);
                 }
             }

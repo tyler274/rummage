@@ -62,106 +62,60 @@ impl Plugin for SettingsPlugin {
                 OnEnter(SettingsMenuState::Main),
                 (
                     crate::menu::camera::setup::setup_menu_camera,
-                    |mut commands: Commands| {
-                        // Add an input blocker to prevent clicks going through to other UI elements
-                        commands.spawn((
-                            Node {
-                                width: Val::Percent(100.0),
-                                height: Val::Percent(100.0),
-                                position_type: PositionType::Absolute,
-                                ..default()
-                            },
-                            crate::menu::components::MenuItem,
-                            crate::menu::settings::components::SettingsMenuItem,
-                            crate::menu::input_blocker::InputBlocker,
-                            Visibility::Visible,
-                            InheritedVisibility::VISIBLE,
-                            Name::new("Settings Menu Input Blocker"),
-                        ));
-                    },
                     setup_main_settings,
-                    |mut game_state: ResMut<NextState<GameMenuState>>,
-                     current_game_state: Res<State<GameMenuState>>| {
-                        // Force the game state to remain in Settings when entering main settings
-                        if *current_game_state.get() != GameMenuState::Settings {
-                            info!("Fixing GameMenuState to Settings for main settings");
-                        }
+                    |mut game_state: ResMut<NextState<GameMenuState>>| {
                         game_state.set(GameMenuState::Settings);
-                        info!("ENTERED SettingsMenuState::Main - Current Settings State: Main, Game State: Settings");
+                        info!("ENTERED SettingsMenuState::Main - Set GameMenuState to Settings");
                     },
                 ),
             )
             // Settings state - Video settings
-            .add_systems(
-                OnEnter(SettingsMenuState::Video),
-                (
-                    setup_video_settings,
-                    |mut game_state: ResMut<NextState<GameMenuState>>| {
-                        game_state.set(GameMenuState::Settings);
-                    },
-                ),
-            )
+            .add_systems(OnEnter(SettingsMenuState::Video), setup_video_settings)
             // Settings state - Audio settings
-            .add_systems(
-                OnEnter(SettingsMenuState::Audio),
-                (
-                    setup_audio_settings,
-                    |mut game_state: ResMut<NextState<GameMenuState>>| {
-                        game_state.set(GameMenuState::Settings);
-                    },
-                ),
-            )
+            .add_systems(OnEnter(SettingsMenuState::Audio), setup_audio_settings)
             // Settings state - Gameplay settings
             .add_systems(
                 OnEnter(SettingsMenuState::Gameplay),
-                (
-                    setup_gameplay_settings,
-                    |mut game_state: ResMut<NextState<GameMenuState>>| {
-                        game_state.set(GameMenuState::Settings);
-                    },
-                ),
+                setup_gameplay_settings,
             )
             // Settings state - Controls settings
             .add_systems(
                 OnEnter(SettingsMenuState::Controls),
-                (
-                    setup_controls_settings,
-                    |mut game_state: ResMut<NextState<GameMenuState>>| {
-                        game_state.set(GameMenuState::Settings);
-                    },
-                ),
+                setup_controls_settings,
             )
             // Settings interaction system
-            .add_systems(
-                Update,
-                (settings_button_action, volume_slider_interaction),
-            )
+            .add_systems(Update, (settings_button_action, volume_slider_interaction))
             // Apply settings on startup
             .add_systems(Startup, apply_settings)
             // Save settings when exiting any settings menu
-            .add_systems(OnExit(SettingsMenuState::Audio), save_settings)
-            .add_systems(OnExit(SettingsMenuState::Video), save_settings)
-            .add_systems(OnExit(SettingsMenuState::Gameplay), save_settings)
-            // Cleanup systems for each settings state
             .add_systems(
-                OnExit(SettingsMenuState::Main),
-                cleanup_settings_menu.run_if(not(in_state(GameMenuState::Settings))),
+                OnExit(SettingsMenuState::Audio),
+                (
+                    save_settings,
+                    cleanup_settings_menu.run_if(in_state(SettingsMenuState::Disabled)),
+                ),
             )
             .add_systems(
                 OnExit(SettingsMenuState::Video),
-                cleanup_settings_menu.run_if(not(in_state(GameMenuState::Settings))),
-            )
-            .add_systems(
-                OnExit(SettingsMenuState::Audio),
-                cleanup_settings_menu.run_if(not(in_state(GameMenuState::Settings))),
+                (
+                    save_settings,
+                    cleanup_settings_menu.run_if(in_state(SettingsMenuState::Disabled)),
+                ),
             )
             .add_systems(
                 OnExit(SettingsMenuState::Gameplay),
-                cleanup_settings_menu.run_if(not(in_state(GameMenuState::Settings))),
+                (
+                    save_settings,
+                    cleanup_settings_menu.run_if(in_state(SettingsMenuState::Disabled)),
+                ),
             )
             .add_systems(
                 OnExit(SettingsMenuState::Controls),
-                cleanup_settings_menu.run_if(not(in_state(GameMenuState::Settings))),
+                cleanup_settings_menu.run_if(in_state(SettingsMenuState::Disabled)),
+            )
+            .add_systems(
+                OnExit(SettingsMenuState::Main),
+                cleanup_settings_menu.run_if(in_state(SettingsMenuState::Disabled)),
             )
             // Cleanup system for the main settings menu
             .add_systems(OnExit(GameMenuState::Settings), settings_cleanup);

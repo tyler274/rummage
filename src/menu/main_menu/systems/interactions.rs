@@ -35,20 +35,14 @@ pub fn handle_main_menu_interactions(
                         info!("Settings button pressed");
                         // Save our origin for when we return
                         context.settings_origin = Some(GameMenuState::MainMenu);
-                        // Reset from_pause_menu flag when coming from main menu
+                        // Reset flags
                         context.from_pause_menu = false;
+                        context.returning_from_settings = false;
 
-                        // First transition to the settings game state
-                        next_state.set(GameMenuState::Settings);
-                        info!("Set GameMenuState to Settings");
-
-                        // Then set settings menu state to main
+                        // Set up settings menu
                         settings_state.set(SettingsMenuState::Main);
-                        info!("Set SettingsMenuState to Main");
-
-                        info!(
-                            "State transition for settings setup complete: origin=MainMenu, settings_state=Main, game_state=Settings"
-                        );
+                        next_state.set(GameMenuState::Settings);
+                        info!("Transitioning to settings menu");
                     }
                     MenuButtonAction::Multiplayer => {
                         info!("Multiplayer button pressed");

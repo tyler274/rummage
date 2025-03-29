@@ -1,4 +1,7 @@
-use crate::menu::{backgrounds::MenuBackground, components::MenuItem};
+use crate::menu::{
+    backgrounds::MenuBackground,
+    components::{MenuItem, MenuVisibilityState},
+};
 use bevy::prelude::*;
 
 /// Resource to track previous window size
@@ -6,13 +9,6 @@ use bevy::prelude::*;
 pub struct PreviousWindowSize {
     pub width: f32,
     pub height: f32,
-}
-
-/// Tracks visible menu items for diagnostics
-#[derive(Resource, Default, Debug)]
-pub struct MenuVisibilityState {
-    pub item_count: usize,
-    pub visible_count: usize,
 }
 
 /// Resource to control logging frequency for menu visibility
@@ -69,6 +65,7 @@ pub fn update_menu_visibility_state(
     if menu_state.item_count != total_items || menu_state.visible_count != visible_items {
         menu_state.item_count = total_items;
         menu_state.visible_count = visible_items;
+        menu_state.visible_items = visible_items; // Update for compatibility
     }
 }
 

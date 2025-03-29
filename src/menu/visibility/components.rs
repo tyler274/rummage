@@ -9,14 +9,6 @@ pub struct PreviousWindowSize {
     pub height: f32,
 }
 
-/// Tracks visible menu items for diagnostics
-#[derive(Resource, Default, Debug)]
-pub struct MenuVisibilityState {
-    pub item_count: usize,
-    pub visible_count: usize,
-    pub visible_items: usize,
-}
-
 /// Resource to control logging frequency for menu visibility
 #[derive(Resource)]
 pub struct MenuVisibilityLogState {

@@ -11,7 +11,11 @@ pub struct MenuRoot;
 /// Resource for tracking visible menu items
 #[derive(Resource, Debug, Default)]
 pub struct MenuVisibilityState {
+    /// Total number of menu items
+    pub item_count: usize,
     /// Number of visible menu items
+    pub visible_count: usize,
+    /// Number of visible menu items (for compatibility)
     pub visible_items: usize,
 }
 

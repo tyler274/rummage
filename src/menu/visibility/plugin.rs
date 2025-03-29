@@ -1,14 +1,12 @@
 use bevy::prelude::*;
 
-use super::{
-    components::MenuVisibilityState,
-    systems::{
-        debug_menu_visibility, detect_ui_hierarchy_issues, ensure_menu_item_visibility,
-        fix_changed_main_menu_visibility, fix_visibility_for_changed_items,
-        force_main_menu_items_visibility, force_startup_visibility, update_menu_background,
-        update_menu_visibility_state,
-    },
+use super::systems::{
+    debug_menu_visibility, detect_ui_hierarchy_issues, ensure_menu_item_visibility,
+    fix_changed_main_menu_visibility, fix_visibility_for_changed_items,
+    force_main_menu_items_visibility, force_startup_visibility, update_menu_background,
 };
+use crate::menu::components::MenuVisibilityState;
+use crate::menu::ui::update_menu_visibility_state;
 
 /// Plugin for managing menu item visibility and UI hierarchy
 #[derive(Default)]

@@ -1,62 +1,62 @@
+use crate::menu::settings::state::SettingsMenuState;
 use crate::menu::{
     backgrounds::MenuBackground,
     camera::MenuCamera,
-    components::MenuItem,
+    components::{MenuItem, MenuVisibilityState},
     state::GameMenuState,
-    visibility::components::{MenuVisibilityLogState, MenuVisibilityState, PreviousWindowSize},
+    visibility::components::{MenuVisibilityLogState, PreviousWindowSize},
 };
 use bevy::prelude::*;
 
-/// Update menu visibility state resource
-pub fn update_menu_visibility_state(
-    menu_items: Query<Entity, With<MenuItem>>,
-    visible_items: Query<(Entity, &Visibility, &InheritedVisibility), With<MenuItem>>,
+/// Update menu visibility state resource and ensure menu items are visible in appropriate states
+pub fn ensure_menu_item_visibility(
+    mut menu_items: Query<(&mut Visibility, &mut InheritedVisibility, &Name), With<MenuItem>>,
+    state: Res<State<GameMenuState>>,
+    settings_state: Res<State<SettingsMenuState>>,
     mut menu_state: ResMut<MenuVisibilityState>,
 ) {
-    // Gather counts
-    let total_items = menu_items.iter().count();
-    let visible_items_count = visible_items
-        .iter()
-        .filter(|(_, vis, inherited)| {
-            **vis == Visibility::Visible && **inherited == InheritedVisibility::VISIBLE
-        })
-        .count();
+    let should_be_visible = matches!(
+        state.get(),
+        GameMenuState::MainMenu | GameMenuState::PauseMenu | GameMenuState::Settings
+    );
 
-    // Only update if there's a change
-    if menu_state.visible_items != visible_items_count {
+    let is_in_settings = *state.get() == GameMenuState::Settings
+        && *settings_state.get() != SettingsMenuState::Disabled;
+
+    let mut visible_count = 0;
+    let total_items = menu_items.iter().count();
+
+    for (mut visibility, mut inherited, name) in menu_items.iter_mut() {
+        if should_be_visible {
+            if *visibility != Visibility::Visible || *inherited != InheritedVisibility::VISIBLE {
+                debug!(
+                    "Setting menu item '{}' to Visible in state {:?}",
+                    name,
+                    state.get()
+                );
+                *visibility = Visibility::Visible;
+                *inherited = InheritedVisibility::VISIBLE;
+            }
+            visible_count += 1;
+        } else if *visibility == Visibility::Visible && !is_in_settings {
+            debug!(
+                "Setting menu item '{}' to Hidden in state {:?}",
+                name,
+                state.get()
+            );
+            *visibility = Visibility::Hidden;
+        }
+    }
+
+    // Update menu state if counts changed
+    if menu_state.visible_items != visible_count {
         menu_state.item_count = total_items;
-        menu_state.visible_count = visible_items_count;
-        menu_state.visible_items = visible_items_count;
+        menu_state.visible_count = visible_count;
+        menu_state.visible_items = visible_count;
         debug!(
             "Menu visibility update: {}/{} items visible",
-            visible_items_count, total_items
+            visible_count, total_items
         );
-    }
-}
-
-/// Prints debug info about menu visibility state
-pub fn debug_menu_visibility(
-    menu_state: Res<MenuVisibilityState>,
-    menu_cameras: Query<(Entity, &Visibility, &InheritedVisibility), With<MenuCamera>>,
-    mut log_state: Local<MenuVisibilityLogState>,
-) {
-    // Only log if something changed
-    if log_state.last_update.elapsed().as_secs_f32() >= 5.0 {
-        // Log the state
-        debug!(
-            "Menu visibility: {}/{} items visible",
-            menu_state.visible_count, menu_state.item_count
-        );
-
-        // Log camera visibility
-        for (entity, visibility, inherited) in menu_cameras.iter() {
-            debug!(
-                "Menu camera {:?} visibility: {:?}, inherited: {:?}",
-                entity, visibility, inherited
-            );
-        }
-
-        log_state.last_update = std::time::Instant::now();
     }
 }
 
@@ -87,7 +87,6 @@ pub fn update_menu_background(
                 prev_size.width = current_width;
                 prev_size.height = current_height;
 
-                // Log window size changes at debug level
                 debug!(
                     "Window size changed: {}x{}, updating menu background size",
                     current_width, current_height
@@ -148,35 +147,29 @@ pub fn detect_ui_hierarchy_issues(
     }
 }
 
-/// Ensure menu items are visible in appropriate states
-pub fn ensure_menu_item_visibility(
-    mut menu_items: Query<(&mut Visibility, &mut InheritedVisibility, &Name), With<MenuItem>>,
-    state: Res<State<GameMenuState>>,
+/// Prints debug info about menu visibility state
+pub fn debug_menu_visibility(
+    menu_state: Res<MenuVisibilityState>,
+    menu_cameras: Query<(Entity, &Visibility, &InheritedVisibility), With<MenuCamera>>,
+    mut log_state: Local<MenuVisibilityLogState>,
 ) {
-    let should_be_visible = matches!(
-        state.get(),
-        GameMenuState::MainMenu | GameMenuState::PauseMenu | GameMenuState::Settings
-    );
+    // Only log if something changed
+    if log_state.last_update.elapsed().as_secs_f32() >= 5.0 {
+        // Log the state
+        debug!(
+            "Menu visibility: {}/{} items visible",
+            menu_state.visible_count, menu_state.item_count
+        );
 
-    for (mut visibility, mut inherited, name) in menu_items.iter_mut() {
-        if should_be_visible {
-            if *visibility != Visibility::Visible || *inherited != InheritedVisibility::VISIBLE {
-                debug!(
-                    "Setting menu item '{}' to Visible in state {:?}",
-                    name,
-                    state.get()
-                );
-                *visibility = Visibility::Visible;
-                *inherited = InheritedVisibility::VISIBLE;
-            }
-        } else if *visibility == Visibility::Visible {
+        // Log camera visibility
+        for (entity, visibility, inherited) in menu_cameras.iter() {
             debug!(
-                "Setting menu item '{}' to Hidden in state {:?}",
-                name,
-                state.get()
+                "Menu camera {:?} visibility: {:?}, inherited: {:?}",
+                entity, visibility, inherited
             );
-            *visibility = Visibility::Hidden;
         }
+
+        log_state.last_update = std::time::Instant::now();
     }
 }
 
