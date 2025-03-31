@@ -103,3 +103,28 @@ pub fn settings_button_action(
         }
     }
 }
+
+/// Handles the Escape key press to exit the settings menu
+pub fn handle_settings_back_input(
+    input: Res<ButtonInput<KeyCode>>,
+    mut settings_menu_state: ResMut<NextState<SettingsMenuState>>,
+    mut game_menu_state: ResMut<NextState<GameMenuState>>,
+    mut context: ResMut<StateTransitionContext>,
+) {
+    if input.just_pressed(KeyCode::Escape) {
+        info!("Escape key pressed, exiting settings menu");
+
+        // First set settings state to disabled to trigger cleanup
+        settings_menu_state.set(SettingsMenuState::Disabled);
+
+        // Get the origin state from context, defaulting to MainMenu
+        let origin = context.settings_origin.unwrap_or(GameMenuState::MainMenu);
+        info!("Exiting settings via ESC, returning to {:?}", origin);
+
+        // Then transition back to the origin state
+        game_menu_state.set(origin);
+
+        // Clear the settings origin
+        context.settings_origin = None;
+    }
+}

@@ -14,7 +14,7 @@ use super::systems::{
     cleanup_settings_menu,
     controls::setup_controls_settings,
     gameplay::setup_gameplay_settings,
-    main::{settings_button_action, setup_main_settings},
+    main::{handle_settings_back_input, settings_button_action, setup_main_settings},
     video::setup_video_settings,
 };
 use crate::game_engine::state::GameState;
@@ -92,7 +92,14 @@ impl Plugin for SettingsPlugin {
                 setup_controls_settings,
             )
             // Settings interaction system
-            .add_systems(Update, (settings_button_action, volume_slider_interaction))
+            .add_systems(
+                Update,
+                (
+                    settings_button_action,
+                    volume_slider_interaction,
+                    handle_settings_back_input.run_if(in_state(GameMenuState::Settings)),
+                ),
+            )
             // Apply settings on startup
             .add_systems(Startup, apply_settings)
             // Save settings when exiting any settings menu
@@ -233,18 +240,7 @@ fn settings_cleanup(
 
     info!("Despawned {} settings menu entities", num_entities);
 
-    // Only handle state transitions if we're in the Disabled state
-    if *current_settings_state.get() == SettingsMenuState::Disabled {
-        // Return to the origin state after settings
-        if let Some(origin) = context.settings_origin {
-            info!("Returning to origin state: {:?}", origin);
-            next_state.set(origin);
-            if origin == GameMenuState::MainMenu {
-                // Mark that the main menu needs setup when returning from settings
-                info!("Setting NeedsMainMenuSetup flag to true");
-                commands.insert_resource(NeedsMainMenuSetup(true));
-            }
-            context.settings_origin = None;
-        }
-    }
+    // Removed redundant state transition logic here.
+    // The transition is now handled by `settings_button_action` for the Back button
+    // and will be handled by `handle_settings_back_input` for the ESC key.
 }
