@@ -44,7 +44,15 @@ pub fn cleanup_settings_menu(
                         && !name_str.contains("Gameplay")
                         && !name_str.contains("Controls")
                 }
-                SettingsMenuState::Disabled => true, // Clean up everything in disabled state
+                SettingsMenuState::Disabled => {
+                    // In disabled state, clean up everything settings related
+                    name_str.contains("Settings")
+                        || name_str.contains("Option")
+                        || name_str.contains("Slider")
+                        || name_str.contains("Checkbox")
+                        || name_str.contains("settings")
+                        || name_str.contains("Input Blocker")
+                }
             }
         })
         .map(|(entity, name)| (entity, name.to_string()))
@@ -55,9 +63,9 @@ pub fn cleanup_settings_menu(
 
     // Remove the entities
     for (entity, name) in entities_to_remove {
-        info!("Despawning entity: '{}'", name);
+        info!("Despawning settings entity: '{}'", name);
         commands.entity(entity).despawn_recursive();
     }
 
-    info!("Completed cleanup of {} entities", num_entities);
+    info!("Despawned {} settings menu entities", num_entities);
 }

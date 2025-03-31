@@ -2,7 +2,7 @@ use super::common::*;
 use crate::menu::components::MenuItem;
 use crate::menu::settings::components::*;
 use crate::menu::settings::state::SettingsMenuState;
-use crate::menu::state::GameMenuState;
+use crate::menu::state::{GameMenuState, StateTransitionContext};
 use bevy::prelude::*;
 
 /// Sets up the main settings menu
@@ -48,6 +48,7 @@ pub fn settings_button_action(
     mut next_state: ResMut<NextState<SettingsMenuState>>,
     mut game_menu_state: ResMut<NextState<GameMenuState>>,
     current_state: Res<State<GameMenuState>>,
+    mut context: ResMut<StateTransitionContext>,
 ) {
     for (interaction, action) in interaction_query.iter_mut() {
         if *interaction == Interaction::Pressed {
@@ -87,8 +88,16 @@ pub fn settings_button_action(
                 SettingsButtonAction::ExitSettings => {
                     // First set settings state to disabled to trigger cleanup
                     next_state.set(SettingsMenuState::Disabled);
-                    // Then transition back to main menu
-                    game_menu_state.set(GameMenuState::MainMenu);
+
+                    // Get the origin state from context, defaulting to MainMenu
+                    let origin = context.settings_origin.unwrap_or(GameMenuState::MainMenu);
+                    info!("Exiting settings, returning to {:?}", origin);
+
+                    // Then transition back to the origin state
+                    game_menu_state.set(origin);
+
+                    // Clear the settings origin
+                    context.settings_origin = None;
                 }
             }
         }

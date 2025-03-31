@@ -54,15 +54,19 @@ pub fn setup_settings_transition(
         }
     }
 
-    // Ensure we're showing the main settings screen when entering settings
-    info!(
-        "Setting SettingsMenuState to Main (was {:?})",
-        settings_current.get()
-    );
-    settings_state.set(SettingsMenuState::Main);
+    // Only set the settings state if we're not already in Main
+    if *settings_current.get() != SettingsMenuState::Main {
+        info!(
+            "Setting SettingsMenuState to Main (was {:?})",
+            settings_current.get()
+        );
+        settings_state.set(SettingsMenuState::Main);
+    } else {
+        info!("Already in SettingsMenuState::Main, not changing state");
+    }
 
     // Log that we're about to exit this function
-    info!("Completed settings transition setup, SettingsMenuState should now be Main");
+    info!("Completed settings transition setup");
 }
 
 /// Starts the game loading process

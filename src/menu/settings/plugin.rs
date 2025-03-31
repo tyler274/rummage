@@ -61,12 +61,20 @@ impl Plugin for SettingsPlugin {
             .add_systems(
                 OnEnter(SettingsMenuState::Main),
                 (
-                    crate::menu::camera::setup::setup_menu_camera,
                     setup_main_settings,
-                    |mut game_state: ResMut<NextState<GameMenuState>>| {
-                        game_state.set(GameMenuState::Settings);
-                        info!("ENTERED SettingsMenuState::Main - Set GameMenuState to Settings");
+                    |mut game_state: ResMut<NextState<GameMenuState>>,
+                     current_state: Res<State<GameMenuState>>| {
+                        if *current_state.get() != GameMenuState::Settings {
+                            game_state.set(GameMenuState::Settings);
+                            info!(
+                                "ENTERED SettingsMenuState::Main - Set GameMenuState to Settings"
+                            );
+                        }
                     },
+                    // Only set up menu camera if we're not already in Settings state
+                    crate::menu::camera::setup::setup_menu_camera.run_if(
+                        |state: Res<State<GameMenuState>>| *state.get() != GameMenuState::Settings,
+                    ),
                 ),
             )
             // Settings state - Video settings
