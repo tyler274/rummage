@@ -54,33 +54,28 @@ pub fn esc_key_system(
                 }
             }
         } else if *app_state.get() == AppState::Menu {
-            if *menu_state.get() == GameMenuState::Settings {
+            if *menu_state.get() != GameMenuState::Settings {
                 if *settings_state.get() != SettingsMenuState::Main {
                     info!(
-                        "ESC key pressed - current app state: {:?}, menu state: {:?}, settings state: {:?}",
+                        "ESC key pressed (Pause Handler) - current app state: {:?}, menu state: {:?}, settings state: {:?}",
                         app_state.get(),
                         menu_state.get(),
                         settings_state.get()
                     );
                     info!(
-                        "Returning to main settings from submenu while in menu: {:?}",
+                        "(Pause Handler) Returning to main settings from submenu while in menu: {:?}",
                         settings_state.get()
                     );
                     next_settings_state.set(SettingsMenuState::Main);
                 } else {
-                    info!("Returning to main menu from settings");
-                    // First set settings state to disabled to trigger cleanup
-                    next_settings_state.set(SettingsMenuState::Disabled);
-                    // Then transition to main menu
-                    next_menu_state.set(GameMenuState::MainMenu);
-                    // Mark that the main menu needs setup when returning from settings
-                    info!("Setting MainMenuNeedsSetup flag to true");
-                    commands.insert_resource(crate::menu::components::NeedsMainMenuSetup(true));
+                    info!(
+                        "ESC pressed in AppState::Menu / GameMenuState::{:?} (Pause Handler), no action needed.",
+                        menu_state.get()
+                    );
                 }
             } else {
                 info!(
-                    "ESC pressed in menu state: {:?}, no action taken",
-                    menu_state.get()
+                    "ESC pressed in AppState::Menu / GameMenuState::Settings (Pause Handler), deferring to handle_settings_back_input.",
                 );
             }
         }

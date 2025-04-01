@@ -19,10 +19,6 @@ pub struct MenuVisibilityState {
     pub visible_items: usize,
 }
 
-/// Resource to indicate that the main menu needs to be set up
-#[derive(Resource, Debug, Default)]
-pub struct NeedsMainMenuSetup(pub bool);
-
 /// Resource to track if we've checked for UI hierarchy issues
 #[derive(Resource, Debug, Default, PartialEq)]
 pub struct UiHierarchyChecked(pub bool);

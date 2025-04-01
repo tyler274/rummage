@@ -28,7 +28,7 @@ impl Plugin for MainMenuPlugin {
             .add_systems(
                 Update,
                 (
-                    check_main_menu_setup.run_if(in_state(GameMenuState::MainMenu)),
+                    // REMOVED: check_main_menu_setup.run_if(in_state(GameMenuState::MainMenu)),
                     handle_main_menu_interactions.run_if(in_state(GameMenuState::MainMenu)),
                     update_background.run_if(in_state(GameMenuState::MainMenu)),
                 ),
@@ -57,16 +57,9 @@ pub fn setup_main_menu_adapter(
     );
 }
 
-/// System to check if main menu needs to be set up
+// REMOVED: System to check if main menu needs to be set up
+/*
 pub fn check_main_menu_setup(
-    mut commands: Commands,
-    menu_setup: Res<NeedsMainMenuSetup>,
-    visibility: Res<MenuVisibilityState>,
-) {
-    // If the menu needs to be set up and it's supposed to be visible
-    if menu_setup.0 && visibility.visible_items > 0 {
-        // Trigger the setup
-        info!("Main menu needs setup, dispatching setup event");
-        commands.insert_resource(NeedsMainMenuSetup(false));
-    }
+// ... existing code ...
 }
+*/

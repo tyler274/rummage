@@ -62,6 +62,7 @@ impl Plugin for SettingsPlugin {
                 OnEnter(SettingsMenuState::Main),
                 (
                     setup_main_settings,
+                    /* // REMOVED: System that incorrectly forced GameMenuState to Settings
                     |mut game_state: ResMut<NextState<GameMenuState>>,
                      current_state: Res<State<GameMenuState>>| {
                         if *current_state.get() != GameMenuState::Settings {
@@ -70,7 +71,7 @@ impl Plugin for SettingsPlugin {
                                 "ENTERED SettingsMenuState::Main - Set GameMenuState to Settings"
                             );
                         }
-                    },
+                    }, */
                     // Only set up menu camera if we're not already in Settings state
                     crate::menu::camera::setup::setup_menu_camera.run_if(
                         |state: Res<State<GameMenuState>>| *state.get() != GameMenuState::Settings,
@@ -132,8 +133,8 @@ impl Plugin for SettingsPlugin {
                 OnExit(SettingsMenuState::Main),
                 cleanup_settings_menu.run_if(in_state(SettingsMenuState::Disabled)),
             )
-            // Cleanup system for the main settings menu
-            .add_systems(OnExit(GameMenuState::Settings), settings_cleanup);
+            // REMOVED: Cleanup system for the main settings menu (now handled by OnExit(SettingsMenuState::*))
+            /* .add_systems(OnExit(GameMenuState::Settings), settings_cleanup) */;
     }
 }
 
@@ -198,49 +199,4 @@ fn save_settings(
     } else {
         warn!("No persistent settings resource found, settings not saved");
     }
-}
-
-/// Cleanup settings menu entities and handle state transitions
-fn settings_cleanup(
-    mut commands: Commands,
-    settings_entities: Query<(Entity, &Name), With<MenuItem>>,
-    mut next_state: ResMut<NextState<GameMenuState>>,
-    mut context: ResMut<StateTransitionContext>,
-    current_state: Res<State<GameMenuState>>,
-    current_settings_state: Res<State<SettingsMenuState>>,
-) {
-    info!(
-        "Starting settings cleanup with current state: {:?}",
-        current_settings_state.get()
-    );
-
-    // First, collect all entities to remove to avoid any ordering issues
-    let entities_to_remove: Vec<(Entity, String)> = settings_entities
-        .iter()
-        .filter(|(_, name)| {
-            let name_str = name.to_string();
-            name_str.contains("Settings")
-                || name_str.contains("Option")
-                || name_str.contains("Slider")
-                || name_str.contains("Checkbox")
-                || name_str.contains("settings")
-                || name_str.contains("Input Blocker")
-        })
-        .map(|(entity, name)| (entity, name.to_string()))
-        .collect();
-
-    let num_entities = entities_to_remove.len();
-    info!("Found {} settings entities to remove", num_entities);
-
-    // Log what we're about to remove and remove them
-    for (entity, name) in entities_to_remove {
-        info!("Despawning settings entity: '{}'", name);
-        commands.entity(entity).despawn_recursive();
-    }
-
-    info!("Despawned {} settings menu entities", num_entities);
-
-    // Removed redundant state transition logic here.
-    // The transition is now handled by `settings_button_action` for the Back button
-    // and will be handled by `handle_settings_back_input` for the ESC key.
 }

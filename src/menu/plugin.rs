@@ -5,7 +5,7 @@ use crate::{
     menu::{
         backgrounds::BackgroundsPlugin,
         cleanup::CleanupPlugin,
-        components::{MenuVisibilityState, NeedsMainMenuSetup, UiHierarchyChecked},
+        components::{MenuVisibilityState, /* NeedsMainMenuSetup, */ UiHierarchyChecked},
         credits::CreditsPlugin,
         deck::DeckManagerPlugin,
         input_blocker::InputBlockerPlugin,
@@ -36,7 +36,7 @@ impl Plugin for MenuPlugin {
             .insert_resource(GameMenuState::MainMenu)
             .insert_resource(StateTransitionContext::default())
             .init_resource::<MenuVisibilityState>()
-            .insert_resource(NeedsMainMenuSetup(true))
+            // .insert_resource(NeedsMainMenuSetup(true))
             .init_resource::<UiHierarchyChecked>()
             // Setup state transitions
             .add_systems(OnEnter(GameMenuState::Settings), setup_settings_transition)
