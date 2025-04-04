@@ -2,8 +2,6 @@ use super::common::*;
 use crate::camera::components::AppLayer;
 use crate::menu::components::MenuItem;
 use crate::menu::settings::components::*;
-use crate::menu::settings::state::SettingsMenuState;
-use crate::menu::styles::*;
 use bevy::audio::Volume;
 use bevy::prelude::*;
 use bevy_persistent::prelude::*;

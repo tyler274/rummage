@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
-use crate::menu::{
-    components::{MenuVisibilityState, NeedsMainMenuSetup},
-    state::GameMenuState,
+use crate::{
+    // TODO: menu::state::MenuState,
+    menu::state::GameMenuState,
 };
 
 use super::systems::{

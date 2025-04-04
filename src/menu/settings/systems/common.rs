@@ -5,7 +5,6 @@ use bevy::ui::{AlignItems, JustifyContent, UiRect, Val};
 use crate::camera::components::AppLayer;
 use crate::menu::components::MenuItem;
 use crate::menu::settings::components::*;
-use crate::menu::styles::*;
 
 /// Text color for settings menu
 pub const TEXT_COLOR: Color = Color::WHITE;

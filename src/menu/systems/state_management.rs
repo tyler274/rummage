@@ -1,7 +1,7 @@
 use crate::menu::camera::setup::MenuCamera;
 use crate::menu::state::StateTransitionContext;
 use crate::menu::{
-    components::{MenuItem, MenuRoot, NeedsMainMenuSetup},
+    components::{MenuItem, MenuRoot},
     save_load::SaveExists,
     settings::SettingsMenuState,
     state::GameMenuState,
@@ -142,7 +142,6 @@ pub fn monitor_state_transitions(
                     } else {
                         // Wait for the resource to be available in the next frame
                         info!("SaveExists resource not available, deferring main menu setup");
-                        commands.insert_resource(NeedsMainMenuSetup(true));
                     }
                 }
             }
@@ -163,69 +162,24 @@ pub fn monitor_state_transitions(
 }
 
 /// Periodically check menu items in MainMenu state
-pub fn check_menu_items_exist(
-    state: Res<State<GameMenuState>>,
-    mut commands: Commands,
-    menu_items: Query<Entity, With<MenuItem>>,
-) {
-    // Periodically check if we're in MainMenu state but have no visible menu items
-    if *state.get() == GameMenuState::MainMenu {
-        let count = menu_items.iter().count();
-
-        if count == 0 {
-            info!("No menu items found in MainMenu state! Scheduling setup...");
-
-            // Since we can't directly call setup here because of the borrowing issues,
-            // we'll set a flag in a resource to trigger the setup in another system
-            commands.insert_resource(NeedsMainMenuSetup(true));
-        }
-    }
-}
-
-/// Perform main menu setup if needed based on flag
-pub fn perform_main_menu_setup_if_needed(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    menu_cameras: Query<Entity, With<MenuCamera>>,
-    existing_roots: Query<Entity, With<MenuRoot>>,
-    all_cameras: Query<&Camera>,
-    setup_flag: Option<Res<NeedsMainMenuSetup>>,
-    mut next_state: ResMut<NextState<GameMenuState>>,
-    save_exists: Option<ResMut<SaveExists>>,
-) {
-    // Even if setup_flag is None, log a message
-    if setup_flag.is_none() {
-        info!("No NeedsMainMenuSetup flag found, considering setting it up");
-    }
-
-    if let Some(flag) = setup_flag {
-        if flag.0 {
-            info!("Setting up main menu as requested by NeedsMainMenuSetup flag");
-            commands.remove_resource::<NeedsMainMenuSetup>();
-
-            if let Some(save_exists_res) = save_exists {
-                // Set up the main menu directly
-                crate::menu::systems::main_menu::setup::setup_main_menu(
-                    commands,
-                    asset_server,
-                    menu_cameras,
-                    existing_roots,
-                    all_cameras,
-                    save_exists_res,
-                );
-            } else {
-                // Insert the resource and defer setup to next frame
-                info!("SaveExists resource not available, creating it and deferring setup");
-                commands.insert_resource(SaveExists(false));
-                commands.insert_resource(NeedsMainMenuSetup(true));
-                return;
-            }
-
-            info!("Main menu setup complete, ensuring MainMenu state is set");
-            next_state.set(GameMenuState::MainMenu);
-        }
-    }
-}
+// pub fn check_menu_items_exist(
+//     state: Res<State<GameMenuState>>,
+//     mut commands: Commands,
+//     menu_items: Query<Entity, With<MenuItem>>,
+// ) {
+//     // Periodically check if we're in MainMenu state but have no visible menu items
+//     if *state.get() == GameMenuState::MainMenu {
+//         let count = menu_items.iter().count();
+//
+//         if count == 0 {
+//             info!("No menu items found in MainMenu state! Scheduling setup...");
+//
+//             // Since we can't directly call setup here because of the borrowing issues,
+//             // we'll set a flag in a resource to trigger the setup in another system
+//             commands.insert_resource(NeedsMainMenuSetup(true));
+//         }
+//     }
+// }
 
 /// Log when exiting settings
 pub fn log_settings_exit(context: Res<StateTransitionContext>) {

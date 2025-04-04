@@ -1,13 +1,16 @@
-use super::common::*;
-use crate::camera::components::AppLayer;
-use crate::menu::components::MenuItem;
-use crate::menu::settings::components::*;
-use crate::menu::settings::state::SettingsMenuState;
-use crate::menu::styles::*;
+use super::common::{
+    TEXT_COLOR, spawn_settings_button, spawn_settings_container, spawn_settings_root,
+    spawn_settings_title,
+};
+use crate::menu::components::*;
+use crate::menu::settings::components::{
+    GraphicsQuality, QualityButton, SettingsButtonAction, SettingsMenuItem,
+};
+use crate::menu::settings::plugin::CurrentGraphicsQuality;
 use bevy::prelude::*;
 
-/// Sets up the video settings menu
-pub fn setup_video_settings(mut commands: Commands) {
+/// Sets up the video settings UI elements
+pub fn setup_video_settings(mut commands: Commands, graphics_quality: Res<CurrentGraphicsQuality>) {
     info!("Setting up video settings menu");
 
     let root_entity = spawn_settings_root(
@@ -16,27 +19,39 @@ pub fn setup_video_settings(mut commands: Commands) {
         "Video Settings",
     );
 
-    // Store root_entity for later use
-    let mut root = commands.entity(root_entity);
+    // Variable to hold the container entity ID, initialized inside the closure
+    let mut container_entity_id = Entity::PLACEHOLDER;
 
-    // Create a new scope for the first with_children call
-    root.with_children(|parent| {
+    commands.entity(root_entity).with_children(|parent| {
         spawn_settings_title(parent, "Video Settings");
 
-        let _container = spawn_settings_container(parent);
+        // Spawn container using the parent builder and store its ID
+        container_entity_id = spawn_settings_container(parent); // This returns an Entity
 
-        // Add video settings here
-        create_toggle_setting(parent, "Fullscreen", true);
-        create_toggle_setting(parent, "VSync", true);
-        create_toggle_setting(parent, "Motion Blur", false);
-
-        // Back button
+        // Spawn the back button
         spawn_settings_button(parent, "Back", SettingsButtonAction::NavigateToMain);
     });
+
+    // Now that the first `with_children` scope is closed, we can borrow `commands` again
+    // Add children to the container using its stored ID
+    commands
+        .entity(container_entity_id)
+        .with_children(|container_parent| {
+            // Add video settings here
+            create_quality_setting(
+                container_parent,
+                "Graphics Quality",
+                &graphics_quality.quality,
+            );
+        });
 }
 
-/// Creates a graphics quality setting display
-fn create_graphics_quality_setting(parent: &mut ChildBuilder, quality: &GraphicsQuality) {
+/// Creates a quality setting display with buttons
+fn create_quality_setting(
+    parent: &mut ChildBuilder,
+    label: &str,
+    current_quality: &GraphicsQuality,
+) {
     parent
         .spawn((
             Node {
@@ -51,12 +66,12 @@ fn create_graphics_quality_setting(parent: &mut ChildBuilder, quality: &Graphics
             SettingsMenuItem,
             Visibility::Visible,
             InheritedVisibility::VISIBLE,
-            Name::new("Graphics Quality Row"),
+            Name::new("Quality Setting Row"),
         ))
         .with_children(|parent| {
             // Label
             parent.spawn((
-                Text::new("Graphics Quality:"),
+                Text::new(label),
                 TextFont {
                     font_size: 20.0,
                     ..default()
@@ -66,28 +81,68 @@ fn create_graphics_quality_setting(parent: &mut ChildBuilder, quality: &Graphics
                 SettingsMenuItem,
                 Visibility::Visible,
                 InheritedVisibility::VISIBLE,
-                Name::new("Graphics Quality Label"),
+                Name::new("Quality Label"),
             ));
 
-            // Value
-            let quality_text = match quality {
-                GraphicsQuality::Low => "Low",
-                GraphicsQuality::Medium => "Medium",
-                GraphicsQuality::High => "High",
-            };
+            // Quality buttons
+            parent
+                .spawn(Node {
+                    flex_direction: FlexDirection::Row,
+                    ..default()
+                })
+                .with_children(|parent| {
+                    spawn_quality_button(parent, GraphicsQuality::Low, current_quality);
+                    spawn_quality_button(parent, GraphicsQuality::Medium, current_quality);
+                    spawn_quality_button(parent, GraphicsQuality::High, current_quality);
+                });
+        });
+}
 
+/// Spawns a quality button
+fn spawn_quality_button(
+    parent: &mut ChildBuilder,
+    quality: GraphicsQuality,
+    current_quality: &GraphicsQuality,
+) {
+    let quality_text = match quality {
+        GraphicsQuality::Low => "Low",
+        GraphicsQuality::Medium => "Medium",
+        GraphicsQuality::High => "High",
+    };
+
+    let background_color = if quality == *current_quality {
+        BackgroundColor(Color::srgba(0.4, 0.4, 0.8, 1.0)) // Highlighted
+    } else {
+        BackgroundColor(Color::srgba(0.2, 0.2, 0.2, 1.0)) // Normal
+    };
+
+    parent
+        .spawn((
+            Button::default(),
+            Node {
+                width: Val::Px(80.0),
+                height: Val::Px(40.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                margin: UiRect::horizontal(Val::Px(5.0)),
+                ..default()
+            },
+            background_color,
+            QualityButton(quality),
+            MenuItem,
+            SettingsMenuItem,
+            Visibility::Visible,
+            InheritedVisibility::VISIBLE,
+            Name::new(format!("Quality Button {}", quality_text)),
+        ))
+        .with_children(|parent| {
             parent.spawn((
                 Text::new(quality_text),
                 TextFont {
-                    font_size: 20.0,
+                    font_size: 18.0,
                     ..default()
                 },
-                TextColor(TEXT_COLOR),
-                MenuItem,
-                SettingsMenuItem,
-                Visibility::Visible,
-                InheritedVisibility::VISIBLE,
-                Name::new("Graphics Quality Value"),
+                TextColor(Color::WHITE),
             ));
         });
 }

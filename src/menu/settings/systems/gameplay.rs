@@ -1,13 +1,13 @@
-use super::common::*;
-use crate::camera::components::AppLayer;
-use crate::menu::components::MenuItem;
+use super::common::{
+    TEXT_COLOR, create_toggle_setting, spawn_settings_button, spawn_settings_container,
+    spawn_settings_root, spawn_settings_title,
+};
+use crate::menu::components::*;
 use crate::menu::settings::components::*;
-use crate::menu::settings::state::SettingsMenuState;
-use crate::menu::styles::*;
 use bevy::prelude::*;
 
-/// Sets up the gameplay settings menu
-pub fn setup_gameplay_settings(mut commands: Commands) {
+/// Sets up the gameplay settings UI elements
+pub fn setup_gameplay_settings(mut commands: Commands, settings: Res<GameplaySettings>) {
     info!("Setting up gameplay settings menu");
 
     let root_entity = spawn_settings_root(
@@ -16,22 +16,23 @@ pub fn setup_gameplay_settings(mut commands: Commands) {
         "Gameplay Settings",
     );
 
-    // Store root_entity for later use
+    // Get the container entity before the closure
+    let mut container_entity = Entity::PLACEHOLDER;
     let mut root = commands.entity(root_entity);
 
-    // Create a new scope for the first with_children call
     root.with_children(|parent| {
         spawn_settings_title(parent, "Gameplay Settings");
-
-        let _container = spawn_settings_container(parent);
-
-        // Add gameplay settings here
-        create_toggle_setting(parent, "Show Card Tooltips", true);
-        create_toggle_setting(parent, "Auto-Pass Priority", false);
-        create_toggle_setting(parent, "Stack Auto-Ordering", true);
-
-        // Back button
+        container_entity = spawn_settings_container(parent);
+        // Back button outside the container's closure
         spawn_settings_button(parent, "Back", SettingsButtonAction::NavigateToMain);
+    });
+
+    // Build content for the container separately to avoid double borrow of commands
+    let mut container_children = commands.entity(container_entity);
+    container_children.with_children(|parent| {
+        create_toggle_setting(parent, "Auto Pass", settings.auto_pass);
+        create_toggle_setting(parent, "Show Tooltips", settings.show_tooltips);
+        // create_slider_setting(parent, "Animation Speed", settings.animation_speed);
     });
 }
 

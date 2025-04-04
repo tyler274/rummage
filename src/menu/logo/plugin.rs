@@ -115,7 +115,7 @@ fn setup_startup_logo(
 
 /// System to ensure the logo exists when in the MainMenu state
 fn ensure_logo_exists(
-    mut commands: Commands,
+    commands: Commands,
     asset_server: Res<AssetServer>,
     menu_cameras: Query<Entity, With<MenuCamera>>,
     existing_logos: Query<Entity, With<MenuDecorativeElement>>,
@@ -165,7 +165,7 @@ fn ensure_logo_exists(
 
 /// Sets up the combined logo with Star of David and text for the main menu
 fn setup_combined_logo(
-    mut commands: Commands,
+    commands: Commands,
     asset_server: Res<AssetServer>,
     menu_cameras: Query<Entity, With<MenuCamera>>,
     existing_logos: Query<Entity, With<MenuDecorativeElement>>,
@@ -309,7 +309,7 @@ fn cleanup_non_persistent_logo(
 
 /// Sets up the pause menu logo
 fn setup_pause_logo(
-    mut commands: Commands,
+    commands: Commands,
     asset_server: Res<AssetServer>,
     menu_cameras: Query<Entity, With<MenuCamera>>,
     existing_logos: Query<Entity, With<MenuDecorativeElement>>,

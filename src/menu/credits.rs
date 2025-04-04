@@ -14,10 +14,9 @@ impl Plugin for CreditsPlugin {
 }
 
 /// Set up the credits screen UI
-pub fn setup_credits(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn setup_credits(_commands: Commands, _asset_server: Res<AssetServer>) {
     info!("Setting up credits screen");
-    // TODO: Implement proper credits UI
-    // This is a placeholder implementation
+    // TODO: Implement credits screen content
 }
 
 /// Handle ESC key press in credits screen

@@ -1,9 +1,9 @@
-use super::common::*;
-use crate::camera::components::AppLayer;
+use super::common::{
+    TEXT_COLOR, create_toggle_setting, spawn_settings_button, spawn_settings_container,
+    spawn_settings_root, spawn_settings_title,
+};
 use crate::menu::components::MenuItem;
 use crate::menu::settings::components::*;
-use crate::menu::settings::state::SettingsMenuState;
-use crate::menu::styles::*;
 use bevy::prelude::*;
 
 /// Sets up the controls settings menu

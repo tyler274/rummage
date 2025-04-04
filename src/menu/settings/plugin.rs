@@ -1,14 +1,9 @@
-use crate::menu::{
-    components::NeedsMainMenuSetup,
-    settings::state::SettingsMenuState,
-    state::{GameMenuState, StateTransitionContext},
-};
+use crate::menu::{settings::state::SettingsMenuState, state::GameMenuState};
 use bevy::audio::Volume;
 use bevy::prelude::*;
 use bevy_persistent::prelude::*;
 
 use super::components::*;
-use super::state::*;
 use super::systems::{
     audio::{setup_audio_settings, volume_slider_interaction},
     cleanup_settings_menu,
@@ -17,8 +12,6 @@ use super::systems::{
     main::{handle_settings_back_input, settings_button_action, setup_main_settings},
     video::setup_video_settings,
 };
-use crate::game_engine::state::GameState;
-use crate::menu::components::MenuItem;
 
 /// Plugin that sets up the settings menu system
 pub struct SettingsPlugin;

@@ -10,10 +10,10 @@ pub fn esc_key_system(
     app_state: Res<State<AppState>>,
     menu_state: Res<State<GameMenuState>>,
     settings_state: Res<State<SettingsMenuState>>,
-    context: Res<StateTransitionContext>,
+    _context: Res<StateTransitionContext>,
     mut next_menu_state: ResMut<NextState<GameMenuState>>,
     mut next_settings_state: ResMut<NextState<SettingsMenuState>>,
-    mut commands: Commands,
+    mut _commands: Commands,
     mut next_game_state: ResMut<NextState<AppState>>,
 ) {
     if keys.just_pressed(KeyCode::Escape) {
@@ -80,4 +80,13 @@ pub fn esc_key_system(
             }
         }
     }
+}
+
+pub fn handle_pause_menu_input(
+    _keyboard_input: Res<ButtonInput<KeyCode>>,
+    _app_exit_events: EventWriter<AppExit>,
+    _game_state: ResMut<NextState<GameMenuState>>,
+    _context: Res<StateTransitionContext>,
+    _commands: Commands,
+) {
 }

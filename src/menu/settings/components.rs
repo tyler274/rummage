@@ -42,6 +42,10 @@ pub enum SettingsButtonAction {
     ExitSettings,
 }
 
+/// Component to associate a button with a specific GraphicsQuality
+#[derive(Component, Debug, Clone, PartialEq, Eq)]
+pub struct QualityButton(pub GraphicsQuality);
+
 /// Volume settings resource
 #[derive(Resource, Debug, Clone, Serialize, Deserialize)]
 pub struct VolumeSettings {
