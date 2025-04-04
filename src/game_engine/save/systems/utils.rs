@@ -63,23 +63,22 @@ pub fn apply_game_state(
     }
 
     // Restore game state
-    if let Some(game_state) = game_state {
+    if let Some(gs) = game_state {
         if index_to_entity.is_empty() || index_to_entity.contains(&Entity::PLACEHOLDER) {
             // At minimum, restore basic properties not tied to player entities
-            game_state.turn_number = save_data.game_state.turn_number;
+            gs.turn_number = save_data.game_state.turn_number;
         } else {
             // Full restore with valid player entities
-            **game_state = save_data.to_game_state(&index_to_entity);
+            **gs = save_data.to_game_state(&index_to_entity);
         }
+    } else if index_to_entity.is_empty() || index_to_entity.contains(&Entity::PLACEHOLDER) {
+        // Create a new game state with basic properties if mapping failed or is empty
+        let mut new_state = GameState::default();
+        new_state.turn_number = save_data.game_state.turn_number;
+        commands.insert_resource(new_state);
     } else {
-        if index_to_entity.is_empty() || index_to_entity.contains(&Entity::PLACEHOLDER) {
-            // Create a new game state with basic properties
-            let mut new_state = GameState::default();
-            new_state.turn_number = save_data.game_state.turn_number;
-            commands.insert_resource(new_state);
-        } else {
-            commands.insert_resource(save_data.to_game_state(&index_to_entity));
-        }
+        // Create a new game state from save data
+        commands.insert_resource(save_data.to_game_state(&index_to_entity));
     }
 
     // Restore zone contents if a valid ZoneManager exists and we have player entities

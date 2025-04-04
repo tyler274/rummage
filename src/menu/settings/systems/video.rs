@@ -118,7 +118,7 @@ fn spawn_quality_button(
 
     parent
         .spawn((
-            Button::default(),
+            Button,
             Node {
                 width: Val::Px(80.0),
                 height: Val::Px(40.0),

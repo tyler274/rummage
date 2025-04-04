@@ -101,7 +101,7 @@ pub fn setup_save_dialog(
                                 let description = saves
                                     .iter()
                                     .find(|save| save.slot_name == slot_name)
-                                    .and_then(|save| Some(save.description.clone()));
+                                    .map(|save| save.description.clone());
 
                                 spawn_save_slot_button(
                                     parent,
@@ -127,7 +127,7 @@ pub fn setup_save_dialog(
                             // Cancel button
                             parent
                                 .spawn((
-                                    Button::default(),
+                                    Button,
                                     Node {
                                         width: Val::Px(120.0),
                                         height: Val::Percent(100.0),
@@ -167,7 +167,7 @@ fn spawn_save_slot_button(
     // Save slot button
     parent
         .spawn((
-            Button::default(),
+            Button,
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Px(60.0),

@@ -220,7 +220,7 @@ pub fn button_with_text<T: Component + Default>(
     // Create a button entity
     parent
         .spawn((
-            Button::default(),
+            Button,
             Node {
                 width: Val::Px(150.0),
                 height: Val::Px(40.0),

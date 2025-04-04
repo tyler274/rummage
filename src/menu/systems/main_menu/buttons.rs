@@ -154,6 +154,12 @@ impl MenuRootBundle {
     }
 }
 
+impl Default for MenuRootBundle {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Creates the main menu buttons
 pub fn create_main_menu_buttons(
     parent: &mut ChildBuilder,

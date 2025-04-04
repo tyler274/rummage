@@ -43,7 +43,7 @@ pub fn setup_main_menu(
 
         // Spawn camera with proper order if none exists
         commands.spawn((
-            Camera2d::default(),
+            Camera2d,
             Camera {
                 order: highest_order + 1,
                 ..default()

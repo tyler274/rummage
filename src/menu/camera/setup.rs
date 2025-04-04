@@ -4,6 +4,9 @@ use bevy::prelude::*;
 #[derive(Component, Debug)]
 pub struct MenuCamera;
 
+#[derive(Resource)]
+pub struct MenuCameraEntity(pub Entity);
+
 /// Sets up a dedicated camera for the menu
 pub fn setup_menu_camera(
     mut commands: Commands,
@@ -52,7 +55,7 @@ pub fn setup_menu_camera(
     let new_order = highest_order + 1;
     let camera_entity = commands
         .spawn((
-            Camera2d::default(),
+            Camera2d,
             Camera {
                 order: new_order,
                 ..default()
@@ -91,4 +94,28 @@ pub fn cleanup_menu_camera(mut commands: Commands, cameras: Query<Entity, With<M
             commands.entity(entity).despawn_recursive();
         }
     }
+}
+
+/// Ensure this camera renders above all other cameras.
+pub fn setup_main_menu_camera(
+    mut commands: Commands,
+    camera_query: Query<Entity, With<MenuCamera>>,
+) {
+    let camera_entity = camera_query.single();
+    commands.entity(camera_entity).insert(Camera {
+        order: isize::MAX - 1,
+        ..default()
+    });
+    commands.insert_resource(MenuCameraEntity(camera_entity));
+
+    info!("Main Menu Camera setup complete");
+}
+
+/// System to despawn the main menu camera
+pub fn despawn_menu_camera(mut commands: Commands, camera_query: Query<Entity, With<MenuCamera>>) {
+    for entity in camera_query.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+    commands.remove_resource::<MenuCameraEntity>();
+    info!("Main Menu Camera despawned");
 }

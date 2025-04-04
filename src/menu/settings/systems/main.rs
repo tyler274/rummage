@@ -6,6 +6,14 @@ use crate::menu::settings::state::SettingsMenuState;
 use crate::menu::state::{GameMenuState, StateTransitionContext};
 use bevy::prelude::*;
 
+/// Type alias for the query used in `settings_button_action`.
+type SettingsButtonInteractionQuery<'w, 's> = Query<
+    'w,
+    's,
+    (&'static Interaction, &'static SettingsButtonAction),
+    (Changed<Interaction>, With<Button>),
+>;
+
 /// Sets up the main settings menu
 pub fn setup_main_settings(mut commands: Commands) {
     info!("Setting up main settings menu");
@@ -42,10 +50,7 @@ pub fn setup_main_settings(mut commands: Commands) {
 
 /// Handles button actions in the settings menu
 pub fn settings_button_action(
-    mut interaction_query: Query<
-        (&Interaction, &SettingsButtonAction),
-        (Changed<Interaction>, With<Button>),
-    >,
+    mut interaction_query: SettingsButtonInteractionQuery,
     mut next_state: ResMut<NextState<SettingsMenuState>>,
     mut game_menu_state: ResMut<NextState<GameMenuState>>,
     _current_state: Res<State<GameMenuState>>,

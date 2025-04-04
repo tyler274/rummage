@@ -5,12 +5,21 @@ use crate::menu::state::GameMenuState;
 use crate::menu::styles::{HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON};
 use bevy::prelude::*;
 
+/// Type alias for the query used in `handle_save_load_buttons`.
+type SaveLoadButtonInteractionQuery<'w, 's> = Query<
+    'w,
+    's,
+    (
+        &'static Interaction,
+        &'static SaveLoadButtonAction,
+        &'static mut BackgroundColor,
+    ),
+    (Changed<Interaction>, With<Button>),
+>;
+
 /// Handles button interactions in the save/load UI
 pub fn handle_save_load_buttons(
-    mut interaction_query: Query<
-        (&Interaction, &SaveLoadButtonAction, &mut BackgroundColor),
-        (Changed<Interaction>, With<Button>),
-    >,
+    mut interaction_query: SaveLoadButtonInteractionQuery,
     mut save_load_state: ResMut<NextState<SaveLoadUiState>>,
     mut game_state: ResMut<NextState<GameMenuState>>,
     mut save_events: EventWriter<SaveGameEvent>,

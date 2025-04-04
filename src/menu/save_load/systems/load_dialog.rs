@@ -148,7 +148,7 @@ pub fn setup_load_dialog(
                             // Cancel button
                             parent
                                 .spawn((
-                                    Button::default(),
+                                    Button,
                                     Node {
                                         width: Val::Px(120.0),
                                         height: Val::Percent(100.0),
@@ -189,7 +189,7 @@ fn spawn_load_slot_button(
     // Load slot button
     parent
         .spawn((
-            Button::default(),
+            Button,
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Px(70.0),

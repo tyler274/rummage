@@ -3,8 +3,22 @@ use crate::camera::components::AppLayer;
 use crate::menu::components::MenuItem;
 use crate::menu::settings::components::*;
 use bevy::audio::Volume;
+use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 use bevy_persistent::prelude::*;
+
+/// Query for volume slider interactions
+type VolumeSliderInteractionQuery<'w, 's> = Query<
+    'w,
+    's,
+    (
+        &'static Interaction,
+        &'static VolumeType,
+        &'static Node,
+        &'static GlobalTransform,
+    ),
+    (Changed<Interaction>, With<VolumeSlider>),
+>;
 
 /// Volume slider type to identify which volume is being adjusted
 #[derive(Component, Clone, Copy, Debug)]
@@ -21,6 +35,18 @@ pub struct VolumeValueText(pub VolumeType);
 /// Volume slider component
 #[derive(Component)]
 pub struct VolumeSlider;
+
+/// Groups system parameters for volume updates
+#[derive(SystemParam)]
+struct VolumeUpdateContext<'w, 's> {
+    volume_settings: ResMut<'w, VolumeSettings>,
+    text_query: Query<'w, 's, (&'static mut Text, &'static VolumeValueText)>,
+    volume_indicators: Query<'w, 's, (&'static mut Node, &'static Parent), Without<Button>>,
+    volume_type_query: Query<'w, 's, &'static VolumeType>,
+    global_volume: ResMut<'w, bevy::prelude::GlobalVolume>,
+    audio_players: Query<'w, 's, &'static mut bevy::audio::PlaybackSettings>,
+    persistent_settings: Option<ResMut<'w, Persistent<RummageSettings>>>,
+}
 
 /// Sets up the audio settings menu
 pub fn setup_audio_settings(mut commands: Commands) {
@@ -133,17 +159,8 @@ pub fn setup_audio_settings(mut commands: Commands) {
 
 /// System to handle interactions with volume sliders
 pub fn volume_slider_interaction(
-    mut interaction_query: Query<
-        (&Interaction, &VolumeType, &Node, &GlobalTransform),
-        (Changed<Interaction>, With<Button>),
-    >,
-    volume_type_query: Query<&VolumeType>,
-    mut volume_settings: ResMut<VolumeSettings>,
-    mut text_query: Query<(&mut Text, &VolumeValueText)>,
-    mut volume_indicators: Query<(&mut Node, &Parent), Without<Button>>,
-    mut global_volume: ResMut<bevy::prelude::GlobalVolume>,
-    mut audio_players: Query<&mut bevy::audio::PlaybackSettings>,
-    mut persistent_settings: Option<ResMut<Persistent<RummageSettings>>>,
+    mut interaction_query: VolumeSliderInteractionQuery,
+    mut context: VolumeUpdateContext,
     windows: Query<&Window>,
     mouse_input: Res<ButtonInput<MouseButton>>,
 ) {
@@ -161,8 +178,8 @@ pub fn volume_slider_interaction(
                 // Calculate slider value from cursor position
                 let button_size = match node.width {
                     Val::Px(px) => px,
-                    Val::Percent(pct) => pct * 2.0,
-                    _ => 200.0,
+                    Val::Percent(pct) => pct * 2.0, // Approximation, adjust if needed
+                    _ => 200.0,                     // Fallback width
                 };
 
                 let button_pos = transform.translation().x;
@@ -174,17 +191,18 @@ pub fn volume_slider_interaction(
                 // Update volume settings
                 match *volume_type {
                     VolumeType::Master => {
-                        volume_settings.master = volume_value;
-                        global_volume.volume = Volume::new(volume_value);
+                        context.volume_settings.master = volume_value;
+                        context.global_volume.volume = Volume::new(volume_value);
                     }
                     VolumeType::Music => {
-                        volume_settings.music = volume_value;
-                        for mut settings in audio_players.iter_mut() {
+                        context.volume_settings.music = volume_value;
+                        for mut settings in context.audio_players.iter_mut() {
                             settings.volume = Volume::new(volume_value);
                         }
                     }
                     VolumeType::Sfx => {
-                        volume_settings.sfx = volume_value;
+                        context.volume_settings.sfx = volume_value;
+                        // NOTE: Need a way to apply SFX volume globally or per-sound
                     }
                 }
 
@@ -192,13 +210,13 @@ pub fn volume_slider_interaction(
                 update_volume_ui(
                     clamped_value,
                     *volume_type,
-                    &mut text_query,
-                    &mut volume_indicators,
-                    &volume_type_query,
+                    &mut context.text_query,
+                    &mut context.volume_indicators,
+                    &context.volume_type_query,
                 );
 
                 // Save settings
-                save_volume_settings(&mut persistent_settings, &volume_settings);
+                save_volume_settings(&mut context.persistent_settings, &context.volume_settings);
 
                 info!("Volume {:?} set to {}%", volume_type, clamped_value);
             }

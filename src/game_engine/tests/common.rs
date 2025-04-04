@@ -5,7 +5,7 @@ use bevy::prelude::*;
 
 /// Setup test logger
 #[allow(dead_code)]
-pub fn setup_test_logger() -> () {
+pub fn setup_test_logger() {
     // Placeholder for test logger setup
     // Usually sets up a test-specific logger configuration
 }

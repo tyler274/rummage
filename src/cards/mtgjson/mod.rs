@@ -19,6 +19,7 @@ use crate::cards::{
 use crate::mana::{Mana, ManaColor};
 use async_trait::async_trait;
 use lazy_static::lazy_static;
+use log::info;
 use regex;
 use reqwest;
 use serde::{Deserialize, Serialize};
@@ -438,7 +439,6 @@ impl MTGService {
     }
 
     /// Gets the path for set version information
-
     fn get_set_version_path(&self, set_code: &str) -> std::path::PathBuf {
         std::path::PathBuf::from("sets").join(format!("{}.json.bz2.version", set_code))
     }
@@ -447,7 +447,6 @@ impl MTGService {
     ///
     /// This includes the current version number and update date.
     /// Results are cached to avoid unnecessary API calls.
-
     pub async fn fetch_meta(&self) -> Result<MTGJSONMeta, Error> {
         let mut meta = self.meta.lock().await;
         if meta.is_some() {
@@ -472,7 +471,6 @@ impl MTGService {
     ///
     /// Checks both the version and checksum of the file against
     /// the current MTGJSON version.
-
     pub async fn verify_file_checksum(&self, set_code: &str, path: &Path) -> Result<bool, Error> {
         // First check if we have a version file and if it matches current version
         let version_path = self.get_set_version_path(set_code);
@@ -550,30 +548,35 @@ impl MTGService {
         }
         drop(memory_cache);
 
-        // Check if we have a cached version and its checksum is valid
+        // Check if set archive already exists and is valid
         let set_archive_path = self.get_set_archive_path(set_code);
-        if set_archive_path.exists() {
-            if self
+
+        if set_archive_path.exists()
+            && self
                 .verify_file_checksum(set_code, &set_archive_path)
                 .await?
-            {
-                let compressed_data = fs::read(&set_archive_path)?;
-                let decompressed = bzip2::read::BzDecoder::new(&compressed_data[..]);
-                let set: MTGJSONSetResponse = serde_json::from_reader(decompressed)?;
-                let cards: Vec<Card> = set
-                    .data
-                    .cards
-                    .into_iter()
-                    .filter_map(convert_mtgjson_to_card)
-                    .map(|(card, _, _, _, _, _, _)| card)
-                    .collect();
+        {
+            // Load from existing archive
+            info!(
+                "Loading set data for {} from existing archive: {:?}",
+                set_code, set_archive_path
+            );
+            let compressed_data = fs::read(&set_archive_path)?;
+            let decompressed = bzip2::read::BzDecoder::new(&compressed_data[..]);
+            let set: MTGJSONSetResponse = serde_json::from_reader(decompressed)?;
+            let cards: Vec<Card> = set
+                .data
+                .cards
+                .into_iter()
+                .filter_map(convert_mtgjson_to_card)
+                .map(|(card, _, _, _, _, _, _)| card)
+                .collect();
 
-                // Update memory cache
-                let mut memory_cache = self.cache.lock().await;
-                memory_cache.insert(set_code.to_string(), cards.clone());
+            // Update memory cache
+            let mut memory_cache = self.cache.lock().await;
+            memory_cache.insert(set_code.to_string(), cards.clone());
 
-                return Ok(cards);
-            }
+            return Ok(cards);
         }
 
         // Get the set data from the client

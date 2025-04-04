@@ -162,25 +162,6 @@ pub fn monitor_state_transitions(
 }
 
 /// Periodically check menu items in MainMenu state
-// pub fn check_menu_items_exist(
-//     state: Res<State<GameMenuState>>,
-//     mut commands: Commands,
-//     menu_items: Query<Entity, With<MenuItem>>,
-// ) {
-//     // Periodically check if we're in MainMenu state but have no visible menu items
-//     if *state.get() == GameMenuState::MainMenu {
-//         let count = menu_items.iter().count();
-//
-//         if count == 0 {
-//             info!("No menu items found in MainMenu state! Scheduling setup...");
-//
-//             // Since we can't directly call setup here because of the borrowing issues,
-//             // we'll set a flag in a resource to trigger the setup in another system
-//             commands.insert_resource(NeedsMainMenuSetup(true));
-//         }
-//     }
-// }
-
 /// Log when exiting settings
 pub fn log_settings_exit(context: Res<StateTransitionContext>) {
     // Log the transition from settings

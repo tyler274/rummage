@@ -4,12 +4,21 @@ use crate::menu::{
 };
 use bevy::prelude::*;
 
+/// Type alias for the query used in `handle_main_menu_interactions`.
+type MainMenuButtonInteractionQuery<'w, 's> = Query<
+    'w,
+    's,
+    (
+        &'static Interaction,
+        &'static MenuButtonAction,
+        &'static mut BackgroundColor,
+    ),
+    (Changed<Interaction>, With<Button>),
+>;
+
 /// Handles button interactions for the main menu
 pub fn handle_main_menu_interactions(
-    mut interaction_query: Query<
-        (&Interaction, &MenuButtonAction, &mut BackgroundColor),
-        (Changed<Interaction>, With<Button>),
-    >,
+    mut interaction_query: MainMenuButtonInteractionQuery,
     mut next_state: ResMut<NextState<GameMenuState>>,
     mut settings_state: ResMut<NextState<SettingsMenuState>>,
     mut context: ResMut<StateTransitionContext>,

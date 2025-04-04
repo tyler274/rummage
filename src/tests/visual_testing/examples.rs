@@ -150,31 +150,19 @@ mod tests {
                     Err(e) => panic!("Failed to save card reference image: {}", e),
                 }
             } else {
-                if ref_path.exists() {
-                    match image::open(&ref_path) {
-                        Ok(reference) => {
-                            let result = compare_images(&screenshot, &reference);
-                            assert!(
-                                result.similarity_score >= 0.99,
-                                "Card rendering differs from reference. Similarity: {}",
-                                result.similarity_score
-                            );
-                        }
-                        Err(e) => {
-                            info!("Reference image load error: {}. Creating new reference.", e);
-                            match screenshot.into_rgba8().save(&ref_path) {
-                                Ok(_) => info!("Saved card reference image: {}", reference_name),
-                                Err(e) => panic!("Failed to save reference image: {}", e),
-                            }
-                        }
-                    }
-                } else {
-                    info!("Reference image doesn't exist. Creating new reference.");
-                    match screenshot.into_rgba8().save(&ref_path) {
-                        Ok(_) => info!("Saved card reference image: {}", reference_name),
-                        Err(e) => panic!("Failed to save reference image: {}", e),
-                    }
-                }
+                // Compare screenshot with reference image
+                assert!(
+                    ref_path.exists(),
+                    "Reference image missing: {}",
+                    reference_name
+                );
+                let reference = image::open(&ref_path).expect("Failed to load reference image");
+                let result = compare_images(&screenshot, &reference);
+                assert!(
+                    result.similarity_score >= 0.99,
+                    "Card rendering differs from reference. Similarity: {}",
+                    result.similarity_score
+                );
             }
         }
     }

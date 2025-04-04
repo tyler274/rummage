@@ -91,8 +91,12 @@ impl Plugin for SettingsPlugin {
                 (
                     settings_button_action,
                     volume_slider_interaction,
-                    handle_settings_back_input.run_if(in_state(GameMenuState::Settings)),
                 ),
+            )
+            // Add handle_settings_back_input separately with its condition
+            .add_systems(
+                Update,
+                handle_settings_back_input.run_if(in_state(GameMenuState::Settings)),
             )
             // Apply settings on startup
             .add_systems(Startup, apply_settings)

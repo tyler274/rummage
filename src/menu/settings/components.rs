@@ -107,7 +107,7 @@ impl Default for GameplaySettings {
 }
 
 /// Combined settings that will be saved to TOML
-#[derive(Resource, Debug, Clone, Serialize, Deserialize)]
+#[derive(Resource, Debug, Clone, Serialize, Deserialize, Default)]
 pub struct RummageSettings {
     /// Volume settings
     pub volume: VolumeSettings,
@@ -117,7 +117,7 @@ pub struct RummageSettings {
     pub gameplay: GameplaySettings,
 }
 
-impl Default for RummageSettings {
+/* impl Default for RummageSettings {
     fn default() -> Self {
         Self {
             volume: VolumeSettings::default(),
@@ -125,4 +125,4 @@ impl Default for RummageSettings {
             gameplay: GameplaySettings::default(),
         }
     }
-}
+} */

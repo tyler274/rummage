@@ -1,13 +1,13 @@
+// use crate::game_engine::state::Zone;
 use bevy::prelude::*;
 
 /// Game state assertions for testing
-
 /// Asserts that an entity is in a specific zone
 #[allow(dead_code)]
 pub fn assert_in_zone(
     _app: &App,
     _entity: Entity,
-    _zone_type: crate::game_engine::zones::Zone,
+    _zone_type: crate::game_engine::zones::types::Zone,
     _owner: Option<Entity>,
 ) {
     // Placeholder implementation

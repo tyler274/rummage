@@ -69,7 +69,7 @@ fn setup_startup_logo(
             info!("No menu camera found - creating one before logo setup");
             let camera_entity = commands
                 .spawn((
-                    Camera2d::default(),
+                    Camera2d,
                     Camera {
                         order: 100, // Use a much higher order to avoid conflicts with default cameras
                         ..default()
