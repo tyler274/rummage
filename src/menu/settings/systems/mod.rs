@@ -5,12 +5,6 @@ pub mod gameplay;
 pub mod main;
 pub mod video;
 
-pub use audio::*;
-pub use common::*;
-pub use controls::*;
-pub use gameplay::*;
-pub use main::*;
-pub use video::*;
 
 use crate::menu::components::MenuItem;
 use crate::menu::settings::state::SettingsMenuState;
