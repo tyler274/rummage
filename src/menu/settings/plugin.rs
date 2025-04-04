@@ -101,30 +101,30 @@ impl Plugin for SettingsPlugin {
                 OnExit(SettingsMenuState::Audio),
                 (
                     save_settings,
-                    cleanup_settings_menu.run_if(in_state(SettingsMenuState::Disabled)),
+                    cleanup_settings_menu,
                 ),
             )
             .add_systems(
                 OnExit(SettingsMenuState::Video),
                 (
                     save_settings,
-                    cleanup_settings_menu.run_if(in_state(SettingsMenuState::Disabled)),
+                    cleanup_settings_menu,
                 ),
             )
             .add_systems(
                 OnExit(SettingsMenuState::Gameplay),
                 (
                     save_settings,
-                    cleanup_settings_menu.run_if(in_state(SettingsMenuState::Disabled)),
+                    cleanup_settings_menu,
                 ),
             )
             .add_systems(
                 OnExit(SettingsMenuState::Controls),
-                cleanup_settings_menu.run_if(in_state(SettingsMenuState::Disabled)),
+                cleanup_settings_menu,
             )
             .add_systems(
                 OnExit(SettingsMenuState::Main),
-                cleanup_settings_menu.run_if(in_state(SettingsMenuState::Disabled)),
+                cleanup_settings_menu,
             )
             // REMOVED: Cleanup system for the main settings menu (now handled by OnExit(SettingsMenuState::*))
             /* .add_systems(OnExit(GameMenuState::Settings), settings_cleanup) */;
