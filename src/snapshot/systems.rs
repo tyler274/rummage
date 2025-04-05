@@ -8,7 +8,7 @@ use crate::snapshot::resources::{SnapshotConfig, SnapshotDisabled, SnapshotEvent
 
 // SystemParam struct for visibility/transform queries in process_pending_snapshots
 #[derive(SystemParam)]
-struct SnapshotVisibilityParams<'w, 's> {
+pub struct SnapshotVisibilityParams<'w, 's> {
     app_layer_query: Query<'w, 's, Entity, With<AppLayer>>,
     visibility_query: Query<'w, 's, &'static Visibility>,
     transform_query: Query<'w, 's, &'static GlobalTransform>,

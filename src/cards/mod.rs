@@ -41,7 +41,7 @@ pub use components::CardOwner;
 pub use components::CardRulesText;
 pub use components::CardTypeInfo;
 pub use components::CardZone;
-pub use components::Draggable;
+// pub use components::Draggable; // Remove unused export
 pub use components::NoUntapCondition;
 pub use components::NoUntapEffect;
 pub use components::PermanentState;

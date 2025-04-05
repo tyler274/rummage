@@ -63,7 +63,7 @@ pub fn setup_settings_transition(
 
 // SystemParam struct for monitor_state_transitions
 #[derive(SystemParam)]
-struct StateMonitorParams<'w, 's> {
+pub struct StateMonitorParams<'w, 's> {
     state: Res<'w, State<GameMenuState>>,
     #[system_param(ignore)]
     _next_state: ResMut<'w, NextState<GameMenuState>>, // Ignoring unused param

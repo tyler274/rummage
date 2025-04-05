@@ -130,21 +130,19 @@ pub fn spawn_players<'w, 's>(
             // Get the base position for the player's cards
             let card_position = player_transform.translation;
 
-            // Create the context for spawning cards
-            let mut context = cards::CardSpawnContext {
-                commands: &mut commands,
-                game_cameras: &game_cameras,
-                card_size: &config.card_size,
-                spacing_multiplier: config.card_spacing_multiplier,
-                player_position: card_position,
+            // Remove context creation, call spawn_visual_cards directly
+            cards::spawn_visual_cards(
+                commands, // Pass mutable commands directly
+                &game_cameras,
+                &config.card_size,
+                config.card_spacing_multiplier,
+                card_position,
                 player_index,
                 player_entity,
-                table: &table,
-                asset_server_option: Some(&asset_server),
-            };
-
-            // Create visual representations of the cards
-            cards::spawn_visual_cards(&mut context, display_cards);
+                &table,
+                Some(&asset_server),
+                display_cards,
+            );
         } else {
             info!(
                 "Skipping card spawning for player {} (index {})",

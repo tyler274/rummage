@@ -5,9 +5,9 @@ use crate::menu::{
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 
-// SystemParam struct for esc_key_system
+// Define the system parameter struct for EscKeyState
 #[derive(SystemParam)]
-struct EscKeyStateParams<'w, 's> {
+pub struct EscKeyStateParams<'w, 's> {
     keys: Res<'w, ButtonInput<KeyCode>>,
     app_state: Res<'w, State<AppState>>,
     menu_state: Res<'w, State<GameMenuState>>,

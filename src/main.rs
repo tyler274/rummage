@@ -21,6 +21,7 @@ use bevy::audio::AudioPlugin;
 use bevy::log::Level;
 use bevy::prelude::*;
 use bevy::time::Fixed;
+use bevy::window::{PresentMode /* , WindowTheme */};
 use camera::CameraPlugin;
 use menu::MenuPlugin;
 use plugins::MainRummagePlugin;
@@ -54,6 +55,7 @@ fn main() {
                         ..default()
                     },
                     visible: true,
+                    ..default()
                 }),
                 ..default()
             })

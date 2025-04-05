@@ -142,6 +142,7 @@ fn spawn_player_visual_hands(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     game_cameras: Query<Entity, With<GameCamera>>,
+    player_query: Query<&Player>,
     player_config: Res<PlayerConfig>,
     marker_query: Query<(Entity, &SpawnVisualHand)>,
 ) {
@@ -151,9 +152,8 @@ fn spawn_player_visual_hands(
 
     let config = player_config.clone();
     let table = TableLayout::new(config.player_count, config.player_card_distance);
-    let game_camera_vec: Vec<Entity> = game_cameras.iter().collect();
 
-    if game_camera_vec.is_empty() {
+    if game_cameras.is_empty() {
         error!("No game camera found, cannot spawn visual cards.");
         for (marker_entity, _) in marker_query.iter() {
             commands.entity(marker_entity).despawn();
@@ -168,26 +168,34 @@ fn spawn_player_visual_hands(
         let display_cards = deck_copy.draw_multiple(7);
 
         if display_cards.is_empty() {
-            warn!("Deck for player {:?} was empty, cannot spawn hand.", marker.player_entity);
+            warn!(
+                "Deck for player {:?} was empty, cannot spawn hand.",
+                marker.player_entity
+            );
             commands.entity(marker_entity).despawn();
             continue;
         }
 
-        let player_index = marker.deck.player_index;
+        // Get Player component to access player_index
+        if let Ok(player) = player_query.get(marker.player_entity) {
+            let player_index = player.player_index;
 
-        let mut context = cards::CardSpawnContext {
-            commands: &mut commands,
-            game_cameras: &game_camera_vec,
-            card_size: &config.card_size,
-            spacing_multiplier: config.card_spacing_multiplier,
-            player_position: marker.position,
-            player_index,
-            player_entity: marker.player_entity,
-            table: &table,
-            asset_server_option: Some(&asset_server),
-        };
-
-        cards::spawn_visual_cards(&mut context, display_cards);
+            cards::spawn_visual_cards(
+                &mut commands,
+                &game_cameras,
+                &config.card_size,
+                config.card_spacing_multiplier,
+                marker.position,
+                player_index,
+                marker.player_entity,
+                &table,
+                Some(&asset_server),
+                display_cards,
+            );
+        } else {
+            warn!("Could not find Player component for entity {:?}, skipping hand spawn.", marker.player_entity);
+        }
+        
         commands.entity(marker_entity).despawn();
     }
 }

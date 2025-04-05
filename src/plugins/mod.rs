@@ -92,7 +92,7 @@ impl Plugin for MainRummagePlugin {
 fn setup_game(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    game_cameras: Query<Entity, With<GameCamera>>,
+    _game_cameras: Query<Entity, With<GameCamera>>,
     player_config: Res<PlayerConfig>,
 ) {
     info!("Setting up game...");
@@ -186,6 +186,7 @@ fn spawn_player_visual_hands(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     game_cameras: Query<Entity, With<GameCamera>>,
+    player_query: Query<&Player>,
     player_config: Res<PlayerConfig>,
     marker_query: Query<(Entity, &SpawnVisualHand)>,
     // Need TableLayout again, maybe pass as resource or recalculate?
@@ -197,9 +198,9 @@ fn spawn_player_visual_hands(
 
     let config = player_config.clone();
     let table = TableLayout::new(config.player_count, config.player_card_distance);
-    let game_camera_vec: Vec<Entity> = game_cameras.iter().collect(); // Collect cameras once
 
-    if game_camera_vec.is_empty() {
+    // Check the query directly
+    if game_cameras.is_empty() {
         error!("No game camera found, cannot spawn visual cards.");
         // Consider despawning markers anyway or retrying?
         for (marker_entity, _) in marker_query.iter() {
@@ -223,23 +224,29 @@ fn spawn_player_visual_hands(
             continue;
         }
 
-        let player_index = marker.deck.player_index; // Get index from stored deck
+        // Get Player component to access player_index
+        if let Ok(player) = player_query.get(marker.player_entity) {
+            let player_index = player.player_index;
 
-        // Create context
-        let mut context = cards::CardSpawnContext {
-            commands: &mut commands,
-            game_cameras: &game_camera_vec, // Use collected Vec<Entity>
-            card_size: &config.card_size,
-            spacing_multiplier: config.card_spacing_multiplier,
-            player_position: marker.position, // Use stored position
-            player_index,
-            player_entity: marker.player_entity,
-            table: &table,
-            asset_server_option: Some(&asset_server),
-        };
-
-        // Spawn cards
-        cards::spawn_visual_cards(&mut context, display_cards);
+            // Remove context creation, call spawn_visual_cards directly
+            cards::spawn_visual_cards(
+                &mut commands,
+                &game_cameras,
+                &config.card_size,
+                config.card_spacing_multiplier,
+                marker.position, // Use stored position
+                player_index,
+                marker.player_entity,
+                &table,
+                Some(&asset_server),
+                display_cards,
+            );
+        } else {
+            warn!(
+                "Could not find Player component for entity {:?}, skipping hand spawn.",
+                marker.player_entity
+            );
+        }
 
         // Despawn the marker entity once processed
         commands.entity(marker_entity).despawn();

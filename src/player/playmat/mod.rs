@@ -15,7 +15,8 @@ use crate::game_engine::zones::Zone;
 use crate::player::components::Player;
 use crate::player::resources::PlayerConfig;
 use bevy::ecs::system::SystemParam;
-use bevy::input::mouse::{MouseButtonInput, MouseMotion};
+use bevy::input::keyboard::KeyCode;
+use bevy::input::mouse::{MouseButton /* MouseButtonInput, MouseMotion */};
 use bevy::prelude::*;
 
 // This unused import has been removed
@@ -213,7 +214,8 @@ pub fn highlight_active_zones(
 
 /// SystemParam struct for handle_zone_interactions
 #[derive(SystemParam)]
-struct ZoneInteractionParams<'w, 's> {
+pub struct ZoneInteractionParams<'w, 's> {
+    commands: Commands<'w, 's>,
     mouse_button_input: Res<'w, ButtonInput<MouseButton>>,
     key_input: Res<'w, ButtonInput<KeyCode>>,
     windows: Query<'w, 's, &'static Window>,
