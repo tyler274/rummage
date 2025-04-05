@@ -4,6 +4,7 @@ pub mod components;
 pub mod playmat; // New playmat module
 pub mod resources;
 pub mod systems;
+// pub mod zone; // This seems unused or defined elsewhere
 
 use bevy::prelude::*;
 
@@ -11,7 +12,7 @@ use bevy::prelude::*;
 pub use components::Player;
 pub use playmat::PlayerPlaymatPlugin;
 pub use resources::PlayerConfig;
-pub use systems::{PlayerPositionTracker, debug_draw_player_positions, spawn_players};
+pub use systems::{PlayerPositionTracker, debug_draw_player_positions};
 
 /// Plugin for player-related functionality
 pub struct PlayerPlugin;

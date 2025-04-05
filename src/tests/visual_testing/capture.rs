@@ -142,6 +142,8 @@ pub fn capture_saved_game_snapshot(
             });
             // Run update to process load
             world.run_schedule(bevy::app::Update);
+            // Now call the capture logic after state setup
+            capture_snapshot_logic(world, None, turn_number, replay_step, save_slot)
         }
         // Load to a specific turn
         (Some(turn), None) => {
@@ -160,6 +162,8 @@ pub fn capture_saved_game_snapshot(
                 // Run update to process step
                 world.run_schedule(bevy::app::Update);
             }
+            // Now call the capture logic after state setup
+            capture_snapshot_logic(world, None, turn_number, replay_step, save_slot)
         }
         // Load and step to a specific point in the replay
         (_, Some(step)) => {
@@ -175,6 +179,8 @@ pub fn capture_saved_game_snapshot(
             world.send_event(crate::game_engine::save::StepReplayEvent { steps: step });
             // Run update to process step
             world.run_schedule(bevy::app::Update);
+            // Now call the capture logic after state setup
+            capture_snapshot_logic(world, None, turn_number, replay_step, save_slot)
         }
     };
 
@@ -211,6 +217,45 @@ pub fn capture_saved_game_snapshot(
         take_screenshot()
     } else {
         error!("No game camera found for capturing saved game");
+        None
+    }
+}
+
+/// Helper function for the snapshot logic to avoid repetition
+fn capture_snapshot_logic(
+    world: &mut World,
+    camera_entity: Option<Entity>,
+    turn_number: Option<u32>,
+    replay_step: Option<usize>,
+    save_slot: &str,
+) -> Option<DynamicImage> {
+    if let Some(camera) = camera_entity {
+        // Take the snapshot
+        let snapshot_name = match (turn_number, replay_step) {
+            (None, None) => format!("test_save_{}", save_slot),
+            (Some(turn), None) => format!("test_save_{}_turn_{}", save_slot, turn),
+            (_, Some(step)) => format!("test_save_{}_step_{}", save_slot, step),
+        };
+
+        let snapshot_event = crate::snapshot::SnapshotEvent::new()
+            .with_camera(camera)
+            .with_filename(format!("{}.png", snapshot_name))
+            .with_description(snapshot_name.clone())
+            .with_debug(true);
+
+        // Send the event to take a snapshot
+        world.send_event(snapshot_event);
+
+        // Run update to process the snapshot
+        world.run_schedule(bevy::app::Update);
+        world.run_schedule(bevy::app::PostUpdate);
+
+        // Simplified - in a real implementation, we'd need to wait for the snapshot to complete
+        // and retrieve the actual image data from the snapshot system
+
+        take_screenshot()
+    } else {
+        error!("No game camera found for capturing saved game (in helper)");
         None
     }
 }

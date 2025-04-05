@@ -5,21 +5,24 @@ use crate::camera::{
     systems::{camera_movement, handle_window_resize, set_initial_zoom},
 };
 use crate::deck::{PlayerDeck, get_player_shuffled_deck};
-use crate::game_engine::config::GameConfig;
 use crate::menu::GameMenuState;
-use crate::menu::state::StateTransitionContext;
 use crate::player::components::Player;
 use crate::player::playmat::spawn_player_playmat;
 use crate::player::systems::spawn::cards;
 use crate::player::systems::spawn::table::TableLayout;
-use crate::player::{PlayerPlugin, resources::PlayerConfig, spawn_players};
-use crate::replicon::RepliconPluginSettings;
-use crate::snapshot::GameSnapshotPlugin;
+use crate::player::{PlayerPlugin, resources::PlayerConfig};
 #[cfg(feature = "snapshot")]
 use crate::snapshot::systems::take_snapshot_after_setup;
-use crate::state::GameState;
 use crate::text::DebugConfig;
 use bevy::prelude::*;
+
+/// Marker component to trigger visual hand spawning for a player
+#[derive(Component)]
+struct SpawnVisualHand {
+    player_entity: Entity,
+    deck: PlayerDeck,
+    position: Vec3,
+}
 
 // Plugin for the actual game systems
 pub struct RummagePlugin;
@@ -52,7 +55,8 @@ impl Plugin for RummagePlugin {
                 OnEnter(GameMenuState::InGame),
                 (
                     setup_game,
-                    // Only set initial zoom when not coming from pause menu
+                    // Run card spawning system after setup
+                    spawn_player_visual_hands.after(setup_game),
                     set_initial_zoom
                         .run_if(|context: Res<crate::menu::state::StateTransitionContext>| {
                             !context.from_pause_menu
@@ -78,56 +82,31 @@ impl Plugin for RummagePlugin {
 fn setup_game(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    game_cameras: Query<Entity, With<GameCamera>>,
     player_config: Res<PlayerConfig>,
-    game_config: Res<GameConfig>,
 ) {
     info!("Setting up game state...");
 
-    // Use player config
     let config = player_config.clone();
-
     info!("Spawning {} players...", config.player_count);
-
-    // Create a table layout calculator for the players with appropriate playmat size
-    let playmat_size = Vec2::new(430.0, 330.0); // Increased playmat size for larger cards
+    let playmat_size = Vec2::new(430.0, 330.0);
     let table = TableLayout::new(config.player_count, config.player_card_distance)
         .with_playmat_size(playmat_size);
 
-    // Spawn each player
     for player_index in 0..config.player_count {
-        // Get position name for logging
         let position_name = table.get_position_name(player_index);
-
-        // Create a new player using the builder pattern
         let player = Player::new(&format!("Player {} ({})", player_index + 1, position_name))
             .with_life(config.starting_life)
             .with_player_index(player_index);
-
-        info!(
-            "Creating player with index {} and name '{}'",
-            player_index, player.name
-        );
-
-        // Get player position based on their index and table layout
         let player_transform = table.get_player_position(player_index);
-
-        // Spawn the player entity
         let player_entity = commands
             .spawn((
                 player.clone(),
                 player_transform,
                 GlobalTransform::default(),
-                AppLayer::game_layers(), // Add to all game layers
+                AppLayer::game_layers(),
             ))
             .id();
 
-        info!(
-            "Spawned player entity {:?} with index {} and name '{}' at position {:?}",
-            player_entity, player_index, player.name, player_transform.translation
-        );
-
-        // Spawn the player's playmat
         spawn_player_playmat(
             &mut commands,
             &asset_server,
@@ -137,81 +116,78 @@ fn setup_game(
             player_transform.translation,
         );
 
-        // Create a player-specific deck for ALL players
         let deck = get_player_shuffled_deck(
             player_entity,
             player_index,
             Some(&format!("Player {} Deck", player_index + 1)),
         );
-
-        // Add the PlayerDeck component to the player entity
         commands
             .entity(player_entity)
             .insert(PlayerDeck::new(deck.clone()));
 
-        info!(
-            "Added independent deck component with {} cards to player {}",
-            deck.cards.len(),
-            player_index
-        );
-
-        // Only spawn visual cards for player 1 or if spawn_all_cards is true
+        // If cards should be spawned, add marker component
         if player_index == 0 || config.spawn_all_cards {
-            // Instead of getting new cards, draw from the player's own deck
-            // Make a copy of the deck to draw from without modifying the original
-            let mut temp_deck = deck.clone();
-
-            // Draw 7 cards from the player's own deck as a starting hand
-            let display_cards = temp_deck.draw_multiple(7);
-
-            info!(
-                "Drew {} cards from player {}'s own deck for display",
-                display_cards.len(),
-                player_index
-            );
-
-            // Update the player's cards while preserving other fields
-            commands.entity(player_entity).insert(
-                Player::new(&player.name)
-                    .with_life(player.life)
-                    .with_player_index(player.player_index),
-            );
-
-            // Spawn visual cards for all players that have cards
-            info!(
-                "Spawning visual cards for player {} ({})",
-                player_index, position_name
-            );
-
-            // Get the base position for the player's cards
-            let card_position = player_transform.translation;
-
-            // Create the context for spawning cards
-            let mut context = cards::CardSpawnContext {
-                commands: &mut commands,
-                game_cameras: &game_cameras,
-                card_size: &config.card_size,
-                spacing_multiplier: config.card_spacing_multiplier,
-                player_position: card_position,
-                player_index,
+            commands.spawn(SpawnVisualHand {
                 player_entity,
-                table: &table,
-                asset_server_option: Some(&asset_server),
-            };
-
-            // Create visual representations of the cards
-            cards::spawn_visual_cards(&mut context, display_cards);
-        } else {
-            info!(
-                "Skipping card spawning for player {} (index {})",
-                player.name, player_index
-            );
+                deck: PlayerDeck::new(deck),
+                position: player_transform.translation,
+            });
         }
     }
+    info!("Player setup complete, markers added for visual hands.");
+}
 
-    info!("Player spawning complete!");
+// System to handle spawning visual hands based on the marker
+fn spawn_player_visual_hands(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    game_cameras: Query<Entity, With<GameCamera>>,
+    player_config: Res<PlayerConfig>,
+    marker_query: Query<(Entity, &SpawnVisualHand)>,
+) {
+    if marker_query.is_empty() {
+        return;
+    }
 
-    // Other setup logic using game_config
-    info!("Game starting turn: {}", game_config.starting_turn);
-    info!("Player life total: {}", game_config.player_life);
+    let config = player_config.clone();
+    let table = TableLayout::new(config.player_count, config.player_card_distance);
+    let game_camera_vec: Vec<Entity> = game_cameras.iter().collect();
+
+    if game_camera_vec.is_empty() {
+        error!("No game camera found, cannot spawn visual cards.");
+        for (marker_entity, _) in marker_query.iter() {
+            commands.entity(marker_entity).despawn();
+        }
+        return;
+    }
+
+    for (marker_entity, marker) in marker_query.iter() {
+        info!("Spawning visual hand for player {:?}", marker.player_entity);
+
+        let mut deck_copy = marker.deck.deck.clone();
+        let display_cards = deck_copy.draw_multiple(7);
+
+        if display_cards.is_empty() {
+            warn!("Deck for player {:?} was empty, cannot spawn hand.", marker.player_entity);
+            commands.entity(marker_entity).despawn();
+            continue;
+        }
+
+        let player_index = marker.deck.player_index;
+
+        let mut context = cards::CardSpawnContext {
+            commands: &mut commands,
+            game_cameras: &game_camera_vec,
+            card_size: &config.card_size,
+            spacing_multiplier: config.card_spacing_multiplier,
+            player_position: marker.position,
+            player_index,
+            player_entity: marker.player_entity,
+            table: &table,
+            asset_server_option: Some(&asset_server),
+        };
+
+        cards::spawn_visual_cards(&mut context, display_cards);
+        commands.entity(marker_entity).despawn();
+    }
 }

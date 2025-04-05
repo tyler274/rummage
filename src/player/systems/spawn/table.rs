@@ -1,10 +1,7 @@
 use bevy::prelude::*;
 use std::f32::consts::PI;
 
-/// Handles the layout of players around a table
-///
-/// This struct calculates positions for any number of players
-/// arranged in a polygon pattern around a central point
+/// Calculates positions for players and cards around a table
 #[derive(Debug, Clone)]
 pub struct TableLayout {
     /// Number of players at the table

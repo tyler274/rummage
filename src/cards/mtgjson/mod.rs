@@ -1029,3 +1029,13 @@ pub struct MTGJSONSetInfo {
     #[serde(default)]
     pub translations: HashMap<String, Option<String>>,
 }
+
+#[cfg(feature = "mtgjson")]
+pub fn http(client: reqwest::Client) -> MTGClientType {
+    MTGClientType::Http(client)
+}
+
+#[cfg(feature = "mtgjson")]
+pub async fn create_http() -> MTGClientType {
+    MTGClientType::Http(reqwest::Client::new())
+}

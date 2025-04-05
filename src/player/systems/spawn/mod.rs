@@ -1,9 +1,9 @@
 //! Player spawn systems for positioning players and their cards around a table
 //! This module handles spawning any number of players in a circular arrangement
 
-mod cards;
-mod position;
-mod table;
+pub mod cards;
+pub mod position;
+pub mod table;
 
 use crate::camera::components::AppLayer;
 use crate::deck::{PlayerDeck, get_player_shuffled_deck};
@@ -132,7 +132,7 @@ pub fn spawn_players<'w, 's>(
 
             // Create the context for spawning cards
             let mut context = cards::CardSpawnContext {
-                commands,
+                commands: &mut commands,
                 game_cameras: &game_cameras,
                 card_size: &config.card_size,
                 spacing_multiplier: config.card_spacing_multiplier,

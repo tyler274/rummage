@@ -1,9 +1,9 @@
 use super::table::TableLayout;
-use crate::camera::components::AppLayer;
+use crate::camera::components::{AppLayer, GameCamera};
+use crate::cards::components::card_entity::CardZone;
+use crate::cards::drag::Draggable;
 use crate::cards::text::card_text::spawn_card_text_components;
-use crate::cards::visual_card::Draggable;
-use crate::game_engine::zones::Zone;
-use crate::player::zone::CardZone;
+use crate::game_engine::zones::types::Zone;
 
 use bevy::prelude::*;
 
@@ -166,7 +166,7 @@ pub fn spawn_visual_cards(context: &mut CardSpawnContext, display_cards: Vec<cra
                 "Attaching card for player {} to game camera {:?}",
                 context.player_index, camera
             );
-            context.commands.entity(*camera).add_child(card_entity);
+            context.commands.entity(camera).add_child(card_entity);
         }
     }
 }

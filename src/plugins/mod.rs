@@ -14,7 +14,7 @@ use crate::menu::GameMenuState;
 use crate::player::playmat::spawn_player_playmat;
 use crate::player::systems::spawn::cards;
 use crate::player::systems::spawn::table::TableLayout;
-use crate::player::{PlayerPlugin, components::Player, resources::PlayerConfig, spawn_players};
+use crate::player::{PlayerPlugin, components::Player, resources::PlayerConfig};
 use crate::text::DebugConfig;
 
 // Type alias for the query in register_unzoned_cards
@@ -27,6 +27,14 @@ type UnzonedCardQuery<'w, 's> = Query<
         Without<crate::game_engine::zones::ZoneMarker>,
     ),
 >;
+
+/// Marker component to trigger visual hand spawning for a player
+#[derive(Component)]
+struct SpawnVisualHand {
+    player_entity: Entity,
+    deck: PlayerDeck,
+    position: Vec3, // Store position needed for context
+}
 
 pub struct MainRummagePlugin;
 
@@ -71,6 +79,7 @@ impl Plugin for MainRummagePlugin {
             .add_systems(
                 Update,
                 (
+                    spawn_player_visual_hands,
                     connect_cards_to_zones,
                     check_card_status,
                     register_unzoned_cards.run_if(in_state(GameMenuState::InGame)),
@@ -159,61 +168,82 @@ fn setup_game(
             player_index
         );
 
-        // Only spawn visual cards for player 1 or if spawn_all_cards is true
+        // If cards should be spawned, add marker component instead of spawning directly
         if player_index == 0 || config.spawn_all_cards {
-            // Instead of getting new cards, draw from the player's own deck
-            // Make a copy of the deck to draw from without modifying the original
-            let mut temp_deck = deck.clone();
-
-            // Draw 7 cards from the player's own deck as a starting hand
-            let display_cards = temp_deck.draw_multiple(7);
-
-            info!(
-                "Drew {} cards from player {}'s own deck for display",
-                display_cards.len(),
-                player_index
-            );
-
-            // Update the player's cards while preserving other fields
-            commands.entity(player_entity).insert(
-                Player::new(&player.name)
-                    .with_life(player.life)
-                    .with_player_index(player.player_index),
-            );
-
-            // Spawn visual cards for all players that have cards
-            info!(
-                "Spawning visual cards for player {} ({})",
-                player_index, position_name
-            );
-
-            // Get the base position for the player's cards
-            let card_position = player_transform.translation;
-
-            // Create the context for spawning cards
-            let mut context = cards::CardSpawnContext {
-                commands: &mut commands,
-                game_cameras: &game_cameras,
-                card_size: &config.card_size,
-                spacing_multiplier: config.card_spacing_multiplier,
-                player_position: card_position,
-                player_index,
+            commands.spawn(SpawnVisualHand {
                 player_entity,
-                table: &table,
-                asset_server_option: Some(&asset_server),
-            };
-
-            // Create visual representations of the cards
-            cards::spawn_visual_cards(&mut context, display_cards);
-        } else {
-            info!(
-                "Skipping card spawning for player {} (index {})",
-                player.name, player_index
-            );
+                deck: PlayerDeck::new(deck), // Store the deck copy needed
+                position: player_transform.translation, // Store position
+            });
         }
     }
 
     info!("Player spawning complete!");
+}
+
+// NEW system to handle spawning visual hands based on the marker
+fn spawn_player_visual_hands(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    game_cameras: Query<Entity, With<GameCamera>>,
+    player_config: Res<PlayerConfig>,
+    marker_query: Query<(Entity, &SpawnVisualHand)>,
+    // Need TableLayout again, maybe pass as resource or recalculate?
+    // For now, recalculate based on player_config
+) {
+    if marker_query.is_empty() {
+        return; // No hands to spawn
+    }
+
+    let config = player_config.clone();
+    let table = TableLayout::new(config.player_count, config.player_card_distance);
+    let game_camera_vec: Vec<Entity> = game_cameras.iter().collect(); // Collect cameras once
+
+    if game_camera_vec.is_empty() {
+        error!("No game camera found, cannot spawn visual cards.");
+        // Consider despawning markers anyway or retrying?
+        for (marker_entity, _) in marker_query.iter() {
+            commands.entity(marker_entity).despawn();
+        }
+        return;
+    }
+
+    for (marker_entity, marker) in marker_query.iter() {
+        info!("Spawning visual hand for player {:?}", marker.player_entity);
+
+        let mut deck_copy = marker.deck.deck.clone(); // Clone deck from marker
+        let display_cards = deck_copy.draw_multiple(7); // Draw from the cloned deck
+
+        if display_cards.is_empty() {
+            warn!(
+                "Deck for player {:?} was empty, cannot spawn hand.",
+                marker.player_entity
+            );
+            commands.entity(marker_entity).despawn(); // Remove marker
+            continue;
+        }
+
+        let player_index = marker.deck.player_index; // Get index from stored deck
+
+        // Create context
+        let mut context = cards::CardSpawnContext {
+            commands: &mut commands,
+            game_cameras: &game_camera_vec, // Use collected Vec<Entity>
+            card_size: &config.card_size,
+            spacing_multiplier: config.card_spacing_multiplier,
+            player_position: marker.position, // Use stored position
+            player_index,
+            player_entity: marker.player_entity,
+            table: &table,
+            asset_server_option: Some(&asset_server),
+        };
+
+        // Spawn cards
+        cards::spawn_visual_cards(&mut context, display_cards);
+
+        // Despawn the marker entity once processed
+        commands.entity(marker_entity).despawn();
+    }
 }
 
 // One-time event to connect cards to zones after they're spawned

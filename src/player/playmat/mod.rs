@@ -15,6 +15,7 @@ use crate::game_engine::zones::Zone;
 use crate::player::components::Player;
 use crate::player::resources::PlayerConfig;
 use bevy::ecs::system::SystemParam;
+use bevy::input::mouse::{MouseButtonInput, MouseMotion};
 use bevy::prelude::*;
 
 // This unused import has been removed
