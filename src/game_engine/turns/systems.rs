@@ -6,6 +6,19 @@ use crate::game_engine::turns::{
 use crate::player::Player;
 use bevy::prelude::*;
 
+/// Type alias for the complex query in handle_untap_step
+type UntapCardQuery<'w, 's> = Query<
+    'w,
+    's,
+    (
+        Entity,
+        &'static mut PermanentState,
+        Option<&'static NoUntapEffect>,
+        Option<&'static PermanentController>,
+    ),
+    With<Card>,
+>;
+
 /// System to handle the start of a new turn
 pub fn handle_turn_start(
     _commands: Commands,
@@ -86,15 +99,7 @@ pub fn handle_turn_end(
 /// This system considers special effects that prevent untapping, like NoUntapEffect
 #[allow(dead_code)]
 pub fn handle_untap_step(
-    mut card_query: Query<
-        (
-            Entity,
-            &mut PermanentState,
-            Option<&NoUntapEffect>,
-            Option<&PermanentController>,
-        ),
-        With<Card>,
-    >,
+    mut card_query: UntapCardQuery,
     turn_manager: Res<TurnManager>,
     phase: Res<Phase>,
     _player_query: Query<&Player>,
@@ -128,7 +133,7 @@ pub fn handle_untap_step(
         permanent_state.update_summoning_sickness(current_turn);
 
         // Only untap permanents controlled by the active player
-        if controller.map_or(false, |c| c.player != active_player_entity) {
+        if controller.is_some_and(|c| c.player != active_player_entity) {
             continue;
         }
 

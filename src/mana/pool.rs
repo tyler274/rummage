@@ -37,10 +37,12 @@ impl ManaPool {
         // Update or add mana of the given color
         let color = mana.color;
         let entry = self.mana.entry(color).or_insert_with(|| {
-            let mut new_mana = Mana::default();
-            new_mana.color = color;
-            new_mana.reflectable_color = color.into();
-            new_mana
+            // Directly initialize Mana with the correct color fields
+            Mana {
+                color,
+                reflectable_color: color.into(),
+                ..Default::default() // Use struct update syntax with default for the rest
+            }
         });
 
         // Add mana of each color

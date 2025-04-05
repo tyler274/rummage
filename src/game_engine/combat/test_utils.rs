@@ -26,7 +26,7 @@ pub fn setup_test_combat(
         combat_state
             .blockers
             .entry(attacker)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(blocker);
         combat_state
             .blocked_status
@@ -64,7 +64,7 @@ pub fn apply_combat_damage(app: &mut App, damage_events: Vec<CombatDamageEvent>)
         // Get the entity first
         let entity_opt = world
             .query_filtered::<Entity, With<Player>>()
-            .iter(&world)
+            .iter(world)
             .find(|&id| id == event.target);
 
         if let Some(player_entity) = entity_opt {
@@ -124,7 +124,7 @@ pub fn assign_blocker(app: &mut App, attacker: Entity, blocker: Entity) {
     combat_state
         .blockers
         .entry(attacker)
-        .or_insert_with(Vec::new)
+        .or_default()
         .push(blocker);
     combat_state.in_declare_blockers = true;
 }
@@ -139,7 +139,7 @@ pub fn deal_damage_to_players(app: &mut App, amount: i32) {
         // Get all player entities
         let players: Vec<Entity> = world
             .query_filtered::<Entity, With<Player>>()
-            .iter(&world)
+            .iter(world)
             .collect();
 
         // Then apply damage to each player one at a time

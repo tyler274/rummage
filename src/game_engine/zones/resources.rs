@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use std::collections::HashMap;
 
 /// Resource managing game zones and card movement between zones
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct ZoneManager {
     /// Libraries (decks) for each player
     pub libraries: HashMap<Entity, Vec<Entity>>,
@@ -27,28 +27,14 @@ pub struct ZoneManager {
     pub card_zone_map: HashMap<Entity, Zone>,
 }
 
-impl Default for ZoneManager {
-    fn default() -> Self {
-        Self {
-            libraries: HashMap::new(),
-            hands: HashMap::new(),
-            battlefield: Vec::new(),
-            graveyards: HashMap::new(),
-            exile: Vec::new(),
-            command_zone: Vec::new(),
-            card_zone_map: HashMap::new(),
-        }
-    }
-}
-
 impl ZoneManager {
     /// Initialize zones for a new player
     /// TODO: Implement when initializing zones for a player
     #[allow(dead_code)]
     pub fn init_player_zones(&mut self, player: Entity) {
-        self.libraries.entry(player).or_insert_with(Vec::new);
-        self.hands.entry(player).or_insert_with(Vec::new);
-        self.graveyards.entry(player).or_insert_with(Vec::new);
+        self.libraries.entry(player).or_default();
+        self.hands.entry(player).or_default();
+        self.graveyards.entry(player).or_default();
     }
 
     /// Move a card from one zone to another
@@ -66,7 +52,7 @@ impl ZoneManager {
             Zone::Battlefield => self.remove_from_battlefield(card),
             Zone::Graveyard => self.remove_from_graveyard(card, owner),
             Zone::Exile => self.remove_from_exile(card),
-            Zone::CommandZone => self.remove_from_command_zone(card),
+            Zone::Command => self.remove_from_command_zone(card),
             Zone::Stack => true, // Stack items are removed when they resolve
         };
 
@@ -81,7 +67,7 @@ impl ZoneManager {
             Zone::Battlefield => self.add_to_battlefield(owner, card),
             Zone::Graveyard => self.add_to_graveyard(owner, card),
             Zone::Exile => self.add_to_exile(card),
-            Zone::CommandZone => self.add_to_command_zone(card),
+            Zone::Command => self.add_to_command_zone(card),
             Zone::Stack => {} // Stack items are added via GameStack
         }
 
@@ -181,7 +167,7 @@ impl ZoneManager {
     /// Add a card to the command zone
     fn add_to_command_zone(&mut self, card: Entity) {
         self.command_zone.push(card);
-        self.card_zone_map.insert(card, Zone::CommandZone);
+        self.card_zone_map.insert(card, Zone::Command);
     }
 
     /// Remove a card from the command zone
@@ -203,7 +189,7 @@ impl ZoneManager {
             Zone::Battlefield => Some(&self.battlefield),
             Zone::Graveyard => self.graveyards.get(&player),
             Zone::Exile => Some(&self.exile),
-            Zone::CommandZone => Some(&self.command_zone),
+            Zone::Command => Some(&self.command_zone),
             Zone::Stack => None, // Stack is managed separately by the GameStack resource
         }
     }

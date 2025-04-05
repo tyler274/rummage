@@ -214,6 +214,12 @@ pub struct PrioritySystemBuilder {
     decision_timeouts: HashMap<Entity, std::time::Duration>,
 }
 
+impl Default for PrioritySystemBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PrioritySystemBuilder {
     /// Creates a new PrioritySystemBuilder with default values
     pub fn new() -> Self {

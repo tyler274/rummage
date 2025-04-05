@@ -186,7 +186,7 @@ fn process_single_save(
 
     // Create persistent resource for this save
     let persistent_save = Persistent::<GameSaveData>::builder()
-        .name(&format!("game_save_{}", event.slot_name))
+        .name(format!("game_save_{}", event.slot_name))
         .format(StorageFormat::Bincode)
         .path(save_path.clone())
         .default(save_data.clone())

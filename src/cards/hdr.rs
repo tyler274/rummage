@@ -106,7 +106,7 @@ pub fn spawn_emissive_cards(
         let card_mesh = meshes.add(Cuboid::new(100.0, 140.0, 2.0));
 
         // Position slightly behind the actual card
-        let mut new_transform = transform.clone();
+        let mut new_transform = *transform;
         new_transform.translation.z -= 5.0;
 
         // Add slight tilt for a more dynamic look

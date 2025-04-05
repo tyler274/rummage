@@ -33,7 +33,7 @@ pub fn spawn_card(
     commands
         .spawn((
             card,
-            CardEntity::default(),
+            CardEntity,
             CardZone::new(zone, zone_owner),
             CardOwner::new(owner),
             name,

@@ -318,19 +318,19 @@ fn perceptual_hash_compare(image1: &DynamicImage, image2: &DynamicImage) -> Comp
                     pixel_diff_count += 1;
 
                     // Compute maximum channel difference
-                    let mut max_diff = 0;
+                    let mut _total_diff = 0;
                     for i in 0..4 {
-                        // RGBA has 4 channels
-                        let diff = (pixel1[i] as i32 - pixel2[i] as i32).abs() as u8;
-                        if diff > max_diff {
-                            max_diff = diff;
-                        }
-                    }
+                        // Calculate absolute difference for each channel
+                        let diff = (pixel1[i] as i32 - pixel2[i] as i32).unsigned_abs() as u8;
 
-                    // Update max difference if needed
-                    if max_diff > max_channel_diff {
-                        max_channel_diff = max_diff;
-                        max_diff_location = Some((x, y));
+                        // Update max difference if needed
+                        if diff > max_channel_diff {
+                            max_channel_diff = diff;
+                            max_diff_location = Some((x, y));
+                        }
+
+                        // Accumulate total difference
+                        _total_diff += diff as u32;
                     }
                 }
             }
@@ -449,18 +449,19 @@ fn structural_similarity_compare(image1: &DynamicImage, image2: &DynamicImage) -
                     pixel_diff_count += 1;
 
                     // Find maximum channel difference
-                    let mut max_diff = 0;
+                    let mut _total_diff = 0;
                     for i in 0..4 {
-                        // RGBA has 4 channels
-                        let diff = (p1[i] as i32 - p2[i] as i32).abs() as u8;
-                        if diff > max_diff {
-                            max_diff = diff;
-                        }
-                    }
+                        // Calculate absolute difference
+                        let diff = (p1[i] as i32 - p2[i] as i32).unsigned_abs() as u8;
 
-                    if max_diff > max_channel_diff {
-                        max_channel_diff = max_diff;
-                        max_diff_location = Some((mid_x, mid_y));
+                        // Apply difference color if above threshold
+                        if diff > max_channel_diff {
+                            max_channel_diff = diff;
+                            max_diff_location = Some((mid_x, mid_y));
+                        }
+
+                        // Accumulate total difference
+                        _total_diff += diff as u32;
                     }
                 }
             }
@@ -548,13 +549,13 @@ pub fn save_difference_visualization(
                 diff_image.put_pixel(x + 2 * width, y, Rgba([0, 0, 0, 255]));
             } else {
                 // Different pixels: use heat map based on difference magnitude
+                let mut _total_diff = 0;
                 let mut max_diff = 0;
-                for i in 0..3 {
-                    // Just RGB, not alpha
-                    let diff = (pixel1[i] as i32 - pixel2[i] as i32).abs() as u8;
-                    if diff > max_diff {
-                        max_diff = diff;
-                    }
+                for i in 0..4 {
+                    // Calculate absolute difference
+                    let diff = (pixel1[i] as i32 - pixel2[i] as i32).unsigned_abs() as u8;
+                    _total_diff += diff as u32;
+                    max_diff = max_diff.max(diff);
                 }
 
                 // Scale difference to create a heat map
@@ -954,7 +955,7 @@ mod tests {
 fn setup_test_scene(mut commands: Commands) {
     // Set up camera with explicit order to avoid ambiguities
     commands.spawn((
-        Camera2d::default(),
+        Camera2d,
         Camera {
             order: 1,
             ..default()
@@ -971,7 +972,7 @@ fn setup_test_scene(mut commands: Commands) {
 fn setup_ui_test_scene(mut commands: Commands) {
     // Set up camera with explicit order to avoid ambiguities
     commands.spawn((
-        Camera2d::default(),
+        Camera2d,
         Camera {
             order: 1,
             ..default()
@@ -988,7 +989,7 @@ fn setup_ui_test_scene(mut commands: Commands) {
 fn setup_animation_test(mut commands: Commands) {
     // Set up camera with explicit order to avoid ambiguities
     commands.spawn((
-        Camera2d::default(),
+        Camera2d,
         Camera {
             order: 1,
             ..default()

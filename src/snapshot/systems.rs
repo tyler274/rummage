@@ -1,9 +1,20 @@
+use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 use chrono::Local;
 
 use crate::camera::components::{AppLayer, GameCamera};
 use crate::snapshot::components::{CameraSnapshot, SaveGameSnapshot, SnapshotSettings};
 use crate::snapshot::resources::{SnapshotConfig, SnapshotDisabled, SnapshotEvent};
+
+// SystemParam struct for visibility/transform queries in process_pending_snapshots
+#[derive(SystemParam)]
+struct SnapshotVisibilityParams<'w, 's> {
+    app_layer_query: Query<'w, 's, Entity, With<AppLayer>>,
+    visibility_query: Query<'w, 's, &'static Visibility>,
+    transform_query: Query<'w, 's, &'static GlobalTransform>,
+    inherited_visibility_query: Query<'w, 's, &'static InheritedVisibility>,
+    view_visibility_query: Query<'w, 's, &'static ViewVisibility>,
+}
 
 /// System to take a snapshot after the game setup is complete
 pub fn take_snapshot_after_setup(
@@ -44,10 +55,9 @@ pub fn take_snapshot_safe(
         .with_description(description.to_string())
         .with_debug(true);
 
-    match event_writer.send(event) {
-        _ => {
-            debug!("Successfully sent snapshot event");
-        }
+    event_writer.send(event);
+    {
+        debug!("Successfully sent snapshot event");
     }
 
     // We don't actually need to use the returned unit value from send()
@@ -185,13 +195,12 @@ pub fn take_snapshot(
         event = event.with_description(desc);
     }
 
-    match event_writer.send(event) {
-        _ => {
-            info!(
-                "Successfully sent snapshot event for description: {:?}",
-                description
-            );
-        }
+    event_writer.send(event);
+    {
+        info!(
+            "Successfully sent snapshot event for description: {:?}",
+            description
+        );
     }
 
     debug!("take_snapshot completed");
@@ -231,11 +240,7 @@ pub fn process_pending_snapshots(
         Query<(Entity, &CameraSnapshot, &SnapshotSettings)>,
         Query<&mut CameraSnapshot>,
     )>,
-    app_layer_query: Query<Entity, With<AppLayer>>,
-    visibility_query: Query<&Visibility>,
-    transform_query: Query<&GlobalTransform>,
-    inherited_visibility_query: Query<&InheritedVisibility>,
-    view_visibility_query: Query<&ViewVisibility>,
+    vis_params: SnapshotVisibilityParams,
     mut debug_state: ResMut<crate::snapshot::resources::SnapshotDebugState>,
 ) {
     // Get the snapshots that need processing
@@ -272,7 +277,7 @@ pub fn process_pending_snapshots(
         // If debug info should be included, ensure debug layers are visible
         if settings.include_debug {
             debug!("Debug info requested, ensuring debug layers are visible");
-            let debug_entities: Vec<Entity> = app_layer_query.iter().collect();
+            let debug_entities: Vec<Entity> = vis_params.app_layer_query.iter().collect();
 
             info!(
                 "Including debug visuals in snapshot, found {} debug layer entities",
@@ -283,10 +288,14 @@ pub fn process_pending_snapshots(
                 debug!("Processing debug entity: {:?}", debug_entity);
 
                 // Check if the entity has necessary components
-                let has_visibility = visibility_query.get(debug_entity).is_ok();
-                let has_global_transform = transform_query.get(debug_entity).is_ok();
-                let has_inherited_visibility = inherited_visibility_query.get(debug_entity).is_ok();
-                let has_view_visibility = view_visibility_query.get(debug_entity).is_ok();
+                let has_visibility = vis_params.visibility_query.get(debug_entity).is_ok();
+                let has_global_transform = vis_params.transform_query.get(debug_entity).is_ok();
+                let has_inherited_visibility = vis_params
+                    .inherited_visibility_query
+                    .get(debug_entity)
+                    .is_ok();
+                let has_view_visibility =
+                    vis_params.view_visibility_query.get(debug_entity).is_ok();
 
                 // Add missing components using commands (safer than direct world access)
                 let mut entity_commands = commands.entity(debug_entity);
@@ -534,14 +543,11 @@ pub fn capture_replay_at_point(
     // Create a unique identifier for this test point
     let turn = game_state.turn_number;
     let step = replay_state.current_step;
-    let active_player_index = match game_state
+    let active_player_index = game_state
         .turn_order
         .iter()
         .position(|&e| e == game_state.active_player)
-    {
-        Some(idx) => idx,
-        None => 0,
-    };
+        .unwrap_or(0);
 
     // Use a default slot name since we don't have direct access to it
     let slot_name = "visual_test".to_string();

@@ -7,7 +7,7 @@ use bevy::prelude::*;
 pub fn setup_test_scene(mut commands: Commands) {
     // Set up camera with explicit order to avoid ambiguities
     commands.spawn((
-        Camera2d::default(),
+        Camera2d,
         Camera {
             order: 1,
             ..default()
@@ -25,7 +25,7 @@ pub fn setup_test_scene(mut commands: Commands) {
 pub fn setup_ui_test_scene(mut commands: Commands) {
     // Set up camera with explicit order to avoid ambiguities
     commands.spawn((
-        Camera2d::default(),
+        Camera2d,
         Camera {
             order: 1,
             ..default()
@@ -43,7 +43,7 @@ pub fn setup_ui_test_scene(mut commands: Commands) {
 pub fn setup_animation_test(mut commands: Commands) {
     // Set up camera with explicit order to avoid ambiguities
     commands.spawn((
-        Camera2d::default(),
+        Camera2d,
         Camera {
             order: 1,
             ..default()

@@ -1,3 +1,4 @@
+#![allow(dead_code)] // Allow dead code globally for now
 #![feature(trivial_bounds)]
 
 mod camera;
@@ -46,7 +47,13 @@ fn main() {
                     resolution: (1280.0, 720.0).into(),
                     position: WindowPosition::Centered(MonitorSelection::Current),
                     resizable: true,
-                    ..default()
+                    present_mode: PresentMode::AutoVsync,
+                    prevent_default_event_handling: false,
+                    enabled_buttons: bevy::window::EnabledButtons {
+                        maximize: false,
+                        ..default()
+                    },
+                    visible: true,
                 }),
                 ..default()
             })

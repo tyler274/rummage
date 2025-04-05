@@ -50,6 +50,16 @@ pub enum PermanentType {
     Token,
 }
 
+/// Local struct for grouping card positioning parameters
+struct CardGroupPositioning {
+    start_row: f32,
+    start_col: f32,
+    end_row: f32,
+    end_col: f32,
+    cell_size: f32,
+    scale: f32,
+}
+
 /// Spawn the battlefield zone for a player
 pub fn spawn_battlefield_zone(
     commands: &mut Commands,
@@ -168,42 +178,50 @@ pub fn organize_battlefield_cards(
             position_card_group(
                 &mut card_query,
                 &creatures,
-                0.0,
-                0.0,
-                grid_height / 2.0,
-                grid_width / 2.0,
-                cell_size,
-                scale,
+                CardGroupPositioning {
+                    start_row: 0.0,
+                    start_col: 0.0,
+                    end_row: grid_height / 2.0,
+                    end_col: grid_width / 2.0,
+                    cell_size,
+                    scale,
+                },
             );
             position_card_group(
                 &mut card_query,
                 &lands,
-                0.0,
-                grid_width / 2.0,
-                grid_height / 2.0,
-                grid_width,
-                cell_size,
-                scale,
+                CardGroupPositioning {
+                    start_row: 0.0,
+                    start_col: grid_width / 2.0,
+                    end_row: grid_height,
+                    end_col: grid_width,
+                    cell_size,
+                    scale,
+                },
             );
             position_card_group(
                 &mut card_query,
                 &artifacts,
-                grid_height / 2.0,
-                0.0,
-                grid_height,
-                grid_width / 2.0,
-                cell_size,
-                scale,
+                CardGroupPositioning {
+                    start_row: grid_height / 2.0,
+                    start_col: 0.0,
+                    end_row: grid_height,
+                    end_col: grid_width / 2.0,
+                    cell_size,
+                    scale,
+                },
             );
             position_card_group(
                 &mut card_query,
                 &enchantments,
-                grid_height / 2.0,
-                grid_width / 2.0,
-                grid_height,
-                grid_width,
-                cell_size,
-                scale,
+                CardGroupPositioning {
+                    start_row: grid_height / 2.0,
+                    start_col: grid_width / 2.0,
+                    end_row: grid_height,
+                    end_col: grid_width,
+                    cell_size,
+                    scale,
+                },
             );
 
             // Place planeswalkers and tokens in remaining space or overflow areas
@@ -216,12 +234,14 @@ pub fn organize_battlefield_cards(
             position_card_group(
                 &mut card_query,
                 &remaining_cards,
-                0.0,
-                0.0,
-                grid_height,
-                grid_width,
-                cell_size,
-                scale,
+                CardGroupPositioning {
+                    start_row: 0.0,
+                    start_col: 0.0,
+                    end_row: grid_height,
+                    end_col: grid_width,
+                    cell_size,
+                    scale,
+                },
             );
         } else {
             // Simple grid layout without type grouping
@@ -264,7 +284,7 @@ fn calculate_battlefield_layout(
 
     // Calculate required columns and rows
     let columns = grid_columns.max((card_count as f32).sqrt().ceil() as u32);
-    let rows = grid_rows.max((card_count + columns - 1) / columns);
+    let rows = grid_rows.max(card_count.div_ceil(columns));
 
     // Calculate cell size with spacing
     let cell_width = available_width / columns as f32;
@@ -281,35 +301,32 @@ fn calculate_battlefield_layout(
 fn position_card_group(
     card_query: &mut Query<(&mut Transform, Option<&PermanentType>)>,
     cards: &[Entity],
-    start_row: f32,
-    start_col: f32,
-    end_row: f32,
-    end_col: f32,
-    cell_size: f32,
-    scale: f32,
+    positioning: CardGroupPositioning,
 ) {
     if cards.is_empty() {
         return;
     }
 
-    let group_columns = ((end_col - start_col) * 2.0) as u32;
+    let group_columns = ((positioning.end_col - positioning.start_col) * 2.0) as u32;
     if group_columns == 0 {
         return;
     }
 
-    let start_x = (start_col * cell_size) - (((end_col - start_col) / 2.0) * cell_size);
-    let start_y = (start_row * cell_size) - (((end_row - start_row) / 2.0) * cell_size);
+    let start_x = (positioning.start_col * positioning.cell_size)
+        - (((positioning.end_col - positioning.start_col) / 2.0) * positioning.cell_size);
+    let start_y = (positioning.start_row * positioning.cell_size)
+        - (((positioning.end_row - positioning.start_row) / 2.0) * positioning.cell_size);
 
     for (i, &card) in cards.iter().enumerate() {
         if let Ok((mut transform, _)) = card_query.get_mut(card) {
             let local_row = (i as u32) / group_columns;
             let local_col = (i as u32) % group_columns;
 
-            let x = start_x + (local_col as f32 * cell_size / 2.0);
-            let y = start_y + (local_row as f32 * cell_size / 2.0);
+            let x = start_x + (local_col as f32 * positioning.cell_size / 2.0);
+            let y = start_y + (local_row as f32 * positioning.cell_size / 2.0);
 
             transform.translation = Vec3::new(x, y, i as f32 * 0.1);
-            transform.scale = Vec3::splat(scale);
+            transform.scale = Vec3::splat(positioning.scale);
         }
     }
 }

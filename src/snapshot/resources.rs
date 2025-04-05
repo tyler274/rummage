@@ -130,7 +130,7 @@ impl SnapshotEvent {
 
 /// Resource to globally disable snapshot functionality
 /// This is useful for debugging when snapshot functionality might be causing panics
-#[derive(Resource, Debug, Clone, Copy)]
+#[derive(Resource, Debug, Clone, Copy, Default)]
 pub struct SnapshotDisabled(pub bool);
 
 impl SnapshotDisabled {
@@ -157,13 +157,6 @@ impl SnapshotDisabled {
     /// Check if snapshots are disabled
     pub fn is_disabled(&self) -> bool {
         self.0
-    }
-}
-
-impl Default for SnapshotDisabled {
-    fn default() -> Self {
-        // Default to enabled (not disabled)
-        Self(false)
     }
 }
 

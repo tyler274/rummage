@@ -132,7 +132,7 @@ pub fn capture_saved_game_snapshot(
     turn_number: Option<u32>,
     replay_step: Option<usize>,
 ) -> Option<DynamicImage> {
-    // Load the save file or resume the replay
+    // Load the save file or resume the replay, then capture
     match (turn_number, replay_step) {
         // Just load the save at its latest state
         (None, None) => {
@@ -141,7 +141,7 @@ pub fn capture_saved_game_snapshot(
                 slot_name: save_slot.to_string(),
             });
             // Run update to process load
-            let _ = world.run_schedule(bevy::app::Update);
+            world.run_schedule(bevy::app::Update);
         }
         // Load to a specific turn
         (Some(turn), None) => {
@@ -151,14 +151,14 @@ pub fn capture_saved_game_snapshot(
                 slot_name: save_slot.to_string(),
             });
             // Run update to process replay start
-            let _ = world.run_schedule(bevy::app::Update);
+            world.run_schedule(bevy::app::Update);
 
             // Step through replay until we reach the desired turn
             // This is simplified - real code would need to track turns more carefully
             for _ in 0..turn {
                 world.send_event(crate::game_engine::save::StepReplayEvent { steps: 1 });
                 // Run update to process step
-                let _ = world.run_schedule(bevy::app::Update);
+                world.run_schedule(bevy::app::Update);
             }
         }
         // Load and step to a specific point in the replay
@@ -169,14 +169,14 @@ pub fn capture_saved_game_snapshot(
                 slot_name: save_slot.to_string(),
             });
             // Run update to process replay start
-            let _ = world.run_schedule(bevy::app::Update);
+            world.run_schedule(bevy::app::Update);
 
             // Step to the exact step
             world.send_event(crate::game_engine::save::StepReplayEvent { steps: step });
             // Run update to process step
-            let _ = world.run_schedule(bevy::app::Update);
+            world.run_schedule(bevy::app::Update);
         }
-    }
+    };
 
     // Find the game camera to capture
     let camera_entity = world
@@ -202,13 +202,13 @@ pub fn capture_saved_game_snapshot(
         world.send_event(snapshot_event);
 
         // Run update to process the snapshot
-        let _ = world.run_schedule(bevy::app::Update);
-        let _ = world.run_schedule(bevy::app::PostUpdate);
+        world.run_schedule(bevy::app::Update);
+        world.run_schedule(bevy::app::PostUpdate);
 
         // Simplified - in a real implementation, we'd need to wait for the snapshot to complete
         // and retrieve the actual image data from the snapshot system
 
-        return take_screenshot();
+        take_screenshot()
     } else {
         error!("No game camera found for capturing saved game");
         None
@@ -276,8 +276,8 @@ pub fn capture_differential_game_snapshot(
     world.send_event(snapshot_event);
 
     // Run update to process the snapshot
-    let _ = world.run_schedule(bevy::app::Update);
-    let _ = world.run_schedule(bevy::app::PostUpdate);
+    world.run_schedule(bevy::app::Update);
+    world.run_schedule(bevy::app::PostUpdate);
 
     // Simplified - in a real implementation, we'd wait for the snapshot to complete
     // and retrieve the actual image data
@@ -344,7 +344,7 @@ pub fn run_visual_diff_test(save_slot: &str) -> Result<(), String> {
 
     // Compare initial state to state after 3 turns
     let comparison_result = compare_game_states(
-        &mut app.world_mut(),
+        app.world_mut(),
         save_slot,
         (Some(1), None), // Turn 1
         (Some(3), None), // Turn 3

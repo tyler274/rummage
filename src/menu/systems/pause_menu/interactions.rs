@@ -4,13 +4,22 @@ use crate::menu::{
 };
 use bevy::{app::AppExit, prelude::*};
 
+/// Type alias for the pause menu button interaction query
+type PauseMenuInteractionQuery<'w, 's> = Query<
+    'w,
+    's,
+    (
+        &'static Interaction,
+        &'static mut BackgroundColor,
+        &'static MenuButtonAction,
+    ),
+    (Changed<Interaction>, With<Button>),
+>;
+
 /// System to handle pause menu button interactions
 pub fn pause_menu_action(
     _commands: Commands,
-    mut interaction_query: Query<
-        (&Interaction, &mut BackgroundColor, &MenuButtonAction),
-        (Changed<Interaction>, With<Button>),
-    >,
+    mut interaction_query: PauseMenuInteractionQuery,
     mut app_exit_events: EventWriter<AppExit>,
     mut game_state: ResMut<NextState<GameMenuState>>,
     mut save_load_state: ResMut<NextState<SaveLoadUiState>>,

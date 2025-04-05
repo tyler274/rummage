@@ -18,19 +18,25 @@ pub struct TurnManagerBuilder {
     current_phase: Phase,
 }
 
-impl TurnManagerBuilder {
-    /// Creates a new builder with default values
-    #[allow(dead_code)]
-    pub fn new() -> Self {
+impl Default for TurnManagerBuilder {
+    fn default() -> Self {
         Self {
             // Default value needed, will be overridden when players are added
-            active_player: Entity::from_raw(0),
+            active_player: Entity::PLACEHOLDER,
             player_order: Vec::new(),
             active_player_index: 0,
             turn_number: 1,
             eliminated_players: Vec::new(),
             current_phase: Phase::Beginning(BeginningStep::Untap),
         }
+    }
+}
+
+impl TurnManagerBuilder {
+    /// Creates a new builder using default values
+    #[allow(dead_code)]
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Sets the active player
@@ -94,7 +100,7 @@ impl TurnManagerBuilder {
 /// This builder is part of the turn event tracking design but is not
 /// actively used in the current implementation. It will be needed
 /// for future proper turn event sequencing.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 #[allow(dead_code)]
 pub struct TurnEventTrackerBuilder {
     turn_start_processed: bool,

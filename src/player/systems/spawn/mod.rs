@@ -5,12 +5,14 @@ mod cards;
 mod position;
 mod table;
 
-use crate::camera::components::{AppLayer, GameCamera};
+use crate::camera::components::AppLayer;
 use crate::deck::{PlayerDeck, get_player_shuffled_deck};
 use crate::player::components::Player;
 use crate::player::playmat::spawn_player_playmat; // Import the new playmat function
 use crate::player::resources::PlayerConfig;
 use bevy::prelude::*;
+
+// spawn_players function removed as its logic is now inlined in setup_game systems
 
 /// Spawns players according to the PlayerConfig resource
 ///
@@ -20,10 +22,10 @@ use bevy::prelude::*;
 /// 3. Only spawns cards for player 1 by default (or all if configured)
 /// 4. Creates a playmat for each player using the game engine Zone structure
 /// 5. Creates independent deck components for each player
-pub fn spawn_players(
-    commands: &mut Commands,
+pub fn spawn_players<'w, 's>(
+    commands: &mut Commands<'w, 's>,
     asset_server: Res<AssetServer>,
-    game_cameras: Query<Entity, With<GameCamera>>,
+    game_cameras: Query<'w, 's, Entity, With<crate::camera::components::GameCamera>>,
     player_config: Option<Res<PlayerConfig>>,
 ) {
     // Use default config if none exists
@@ -128,19 +130,21 @@ pub fn spawn_players(
             // Get the base position for the player's cards
             let card_position = player_transform.translation;
 
-            // Create visual representations of the cards
-            cards::spawn_visual_cards(
+            // Create the context for spawning cards
+            let mut context = cards::CardSpawnContext {
                 commands,
-                display_cards,
-                &game_cameras,
-                &config.card_size,
-                config.card_spacing_multiplier,
-                card_position,
+                game_cameras: &game_cameras,
+                card_size: &config.card_size,
+                spacing_multiplier: config.card_spacing_multiplier,
+                player_position: card_position,
                 player_index,
                 player_entity,
-                &table,
-                Some(&asset_server),
-            );
+                table: &table,
+                asset_server_option: Some(&asset_server),
+            };
+
+            // Create visual representations of the cards
+            cards::spawn_visual_cards(&mut context, display_cards);
         } else {
             info!(
                 "Skipping card spawning for player {} (index {})",

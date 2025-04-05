@@ -42,7 +42,7 @@ pub fn setup_main_menu(
         info!("No menu camera found, creating one");
         commands
             .spawn((
-                Camera2d::default(),
+                Camera2d,
                 Camera {
                     order: highest_order + 1, // Ensure this has a unique order
                     ..default()

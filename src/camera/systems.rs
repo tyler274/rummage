@@ -57,7 +57,7 @@ pub fn setup_camera(mut commands: Commands) {
     // Set up the camera with improved position to see all cards clearly
     let camera_entity = commands
         .spawn((
-            Camera2d::default(),
+            Camera2d,
             Camera {
                 order: 0, // Explicitly set order to 0 for game camera
                 ..default()

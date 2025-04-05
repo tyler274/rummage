@@ -38,7 +38,7 @@ pub fn spawn_command_zone(
             ViewVisibility::default(),
             PlaymatZone {
                 player_id: player_entity,
-                zone_type: Zone::CommandZone,
+                zone_type: Zone::Command,
             },
             AppLayer::game_layers(),
             Name::new(format!("Command-{}", player.name)),

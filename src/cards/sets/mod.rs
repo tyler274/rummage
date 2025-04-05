@@ -16,6 +16,7 @@ pub mod scourge;
 
 /// Registry for all available card sets
 #[derive(Resource)]
+#[derive(Default)]
 pub struct CardRegistry {
     /// Cards organized by set code
     sets: HashMap<String, CardSetRegistry>,
@@ -39,14 +40,6 @@ pub struct CardSetRegistry {
     pub by_type: HashMap<String, Vec<Entity>>,
 }
 
-impl Default for CardRegistry {
-    fn default() -> Self {
-        Self {
-            sets: HashMap::new(),
-            all_cards: Vec::new(),
-        }
-    }
-}
 
 impl CardRegistry {
     /// Register a new card with the registry

@@ -54,7 +54,12 @@ pub fn spawn_rules_text(
     let _mana_font: Handle<Font> = asset_server.load("fonts/Mana.ttf"); // Keep for future mana symbol rendering
 
     // Spawn the text entity with proper positioning
-    let text_entity = commands
+    
+
+    // For now, we're not adding inline mana symbols
+    // Future: add_mana_symbols_as_children(commands, text_entity, &formatted_text, font_size, &regular_font, &mana_font);
+
+    commands
         .spawn((
             Node {
                 width: Val::Auto,
@@ -81,12 +86,7 @@ pub fn spawn_rules_text(
             InheritedVisibility::default(),
             ViewVisibility::default(),
         ))
-        .id();
-
-    // For now, we're not adding inline mana symbols
-    // Future: add_mana_symbols_as_children(commands, text_entity, &formatted_text, font_size, &regular_font, &mana_font);
-
-    text_entity
+        .id()
 }
 
 /// Add mana symbols as child entities with TextSpan components - Deprecated

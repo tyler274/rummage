@@ -6,6 +6,7 @@ pub type ZoneType = crate::game_engine::zones::types::Zone;
 
 /// Serializable zone data
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct ZoneData {
     // Maps player indices to their libraries
     pub libraries: HashMap<usize, Vec<usize>>,
@@ -29,19 +30,6 @@ pub struct ZoneData {
     pub card_zone_map: HashMap<usize, ZoneType>,
 }
 
-impl Default for ZoneData {
-    fn default() -> Self {
-        Self {
-            libraries: HashMap::new(),
-            hands: HashMap::new(),
-            battlefield: Vec::new(),
-            graveyards: HashMap::new(),
-            exile: Vec::new(),
-            command_zone: Vec::new(),
-            card_zone_map: HashMap::new(),
-        }
-    }
-}
 
 /// Serializable card data
 #[derive(Debug, Clone, Serialize, Deserialize)]

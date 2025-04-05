@@ -54,7 +54,7 @@ pub fn handle_rewind(
             if let Some(state) = game_state.as_ref() {
                 // Create game save data
                 let mut current_save_data =
-                    GameSaveData::from_game_state(&state, &entity_to_index, player_data);
+                    GameSaveData::from_game_state(state, &entity_to_index, player_data);
 
                 // Add zone data if ZoneManager is available
                 if let Some(zone_manager) = zones.as_ref() {
@@ -146,7 +146,7 @@ pub fn handle_rewind_to_turn(
             if let Some(state) = game_state.as_ref() {
                 // Create game save data
                 let mut current_save_data =
-                    GameSaveData::from_game_state(&state, &entity_to_index, player_data);
+                    GameSaveData::from_game_state(state, &entity_to_index, player_data);
 
                 // Add zone data if ZoneManager is available
                 if let Some(zone_manager) = zones.as_ref() {

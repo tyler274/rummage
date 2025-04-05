@@ -130,6 +130,7 @@ pub enum Comparison {
 
 /// Resource tracking the state of combat during a turn
 #[derive(Resource)]
+#[derive(Default)]
 pub struct CombatState {
     /// Current attackers and defenders - maps attacker creature to defending player
     pub attackers: HashMap<Entity, Entity>,
@@ -176,27 +177,6 @@ pub struct CombatState {
     pub combat_damage_step_number: u8,
 }
 
-impl Default for CombatState {
-    fn default() -> Self {
-        Self {
-            attackers: HashMap::new(),
-            blockers: HashMap::new(),
-            blocked_status: HashMap::new(),
-            assigned_combat_damage: HashMap::new(),
-            pending_combat_damage: Vec::new(),
-            players_attacked_this_turn: HashSet::new(),
-            creatures_attacking_each_player: HashMap::new(),
-            must_attack: HashMap::new(),
-            cannot_attack: HashMap::new(),
-            cannot_be_blocked_by: HashMap::new(),
-            commander_damage_this_combat: HashMap::new(),
-            in_declare_attackers: false,
-            in_declare_blockers: false,
-            in_combat_damage: false,
-            combat_damage_step_number: 0,
-        }
-    }
-}
 
 // Combat systems
 pub fn initialize_combat_phase(

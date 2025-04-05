@@ -22,7 +22,7 @@ pub fn spawn_menu_button(
                 align_items: AlignItems::Center,
                 ..default()
             },
-            BackgroundColor(NORMAL_BUTTON.into()),
+            BackgroundColor(NORMAL_BUTTON),
             MenuItem,
             action,
             AppLayer::Menu.layer(),
@@ -58,7 +58,7 @@ pub fn create_pause_menu_buttons(commands: &mut Commands, asset_server: &AssetSe
                 margin: UiRect::all(Val::Px(5.0)),
                 ..default()
             },
-            BackgroundColor(NORMAL_BUTTON.into()),
+            BackgroundColor(NORMAL_BUTTON),
             MenuButtonAction::Resume,
             MenuItem,
             ZIndex::from(ZLayers::MenuButtons),

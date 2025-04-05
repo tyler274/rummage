@@ -38,7 +38,7 @@ pub struct VolumeSlider;
 
 /// Groups system parameters for volume updates
 #[derive(SystemParam)]
-struct VolumeUpdateContext<'w, 's> {
+pub struct VolumeUpdateContext<'w, 's> {
     volume_settings: ResMut<'w, VolumeSettings>,
     text_query: Query<'w, 's, (&'static mut Text, &'static VolumeValueText)>,
     volume_indicators: Query<'w, 's, (&'static mut Node, &'static Parent), Without<Button>>,

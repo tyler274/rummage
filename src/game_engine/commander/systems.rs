@@ -31,7 +31,7 @@ pub fn calculate_commander_cost(
     base_cost: Mana,
     cmd_zone_manager: &CommandZoneManager,
 ) -> Mana {
-    let mut final_cost = base_cost.clone();
+    let mut final_cost = base_cost;
 
     // Get the commander's cast count and add tax
     let cast_count = cmd_zone_manager.get_cast_count(commander);
@@ -111,7 +111,7 @@ pub fn handle_commander_zone_change(
         if let Ok((entity, commander)) = commander_query.get(event.card) {
             // Update the commander's zone status
             let new_zone = match event.destination {
-                Zone::CommandZone => CommanderZoneLocation::CommandZone,
+                Zone::Command => CommanderZoneLocation::CommandZone,
                 Zone::Battlefield => CommanderZoneLocation::Battlefield,
                 Zone::Graveyard => CommanderZoneLocation::Graveyard,
                 Zone::Exile => CommanderZoneLocation::Exile,
@@ -153,7 +153,7 @@ pub fn process_commander_zone_choices(
                 event.commander,
                 event.owner,
                 event.current_zone,
-                Zone::CommandZone,
+                Zone::Command,
             );
 
             // Update the commander zone status
@@ -269,7 +269,7 @@ pub fn reset_commander_damage_tracking(
     mut turn_events: EventReader<TurnStartEvent>,
 ) {
     // Only run when a new turn starts
-    if !turn_events.read().next().is_some() {
+    if turn_events.read().next().is_none() {
         return;
     }
 

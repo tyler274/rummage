@@ -1,39 +1,42 @@
 use super::table::TableLayout;
-use crate::camera::components::{AppLayer, GameCamera};
+use crate::camera::components::AppLayer;
 use crate::cards::text::card_text::spawn_card_text_components;
-use crate::cards::{CardZone, Draggable};
+use crate::cards::visual_card::Draggable;
 use crate::game_engine::zones::Zone;
+use crate::player::zone::CardZone;
 
 use bevy::prelude::*;
 
+// Context struct for spawn_visual_cards
+pub struct CardSpawnContext<'a, 'w, 's> {
+    pub commands: &'a mut Commands<'w, 's>,
+    pub game_cameras: &'a Query<'w, 's, Entity, With<GameCamera>>,
+    pub card_size: &'a Vec2,
+    pub spacing_multiplier: f32,
+    pub player_position: Vec3,
+    pub player_index: usize,
+    pub player_entity: Entity,
+    pub table: &'a TableLayout,
+    pub asset_server_option: Option<&'a AssetServer>,
+}
+
 /// Helper function to spawn visual card entities
-pub fn spawn_visual_cards(
-    commands: &mut Commands,
-    display_cards: Vec<crate::cards::Card>,
-    game_cameras: &Query<Entity, With<GameCamera>>,
-    card_size: &Vec2,
-    spacing_multiplier: f32,
-    player_position: Vec3,
-    player_index: usize,
-    player_entity: Entity,
-    table: &TableLayout,
-    asset_server_option: Option<&AssetServer>,
-) {
+pub fn spawn_visual_cards(context: &mut CardSpawnContext, display_cards: Vec<crate::cards::Card>) {
     // Skip if no cards to spawn
     if display_cards.is_empty() {
-        warn!("No cards to spawn for player {}", player_index);
+        warn!("No cards to spawn for player {}", context.player_index);
         return;
     }
 
     debug!(
         "Spawning {} cards for player {:?} (index {})",
         display_cards.len(),
-        player_entity,
-        player_index
+        context.player_entity,
+        context.player_index
     );
 
     // Increase the spacing between cards, but use a smaller multiplier
-    let spacing = card_size.x * spacing_multiplier * 0.6; // Reduced from 1.5 to 0.6 for tighter card layout
+    let spacing = context.card_size.x * context.spacing_multiplier * 0.6; // Reduced from 1.5 to 0.6 for tighter card layout
 
     // Calculate the total width of all cards with spacing
     let total_width = display_cards.len() as f32 * spacing;
@@ -45,29 +48,29 @@ pub fn spawn_visual_cards(
     let start_x = -(total_width) / 2.0 + spacing / 2.0;
 
     // Get the card offset for this player based on table position
-    let card_offset = table.get_card_offset(player_index);
+    let card_offset = context.table.get_card_offset(context.player_index);
 
     // Determine if the cards should be laid out horizontally or vertically
-    let is_horizontal = table.is_horizontal_layout(player_index);
+    let is_horizontal = context.table.is_horizontal_layout(context.player_index);
 
     // Calculate the starting position and direction based on layout
     let (start_pos, card_direction) = if is_horizontal {
         // Horizontal layout (cards in a row)
         (
-            Vec3::new(start_x, player_position.y, 0.0) + card_offset,
+            Vec3::new(start_x, context.player_position.y, 0.0) + card_offset,
             Vec3::new(spacing, 0.0, 0.0),
         )
     } else {
         // Vertical layout (cards in a column)
         (
-            Vec3::new(player_position.x, start_x, 0.0) + card_offset,
+            Vec3::new(context.player_position.x, start_x, 0.0) + card_offset,
             Vec3::new(0.0, spacing, 0.0),
         )
     };
 
     info!(
         "Starting spawn of {} cards for player {}",
-        card_count, player_index
+        card_count, context.player_index
     );
 
     // Spawn each card with proper positioning
@@ -87,11 +90,12 @@ pub fn spawn_visual_cards(
 
         // Draw cards at a much larger internal size for better text layout
         // but scale them down visually to fit in the playmat
-        let internal_card_size = *card_size * 6.0; // Much larger internal size for text positioning
+        let internal_card_size = *context.card_size * 6.0; // Much larger internal size for text positioning
         let display_scale = 2.5 / 6.0; // Scale factor to display correctly in the playmat
 
         // Create a card with a grayish white background for better readability
-        let card_entity = commands
+        let card_entity = context
+            .commands
             .spawn(Sprite {
                 color: Color::srgb(0.92, 0.92, 0.94), // Grayish white for better readability
                 custom_size: Some(internal_card_size),
@@ -115,7 +119,7 @@ pub fn spawn_visual_cards(
             .insert(AppLayer::Cards.layer())
             .insert(CardZone {
                 zone: Zone::Hand,
-                zone_owner: Some(player_entity),
+                zone_owner: Some(context.player_entity),
             })
             .insert(Name::new(format!("Card: {}", card_clone.name.name)))
             .id();
@@ -127,7 +131,7 @@ pub fn spawn_visual_cards(
         );
 
         // Spawn text components directly instead of just adding marker components
-        if let Some(game_asset_server) = asset_server_option {
+        if let Some(game_asset_server) = context.asset_server_option {
             // Convert card::components::CardRulesText to text::components::CardRulesText
             let rules_text = crate::text::components::CardRulesText {
                 rules_text: card_clone.rules_text.rules_text.clone(),
@@ -135,7 +139,7 @@ pub fn spawn_visual_cards(
 
             // With our new Card bundle, we can get all the components directly from the card
             spawn_card_text_components(
-                commands,
+                context.commands,
                 card_entity,
                 (
                     &card_clone, // Use the cloned Card bundle
@@ -157,12 +161,12 @@ pub fn spawn_visual_cards(
         }
 
         // Make the card a child of the game camera to ensure it's rendered in the game view
-        for camera in game_cameras.iter() {
+        for camera in context.game_cameras.iter() {
             debug!(
                 "Attaching card for player {} to game camera {:?}",
-                player_index, camera
+                context.player_index, camera
             );
-            commands.entity(camera).add_child(card_entity);
+            context.commands.entity(*camera).add_child(card_entity);
         }
     }
 }

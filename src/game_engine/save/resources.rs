@@ -65,22 +65,16 @@ impl Default for SaveConfig {
 
 /// Metadata about all saved games
 #[derive(Resource, Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct SaveMetadata {
     pub saves: Vec<SaveInfo>,
     pub checkpoints: Vec<SaveInfo>,
 }
 
-impl Default for SaveMetadata {
-    fn default() -> Self {
-        Self {
-            saves: Vec::new(),
-            checkpoints: Vec::new(),
-        }
-    }
-}
 
 /// Replay state for game replay functionality
 #[derive(Resource)]
+#[derive(Default)]
 pub struct ReplayState {
     /// Whether a replay is currently in progress
     pub active: bool,
@@ -98,17 +92,6 @@ pub struct ReplayState {
     pub current_step: usize,
 }
 
-impl Default for ReplayState {
-    fn default() -> Self {
-        Self {
-            active: false,
-            original_save: None,
-            current_game_state: None,
-            action_queue: VecDeque::new(),
-            current_step: 0,
-        }
-    }
-}
 
 /// Represents a branch point in game history
 #[derive(Debug, Clone)]

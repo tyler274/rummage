@@ -32,6 +32,7 @@ pub struct StackItemResolvedEvent {
 
 /// The MTG stack system that manages spells and abilities
 #[derive(Resource)]
+#[derive(Default)]
 pub struct GameStack {
     /// Items currently on the stack (first = bottom, last = top)
     pub items: Vec<StackItem>,
@@ -205,17 +206,6 @@ impl GameStack {
     }
 }
 
-impl Default for GameStack {
-    fn default() -> Self {
-        Self {
-            items: Vec::new(),
-            resolving: false,
-            currently_resolving: None,
-            contains_split_second: false,
-            uncounterable_items: HashSet::new(),
-        }
-    }
-}
 
 /// System that handles resolving items from the stack
 pub fn stack_resolution_system(

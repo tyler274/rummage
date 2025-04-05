@@ -19,13 +19,9 @@ pub use components::*;
 use bevy::prelude::*;
 
 /// Plugin for text rendering and management
+#[derive(Default)]
 pub struct TextPlugin {}
 
-impl Default for TextPlugin {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl Plugin for TextPlugin {
     fn build(&self, app: &mut App) {

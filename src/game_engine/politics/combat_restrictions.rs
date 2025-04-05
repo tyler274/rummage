@@ -125,7 +125,7 @@ pub fn manage_combat_restrictions(
         let restrictions = politics
             .combat_restrictions
             .entry(event.target)
-            .or_insert_with(Vec::new);
+            .or_default();
 
         if !restrictions.contains(&event.restriction) {
             restrictions.push(event.restriction.clone());

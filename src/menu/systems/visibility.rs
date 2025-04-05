@@ -7,6 +7,26 @@ use crate::menu::{
 };
 use bevy::prelude::*;
 
+/// Type alias for query accessing menu background nodes that are missing the PreviousWindowSize component.
+type MissingSizeBackgroundQuery<'w, 's> =
+    Query<'w, 's, (Entity, &'static mut Node), (With<MenuBackground>, Without<PreviousWindowSize>)>;
+
+/// Type alias for query accessing menu items whose visibility has changed.
+type ChangedVisibilityItemQuery<'w, 's> = Query<
+    'w,
+    's,
+    (
+        &'static mut Visibility,
+        &'static GlobalZIndex,
+        &'static Name,
+    ),
+    (With<MenuItem>, Changed<Visibility>),
+>;
+
+/// Type alias for query accessing menu items whose visibility has changed, specifically for the main menu fix.
+type ChangedMainMenuVisibilityQuery<'w, 's> =
+    Query<'w, 's, (&'static mut Visibility, &'static Name), (With<MenuItem>, Changed<Visibility>)>;
+
 /// Update menu visibility state resource
 pub fn update_menu_visibility_state(
     menu_items: Query<Entity, With<MenuItem>>,
@@ -66,10 +86,7 @@ pub fn debug_menu_visibility(
 pub fn update_menu_background(
     windows: Query<&Window>,
     mut backgrounds: Query<(&mut Node, &mut PreviousWindowSize), With<MenuBackground>>,
-    mut missing_size_backgrounds: Query<
-        (Entity, &mut Node),
-        (With<MenuBackground>, Without<PreviousWindowSize>),
-    >,
+    mut missing_size_backgrounds: MissingSizeBackgroundQuery,
     mut commands: Commands,
 ) {
     // Get the primary window
@@ -178,12 +195,7 @@ pub fn ensure_menu_item_visibility(
 }
 
 /// Fix visibility for menu items when it changes
-pub fn fix_visibility_for_changed_items(
-    mut items: Query<
-        (&mut Visibility, &GlobalZIndex, &Name),
-        (With<MenuItem>, Changed<Visibility>),
-    >,
-) {
+pub fn fix_visibility_for_changed_items(mut items: ChangedVisibilityItemQuery) {
     let item_count = items.iter().count();
     if item_count > 0 {
         info!("Fixing visibility for {} changed menu items", item_count);
@@ -252,9 +264,7 @@ pub fn force_main_menu_items_visibility(
 }
 
 /// Fix visibility for any menu items whose visibility has changed while in main menu
-pub fn fix_changed_main_menu_visibility(
-    mut menu_items: Query<(&mut Visibility, &Name), (With<MenuItem>, Changed<Visibility>)>,
-) {
+pub fn fix_changed_main_menu_visibility(mut menu_items: ChangedMainMenuVisibilityQuery) {
     // Only update items whose visibility has changed
     if !menu_items.is_empty() {
         info!(

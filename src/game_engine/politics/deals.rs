@@ -91,7 +91,7 @@ pub fn deal_system(
                 // Check if deal duration has passed based on turn number
                 // This is a simple implementation; in reality, it would need to track
                 // when the deal was made in terms of game turns
-                current_turn > turn_manager.turn_number + *turns as u32
+                current_turn > turn_manager.turn_number + { *turns }
             }
             DealDuration::UntilEndOfGame => false,
             DealDuration::UntilPlayerEliminated(player) => {

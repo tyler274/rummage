@@ -43,7 +43,7 @@ pub fn goad_system(
         politics
             .goad_effects
             .entry(event.target)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(goad_effect);
 
         // Apply combat restrictions for goaded creatures

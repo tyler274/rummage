@@ -61,7 +61,7 @@ pub fn pixel_perfect_compare(image1: &DynamicImage, image2: &DynamicImage) -> Co
             let mut max_channel_diff = 0;
             for i in 0..3 {
                 // RGB channels (ignoring alpha)
-                let diff = (pixel1[i] as i32 - pixel2[i] as i32).abs() as u8;
+                let diff = (pixel1[i] as i32 - pixel2[i] as i32).unsigned_abs() as u8;
                 max_channel_diff = max_channel_diff.max(diff);
             }
 
@@ -306,7 +306,7 @@ pub fn save_difference_visualization(
             let mut max_diff = 0;
             for i in 0..3 {
                 // RGB channels (ignoring alpha)
-                let diff = (pixel1[i] as i32 - pixel2[i] as i32).abs() as u8;
+                let diff = (pixel1[i] as i32 - pixel2[i] as i32).unsigned_abs() as u8;
                 max_diff = max_diff.max(diff);
             }
 

@@ -2,10 +2,9 @@ use bevy::prelude::*;
 
 /// Returns the appropriate color for a mana symbol
 pub fn get_mana_symbol_color(symbol: &str) -> Color {
-    // Make sure we're working with a clean symbol
     let clean_symbol = symbol.trim();
 
-    let color = match clean_symbol {
+    match clean_symbol {
         "{W}" => Color::srgb(0.95, 0.95, 0.85), // White mana (off-white)
         "{U}" => Color::srgb(0.0, 0.4, 0.8),    // Blue mana - more vibrant
         "{B}" => Color::srgb(0.0, 0.0, 0.0),    // Black mana - true black
@@ -14,7 +13,7 @@ pub fn get_mana_symbol_color(symbol: &str) -> Color {
         "{C}" => Color::srgb(0.7, 0.7, 0.8),    // Colorless mana - slight blue tint
         _ => {
             // Generic/numeric mana or other symbols
-            if clean_symbol.starts_with("{") && clean_symbol.ends_with("}") {
+            if clean_symbol.starts_with('{') && clean_symbol.ends_with('}') {
                 let inner = &clean_symbol[1..clean_symbol.len() - 1];
                 if inner.parse::<u32>().is_ok() || inner == "X" {
                     // Generic mana is light gray with a slight brown tint
@@ -28,9 +27,7 @@ pub fn get_mana_symbol_color(symbol: &str) -> Color {
                 Color::srgb(0.0, 0.0, 0.0)
             }
         }
-    };
-
-    color
+    }
 }
 
 /// Helper function to determine if a background color is dark and needs white text

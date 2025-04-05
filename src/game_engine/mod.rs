@@ -55,6 +55,7 @@ use crate::game_engine::politics::{
 use crate::game_engine::priority::{priority_passing_system, priority_system};
 
 // Game Engine Plugin
+use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 
 /// Custom schedule for fixed timestep game logic updates
@@ -171,16 +172,22 @@ impl Plugin for GameEnginePlugin {
     }
 }
 
+// SystemParam struct to group game engine resources
+#[derive(SystemParam)]
+struct GameEngineResources<'w> {
+    combat_state: ResMut<'w, CombatState>,
+    game_stack: ResMut<'w, GameStack>,
+    priority_system: ResMut<'w, PrioritySystem>,
+    game_state: ResMut<'w, GameState>,
+}
+
 /// Initializes the core game engine resources
 fn setup_game_engine(
     mut commands: Commands,
     player_query: Query<Entity, With<Player>>,
     context: Res<StateTransitionContext>,
     turn_manager: Option<Res<TurnManager>>,
-    mut combat_state: ResMut<CombatState>,
-    mut game_stack: ResMut<GameStack>,
-    mut priority_system: ResMut<PrioritySystem>,
-    mut game_state: ResMut<GameState>,
+    mut resources: GameEngineResources, // Use the SystemParam struct
 ) {
     // Skip initialization if we're coming from the pause menu and already have a turn manager
     if context.from_pause_menu && turn_manager.is_some() {
@@ -209,11 +216,11 @@ fn setup_game_engine(
     commands.insert_resource(CommandZone::default());
     commands.insert_resource(CommandZoneManager::default());
 
-    // Reset any existing resources to their default states
-    *combat_state = CombatState::default();
-    *game_stack = GameStack::default();
-    *priority_system = PrioritySystem::default();
-    *game_state = GameState::default();
+    // Reset any existing resources to their default states using the SystemParam struct
+    *resources.combat_state = CombatState::default();
+    *resources.game_stack = GameStack::default();
+    *resources.priority_system = PrioritySystem::default();
+    *resources.game_state = GameState::default();
 }
 
 /// Register core game engine systems with the app

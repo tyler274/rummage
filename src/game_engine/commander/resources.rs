@@ -216,7 +216,7 @@ impl CommandZoneManagerBuilder {
     pub fn add_commander(mut self, player: Entity, commander: Entity) -> Self {
         self.player_commanders
             .entry(player)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(commander);
 
         // By default, commanders start in the command zone

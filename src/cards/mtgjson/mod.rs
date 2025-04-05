@@ -343,7 +343,7 @@ pub trait MTGClient: Send + Sync {
 #[allow(dead_code)]
 pub enum MTGClientType {
     /// Live HTTP client for actual API requests
-    HTTP(reqwest::Client),
+    Http(reqwest::Client),
     /// Mock client for testing
     Mock(Arc<MockClient>),
 }
@@ -370,7 +370,7 @@ impl MTGClientType {
         set_code: &str,
     ) -> Result<MTGJSONSet, Box<dyn std::error::Error>> {
         match self {
-            MTGClientType::HTTP(client) => {
+            MTGClientType::Http(client) => {
                 // Apply rate limiting for HTTP requests
                 let mut last_request = RATE_LIMITER.lock().await;
                 let now = Instant::now();
@@ -425,7 +425,7 @@ impl MTGService {
     /// Creates a new MTGService instance with a default HTTP client
     #[allow(dead_code)]
     pub fn new_with_reqwest() -> Self {
-        Self::new(MTGClientType::HTTP(reqwest::Client::new()))
+        Self::new(MTGClientType::Http(reqwest::Client::new()))
     }
 
     /// Gets the path for compressed set archives

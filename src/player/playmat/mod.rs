@@ -14,6 +14,7 @@ use crate::camera::components::GameCamera;
 use crate::game_engine::zones::Zone;
 use crate::player::components::Player;
 use crate::player::resources::PlayerConfig;
+use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 
 // This unused import has been removed
@@ -209,36 +210,42 @@ pub fn highlight_active_zones(
     }
 }
 
+/// SystemParam struct for handle_zone_interactions
+#[derive(SystemParam)]
+struct ZoneInteractionParams<'w, 's> {
+    mouse_button_input: Res<'w, ButtonInput<MouseButton>>,
+    key_input: Res<'w, ButtonInput<KeyCode>>,
+    windows: Query<'w, 's, &'static Window>,
+    camera_query: Query<'w, 's, (&'static Camera, &'static GlobalTransform), With<GameCamera>>,
+    zone_query: Query<'w, 's, (Entity, &'static PlaymatZone, &'static GlobalTransform)>,
+    zone_focus: ResMut<'w, ZoneFocusState>,
+    game_state: Res<'w, State<crate::menu::state::GameMenuState>>,
+    #[system_param(ignore)]
+    _commands: Commands<'w, 's>, // Ignoring unused param
+}
+
 /// Handle interactions with playmat zones
-pub fn handle_zone_interactions(
-    mouse_button_input: Res<ButtonInput<MouseButton>>,
-    key_input: Res<ButtonInput<KeyCode>>,
-    windows: Query<&Window>,
-    camera_query: Query<(&Camera, &GlobalTransform), With<GameCamera>>,
-    zone_query: Query<(Entity, &PlaymatZone, &GlobalTransform)>,
-    mut zone_focus: ResMut<ZoneFocusState>,
-    game_state: Res<State<crate::menu::state::GameMenuState>>,
-    _commands: Commands,
-) {
+pub fn handle_zone_interactions(mut params: ZoneInteractionParams) {
     // Disable interactions if in any menu state
-    if *game_state != crate::menu::state::GameMenuState::InGame {
+    if *params.game_state != crate::menu::state::GameMenuState::InGame {
         return;
     }
 
-    let mouse_clicked = mouse_button_input.just_pressed(MouseButton::Left);
-    let right_clicked = mouse_button_input.just_pressed(MouseButton::Right);
-    let shift_key = key_input.pressed(KeyCode::ShiftLeft) || key_input.pressed(KeyCode::ShiftRight);
+    let mouse_clicked = params.mouse_button_input.just_pressed(MouseButton::Left);
+    let right_clicked = params.mouse_button_input.just_pressed(MouseButton::Right);
+    let shift_key = params.key_input.pressed(KeyCode::ShiftLeft)
+        || params.key_input.pressed(KeyCode::ShiftRight);
 
     // No interaction to process if no mouse click
     if !mouse_clicked && !right_clicked {
         return;
     }
 
-    let window = windows.single();
+    let window = params.windows.single();
     let cursor_position = window.cursor_position();
     if let Some(cursor_position) = cursor_position {
         // Get the camera transform, skip if no game camera exists (e.g., in menu states)
-        let (camera, camera_transform) = match camera_query.get_single() {
+        let (camera, camera_transform) = match params.camera_query.get_single() {
             Ok(camera) => camera,
             Err(_) => {
                 // Game camera doesn't exist (likely in a menu state), skip processing
@@ -252,7 +259,7 @@ pub fn handle_zone_interactions(
             .map(|ray| ray.origin.truncate())
         {
             // Check if we clicked on a zone
-            for (zone_entity, zone, transform) in zone_query.iter() {
+            for (zone_entity, zone, transform) in params.zone_query.iter() {
                 let zone_position = transform.translation().truncate();
                 // Simple click detection (would be more sophisticated in a real implementation)
                 let distance = (zone_position - cursor_world_position).length();
@@ -278,16 +285,16 @@ pub fn handle_zone_interactions(
                     } else {
                         // Regular click - focus the zone
                         // Update focus state
-                        if zone_focus.focused_zone == Some(zone_entity) {
+                        if params.zone_focus.focused_zone == Some(zone_entity) {
                             // Clicking again on the same zone toggles focus off
-                            zone_focus.focused_zone = None;
-                            zone_focus.focused_zone_type = None;
-                            zone_focus.focused_zone_owner = None;
+                            params.zone_focus.focused_zone = None;
+                            params.zone_focus.focused_zone_type = None;
+                            params.zone_focus.focused_zone_owner = None;
                             info!("Unfocused zone: {:?}", zone.zone_type);
                         } else {
-                            zone_focus.focused_zone = Some(zone_entity);
-                            zone_focus.focused_zone_type = Some(zone.zone_type);
-                            zone_focus.focused_zone_owner = Some(zone.player_id);
+                            params.zone_focus.focused_zone = Some(zone_entity);
+                            params.zone_focus.focused_zone_type = Some(zone.zone_type);
+                            params.zone_focus.focused_zone_owner = Some(zone.player_id);
                             info!("Focused zone: {:?}", zone.zone_type);
                         }
                     }

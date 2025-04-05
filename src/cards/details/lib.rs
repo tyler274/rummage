@@ -5,6 +5,7 @@ use crate::cards::types::CreatureType;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Reflect)]
 #[reflect(Serialize, Deserialize)]
+#[derive(Default)]
 pub enum CardDetails {
     Creature(CreatureCard),
     Planeswalker { loyalty: i32 },
@@ -13,14 +14,10 @@ pub enum CardDetails {
     Enchantment(EnchantmentCard),
     Artifact(ArtifactCard),
     Land(LandCard),
+    #[default]
     Other,
 }
 
-impl Default for CardDetails {
-    fn default() -> Self {
-        CardDetails::Other
-    }
-}
 
 impl CardDetails {
     /// Create a new Creature card details

@@ -185,10 +185,12 @@ pub fn get_card_layout() -> CardTextLayout {
 /// Create a specific card layout with custom parameters
 #[allow(dead_code)]
 pub fn custom_card_layout(width: f32, height: f32) -> CardTextLayout {
-    let mut layout = CardTextLayout::default();
-    layout.card_width = width;
-    layout.card_height = height;
-    layout
+    // Initialize directly instead of using default() and reassigning
+    CardTextLayout {
+        card_width: width,
+        card_height: height,
+        ..Default::default()
+    }
 }
 
 /// Standard battlefield card size multiplier

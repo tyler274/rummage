@@ -69,14 +69,23 @@ pub fn update_menu_visibility_state(
     }
 }
 
+// Type Aliases for complex queries
+type ChangedMenuCameraQuery<'w, 's> = Query<
+    'w,
+    's,
+    (Entity, &'static Visibility),
+    (Changed<Visibility>, With<crate::menu::camera::MenuCamera>),
+>;
+type ChangedMenuItemVisibilityQuery<'w, 's> =
+    Query<'w, 's, (Entity, &'static Visibility), (With<MenuItem>, Changed<Visibility>)>;
+type MissingSizeBackgroundQueryUi<'w, 's> =
+    Query<'w, 's, (Entity, &'static mut Node), (With<MenuBackground>, Without<PreviousWindowSize>)>;
+
 /// Debug menu visibility and update visibility state
 #[allow(dead_code)]
 pub fn debug_menu_visibility(
-    menu_cameras: Query<
-        (Entity, &Visibility),
-        (Changed<Visibility>, With<crate::menu::camera::MenuCamera>),
-    >,
-    menu_items: Query<(Entity, &Visibility), (With<MenuItem>, Changed<Visibility>)>,
+    menu_cameras: ChangedMenuCameraQuery,
+    menu_items: ChangedMenuItemVisibilityQuery,
     mut log_state: ResMut<MenuVisibilityLogState>,
     menu_state: Res<MenuVisibilityState>,
 ) {
@@ -118,10 +127,7 @@ pub fn debug_menu_visibility(
 pub fn update_menu_background(
     windows: Query<&Window>,
     mut backgrounds: Query<(&mut Node, &mut PreviousWindowSize), With<MenuBackground>>,
-    mut missing_size_backgrounds: Query<
-        (Entity, &mut Node),
-        (With<MenuBackground>, Without<PreviousWindowSize>),
-    >,
+    mut missing_size_backgrounds: MissingSizeBackgroundQueryUi,
     mut commands: Commands,
 ) {
     // Get the primary window

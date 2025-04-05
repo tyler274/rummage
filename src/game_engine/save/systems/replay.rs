@@ -23,7 +23,7 @@ pub fn handle_start_replay(
 
         // Create a persistent resource to load the save
         let persistent_save = Persistent::<GameSaveData>::builder()
-            .name(&format!("game_save_{}", event.slot_name))
+            .name(format!("game_save_{}", event.slot_name))
             .format(StorageFormat::Bincode)
             .path(save_path)
             .default(GameSaveData::default())

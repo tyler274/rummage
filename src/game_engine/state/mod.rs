@@ -209,6 +209,12 @@ pub struct GameStateBuilder {
     starting_life: i32,
 }
 
+impl Default for GameStateBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GameStateBuilder {
     /// Creates a new GameStateBuilder with default values
     pub fn new() -> Self {

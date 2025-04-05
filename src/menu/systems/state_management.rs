@@ -6,6 +6,7 @@ use crate::menu::{
     settings::SettingsMenuState,
     state::GameMenuState,
 };
+use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 
 /// Set up the transition context for settings menu
@@ -60,50 +61,57 @@ pub fn setup_settings_transition(
     settings_state.set(SettingsMenuState::Main);
 }
 
+// SystemParam struct for monitor_state_transitions
+#[derive(SystemParam)]
+struct StateMonitorParams<'w, 's> {
+    state: Res<'w, State<GameMenuState>>,
+    #[system_param(ignore)]
+    _next_state: ResMut<'w, NextState<GameMenuState>>, // Ignoring unused param
+    menu_items: Query<'w, 's, Entity, With<MenuItem>>,
+    commands: Commands<'w, 's>,
+    asset_server: Res<'w, AssetServer>,
+    menu_cameras: Query<'w, 's, Entity, With<MenuCamera>>,
+    existing_roots: Query<'w, 's, Entity, With<MenuRoot>>,
+    all_cameras: Query<'w, 's, &'static Camera>,
+    save_exists: Option<ResMut<'w, SaveExists>>,
+}
+
 /// Monitor state transitions and handle diagnostics
 pub fn monitor_state_transitions(
-    state: Res<State<GameMenuState>>,
-    _next_state: ResMut<NextState<GameMenuState>>,
+    mut params: StateMonitorParams,
     mut last_state: Local<Option<GameMenuState>>,
-    menu_items: Query<Entity, With<MenuItem>>,
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    menu_cameras: Query<Entity, With<MenuCamera>>,
-    existing_roots: Query<Entity, With<MenuRoot>>,
-    all_cameras: Query<&Camera>,
-    save_exists: Option<ResMut<SaveExists>>,
 ) {
     // Check if state has changed
-    if last_state.is_none() || last_state.unwrap() != *state.get() {
+    if last_state.is_none() || last_state.unwrap() != *params.state.get() {
         info!(
             "Game menu state changed from {:?} to {:?}",
             last_state,
-            state.get()
+            params.state.get()
         );
-        *last_state = Some(*state.get());
+        *last_state = Some(*params.state.get());
 
-        match state.get() {
+        match params.state.get() {
             GameMenuState::MainMenu => {
                 // Set up main menu if necessary (e.g., on first run or after game)
-                if menu_items.iter().count() == 0 {
+                if params.menu_items.iter().count() == 0 {
                     info!("No menu items found for main menu, setting up");
-                    commands.insert_resource(SaveExists(false));
+                    params.commands.insert_resource(SaveExists(false));
 
                     // Ensure menu camera exists before setting up UI
-                    if menu_cameras.iter().count() == 0 {
+                    if params.menu_cameras.iter().count() == 0 {
                         info!("No menu camera found for UI, creating one with proper order...");
 
                         // Find highest current camera order
                         let mut highest_order = 0;
-                        for camera in all_cameras.iter() {
+                        for camera in params.all_cameras.iter() {
                             if camera.order > highest_order {
                                 highest_order = camera.order;
                             }
                         }
 
                         // Create camera with next order and proper UI components
-                        commands.spawn((
-                            Camera2d::default(),
+                        params.commands.spawn((
+                            Camera2d,
                             Camera {
                                 order: highest_order + 1,
                                 ..default()
@@ -129,14 +137,14 @@ pub fn monitor_state_transitions(
                     }
 
                     // Get the save exists resource
-                    if let Some(save_exists_res) = save_exists {
+                    if let Some(save_exists_res) = params.save_exists {
                         // Set up the main menu directly
                         crate::menu::systems::main_menu::setup::setup_main_menu(
-                            commands,
-                            asset_server,
-                            menu_cameras,
-                            existing_roots,
-                            all_cameras,
+                            params.commands,
+                            params.asset_server,
+                            params.menu_cameras,
+                            params.existing_roots,
+                            params.all_cameras,
                             save_exists_res,
                         );
                     } else {
@@ -155,7 +163,7 @@ pub fn monitor_state_transitions(
             }
             _ => {
                 // Log when entering other states
-                info!("Entering state: {:?}", state.get());
+                info!("Entering state: {:?}", params.state.get());
             }
         }
     }

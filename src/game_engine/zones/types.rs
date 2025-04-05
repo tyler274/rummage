@@ -11,7 +11,7 @@ pub enum Zone {
     Graveyard,
     Stack,
     Exile,
-    CommandZone,
+    Command,
 }
 
 /// Component marking an entity as belonging to a specific zone

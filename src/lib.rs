@@ -1,3 +1,4 @@
+#![allow(dead_code)] // Allow dead code globally for now
 #![feature(trivial_bounds)]
 
 /// Rummage is a Magic: The Gathering game engine built with Bevy.

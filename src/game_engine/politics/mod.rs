@@ -25,6 +25,7 @@ pub use goad::{GoadEvent, goad_system};
 
 /// Resource that manages multiplayer politics in Commander games
 #[derive(Resource)]
+#[derive(Default)]
 pub struct PoliticsSystem {
     /// The current monarch player (if any)
     pub monarch: Option<Entity>,
@@ -63,23 +64,6 @@ pub struct PoliticsSystem {
     pub combat_restrictions: HashMap<Entity, Vec<CombatRestriction>>,
 }
 
-impl Default for PoliticsSystem {
-    fn default() -> Self {
-        Self {
-            monarch: None,
-            initiative_holder: None,
-            goad_effects: HashMap::new(),
-            vow_effects: HashMap::new(),
-            active_vote: None,
-            votes_cast: HashMap::new(),
-            vote_weights: HashMap::new(),
-            pending_deals: Vec::new(),
-            active_deals: Vec::new(),
-            alliances: HashMap::new(),
-            combat_restrictions: HashMap::new(),
-        }
-    }
-}
 
 /// Event for when a player becomes the monarch
 #[derive(Event)]

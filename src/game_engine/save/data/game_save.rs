@@ -298,7 +298,7 @@ impl GameSaveData {
         let lands_played = game_state
             .lands_played
             .iter()
-            .filter_map(|(e, count)| Some((entity_to_index.get(e)?.clone(), *count)))
+            .filter_map(|(e, count)| Some((*entity_to_index.get(e)?, *count)))
             .collect();
 
         let drawn_this_turn = game_state
@@ -468,21 +468,21 @@ impl GameSaveData {
         let mut zone_manager = crate::game_engine::zones::ZoneManager::default();
 
         // Initialize player zones first
-        for (player_idx, _) in &self.zones.hands {
+        for player_idx in self.zones.hands.keys() {
             if *player_idx < index_to_entity.len() {
                 let player = index_to_entity[*player_idx];
                 zone_manager.init_player_zones(player);
             }
         }
 
-        for (player_idx, _) in &self.zones.libraries {
+        for player_idx in self.zones.libraries.keys() {
             if *player_idx < index_to_entity.len() {
                 let player = index_to_entity[*player_idx];
                 zone_manager.init_player_zones(player);
             }
         }
 
-        for (player_idx, _) in &self.zones.graveyards {
+        for player_idx in self.zones.graveyards.keys() {
             if *player_idx < index_to_entity.len() {
                 let player = index_to_entity[*player_idx];
                 zone_manager.init_player_zones(player);

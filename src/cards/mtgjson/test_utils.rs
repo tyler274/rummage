@@ -18,6 +18,12 @@ pub struct MockClient {
 }
 
 #[allow(dead_code)]
+impl Default for MockClient {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MockClient {
     pub fn new() -> Self {
         Self {

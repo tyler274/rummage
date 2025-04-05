@@ -8,6 +8,42 @@ use crate::menu::{
 };
 use bevy::prelude::*;
 
+// Type Aliases for complex queries
+type MissingSizeBackgroundQueryVis<'w, 's> =
+    Query<'w, 's, (Entity, &'static mut Node), (With<MenuBackground>, Without<PreviousWindowSize>)>;
+type ChangedVisibilityItemGlobalZQuery<'w, 's> = Query<
+    'w,
+    's,
+    (
+        &'static mut Visibility,
+        &'static mut InheritedVisibility,
+        &'static GlobalZIndex,
+        &'static Name,
+    ),
+    (With<MenuItem>, Changed<Visibility>),
+>;
+type ChangedVisibilityItemZQuery<'w, 's> = Query<
+    'w,
+    's,
+    (
+        &'static mut Visibility,
+        &'static mut InheritedVisibility,
+        &'static ZIndex,
+        &'static Name,
+    ),
+    (With<MenuItem>, Changed<Visibility>, Without<GlobalZIndex>),
+>;
+type ChangedMainMenuVisibilityVisQuery<'w, 's> = Query<
+    'w,
+    's,
+    (
+        &'static mut Visibility,
+        &'static mut InheritedVisibility,
+        &'static Name,
+    ),
+    (With<MenuItem>, Changed<Visibility>),
+>;
+
 /// Update menu visibility state resource and ensure menu items are visible in appropriate states
 pub fn ensure_menu_item_visibility(
     mut menu_items: Query<(&mut Visibility, &mut InheritedVisibility, &Name), With<MenuItem>>,
@@ -64,10 +100,7 @@ pub fn ensure_menu_item_visibility(
 pub fn update_menu_background(
     windows: Query<&Window>,
     mut backgrounds: Query<(&mut Node, &mut PreviousWindowSize), With<MenuBackground>>,
-    mut missing_size_backgrounds: Query<
-        (Entity, &mut Node),
-        (With<MenuBackground>, Without<PreviousWindowSize>),
-    >,
+    mut missing_size_backgrounds: MissingSizeBackgroundQueryVis,
     mut commands: Commands,
 ) {
     // Get the primary window
@@ -175,19 +208,8 @@ pub fn debug_menu_visibility(
 
 /// Fix visibility for menu items when it changes
 pub fn fix_visibility_for_changed_items(
-    mut items_with_global_z: Query<
-        (
-            &mut Visibility,
-            &mut InheritedVisibility,
-            &GlobalZIndex,
-            &Name,
-        ),
-        (With<MenuItem>, Changed<Visibility>),
-    >,
-    mut items_with_z: Query<
-        (&mut Visibility, &mut InheritedVisibility, &ZIndex, &Name),
-        (With<MenuItem>, Changed<Visibility>, Without<GlobalZIndex>),
-    >,
+    mut items_with_global_z: ChangedVisibilityItemGlobalZQuery,
+    mut items_with_z: ChangedVisibilityItemZQuery,
 ) {
     let global_z_count = items_with_global_z.iter().count();
     let z_count = items_with_z.iter().count();
@@ -289,12 +311,7 @@ pub fn force_main_menu_items_visibility(
 }
 
 /// Fix visibility for changed menu items in the main menu
-pub fn fix_changed_main_menu_visibility(
-    mut menu_items: Query<
-        (&mut Visibility, &mut InheritedVisibility, &Name),
-        (With<MenuItem>, Changed<Visibility>),
-    >,
-) {
+pub fn fix_changed_main_menu_visibility(mut menu_items: ChangedMainMenuVisibilityVisQuery) {
     let changed_count = menu_items.iter().count();
     if changed_count > 0 {
         debug!("Fixing visibility for {} changed menu items", changed_count);

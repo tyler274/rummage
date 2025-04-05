@@ -111,12 +111,10 @@ pub fn list_reference_images() -> Result<Vec<String>, String> {
     let entries =
         fs::read_dir(ref_dir).map_err(|e| format!("Failed to read reference directory: {}", e))?;
 
-    for entry in entries {
-        if let Ok(entry) = entry {
-            if let Some(name) = entry.file_name().to_str() {
-                if name.ends_with(".png") || name.ends_with(".jpg") {
-                    images.push(name.to_string());
-                }
+    for entry in entries.flatten() {
+        if let Some(name) = entry.file_name().to_str() {
+            if name.ends_with(".png") || name.ends_with(".jpg") {
+                images.push(name.to_string());
             }
         }
     }
