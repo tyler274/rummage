@@ -6,6 +6,7 @@ edition = "2024"
 [features]
 test-utils = []
 snapshot = []
+mtgjson = []
 default = ["snapshot"]
 debug = ["bevy-persistent/pretty"]
 
@@ -26,25 +27,25 @@ bevy-persistent = { version = "0.7.0", features = ["bincode", "toml"] }
 #     "wyrand",
 # ] }
 # Commenting out bevy_replicon - repository URL issues
-bevy_replicon = "0.31.1"
+bevy_replicon = "0.32.1"
 bincode = { version = "2.0.1", features = ["serde"] }
 bitflags = "2.9.0"
 bzip2 = "0.5.2"
 chrono = "0.4.40"
 dirs = "6.0.0"
-flate2 = "1.1.0"
+flate2 = "1.1.1"
 hex = "0.4.3"
-image = "0.25.5"
+image = "0.25.6"
 lazy_static = "1.4"
-log = { version = "*", features = [
+log = { version = "0.4.27", features = [
     "max_level_debug",
     "release_max_level_warn",
 ] }
-once_cell = "1.21.0"
+once_cell = "1.21.3"
 rand = "0.9.0"
 rand_core = "0.9.3"
 regex = "1.10.4"
-reqwest = { version = "0.12.12", features = ["json"] }
+reqwest = { version = "0.12.15", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.10.8"
@@ -53,7 +54,7 @@ tokio = { version = "1.44.0", features = ["time"] }
 uuid = { version = "1.12.1", features = ["v4"] }
 
 [dev-dependencies]
-tempfile = "3.19.0"
+tempfile = "3.19.1"
 tokio = { version = "1.44.0", features = ["full"] }
 tokio-test = "0.4"
 
