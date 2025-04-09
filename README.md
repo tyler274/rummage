@@ -6,7 +6,7 @@
 [![Patreon](https://img.shields.io/badge/Patreon-Support-FF424D?logo=patreon)](https://www.patreon.com/c/DabneyEngineeringIncorporated)
 [![Documentation](https://img.shields.io/badge/Docs-GitHub%20Pages-brightgreen)](https://tyler274.github.io/rummage/)
 
-Rummage is a robust end-to-end tested Magic: The Gathering Commander format game engine built with Bevy 0.15.x.
+Rummage is aiming to be a robust end-to-end tested Magic: The Gathering Commander format game engine built with Bevy 0.15.x.
 
 ## Features
 
