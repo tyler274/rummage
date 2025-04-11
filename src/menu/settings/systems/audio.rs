@@ -36,15 +36,11 @@ pub struct VolumeValueText(pub VolumeType);
 #[derive(Component)]
 pub struct VolumeSlider;
 
-/// Groups system parameters for volume updates
+/// Volume settings context without queries to avoid conflicts
 #[derive(SystemParam)]
-pub struct VolumeUpdateContext<'w, 's> {
+pub struct VolumeSettingsContext<'w> {
     volume_settings: ResMut<'w, VolumeSettings>,
-    text_query: Query<'w, 's, (&'static mut Text, &'static VolumeValueText)>,
-    volume_indicators: Query<'w, 's, (&'static mut Node, &'static Parent), Without<Button>>,
-    volume_type_query: Query<'w, 's, &'static VolumeType>,
     global_volume: ResMut<'w, bevy::prelude::GlobalVolume>,
-    audio_players: Query<'w, 's, &'static mut bevy::audio::PlaybackSettings>,
     persistent_settings: Option<ResMut<'w, Persistent<RummageSettings>>>,
 }
 
@@ -159,8 +155,12 @@ pub fn setup_audio_settings(mut commands: Commands) {
 
 /// System to handle interactions with volume sliders
 pub fn volume_slider_interaction(
-    mut interaction_query: VolumeSliderInteractionQuery,
-    mut context: VolumeUpdateContext,
+    interaction_query: VolumeSliderInteractionQuery,
+    mut text_query: Query<(&mut Text, &VolumeValueText)>,
+    mut volume_indicators: Query<(&mut Node, &Parent), Without<Button>>,
+    volume_type_query: Query<&VolumeType>,
+    mut audio_players: Query<&mut bevy::audio::PlaybackSettings>,
+    mut context: VolumeSettingsContext,
     windows: Query<&Window>,
     mouse_input: Res<ButtonInput<MouseButton>>,
 ) {
@@ -173,7 +173,11 @@ pub fn volume_slider_interaction(
     let window = windows.get_single().expect("Expected a primary window");
 
     if let Some(cursor_pos) = window.cursor_position() {
-        for (interaction, volume_type, node, transform) in interaction_query.iter_mut() {
+        // First, gather interaction data
+        let mut interactions_to_process = Vec::new();
+
+        // Process interaction data without modifying any other components
+        for (interaction, volume_type, node, transform) in interaction_query.iter() {
             if let Interaction::Pressed = *interaction {
                 // Calculate slider value from cursor position
                 let button_size = match node.width {
@@ -188,62 +192,50 @@ pub fn volume_slider_interaction(
                 let clamped_value = (relative_x * 100.0).round() as i32;
                 let volume_value = clamped_value as f32 / 100.0;
 
-                // Update volume settings
-                match *volume_type {
-                    VolumeType::Master => {
-                        context.volume_settings.master = volume_value;
-                        context.global_volume.volume = Volume::new(volume_value);
-                    }
-                    VolumeType::Music => {
-                        context.volume_settings.music = volume_value;
-                        for mut settings in context.audio_players.iter_mut() {
-                            settings.volume = Volume::new(volume_value);
-                        }
-                    }
-                    VolumeType::Sfx => {
-                        context.volume_settings.sfx = volume_value;
-                        // NOTE: Need a way to apply SFX volume globally or per-sound
+                interactions_to_process.push((*volume_type, clamped_value, volume_value));
+            }
+        }
+
+        // Process all collected interactions
+        for (volume_type, clamped_value, volume_value) in interactions_to_process {
+            // Update volume settings
+            match volume_type {
+                VolumeType::Master => {
+                    context.volume_settings.master = volume_value;
+                    context.global_volume.volume = Volume::new(volume_value);
+                }
+                VolumeType::Music => {
+                    context.volume_settings.music = volume_value;
+                    for mut settings in audio_players.iter_mut() {
+                        settings.volume = Volume::new(volume_value);
                     }
                 }
-
-                // Update UI
-                update_volume_ui(
-                    clamped_value,
-                    *volume_type,
-                    &mut context.text_query,
-                    &mut context.volume_indicators,
-                    &context.volume_type_query,
-                );
-
-                // Save settings
-                save_volume_settings(&mut context.persistent_settings, &context.volume_settings);
-
-                info!("Volume {:?} set to {}%", volume_type, clamped_value);
+                VolumeType::Sfx => {
+                    context.volume_settings.sfx = volume_value;
+                    // NOTE: Need a way to apply SFX volume globally or per-sound
+                }
             }
-        }
-    }
-}
 
-fn update_volume_ui(
-    value: i32,
-    volume_type: VolumeType,
-    text_query: &mut Query<(&mut Text, &VolumeValueText)>,
-    volume_indicators: &mut Query<(&mut Node, &Parent), Without<Button>>,
-    volume_type_query: &Query<&VolumeType>,
-) {
-    // Update text display
-    for (mut text, value_text) in text_query.iter_mut() {
-        if value_text.0 as u8 == volume_type as u8 {
-            text.0 = format!("{}%", value);
-        }
-    }
-
-    // Update slider indicator
-    for (mut indicator_node, parent) in volume_indicators.iter_mut() {
-        if let Ok(parent_volume_type) = volume_type_query.get(parent.get()) {
-            if *parent_volume_type as u8 == volume_type as u8 {
-                indicator_node.width = Val::Percent(value as f32);
+            // Update text display
+            for (mut text, value_text) in text_query.iter_mut() {
+                if value_text.0 as u8 == volume_type as u8 {
+                    text.0 = format!("{}%", clamped_value);
+                }
             }
+
+            // Update slider indicators in a single pass
+            for (mut node, parent) in volume_indicators.iter_mut() {
+                if let Ok(parent_volume_type) = volume_type_query.get(parent.get()) {
+                    if *parent_volume_type as u8 == volume_type as u8 {
+                        node.width = Val::Percent(clamped_value as f32);
+                    }
+                }
+            }
+
+            // Save settings
+            save_volume_settings(&mut context.persistent_settings, &context.volume_settings);
+
+            info!("Volume {:?} set to {}%", volume_type, clamped_value);
         }
     }
 }
