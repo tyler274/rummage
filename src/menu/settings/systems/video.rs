@@ -160,7 +160,7 @@ pub fn quality_button_interaction(
     mut quality_setting: ResMut<CurrentGraphicsQuality>,
     mut button_query: Query<(Entity, &mut BackgroundColor, &QualityButton), With<Button>>,
 ) {
-    for (interaction, clicked_quality_button, clicked_entity) in interaction_query.iter_mut() {
+    for (interaction, clicked_quality_button, _clicked_entity) in interaction_query.iter_mut() {
         if *interaction == Interaction::Pressed {
             let new_quality = clicked_quality_button.0;
 
