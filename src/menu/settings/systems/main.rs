@@ -76,18 +76,15 @@ pub fn settings_button_action(
                     next_state.set(SettingsMenuState::Main);
                 }
                 SettingsButtonAction::ExitSettings => {
+                    // First set settings state to disabled to trigger cleanup
+                    next_state.set(SettingsMenuState::Disabled);
+
                     // Get the origin state from context, defaulting to MainMenu
                     let origin = context.settings_origin.unwrap_or(GameMenuState::MainMenu);
                     info!("Exiting settings, returning to {:?}", origin);
 
-                    // First set settings state to disabled to trigger cleanup
-                    next_state.set(SettingsMenuState::Disabled);
-
-                    // Wait one frame to ensure cleanup completes
                     // Then transition back to the origin state
-                    if *current_state.get() != origin {
-                        game_menu_state.set(origin);
-                    }
+                    game_menu_state.set(origin);
 
                     // Clear the settings origin after state transition
                     context.settings_origin = None;
