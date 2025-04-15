@@ -16,6 +16,9 @@ use crate::snapshot::systems::take_snapshot_after_setup;
 use crate::text::DebugConfig;
 use bevy::prelude::*;
 
+// Add AppState import
+use crate::menu::state::AppState;
+
 /// Marker component to trigger visual hand spawning for a player
 #[derive(Component)]
 struct SpawnVisualHand {
@@ -52,7 +55,7 @@ impl Plugin for RummagePlugin {
                     .with_player_card_offset(3, 0.0), // Left player
             )
             .add_systems(
-                OnEnter(GameMenuState::InGame),
+                OnEnter(AppState::InGame),
                 (
                     setup_game,
                     // Run card spawning system after setup
@@ -73,7 +76,7 @@ impl Plugin for RummagePlugin {
             )
             .add_systems(
                 Update,
-                (handle_window_resize, camera_movement).run_if(in_state(GameMenuState::InGame)),
+                (handle_window_resize, camera_movement).run_if(in_state(AppState::InGame)),
             );
     }
 }
@@ -193,9 +196,12 @@ fn spawn_player_visual_hands(
                 display_cards,
             );
         } else {
-            warn!("Could not find Player component for entity {:?}, skipping hand spawn.", marker.player_entity);
+            warn!(
+                "Could not find Player component for entity {:?}, skipping hand spawn.",
+                marker.player_entity
+            );
         }
-        
+
         commands.entity(marker_entity).despawn();
     }
 }
