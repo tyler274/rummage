@@ -3,6 +3,7 @@ use super::common::{
     spawn_settings_root, spawn_settings_title,
 };
 use crate::menu::components::MenuItem;
+use crate::menu::settings::components::OnControlsSettingsMenu;
 use crate::menu::settings::components::*;
 use bevy::prelude::*;
 
@@ -15,6 +16,9 @@ pub fn setup_controls_settings(mut commands: Commands) {
         Color::srgba(0.0, 0.0, 0.0, 0.7),
         "Controls Settings",
     );
+
+    // Add the marker component to the root entity
+    commands.entity(root_entity).insert(OnControlsSettingsMenu);
 
     // Store root_entity for later use
     let mut root = commands.entity(root_entity);

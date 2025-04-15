@@ -3,14 +3,19 @@ use bevy::prelude::*;
 use bevy_persistent::prelude::*;
 
 use super::components::*;
+use super::components::{
+    OnAudioSettingsMenu, OnControlsSettingsMenu, OnGameplaySettingsMenu, OnMainSettingsMenu,
+    OnVideoSettingsMenu,
+};
 use super::systems::{
     audio::{
         VolumeUpdateRequests, apply_volume_updates, setup_audio_settings, volume_slider_interaction,
     },
-    cleanup_settings_menu,
     controls::setup_controls_settings,
+    despawn_screen,
     gameplay::setup_gameplay_settings,
     main::{handle_settings_back_input, settings_button_action, setup_main_settings},
+    state_transitions::should_handle_settings_back,
     video::setup_video_settings,
 };
 
@@ -85,35 +90,47 @@ impl Plugin for SettingsPlugin {
                     apply_volume_updates,
                 ),
             )
-            // Add handle_settings_back_input separately with its condition
+            // Add handle_settings_back_input with condition using helper
             .add_systems(
                 Update,
-                handle_settings_back_input.run_if(not(in_state(SettingsMenuState::Disabled))),
+                handle_settings_back_input.run_if(|state: Res<State<SettingsMenuState>>| {
+                    should_handle_settings_back(*state.get())
+                }),
             )
             // Apply settings on startup
             .add_systems(Startup, apply_settings)
             // Save settings and cleanup when exiting any settings menu
-            // Run cleanup in a fixed order to prevent race conditions
+            // Use specific despawn systems for each state
             .add_systems(
                 OnExit(SettingsMenuState::Audio),
-                (save_settings, cleanup_settings_menu).chain(),
+                (save_settings, despawn_screen::<OnAudioSettingsMenu>).chain(),
             )
             .add_systems(
                 OnExit(SettingsMenuState::Video),
-                (save_settings, cleanup_settings_menu).chain(),
+                (save_settings, despawn_screen::<OnVideoSettingsMenu>).chain(),
             )
             .add_systems(
                 OnExit(SettingsMenuState::Gameplay),
-                (save_settings, cleanup_settings_menu).chain(),
+                (save_settings, despawn_screen::<OnGameplaySettingsMenu>).chain(),
             )
-            .add_systems(OnExit(SettingsMenuState::Controls), cleanup_settings_menu)
-            .add_systems(OnExit(SettingsMenuState::Main), cleanup_settings_menu)
-            // Add cleanup for Disabled state to ensure complete cleanup
-            // This should run after any other cleanup systems
             .add_systems(
-                OnExit(SettingsMenuState::Disabled),
-                cleanup_settings_menu.after(save_settings),
+                OnExit(SettingsMenuState::Controls),
+                despawn_screen::<OnControlsSettingsMenu>,
+            )
+            .add_systems(
+                OnExit(SettingsMenuState::Main),
+                despawn_screen::<OnMainSettingsMenu>,
             );
+        // Cleanup for Disabled state - This might need careful thought.
+        // If Disabled means *no* settings UI should be visible, we might need
+        // to despawn *all* markers, or rely on the GameMenuState transitions.
+        // For now, let's assume leaving Disabled doesn't require specific cleanup
+        // beyond what the GameMenuState transition handles.
+        // We remove the previous cleanup_settings_menu call here.
+        // .add_systems(
+        //     OnExit(SettingsMenuState::Disabled),
+        //     cleanup_settings_menu.after(save_settings),
+        // );
     }
 }
 

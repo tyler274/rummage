@@ -3,6 +3,7 @@ use super::common::{
     spawn_settings_title,
 };
 use crate::menu::components::*;
+use crate::menu::settings::components::OnVideoSettingsMenu;
 use crate::menu::settings::components::{
     GraphicsQuality, QualityButton, SettingsButtonAction, SettingsMenuItem,
 };
@@ -18,6 +19,9 @@ pub fn setup_video_settings(mut commands: Commands, graphics_quality: Res<Curren
         Color::srgba(0.0, 0.0, 0.0, 0.7),
         "Video Settings",
     );
+
+    // Add the marker component to the root entity
+    commands.entity(root_entity).insert(OnVideoSettingsMenu);
 
     // Variable to hold the container entity ID, initialized inside the closure
     let mut container_entity_id = Entity::PLACEHOLDER;

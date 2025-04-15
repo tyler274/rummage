@@ -126,3 +126,20 @@ pub struct RummageSettings {
         }
     }
 } */
+
+// --- Marker Components for Settings Screens ---
+
+#[derive(Component, Debug, Clone, Copy)]
+pub struct OnMainSettingsMenu;
+
+#[derive(Component, Debug, Clone, Copy)]
+pub struct OnVideoSettingsMenu;
+
+#[derive(Component, Debug, Clone, Copy)]
+pub struct OnAudioSettingsMenu;
+
+#[derive(Component, Debug, Clone, Copy)]
+pub struct OnGameplaySettingsMenu;
+
+#[derive(Component, Debug, Clone, Copy)]
+pub struct OnControlsSettingsMenu;

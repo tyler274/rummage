@@ -3,6 +3,7 @@ use super::common::{
     spawn_settings_root, spawn_settings_title,
 };
 use crate::menu::components::*;
+use crate::menu::settings::components::OnGameplaySettingsMenu;
 use crate::menu::settings::components::*;
 use bevy::prelude::*;
 
@@ -15,6 +16,9 @@ pub fn setup_gameplay_settings(mut commands: Commands, settings: Res<GameplaySet
         Color::srgba(0.0, 0.0, 0.0, 0.7),
         "Gameplay Settings",
     );
+
+    // Add the marker component to the root entity
+    commands.entity(root_entity).insert(OnGameplaySettingsMenu);
 
     // Get the container entity before the closure
     let mut container_entity = Entity::PLACEHOLDER;

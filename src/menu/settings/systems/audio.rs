@@ -1,6 +1,7 @@
 use super::common::*;
 use crate::camera::components::AppLayer;
 use crate::menu::components::MenuItem;
+use crate::menu::settings::components::OnAudioSettingsMenu;
 use crate::menu::settings::components::*;
 use bevy::audio::Volume;
 use bevy::ecs::system::SystemParam;
@@ -51,7 +52,7 @@ pub struct VolumeUpdateRequests {
 }
 
 /// Sets up the audio settings menu
-pub fn setup_audio_settings(mut commands: Commands) {
+pub fn setup_audio_settings(mut commands: Commands, volume_settings: Res<VolumeSettings>) {
     info!("Setting up audio settings menu");
 
     let root_entity = spawn_settings_root(
@@ -59,6 +60,9 @@ pub fn setup_audio_settings(mut commands: Commands) {
         Color::srgba(0.0, 0.0, 0.0, 0.7),
         "Audio Settings",
     );
+
+    // Add the marker component to the root entity
+    commands.entity(root_entity).insert(OnAudioSettingsMenu);
 
     // Store root_entity for later use
     let mut root = commands.entity(root_entity);
@@ -105,6 +109,8 @@ pub fn setup_audio_settings(mut commands: Commands) {
                 ));
 
                 // Slider
+                let initial_volume_percent = (volume_settings.master * 100.0).round() as u32;
+
                 parent
                     .spawn((
                         Node {
@@ -119,11 +125,12 @@ pub fn setup_audio_settings(mut commands: Commands) {
                         InheritedVisibility::VISIBLE,
                         Name::new("Volume Slider"),
                         VolumeSlider,
+                        VolumeType::Master,
                     ))
                     .with_children(|parent| {
                         parent.spawn((
                             Node {
-                                width: Val::Percent(50.0),
+                                width: Val::Percent(initial_volume_percent as f32),
                                 height: Val::Percent(100.0),
                                 ..default()
                             },
@@ -139,7 +146,7 @@ pub fn setup_audio_settings(mut commands: Commands) {
 
                 // Value text
                 parent.spawn((
-                    Text::new("50%"),
+                    Text::new(format!("{}%", initial_volume_percent)),
                     TextFont {
                         font_size: 20.0,
                         ..default()
@@ -150,6 +157,7 @@ pub fn setup_audio_settings(mut commands: Commands) {
                     AppLayer::Menu.layer(),
                     Visibility::Visible,
                     InheritedVisibility::VISIBLE,
+                    VolumeValueText(VolumeType::Master),
                     Name::new("Volume Value"),
                 ));
             });

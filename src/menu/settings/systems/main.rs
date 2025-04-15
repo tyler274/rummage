@@ -1,6 +1,7 @@
 use super::common::{
     spawn_settings_button, spawn_settings_container, spawn_settings_root, spawn_settings_title,
 };
+use crate::menu::settings::components::OnMainSettingsMenu;
 use crate::menu::settings::components::SettingsButtonAction;
 use crate::menu::settings::state::SettingsMenuState;
 use crate::menu::settings::systems::state_transitions::handle_settings_exit;
@@ -24,6 +25,9 @@ pub fn setup_main_settings(mut commands: Commands) {
         Color::srgba(0.0, 0.0, 0.0, 0.7),
         "Main Settings",
     );
+
+    // Add the marker component to the root entity
+    commands.entity(root_entity).insert(OnMainSettingsMenu);
 
     // Store container entity outside the closure
     let mut container_entity = Entity::PLACEHOLDER;
@@ -76,6 +80,10 @@ pub fn settings_button_action(
                     next_state.set(SettingsMenuState::Main);
                 }
                 SettingsButtonAction::ExitSettings => {
+                    info!(
+                        "settings_button_action: Context before exit: origin={:?}",
+                        context.settings_origin
+                    );
                     handle_settings_exit(&mut next_state, &mut game_menu_state, &mut context);
                 }
             }
@@ -92,6 +100,10 @@ pub fn handle_settings_back_input(
 ) {
     if input.just_pressed(KeyCode::Escape) {
         info!("Escape key pressed, exiting settings menu");
+        info!(
+            "handle_settings_back_input: Context before exit: origin={:?}",
+            context.settings_origin
+        );
         handle_settings_exit(&mut settings_menu_state, &mut game_menu_state, &mut context);
     }
 }
