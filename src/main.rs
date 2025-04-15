@@ -24,7 +24,7 @@ use bevy::time::Fixed;
 use bevy::window::{PresentMode /* , WindowTheme */};
 use camera::CameraPlugin;
 use menu::MenuPlugin;
-use plugins::MainRummagePlugin;
+use plugins::RummagePlugin;
 #[cfg(feature = "snapshot")]
 use snapshot::SnapshotDisabled;
 use tracing::DiagnosticsPlugin;
@@ -93,7 +93,7 @@ fn main() {
     .add_plugins(DiagnosticsPlugin) // Add our diagnostics plugin
     .add_plugins(CameraPlugin) // Add the camera plugin which manages SnapshotEvent
     .add_plugins(MenuPlugin)
-    .add_plugins(MainRummagePlugin);
+    .add_plugins(RummagePlugin);
     // Add debug logging for audio system
     info!("Audio system initialized with DefaultPlugins");
 

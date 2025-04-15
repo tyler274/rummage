@@ -17,6 +17,9 @@ use crate::player::systems::spawn::table::TableLayout;
 use crate::player::{PlayerPlugin, components::Player, resources::PlayerConfig};
 use crate::text::DebugConfig;
 
+// Expose RummagePlugin
+pub use game_plugin::RummagePlugin;
+
 // Type alias for the query in register_unzoned_cards
 type UnzonedCardQuery<'w, 's> = Query<
     'w,
