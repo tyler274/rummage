@@ -24,14 +24,22 @@ pub fn cleanup_pause_menu(
             element_count
         );
         for (entity, star) in decorative_elements.iter() {
-            // Log if it's a Star of David
-            if star.is_some() {
-                info!("Setting Star of David {:?} to Hidden", entity);
+            // Check if the entity still exists before attempting to modify it
+            if let Some(mut entity_commands) = commands.get_entity(entity) {
+                // Log if it's a Star of David
+                if star.is_some() {
+                    info!("Setting Star of David {:?} to Hidden", entity);
+                } else {
+                    debug!("Setting decorative element {:?} to Hidden", entity);
+                }
+                // Just change visibility instead of despawning
+                entity_commands.insert(Visibility::Hidden);
             } else {
-                debug!("Setting decorative element {:?} to Hidden", entity);
+                warn!(
+                    "Decorative element {:?} was already despawned before visibility could be set to Hidden.",
+                    entity
+                );
             }
-            // Just change visibility instead of despawning
-            commands.entity(entity).insert(Visibility::Hidden);
         }
     }
 }
