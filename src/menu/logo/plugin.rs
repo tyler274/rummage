@@ -243,20 +243,15 @@ fn create_logo_on_camera(
 fn hide_logo_for_settings(
     mut logos: Query<&mut Visibility, With<MenuDecorativeElement>>,
     mut transition_context: ResMut<StateTransitionContext>,
-    current_state: Res<State<GameMenuState>>,
+    _current_state: Res<State<GameMenuState>>,
 ) {
-    // Store info about what state we're coming from
-    transition_context.settings_origin = Some(*current_state.get());
+    // Store info about what state we're coming from - REMOVED: This should be handled by handle_settings_enter
+    // transition_context.settings_origin = Some(*current_state.get());
     transition_context.returning_from_settings = false;
 
-    // Just hide the logo instead of removing it
-    let count = logos.iter().count();
-    if count > 0 {
-        info!("Hiding {} logo entities when entering settings", count);
-
-        for mut visibility in logos.iter_mut() {
-            *visibility = Visibility::Hidden;
-        }
+    info!("Hiding logo while entering settings");
+    for mut visibility in logos.iter_mut() {
+        *visibility = Visibility::Hidden;
     }
 }
 

@@ -178,3 +178,39 @@ pub fn log_settings_exit(context: Res<StateTransitionContext>) {
         context.settings_origin
     );
 }
+
+/// Handles transition from MainMenu to Settings
+pub fn handle_main_to_settings(
+    mut next_state: ResMut<NextState<GameMenuState>>,
+    mut _context: ResMut<StateTransitionContext>,
+) {
+    info!("Transitioning from MainMenu to Settings");
+    next_state.set(GameMenuState::Settings);
+}
+
+/// Handles transition from PauseMenu to Settings
+pub fn handle_pause_to_settings(
+    mut next_state: ResMut<NextState<GameMenuState>>,
+    mut _context: ResMut<StateTransitionContext>,
+) {
+    info!("Transitioning from PauseMenu to Settings");
+    next_state.set(GameMenuState::Settings);
+}
+
+/// Handles transition from any menu state back to MainMenu
+pub fn handle_back_to_main(
+    mut next_state: ResMut<NextState<GameMenuState>>,
+    mut _context: ResMut<StateTransitionContext>,
+) {
+    info!("Transitioning back to MainMenu");
+    next_state.set(GameMenuState::MainMenu);
+}
+
+/// Handles transition from Credits back to MainMenu
+pub fn handle_credits_to_main(
+    mut next_state: ResMut<NextState<GameMenuState>>,
+    mut _context: ResMut<StateTransitionContext>,
+) {
+    info!("Transitioning from Credits to MainMenu");
+    next_state.set(GameMenuState::MainMenu);
+}
