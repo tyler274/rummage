@@ -34,6 +34,11 @@ pub fn setup_gameplay_settings(mut commands: Commands, settings: Res<GameplaySet
         create_toggle_setting(parent, "Show Tooltips", settings.show_tooltips);
         // create_slider_setting(parent, "Animation Speed", settings.animation_speed);
     });
+
+    // Back button to return to main settings
+    commands.entity(container_entity).with_children(|parent| {
+        spawn_settings_button(parent, "Back", SettingsButtonAction::NavigateToMain);
+    });
 }
 
 /// Creates an animation speed setting display
