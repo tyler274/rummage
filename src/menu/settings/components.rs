@@ -68,7 +68,7 @@ impl Default for VolumeSettings {
 }
 
 /// Graphics quality settings
-#[derive(Resource, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Resource, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(dead_code)]
 pub enum GraphicsQuality {
     /// Low quality graphics for performance

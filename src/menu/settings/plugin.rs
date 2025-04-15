@@ -149,7 +149,7 @@ fn apply_settings(
     gameplay_settings.auto_pass = persistent_settings.gameplay.auto_pass;
     gameplay_settings.show_tooltips = persistent_settings.gameplay.show_tooltips;
 
-    // Apply graphics settings
+    // Apply graphics settings - now using Copy trait
     graphics_quality.quality = persistent_settings.graphics;
 
     info!("Settings applied successfully");
@@ -173,7 +173,7 @@ fn save_settings(
     persistent_settings.gameplay.auto_pass = gameplay_settings.auto_pass;
     persistent_settings.gameplay.show_tooltips = gameplay_settings.show_tooltips;
 
-    // Save graphics settings
+    // Save graphics settings - now using Copy trait
     persistent_settings.graphics = graphics_quality.quality;
 
     // Persist changes to disk
