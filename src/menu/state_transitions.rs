@@ -1,73 +1,7 @@
 use crate::camera::components::GameCamera;
 use crate::cards::Card;
-use crate::menu::settings::SettingsMenuState;
 use crate::menu::state::{GameMenuState, StateTransitionContext};
 use bevy::prelude::*;
-
-/// Set up the transition context for settings menu
-pub fn setup_settings_transition(
-    mut context: ResMut<StateTransitionContext>,
-    current_state: Res<State<GameMenuState>>,
-    mut settings_state: ResMut<NextState<SettingsMenuState>>,
-    settings_current: Res<State<SettingsMenuState>>,
-) {
-    info!(
-        "Setting up settings transition from state: {:?}, from_pause_menu: {}",
-        current_state.get(),
-        context.from_pause_menu
-    );
-
-    info!("Current SettingsMenuState: {:?}", settings_current.get());
-
-    // Always reset from_pause_menu flag when transitioning from MainMenu
-    if *current_state.get() == GameMenuState::MainMenu {
-        info!("Resetting from_pause_menu flag because we're in MainMenu state");
-        context.from_pause_menu = false;
-        // Explicitly set the settings origin to MainMenu
-        info!("Explicitly setting settings_origin to MainMenu");
-        context.settings_origin = Some(GameMenuState::MainMenu);
-    } else if context.from_pause_menu || *current_state.get() == GameMenuState::PauseMenu {
-        // If the flag is set or we're coming from the pause menu, set the origin to PauseMenu
-        info!("Detected transition from pause menu");
-        context.settings_origin = Some(GameMenuState::PauseMenu);
-    } else {
-        // Fall back to checking the current state
-        match current_state.get() {
-            GameMenuState::Settings if context.settings_origin.is_none() => {
-                // If we're already in Settings state but have no origin,
-                // default to main menu
-                info!("Already in Settings state with no origin, defaulting to main menu");
-                context.settings_origin = Some(GameMenuState::MainMenu);
-            }
-            _ => {
-                if context.settings_origin.is_none() {
-                    // Default to main menu if coming from an unexpected state
-                    info!("Entering settings from unexpected state, defaulting to main menu");
-                    context.settings_origin = Some(GameMenuState::MainMenu);
-                } else {
-                    info!(
-                        "Using existing settings origin: {:?}",
-                        context.settings_origin
-                    );
-                }
-            }
-        }
-    }
-
-    // Only set the settings state if we're not already in Main
-    if *settings_current.get() != SettingsMenuState::Main {
-        info!(
-            "Setting SettingsMenuState to Main (was {:?})",
-            settings_current.get()
-        );
-        settings_state.set(SettingsMenuState::Main);
-    } else {
-        info!("Already in SettingsMenuState::Main, not changing state");
-    }
-
-    // Log that we're about to exit this function
-    info!("Completed settings transition setup");
-}
 
 /// Starts the game loading process
 pub fn start_game_loading(
