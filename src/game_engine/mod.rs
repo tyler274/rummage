@@ -155,7 +155,10 @@ impl Plugin for GameEnginePlugin {
             .add_event::<RemoveCombatRestrictionEvent>();
 
         // Add game resources initialization during OnEnter(GameMenuState::InGame)
-        app.add_systems(OnEnter(GameMenuState::InGame), setup_game_engine);
+        app.add_systems(
+            OnEnter(GameMenuState::InGame),
+            (setup_players, setup_game_engine.after(setup_players)),
+        );
 
         // Register zone systems
         zones::register_zone_systems(app);
@@ -181,6 +184,23 @@ struct GameEngineResources<'w> {
     game_state: ResMut<'w, GameState>,
 }
 
+/// Spawns initial player entities
+fn setup_players(mut commands: Commands) {
+    info!("Spawning initial players...");
+    // Spawn one placeholder player for now
+    // TODO: Replace with actual player setup logic (e.g., based on config or lobby)
+    commands.spawn((
+        Player {
+            player_index: 0,               // Set the player index
+            name: "Player 1".to_string(),  // Provide name
+            life: 40,                      // Provide starting life (Commander format)
+            mana_pool: Default::default(), // Provide default mana pool
+        },
+        Name::new("Player 1"), // Optional: for debugging
+    ));
+    info!("Initial players spawned.");
+}
+
 /// Initializes the core game engine resources
 fn setup_game_engine(
     mut commands: Commands,
@@ -203,6 +223,14 @@ fn setup_game_engine(
 
     // Get all player entities
     let players: Vec<Entity> = player_query.iter().collect();
+    if players.is_empty() {
+        // This case should ideally not happen now, but good to handle defensively
+        error!("No players found during game engine setup! TurnManager initialization skipped.");
+        // We probably shouldn't proceed without players
+        return;
+    } else {
+        info!("Found {} players for initialization.", players.len());
+    }
 
     // Initialize turn manager with player list
     let mut turn_manager_instance = TurnManager::default();
@@ -221,6 +249,8 @@ fn setup_game_engine(
     *resources.game_stack = GameStack::default();
     *resources.priority_system = PrioritySystem::default();
     *resources.game_state = GameState::default();
+
+    info!("Game engine resources initialized successfully.");
 }
 
 /// Register core game engine systems with the app

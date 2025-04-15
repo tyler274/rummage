@@ -5,7 +5,6 @@ use crate::camera::{
     systems::{camera_movement, handle_window_resize, set_initial_zoom},
 };
 use crate::deck::{PlayerDeck, get_player_shuffled_deck};
-use crate::menu::GameMenuState;
 use crate::player::components::Player;
 use crate::player::playmat::spawn_player_playmat;
 use crate::player::systems::spawn::cards;
