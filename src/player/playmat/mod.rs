@@ -1,12 +1,12 @@
 //! Player playmat system for spawning and managing the player's board layout
 //! as defined in the playmat documentation.
 
-mod battlefield;
-mod command;
-mod exile;
-mod graveyard;
-mod hand;
-mod library;
+pub mod battlefield;
+pub mod command;
+pub mod exile;
+pub mod graveyard;
+pub mod hand;
+pub mod library;
 mod zones;
 
 use crate::camera::components::AppLayer;
