@@ -15,8 +15,7 @@ pub mod legends;
 pub mod scourge;
 
 /// Registry for all available card sets
-#[derive(Resource)]
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct CardRegistry {
     /// Cards organized by set code
     sets: HashMap<String, CardSetRegistry>,
@@ -39,7 +38,6 @@ pub struct CardSetRegistry {
     /// Cards organized by type
     pub by_type: HashMap<String, Vec<Entity>>,
 }
-
 
 impl CardRegistry {
     /// Register a new card with the registry

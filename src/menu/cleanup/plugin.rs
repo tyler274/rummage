@@ -1,4 +1,4 @@
-use crate::menu::main_menu::cleanup_main_menu_music_on_settings_enter;
+use crate::menu::main_menu::pause_main_menu_music_on_settings_enter;
 use crate::menu::state::GameMenuState;
 use bevy::prelude::*;
 
@@ -13,7 +13,7 @@ impl Plugin for CleanupPlugin {
         )
         .add_systems(
             OnEnter(GameMenuState::Settings),
-            cleanup_main_menu_music_on_settings_enter,
+            pause_main_menu_music_on_settings_enter,
         )
         .add_systems(
             OnExit(GameMenuState::PauseMenu),

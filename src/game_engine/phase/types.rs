@@ -48,10 +48,8 @@ pub enum EndingStep {
 }
 
 /// Resource representing the current phase of the game
-#[derive(Resource, Debug, Clone, Copy)]
-#[derive(Default)]
+#[derive(Resource, Debug, Clone, Copy, Default)]
 pub struct CurrentPhase(pub Phase);
-
 
 /// Component marking the active player
 #[derive(Component, Debug, Clone, Copy)]

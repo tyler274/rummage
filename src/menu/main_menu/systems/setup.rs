@@ -1,4 +1,4 @@
-use bevy::audio::PlaybackSettings;
+use bevy::audio::{AudioSink, PlaybackSettings};
 use bevy::prelude::*;
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, PositionType, Val};
 
@@ -22,6 +22,8 @@ pub fn setup_main_menu(
     existing_roots: Query<Entity, With<MenuRoot>>,
     all_cameras: Query<&Camera>,
     save_exists: ResMut<SaveExists>,
+    // Query for existing music sinks associated with the MainMenuMusic component
+    music_sinks: Query<&AudioSink, With<MainMenuMusic>>,
 ) {
     info!("Setting up main menu interface");
 
@@ -86,17 +88,37 @@ pub fn setup_main_menu(
         Name::new("Menu Background"),
     ));
 
-    // Set up background music
-    commands.spawn((
-        AudioPlayer::new(asset_server.load("music/negev_hava_nagila.ogg")),
-        PlaybackSettings {
-            mode: bevy::audio::PlaybackMode::Loop,
-            ..default()
-        },
-        MainMenuMusic,
-        MenuItem,
-        Name::new("Main Menu Music"),
-    ));
+    // Handle background music: Resume if paused, otherwise start fresh
+    let mut music_started = false;
+    // Check if any sink exists and is paused
+    if let Ok(sink) = music_sinks.get_single() {
+        if sink.is_paused() {
+            info!("Resuming main menu music.");
+            sink.play();
+            music_started = true;
+        } else {
+            // If it exists but is not paused (playing or stopped), treat as handled
+            info!("Main menu music already exists and is not paused.");
+            music_started = true;
+        }
+    } else if music_sinks.iter().count() > 1 {
+        warn!("Multiple MainMenuMusic sinks found during setup! Starting new music anyway.");
+        // Let it fall through to start new music, but log a warning.
+    }
+
+    if !music_started {
+        info!("Starting main menu music.");
+        commands.spawn((
+            AudioPlayer::new(asset_server.load("music/negev_hava_nagila.ogg")),
+            PlaybackSettings {
+                mode: bevy::audio::PlaybackMode::Loop,
+                ..default()
+            },
+            MainMenuMusic,
+            MenuItem,
+            Name::new("Main Menu Music"),
+        ));
+    }
 
     // Note: Star of David and logo setup is now handled by the LogoPlugin
 

@@ -5,8 +5,7 @@ use std::collections::HashMap;
 pub type CommanderZoneLocation = crate::game_engine::commander::components::CommanderZoneLocation;
 
 /// Serializable commander data
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CommanderData {
     // Maps player indices to their commander indices
     pub player_commanders: HashMap<usize, Vec<usize>>,
@@ -18,13 +17,10 @@ pub struct CommanderData {
     pub zone_transition_count: HashMap<usize, u32>,
 }
 
-
 /// Serializable data for a commander pair
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CommanderPairData {
     pub player_index: usize,
     pub commander_indices: Vec<usize>,
     pub partner_commander: bool,
 }
-

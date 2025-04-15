@@ -129,8 +129,7 @@ pub enum Comparison {
 }
 
 /// Resource tracking the state of combat during a turn
-#[derive(Resource)]
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct CombatState {
     /// Current attackers and defenders - maps attacker creature to defending player
     pub attackers: HashMap<Entity, Entity>,
@@ -176,7 +175,6 @@ pub struct CombatState {
     /// For first strike/regular damage steps
     pub combat_damage_step_number: u8,
 }
-
 
 // Combat systems
 pub fn initialize_combat_phase(

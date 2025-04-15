@@ -1,8 +1,8 @@
 use crate::menu::{
     components::MenuButtonAction, save_load::SaveLoadUiContext, save_load::SaveLoadUiState,
     settings::state::SettingsMenuState,
-    settings::systems::state_transitions::handle_settings_enter, state::GameMenuState,
-    state::StateTransitionContext,
+    settings::systems::state_transitions::handle_settings_enter, state::AppState,
+    state::GameMenuState, state::StateTransitionContext,
 };
 use bevy::prelude::*;
 
@@ -22,6 +22,7 @@ type MainMenuButtonInteractionQuery<'w, 's> = Query<
 pub fn handle_main_menu_interactions(
     mut interaction_query: MainMenuButtonInteractionQuery,
     mut next_state: ResMut<NextState<GameMenuState>>,
+    mut app_state: ResMut<NextState<AppState>>,
     mut settings_state: ResMut<NextState<SettingsMenuState>>,
     mut context: ResMut<StateTransitionContext>,
     mut exit: EventWriter<bevy::app::AppExit>,
@@ -36,6 +37,7 @@ pub fn handle_main_menu_interactions(
                     MenuButtonAction::NewGame => {
                         info!("New Game button pressed");
                         next_state.set(GameMenuState::InGame);
+                        app_state.set(AppState::InGame);
                     }
                     MenuButtonAction::LoadGame => {
                         info!("Load Game button pressed");

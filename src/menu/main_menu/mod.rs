@@ -9,4 +9,4 @@ pub mod systems;
 pub use plugin::MainMenuPlugin;
 
 // Export components needed by other modules
-pub use cleanup::{/* cleanup_main_menu, */ cleanup_main_menu_music_on_settings_enter};
+pub use cleanup::{/* cleanup_main_menu, */ pause_main_menu_music_on_settings_enter};

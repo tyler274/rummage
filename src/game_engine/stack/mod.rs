@@ -31,8 +31,7 @@ pub struct StackItemResolvedEvent {
 }
 
 /// The MTG stack system that manages spells and abilities
-#[derive(Resource)]
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct GameStack {
     /// Items currently on the stack (first = bottom, last = top)
     pub items: Vec<StackItem>,
@@ -205,7 +204,6 @@ impl GameStack {
         }
     }
 }
-
 
 /// System that handles resolving items from the stack
 pub fn stack_resolution_system(

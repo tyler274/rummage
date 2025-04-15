@@ -5,8 +5,7 @@ use std::collections::HashMap;
 pub type ZoneType = crate::game_engine::zones::types::Zone;
 
 /// Serializable zone data
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ZoneData {
     // Maps player indices to their libraries
     pub libraries: HashMap<usize, Vec<usize>>,
@@ -29,7 +28,6 @@ pub struct ZoneData {
     // Maps card indices to their current zone
     pub card_zone_map: HashMap<usize, ZoneType>,
 }
-
 
 /// Serializable card data
 #[derive(Debug, Clone, Serialize, Deserialize)]

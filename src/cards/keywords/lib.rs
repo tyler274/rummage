@@ -237,9 +237,7 @@ impl KeywordAbilities {
         if let Some(protection_match) = text.to_lowercase().find("protection from ") {
             abilities.insert(KeywordAbility::Protection);
             let after_protection = &text[protection_match + "protection from ".len()..];
-            if let Some(end) =
-                after_protection.find(['.', ',', '\n', ';'])
-            {
+            if let Some(end) = after_protection.find(['.', ',', '\n', ';']) {
                 let protection_value = &after_protection[..end];
                 ability_values.insert(
                     KeywordAbility::Protection,
@@ -251,9 +249,7 @@ impl KeywordAbilities {
         if let Some(ward_match) = text.to_lowercase().find("ward ") {
             abilities.insert(KeywordAbility::Ward);
             let after_ward = &text[ward_match + "ward ".len()..];
-            if let Some(end) =
-                after_ward.find(['.', ',', '\n', ';'])
-            {
+            if let Some(end) = after_ward.find(['.', ',', '\n', ';']) {
                 let ward_value = &after_ward[..end];
                 ability_values.insert(KeywordAbility::Ward, ward_value.trim().to_string());
             }

@@ -18,4 +18,4 @@ pub struct MainMenuButton;
 
 /// Component to mark the main menu music entity
 #[derive(Component)]
-pub struct MainMenuMusic; 
+pub struct MainMenuMusic;

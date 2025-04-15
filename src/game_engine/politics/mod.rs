@@ -24,8 +24,7 @@ pub use combat_restrictions::{
 pub use goad::{GoadEvent, goad_system};
 
 /// Resource that manages multiplayer politics in Commander games
-#[derive(Resource)]
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct PoliticsSystem {
     /// The current monarch player (if any)
     pub monarch: Option<Entity>,
@@ -63,7 +62,6 @@ pub struct PoliticsSystem {
     /// Tracks combat restrictions from political effects
     pub combat_restrictions: HashMap<Entity, Vec<CombatRestriction>>,
 }
-
 
 /// Event for when a player becomes the monarch
 #[derive(Event)]

@@ -22,7 +22,6 @@ use bevy::prelude::*;
 #[derive(Default)]
 pub struct TextPlugin {}
 
-
 impl Plugin for TextPlugin {
     fn build(&self, app: &mut App) {
         // Only add the legacy text spawning system if requested

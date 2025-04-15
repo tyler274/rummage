@@ -8,7 +8,9 @@ use crate::cards::types::CreatureType;
 #[derive(Default)]
 pub enum CardDetails {
     Creature(CreatureCard),
-    Planeswalker { loyalty: i32 },
+    Planeswalker {
+        loyalty: i32,
+    },
     Instant(SpellCard),
     Sorcery(SpellCard),
     Enchantment(EnchantmentCard),
@@ -17,7 +19,6 @@ pub enum CardDetails {
     #[default]
     Other,
 }
-
 
 impl CardDetails {
     /// Create a new Creature card details

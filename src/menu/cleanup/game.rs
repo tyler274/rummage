@@ -1,7 +1,4 @@
-use crate::{
-    camera::components::GameCamera,
-    cards::Card,
-};
+use crate::{camera::components::GameCamera, cards::Card};
 use bevy::prelude::*;
 
 /// Cleans up game entities (cards and game camera)
@@ -42,4 +39,4 @@ pub fn cleanup_game(
 #[allow(dead_code)]
 pub fn cleanup_card_selection(_commands: Commands, _cards: Query<Entity, With<Card>>) {
     // Implementation pending
-} 
+}
