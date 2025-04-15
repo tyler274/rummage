@@ -40,3 +40,19 @@ pub fn cleanup_main_menu(
 
     info!("Main menu cleanup completed");
 }
+
+/// System to specifically despawn main menu music when entering settings
+pub fn cleanup_main_menu_music_on_settings_enter(
+    mut commands: Commands,
+    music_query: Query<Entity, With<MainMenuMusic>>,
+) {
+    if let Ok(entity) = music_query.get_single() {
+        info!("Despawning main menu music upon entering settings menu.");
+        commands.entity(entity).despawn_recursive();
+    } else if music_query.iter().count() > 1 {
+        warn!("Multiple MainMenuMusic entities found when entering settings! Despawning all.");
+        for entity in music_query.iter() {
+            commands.entity(entity).despawn_recursive();
+        }
+    }
+}

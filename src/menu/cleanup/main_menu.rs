@@ -1,50 +1,23 @@
-use crate::menu::{
-    components::MenuItem, input_blocker::InputBlocker, main_menu::components::MainMenuMusic,
-};
+use crate::menu::components::MenuRoot;
 use bevy::prelude::*;
 
-/// Cleans up main menu entities
-pub fn cleanup_main_menu(
-    mut commands: Commands,
-    menu_items: Query<(Entity, Option<&Name>), With<MenuItem>>,
-    main_menu_music: Query<Entity, With<MainMenuMusic>>,
-    input_blockers: Query<Entity, With<InputBlocker>>,
-) {
-    let count = menu_items.iter().count();
-
-    // Only clean up if there are items to clean up
-    if count > 0 {
-        info!("Cleaning up {} main menu items", count);
-        for (entity, name) in menu_items.iter() {
-            if let Some(name_comp) = name {
-                info!("Despawning main menu entity: {:?} ({})", entity, name_comp);
-            } else {
-                info!("Despawning unnamed main menu entity: {:?}", entity);
-            }
-            commands.entity(entity).despawn_recursive();
+/// Cleans up main menu entities by despawning the root node
+pub fn cleanup_main_menu(mut commands: Commands, menu_root_query: Query<Entity, With<MenuRoot>>) {
+    // Despawn the root entity recursively
+    if let Ok(root_entity) = menu_root_query.get_single() {
+        info!("Despawning main menu root entity: {:?}", root_entity);
+        commands.entity(root_entity).despawn_recursive();
+    } else if menu_root_query.iter().count() > 1 {
+        warn!("Multiple MenuRoot entities found during cleanup! Despawning all.");
+        for root_entity in menu_root_query.iter() {
+            info!(
+                "Despawning additional main menu root entity: {:?}",
+                root_entity
+            );
+            commands.entity(root_entity).despawn_recursive();
         }
     } else {
-        info!("No main menu items found to clean up");
-    }
-
-    // Clean up the main menu music
-    let music_count = main_menu_music.iter().count();
-    if music_count > 0 {
-        debug!("Stopping main menu music");
-        for entity in main_menu_music.iter() {
-            info!("Despawning main menu music entity: {:?}", entity);
-            commands.entity(entity).despawn();
-        }
-    }
-
-    // Explicitly clean up any input blockers that might remain
-    let blocker_count = input_blockers.iter().count();
-    if blocker_count > 0 {
-        info!("Cleaning up {} input blockers", blocker_count);
-        for entity in input_blockers.iter() {
-            info!("Despawning input blocker: {:?}", entity);
-            commands.entity(entity).despawn_recursive();
-        }
+        info!("No MenuRoot entity found to clean up.");
     }
 
     // Log the completion of cleanup

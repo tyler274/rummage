@@ -27,8 +27,6 @@ pub fn setup_gameplay_settings(mut commands: Commands, settings: Res<GameplaySet
     root.with_children(|parent| {
         spawn_settings_title(parent, "Gameplay Settings");
         container_entity = spawn_settings_container(parent);
-        // Back button outside the container's closure
-        spawn_settings_button(parent, "Back", SettingsButtonAction::NavigateToMain);
     });
 
     // Build content for the container separately to avoid double borrow of commands
