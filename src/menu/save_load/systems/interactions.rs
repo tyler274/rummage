@@ -1,7 +1,7 @@
 use crate::game_engine::save::events::{LoadGameEvent, SaveGameEvent};
 use crate::menu::save_load::components::SaveLoadButtonAction;
 use crate::menu::save_load::resources::{SaveLoadUiContext, SaveLoadUiState};
-use crate::menu::state::GameMenuState;
+use crate::menu::state::{AppState, GameMenuState};
 use crate::menu::styles::{HOVERED_BUTTON, NORMAL_BUTTON, PRESSED_BUTTON};
 use bevy::prelude::*;
 
@@ -22,6 +22,7 @@ pub fn handle_save_load_buttons(
     mut interaction_query: SaveLoadButtonInteractionQuery,
     mut save_load_state: ResMut<NextState<SaveLoadUiState>>,
     mut game_state: ResMut<NextState<GameMenuState>>,
+    mut app_state: ResMut<NextState<AppState>>,
     mut save_events: EventWriter<SaveGameEvent>,
     mut load_events: EventWriter<LoadGameEvent>,
     context: ResMut<SaveLoadUiContext>,
@@ -68,8 +69,10 @@ pub fn handle_save_load_buttons(
                         // Clear the UI
                         save_load_state.set(SaveLoadUiState::Hidden);
 
-                        // Set game state to in-game (loading will happen in game systems)
-                        game_state.set(GameMenuState::InGame);
+                        // Set game state to Loading (will transition to InGame after load)
+                        game_state.set(GameMenuState::Loading);
+                        // Set AppState to InGame immediately? Or wait?
+                        // Let's try setting AppState later, after loading is confirmed.
                     }
                     SaveLoadButtonAction::Cancel => {
                         info!("Cancelling save/load operation");

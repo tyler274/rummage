@@ -17,6 +17,7 @@ use crate::{
         star_of_david::StarOfDavidPlugin,
         state::StateTransitionContext,
         state::{AppState, GameMenuState},
+        state_transitions,
         visibility::MenuVisibilityPlugin,
     },
 };
@@ -53,7 +54,12 @@ impl Plugin for MenuPlugin {
                 InputBlockerPlugin,
                 StarOfDavidPlugin,
                 LogoPlugin,
-            ));
+            ))
+            // Add the new system to check loading completion
+            .add_systems(
+                Update,
+                state_transitions::check_loading_complete.run_if(in_state(GameMenuState::Loading)),
+            );
 
         info!("Menu plugin registered");
     }

@@ -2,6 +2,7 @@ use bevy::app::Plugin as BevyPlugin;
 use bevy::ecs::schedule::ScheduleLabel;
 use bevy::prelude::*;
 
+use crate::menu::state::AppState;
 use crate::snapshot::resources::{
     SnapshotConfig, SnapshotDebugState, SnapshotDisabled, SnapshotEvent,
 };
@@ -95,7 +96,9 @@ impl BevyPlugin for SnapshotPlugin {
             app.add_systems(
                 Update,
                 (
-                    take_save_game_snapshot.run_if(snapshot_enabled),
+                    take_save_game_snapshot
+                        .run_if(snapshot_enabled)
+                        .run_if(in_state(AppState::InGame)),
                     take_replay_snapshot.run_if(snapshot_enabled),
                     capture_replay_at_point.run_if(snapshot_enabled),
                 ),

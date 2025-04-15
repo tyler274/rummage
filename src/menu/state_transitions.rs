@@ -1,6 +1,7 @@
 use crate::camera::components::GameCamera;
 use crate::cards::Card;
-use crate::menu::state::{GameMenuState, StateTransitionContext};
+use crate::game_engine::state::GameState;
+use crate::menu::state::{AppState, GameMenuState, StateTransitionContext};
 use bevy::prelude::*;
 
 /// Starts the game loading process
@@ -75,6 +76,41 @@ pub fn start_game_loading(
 /// Finishes the game loading process
 pub fn finish_loading() {
     info!("Loading state finished");
+}
+
+/// Checks if the game state has been loaded and transitions to InGame if ready.
+pub fn check_loading_complete(
+    current_menu_state: Res<State<GameMenuState>>,
+    game_state: Option<Res<GameState>>,
+    mut next_menu_state: ResMut<NextState<GameMenuState>>,
+    mut next_app_state: ResMut<NextState<AppState>>,
+) {
+    // Only run this logic if we are currently in the Loading state
+    if *current_menu_state.get() != GameMenuState::Loading {
+        return;
+    }
+
+    match game_state {
+        Some(state) => {
+            // Check if the GameState seems valid (e.g., turn number indicates loading happened)
+            // We assume turn_number 0 might be a default/new game state.
+            if state.turn_number > 0 {
+                info!(
+                    "Game state loaded (Turn {}), transitioning from Loading to InGame...",
+                    state.turn_number
+                );
+                next_menu_state.set(GameMenuState::InGame);
+                next_app_state.set(AppState::InGame);
+            } else {
+                // Still waiting for GameState to be populated by the load system
+                debug!("In Loading state, but GameState turn number is 0, waiting...");
+            }
+        }
+        None => {
+            // GameState resource doesn't exist yet, still waiting
+            debug!("In Loading state, GameState resource not found yet, waiting...");
+        }
+    }
 }
 
 /// Handle cleanup when returning to main menu
