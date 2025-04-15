@@ -158,12 +158,12 @@ pub fn spawn_visual_cards(
         }
 
         // Make the card a child of the game camera to ensure it's rendered in the game view
-        // for camera in game_cameras.iter() {
-        //     debug!(
-        //         "Attaching card for player {} to game camera {:?}",
-        //         player_index, camera
-        //     );
-        //     commands.entity(camera).add_child(card_entity);
-        // }
+        for camera in game_cameras.iter() {
+            debug!(
+                "Attaching card for player {} to game camera {:?}",
+                player_index, camera
+            );
+            commands.entity(camera).add_child(card_entity);
+        }
     }
 }
