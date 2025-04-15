@@ -1,8 +1,8 @@
+use bevy::audio::AudioSink;
 use bevy::prelude::*;
 
-use super::components::{
-    MainMenuBackground, MainMenuButton, MainMenuContainer, MainMenuItem, MainMenuMusic,
-};
+use super::components::{MainMenuBackground, MainMenuButton, MainMenuContainer, MainMenuItem};
+use crate::menu::main_menu::components::MainMenuMusic;
 
 /// System to clean up main menu entities when transitioning from main menu
 pub fn cleanup_main_menu(
@@ -41,18 +41,20 @@ pub fn cleanup_main_menu(
     info!("Main menu cleanup completed");
 }
 
-/// System to specifically despawn main menu music when entering settings
-pub fn cleanup_main_menu_music_on_settings_enter(
-    mut commands: Commands,
-    music_query: Query<Entity, With<MainMenuMusic>>,
+/// System to specifically pause main menu music when entering settings
+pub fn pause_main_menu_music_on_settings_enter(
+    music_query: Query<&AudioSink, With<MainMenuMusic>>,
 ) {
-    if let Ok(entity) = music_query.get_single() {
-        info!("Despawning main menu music upon entering settings menu.");
-        commands.entity(entity).despawn_recursive();
+    if let Ok(sink) = music_query.get_single() {
+        info!("Pausing main menu music upon entering settings menu.");
+        sink.pause();
     } else if music_query.iter().count() > 1 {
-        warn!("Multiple MainMenuMusic entities found when entering settings! Despawning all.");
-        for entity in music_query.iter() {
-            commands.entity(entity).despawn_recursive();
+        warn!(
+            "Multiple MainMenuMusic sinks found when entering settings! Pausing the first one found."
+        );
+        // Attempt to pause the first one found, though this indicates an issue elsewhere.
+        if let Some(sink) = music_query.iter().next() {
+            sink.pause();
         }
     }
 }

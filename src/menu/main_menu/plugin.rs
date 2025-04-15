@@ -1,3 +1,4 @@
+use bevy::audio::AudioSink;
 use bevy::prelude::*;
 
 use crate::{
@@ -46,6 +47,7 @@ pub fn setup_main_menu_adapter(
     existing_roots: Query<Entity, With<crate::menu::components::MenuRoot>>,
     all_cameras: Query<&Camera>,
     save_exists: ResMut<crate::menu::save_load::SaveExists>,
+    music_sinks: Query<&AudioSink, With<crate::menu::main_menu::components::MainMenuMusic>>,
 ) {
     setup_main_menu(
         commands,
@@ -54,6 +56,7 @@ pub fn setup_main_menu_adapter(
         existing_roots,
         all_cameras,
         save_exists,
+        music_sinks,
     );
 }
 
