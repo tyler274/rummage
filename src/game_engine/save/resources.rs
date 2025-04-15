@@ -135,15 +135,15 @@ impl GameBranch {
 
     /// Add a state to this branch
     pub fn add_state(&mut self, state: GameSaveData) {
-        // If we're not at the end of history, truncate future states
-        // when adding a new state (creating a new timeline)
-        if self.current_index < self.states.len() - 1 {
+        // If we have existing states and are not at the end of history, truncate
+        if !self.states.is_empty() && self.current_index < self.states.len() - 1 {
             let new_len = self.current_index + 1;
             self.states.truncate(new_len);
         }
 
         self.states.push_back(state);
-        self.current_index = self.states.len() - 1;
+        // Safely calculate the new index (should always be len - 1 after push_back)
+        self.current_index = self.states.len().saturating_sub(1);
     }
 
     /// Get the current state
