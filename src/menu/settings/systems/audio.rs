@@ -118,6 +118,7 @@ pub fn setup_audio_settings(mut commands: Commands, volume_settings: Res<VolumeS
                             height: Val::Px(20.0),
                             ..default()
                         },
+                        Button,
                         MenuItem,
                         SettingsMenuItem,
                         AppLayer::Menu.layer(),

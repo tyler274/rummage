@@ -16,7 +16,7 @@ use super::systems::{
     gameplay::setup_gameplay_settings,
     main::{handle_settings_back_input, settings_button_action, setup_main_settings},
     state_transitions::should_handle_settings_back,
-    video::setup_video_settings,
+    video::{quality_button_interaction, setup_video_settings},
 };
 
 /// Plugin that sets up the settings menu system
@@ -88,6 +88,7 @@ impl Plugin for SettingsPlugin {
                     settings_button_action,
                     volume_slider_interaction,
                     apply_volume_updates,
+                    quality_button_interaction,
                 ),
             )
             // Add handle_settings_back_input with condition using helper

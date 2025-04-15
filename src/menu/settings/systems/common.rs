@@ -63,7 +63,6 @@ pub fn spawn_settings_container(parent: &mut ChildBuilder) -> Entity {
                 margin: UiRect::top(Val::Px(20.0)),
                 ..default()
             },
-            BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
             AppLayer::Menu.layer(),
             Visibility::Visible,
             InheritedVisibility::VISIBLE,

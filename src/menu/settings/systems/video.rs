@@ -150,3 +150,34 @@ fn spawn_quality_button(
             ));
         });
 }
+
+/// System to handle interactions with graphics quality buttons
+pub fn quality_button_interaction(
+    mut interaction_query: Query<
+        (&Interaction, &QualityButton, Entity),
+        (Changed<Interaction>, With<Button>),
+    >,
+    mut quality_setting: ResMut<CurrentGraphicsQuality>,
+    mut button_query: Query<(Entity, &mut BackgroundColor, &QualityButton), With<Button>>,
+) {
+    for (interaction, clicked_quality_button, clicked_entity) in interaction_query.iter_mut() {
+        if *interaction == Interaction::Pressed {
+            let new_quality = clicked_quality_button.0;
+
+            // Only update if the quality actually changed
+            if new_quality != quality_setting.quality {
+                info!("Changing graphics quality to: {:?}", new_quality);
+                quality_setting.quality = new_quality;
+
+                // Update background colors for all quality buttons
+                for (_entity, mut bg_color, button_quality) in button_query.iter_mut() {
+                    if button_quality.0 == new_quality {
+                        *bg_color = BackgroundColor(Color::srgba(0.4, 0.4, 0.8, 1.0)); // Highlighted
+                    } else {
+                        *bg_color = BackgroundColor(Color::srgba(0.2, 0.2, 0.2, 1.0)); // Normal
+                    }
+                }
+            }
+        }
+    }
+}
