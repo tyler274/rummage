@@ -5,7 +5,6 @@ pub mod gameplay;
 pub mod main;
 pub mod video;
 
-
 use crate::menu::components::MenuItem;
 use crate::menu::settings::state::SettingsMenuState;
 use bevy::prelude::*;
@@ -13,7 +12,7 @@ use bevy::prelude::*;
 /// Cleanup the settings menu entities
 pub fn cleanup_settings_menu(
     mut commands: Commands,
-    settings_entities: Query<(Entity, &Name), With<MenuItem>>,
+    settings_entities: Query<(Entity, &Name, Option<&Parent>), With<MenuItem>>,
     current_settings_state: Res<State<SettingsMenuState>>,
 ) {
     info!(
@@ -21,10 +20,10 @@ pub fn cleanup_settings_menu(
         current_settings_state.get()
     );
 
-    // Only clean up entities that belong to the current state
-    let entities_to_remove: Vec<(Entity, String)> = settings_entities
+    // First, collect all entities that match our criteria
+    let entities_to_remove: Vec<(Entity, String, bool)> = settings_entities
         .iter()
-        .filter(|(_, name)| {
+        .filter(|(_, name, _)| {
             let name_str = name.to_string();
             match *current_settings_state.get() {
                 SettingsMenuState::Video => name_str.contains("Video"),
@@ -38,28 +37,25 @@ pub fn cleanup_settings_menu(
                         && !name_str.contains("Gameplay")
                         && !name_str.contains("Controls")
                 }
-                SettingsMenuState::Disabled => {
-                    // In disabled state, clean up everything settings related
-                    name_str.contains("Settings")
-                        || name_str.contains("Option")
-                        || name_str.contains("Slider")
-                        || name_str.contains("Checkbox")
-                        || name_str.contains("settings")
-                        || name_str.contains("Input Blocker")
-                }
+                SettingsMenuState::Disabled => true,
             }
         })
-        .map(|(entity, name)| (entity, name.to_string()))
+        .map(|(entity, name, parent)| (entity, name.to_string(), parent.is_none()))
         .collect();
 
     let num_entities = entities_to_remove.len();
     info!("Found {} entities to remove", num_entities);
 
-    // Remove the entities
-    for (entity, name) in entities_to_remove {
-        info!("Despawning settings entity: '{}'", name);
-        commands.entity(entity).despawn_recursive();
+    // Only despawn root entities (those without parents)
+    // Their children will be despawned automatically due to despawn_recursive
+    let mut despawned = 0;
+    for (entity, name, is_root) in entities_to_remove {
+        if is_root {
+            info!("Despawning root settings entity: '{}'", name);
+            commands.entity(entity).despawn_recursive();
+            despawned += 1;
+        }
     }
 
-    info!("Despawned {} settings menu entities", num_entities);
+    info!("Despawned {} root settings entities", despawned);
 }

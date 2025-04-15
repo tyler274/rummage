@@ -5,7 +5,9 @@ use bevy_persistent::prelude::*;
 
 use super::components::*;
 use super::systems::{
-    audio::{setup_audio_settings, volume_slider_interaction},
+    audio::{
+        VolumeUpdateRequests, apply_volume_updates, setup_audio_settings, volume_slider_interaction,
+    },
     cleanup_settings_menu,
     controls::setup_controls_settings,
     gameplay::setup_gameplay_settings,
@@ -24,7 +26,8 @@ impl Plugin for SettingsPlugin {
         app.init_resource::<VolumeSettings>()
             .init_resource::<GameplaySettings>()
             .init_resource::<CurrentGraphicsQuality>()
-            .init_resource::<RummageSettings>();
+            .init_resource::<RummageSettings>()
+            .init_resource::<VolumeUpdateRequests>();
 
         info!("Settings resources initialized");
 
@@ -55,17 +58,6 @@ impl Plugin for SettingsPlugin {
                 OnEnter(SettingsMenuState::Main),
                 (
                     setup_main_settings,
-                    /* // REMOVED: System that incorrectly forced GameMenuState to Settings
-                    |mut game_state: ResMut<NextState<GameMenuState>>,
-                     current_state: Res<State<GameMenuState>>| {
-                        if *current_state.get() != GameMenuState::Settings {
-                            game_state.set(GameMenuState::Settings);
-                            info!(
-                                "ENTERED SettingsMenuState::Main - Set GameMenuState to Settings"
-                            );
-                        }
-                    }, */
-                    // Only set up menu camera if we're not already in Settings state
                     crate::menu::camera::setup::setup_menu_camera.run_if(
                         |state: Res<State<GameMenuState>>| *state.get() != GameMenuState::Settings,
                     ),
@@ -91,6 +83,7 @@ impl Plugin for SettingsPlugin {
                 (
                     settings_button_action,
                     volume_slider_interaction,
+                    apply_volume_updates,
                 ),
             )
             // Add handle_settings_back_input separately with its condition
@@ -100,38 +93,28 @@ impl Plugin for SettingsPlugin {
             )
             // Apply settings on startup
             .add_systems(Startup, apply_settings)
-            // Save settings when exiting any settings menu
+            // Save settings and cleanup when exiting any settings menu
+            // Run cleanup in a fixed order to prevent race conditions
             .add_systems(
                 OnExit(SettingsMenuState::Audio),
-                (
-                    save_settings,
-                    cleanup_settings_menu,
-                ),
+                (save_settings, cleanup_settings_menu).chain(),
             )
             .add_systems(
                 OnExit(SettingsMenuState::Video),
-                (
-                    save_settings,
-                    cleanup_settings_menu,
-                ),
+                (save_settings, cleanup_settings_menu).chain(),
             )
             .add_systems(
                 OnExit(SettingsMenuState::Gameplay),
-                (
-                    save_settings,
-                    cleanup_settings_menu,
-                ),
+                (save_settings, cleanup_settings_menu).chain(),
             )
+            .add_systems(OnExit(SettingsMenuState::Controls), cleanup_settings_menu)
+            .add_systems(OnExit(SettingsMenuState::Main), cleanup_settings_menu)
+            // Add cleanup for Disabled state to ensure complete cleanup
+            // This should run after any other cleanup systems
             .add_systems(
-                OnExit(SettingsMenuState::Controls),
-                cleanup_settings_menu,
-            )
-            .add_systems(
-                OnExit(SettingsMenuState::Main),
-                cleanup_settings_menu,
-            )
-            // REMOVED: Cleanup system for the main settings menu (now handled by OnExit(SettingsMenuState::*))
-            /* .add_systems(OnExit(GameMenuState::Settings), settings_cleanup) */;
+                OnExit(SettingsMenuState::Disabled),
+                cleanup_settings_menu.after(save_settings),
+            );
     }
 }
 
