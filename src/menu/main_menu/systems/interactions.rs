@@ -1,6 +1,8 @@
 use crate::menu::{
     components::MenuButtonAction, save_load::SaveLoadUiContext, save_load::SaveLoadUiState,
-    settings::state::SettingsMenuState, state::GameMenuState, state::StateTransitionContext,
+    settings::state::SettingsMenuState,
+    settings::systems::state_transitions::handle_settings_enter, state::GameMenuState,
+    state::StateTransitionContext,
 };
 use bevy::prelude::*;
 
@@ -42,16 +44,12 @@ pub fn handle_main_menu_interactions(
                     }
                     MenuButtonAction::Settings => {
                         info!("Settings button pressed");
-                        // Save our origin for when we return
-                        context.settings_origin = Some(GameMenuState::MainMenu);
-                        // Reset flags
-                        context.from_pause_menu = false;
-                        context.returning_from_settings = false;
-
-                        // Set up settings menu
-                        settings_state.set(SettingsMenuState::Main);
-                        next_state.set(GameMenuState::Settings);
-                        info!("Transitioning to settings menu");
+                        handle_settings_enter(
+                            &mut settings_state,
+                            &mut next_state,
+                            &mut context,
+                            GameMenuState::MainMenu,
+                        );
                     }
                     MenuButtonAction::Multiplayer => {
                         info!("Multiplayer button pressed");

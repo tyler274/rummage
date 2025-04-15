@@ -3,6 +3,7 @@ use super::common::{
 };
 use crate::menu::settings::components::SettingsButtonAction;
 use crate::menu::settings::state::SettingsMenuState;
+use crate::menu::settings::systems::state_transitions::handle_settings_exit;
 use crate::menu::state::{GameMenuState, StateTransitionContext};
 use bevy::prelude::*;
 
@@ -53,7 +54,6 @@ pub fn settings_button_action(
     mut interaction_query: SettingsButtonInteractionQuery,
     mut next_state: ResMut<NextState<SettingsMenuState>>,
     mut game_menu_state: ResMut<NextState<GameMenuState>>,
-    current_state: Res<State<GameMenuState>>,
     mut context: ResMut<StateTransitionContext>,
 ) {
     for (interaction, action) in interaction_query.iter_mut() {
@@ -76,18 +76,7 @@ pub fn settings_button_action(
                     next_state.set(SettingsMenuState::Main);
                 }
                 SettingsButtonAction::ExitSettings => {
-                    // First set settings state to disabled to trigger cleanup
-                    next_state.set(SettingsMenuState::Disabled);
-
-                    // Get the origin state from context, defaulting to MainMenu
-                    let origin = context.settings_origin.unwrap_or(GameMenuState::MainMenu);
-                    info!("Exiting settings, returning to {:?}", origin);
-
-                    // Then transition back to the origin state
-                    game_menu_state.set(origin);
-
-                    // Clear the settings origin after state transition
-                    context.settings_origin = None;
+                    handle_settings_exit(&mut next_state, &mut game_menu_state, &mut context);
                 }
             }
         }
@@ -103,18 +92,6 @@ pub fn handle_settings_back_input(
 ) {
     if input.just_pressed(KeyCode::Escape) {
         info!("Escape key pressed, exiting settings menu");
-
-        // First set settings state to disabled to trigger cleanup
-        settings_menu_state.set(SettingsMenuState::Disabled);
-
-        // Get the origin state from context, defaulting to MainMenu
-        let origin = context.settings_origin.unwrap_or(GameMenuState::MainMenu);
-        info!("Exiting settings via ESC, returning to {:?}", origin);
-
-        // Then transition back to the origin state
-        game_menu_state.set(origin);
-
-        // Clear the settings origin
-        context.settings_origin = None;
+        handle_settings_exit(&mut settings_menu_state, &mut game_menu_state, &mut context);
     }
 }

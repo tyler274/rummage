@@ -3,6 +3,7 @@ pub mod common;
 pub mod controls;
 pub mod gameplay;
 pub mod main;
+pub mod state_transitions;
 pub mod video;
 
 use crate::menu::components::MenuItem;

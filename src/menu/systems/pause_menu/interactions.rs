@@ -1,11 +1,18 @@
 use crate::menu::{
-    components::*, save_load::SaveLoadUiContext, save_load::SaveLoadUiState, state::GameMenuState,
-    styles::HOVERED_BUTTON, styles::NORMAL_BUTTON, styles::PRESSED_BUTTON,
+    components::{MenuButtonAction, MenuItem},
+    save_load::{SaveLoadUiContext, SaveLoadUiState},
+    settings::state::SettingsMenuState,
+    settings::systems::state_transitions::handle_settings_enter,
+    state::{GameMenuState, StateTransitionContext},
 };
 use bevy::{app::AppExit, prelude::*};
 
-/// Type alias for the pause menu button interaction query
-type PauseMenuInteractionQuery<'w, 's> = Query<
+const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
+const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
+const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.35, 0.35);
+
+/// Type alias for the query used in `pause_menu_action`.
+type PauseMenuButtonInteractionQuery<'w, 's> = Query<
     'w,
     's,
     (
@@ -13,15 +20,16 @@ type PauseMenuInteractionQuery<'w, 's> = Query<
         &'static mut BackgroundColor,
         &'static MenuButtonAction,
     ),
-    (Changed<Interaction>, With<Button>),
+    (Changed<Interaction>, With<Button>, With<MenuItem>),
 >;
 
-/// System to handle pause menu button interactions
+/// Handles button actions in the pause menu
 pub fn pause_menu_action(
-    _commands: Commands,
-    mut interaction_query: PauseMenuInteractionQuery,
-    mut app_exit_events: EventWriter<AppExit>,
+    mut interaction_query: PauseMenuButtonInteractionQuery,
     mut game_state: ResMut<NextState<GameMenuState>>,
+    mut settings_state: ResMut<NextState<SettingsMenuState>>,
+    mut context: ResMut<StateTransitionContext>,
+    mut app_exit_events: EventWriter<AppExit>,
     mut save_load_state: ResMut<NextState<SaveLoadUiState>>,
     mut save_load_context: ResMut<SaveLoadUiContext>,
 ) {
@@ -47,6 +55,15 @@ pub fn pause_menu_action(
                         info!("Opening load game dialog");
                         save_load_context.from_pause_menu = true;
                         save_load_state.set(SaveLoadUiState::LoadGame);
+                    }
+                    MenuButtonAction::Settings => {
+                        info!("Opening settings from pause menu");
+                        handle_settings_enter(
+                            &mut settings_state,
+                            &mut game_state,
+                            &mut context,
+                            GameMenuState::PauseMenu,
+                        );
                     }
                     MenuButtonAction::MainMenu => {
                         // Go back to the main menu

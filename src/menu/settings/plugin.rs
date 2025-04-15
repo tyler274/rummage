@@ -132,51 +132,54 @@ impl Default for CurrentGraphicsQuality {
 }
 
 /// Apply saved settings on startup
-pub fn apply_settings(
-    persistent_settings: Option<Res<Persistent<RummageSettings>>>,
+fn apply_settings(
     mut volume_settings: ResMut<VolumeSettings>,
     mut gameplay_settings: ResMut<GameplaySettings>,
     mut graphics_quality: ResMut<CurrentGraphicsQuality>,
-    mut global_volume: ResMut<bevy::prelude::GlobalVolume>,
+    persistent_settings: Res<Persistent<RummageSettings>>,
 ) {
-    if let Some(settings) = persistent_settings {
-        // Apply volume settings
-        volume_settings.master = settings.volume.master;
-        volume_settings.music = settings.volume.music;
-        volume_settings.sfx = settings.volume.sfx;
+    info!("Applying saved settings");
 
-        // Apply gameplay settings
-        gameplay_settings.auto_pass = settings.gameplay.auto_pass;
-        gameplay_settings.show_tooltips = settings.gameplay.show_tooltips;
-        gameplay_settings.animation_speed = settings.gameplay.animation_speed;
+    // Apply volume settings
+    volume_settings.master = persistent_settings.volume.master;
+    volume_settings.music = persistent_settings.volume.music;
+    volume_settings.sfx = persistent_settings.volume.sfx;
 
-        // Apply graphics quality
-        graphics_quality.quality = settings.graphics.clone();
+    // Apply gameplay settings
+    gameplay_settings.auto_pass = persistent_settings.gameplay.auto_pass;
+    gameplay_settings.show_tooltips = persistent_settings.gameplay.show_tooltips;
 
-        // Apply global volume
-        global_volume.volume = Volume::new(volume_settings.master);
+    // Apply graphics settings
+    graphics_quality.quality = persistent_settings.graphics;
 
-        info!("Applied settings from persistent storage");
-    } else {
-        info!("No persistent settings found, using defaults");
-    }
+    info!("Settings applied successfully");
 }
 
 /// Save current settings to persistent storage
 fn save_settings(
-    persistent_settings: Option<ResMut<Persistent<RummageSettings>>>,
     volume_settings: Res<VolumeSettings>,
     gameplay_settings: Res<GameplaySettings>,
     graphics_quality: Res<CurrentGraphicsQuality>,
+    mut persistent_settings: ResMut<Persistent<RummageSettings>>,
 ) {
-    if let Some(mut settings) = persistent_settings {
-        // Update settings with current values
-        settings.volume = volume_settings.clone();
-        settings.gameplay = gameplay_settings.clone();
-        settings.graphics = graphics_quality.quality.clone();
+    info!("Saving current settings");
 
-        info!("Saving settings: {:?}", settings.as_ref());
+    // Save volume settings
+    persistent_settings.volume.master = volume_settings.master;
+    persistent_settings.volume.music = volume_settings.music;
+    persistent_settings.volume.sfx = volume_settings.sfx;
+
+    // Save gameplay settings
+    persistent_settings.gameplay.auto_pass = gameplay_settings.auto_pass;
+    persistent_settings.gameplay.show_tooltips = gameplay_settings.show_tooltips;
+
+    // Save graphics settings
+    persistent_settings.graphics = graphics_quality.quality;
+
+    // Persist changes to disk
+    if let Err(e) = persistent_settings.persist() {
+        error!("Failed to save settings: {:?}", e);
     } else {
-        warn!("No persistent settings resource found, settings not saved");
+        info!("Settings saved successfully");
     }
 }
