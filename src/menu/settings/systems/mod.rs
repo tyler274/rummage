@@ -6,14 +6,14 @@ pub mod main;
 pub mod state_transitions;
 pub mod video;
 
-use crate::menu::components::MenuItem;
+use crate::menu::settings::components::SettingsMenuItem;
 use crate::menu::settings::state::SettingsMenuState;
 use bevy::prelude::*;
 
 /// Cleanup the settings menu entities
 pub fn cleanup_settings_menu(
     mut commands: Commands,
-    settings_entities: Query<(Entity, &Name, Option<&Parent>), With<MenuItem>>,
+    settings_entities: Query<(Entity, &Name, Option<&Parent>), With<SettingsMenuItem>>,
     current_settings_state: Res<State<SettingsMenuState>>,
 ) {
     info!(
@@ -52,11 +52,11 @@ pub fn cleanup_settings_menu(
     let mut despawned = 0;
     for (entity, name, is_root) in entities_to_remove {
         if is_root {
-            info!("Despawning root settings entity: '{}'", name);
+            info!("Despawning root entity: {}", name);
             commands.entity(entity).despawn_recursive();
             despawned += 1;
         }
     }
 
-    info!("Despawned {} root settings entities", despawned);
+    info!("Despawned {} root entities", despawned);
 }
