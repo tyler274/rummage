@@ -64,17 +64,14 @@ impl Default for SaveConfig {
 }
 
 /// Metadata about all saved games
-#[derive(Resource, Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Resource, Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SaveMetadata {
     pub saves: Vec<SaveInfo>,
     pub checkpoints: Vec<SaveInfo>,
 }
 
-
 /// Replay state for game replay functionality
-#[derive(Resource)]
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct ReplayState {
     /// Whether a replay is currently in progress
     pub active: bool,
@@ -91,7 +88,6 @@ pub struct ReplayState {
     /// Current step in the replay
     pub current_step: usize,
 }
-
 
 /// Represents a branch point in game history
 #[derive(Debug, Clone)]
@@ -246,11 +242,13 @@ impl GameHistory {
             branch.add_state(state);
 
             // Ensure we don't exceed max history size
-            while branch.states.len() > max_states {
-                branch.states.pop_front();
-                if branch.current_index > 0 {
-                    branch.current_index -= 1;
+            let states_to_remove = branch.states.len().saturating_sub(max_states);
+            if states_to_remove > 0 {
+                for _ in 0..states_to_remove {
+                    branch.states.pop_front();
                 }
+                // Adjust the current_index, ensuring it doesn't underflow
+                branch.current_index = branch.current_index.saturating_sub(states_to_remove);
             }
         }
     }
