@@ -1,5 +1,4 @@
 use crate::menu::{settings::state::SettingsMenuState, state::GameMenuState};
-use bevy::audio::Volume;
 use bevy::prelude::*;
 use bevy_persistent::prelude::*;
 
@@ -89,7 +88,7 @@ impl Plugin for SettingsPlugin {
             // Add handle_settings_back_input separately with its condition
             .add_systems(
                 Update,
-                handle_settings_back_input.run_if(in_state(GameMenuState::Settings)),
+                handle_settings_back_input.run_if(not(in_state(SettingsMenuState::Disabled))),
             )
             // Apply settings on startup
             .add_systems(Startup, apply_settings)
