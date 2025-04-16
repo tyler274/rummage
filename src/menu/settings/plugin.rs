@@ -1,4 +1,6 @@
-use crate::menu::{settings::state::SettingsMenuState, state::GameMenuState};
+use crate::menu::{
+    camera::setup::MenuCamera, settings::state::SettingsMenuState, state::GameMenuState,
+};
 use bevy::prelude::*;
 use bevy_persistent::prelude::*;
 
@@ -21,6 +23,20 @@ use super::systems::{
 
 /// Plugin that sets up the settings menu system
 pub struct SettingsPlugin;
+
+/// Despawns the menu camera when leaving the main settings state.
+fn cleanup_settings_menu_camera(
+    mut commands: Commands,
+    camera_query: Query<Entity, With<MenuCamera>>,
+) {
+    for entity in camera_query.iter() {
+        commands.entity(entity).despawn_recursive();
+        info!(
+            "Despawned settings menu camera entity {:?} on exiting GameMenuState::Settings",
+            entity
+        );
+    }
+}
 
 impl Plugin for SettingsPlugin {
     fn build(&self, app: &mut App) {
@@ -120,6 +136,11 @@ impl Plugin for SettingsPlugin {
                 OnExit(SettingsMenuState::Main),
                 despawn_screen::<OnMainSettingsMenu>,
             );
+        // Add cleanup for the entire Settings state, including the camera
+        app.add_systems(
+            OnExit(GameMenuState::Settings),
+            cleanup_settings_menu_camera,
+        );
         // Cleanup for Disabled state - This might need careful thought.
         // If Disabled means *no* settings UI should be visible, we might need
         // to despawn *all* markers, or rely on the GameMenuState transitions.
