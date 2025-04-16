@@ -51,7 +51,7 @@ pub fn spawn_visual_cards(
 
     // Calculate the base position on the card circle using a smaller radius relative to camera view
     let angle = table.get_player_angle(player_index);
-    let card_circle_radius = 4.0;
+    let card_circle_radius = 300.0;
     let base_card_circle_pos = Vec3::new(
         card_circle_radius * angle.sin(),
         card_circle_radius * angle.cos(),
