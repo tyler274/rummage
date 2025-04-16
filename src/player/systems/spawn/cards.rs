@@ -50,24 +50,35 @@ pub fn spawn_visual_cards(
     // Determine if the cards should be laid out horizontally or vertically
     let is_horizontal = table.is_horizontal_layout(player_index);
 
-    // Calculate the starting position and direction based on layout
+    // Calculate the base position on the card circle using a smaller radius relative to camera view
+    let angle = table.get_player_angle(player_index);
+    let card_circle_radius = 4.0;
+    let base_card_circle_pos = Vec3::new(
+        card_circle_radius * angle.sin(),
+        card_circle_radius * angle.cos(),
+        0.0,
+    );
+
+    // Calculate the starting position and direction based on layout, relative to base_card_circle_pos
     let (start_pos, card_direction) = if is_horizontal {
         // Horizontal layout (cards in a row)
         (
-            Vec3::new(start_x, player_position.y, 0.0) + card_offset,
+            // Use base_card_circle_pos.y for vertical placement, center horizontally with start_x
+            base_card_circle_pos + Vec3::new(start_x, 0.0, 0.0) + card_offset,
             Vec3::new(spacing, 0.0, 0.0),
         )
     } else {
         // Vertical layout (cards in a column)
         (
-            Vec3::new(player_position.x, start_x, 0.0) + card_offset,
+            // Use base_card_circle_pos.x for horizontal placement, center vertically with start_x
+            base_card_circle_pos + Vec3::new(0.0, start_x, 0.0) + card_offset,
             Vec3::new(0.0, spacing, 0.0),
         )
     };
 
     info!(
-        "Starting spawn of {} cards for player {}",
-        card_count, player_index
+        "Starting spawn of {} cards for player {} at base {:?}, start_pos {:?}, offset {:?}",
+        card_count, player_index, base_card_circle_pos, start_pos, card_offset
     );
 
     // Spawn each card with proper positioning
