@@ -3,6 +3,8 @@ use crate::menu::camera::MenuCamera;
 use crate::menu::components::{MenuItem, ZLayers};
 use crate::menu::decorations::MenuDecorativeElement;
 use crate::menu::logo::text::{create_english_text, create_hebrew_text};
+use crate::menu::settings::components::OnMainSettingsMenu;
+use crate::menu::settings::systems::despawn_screen;
 use crate::menu::star_of_david::create_star_of_david;
 use crate::menu::state::{AppState, GameMenuState, StateTransitionContext};
 use bevy::prelude::*;
@@ -40,8 +42,11 @@ impl Plugin for LogoPlugin {
             )
             // Only hide logo when entering settings, rather than cleaning it up completely
             .add_systems(OnEnter(GameMenuState::Settings), hide_logo_for_settings)
-            // Restore logo visibility when returning from settings
-            .add_systems(OnExit(GameMenuState::Settings), restore_logo_visibility)
+            // Restore logo visibility when returning from settings, AFTER the settings screen is despawned
+            .add_systems(
+                OnExit(GameMenuState::Settings),
+                restore_logo_visibility.after(despawn_screen::<OnMainSettingsMenu>),
+            )
             // Cleanup only on major transitions
             .add_systems(OnExit(GameMenuState::MainMenu), cleanup_non_persistent_logo)
             .add_systems(
