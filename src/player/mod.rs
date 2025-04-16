@@ -8,11 +8,11 @@ pub mod systems;
 
 use bevy::prelude::*;
 
-// Re-export the core components and systems
+// Import and re-export common player components and systems
 pub use components::Player;
 pub use playmat::PlayerPlaymatPlugin;
 pub use resources::PlayerConfig;
-pub use systems::{PlayerPositionTracker, debug_draw_player_positions};
+pub use systems::debug::{PlayerPositionTracker, debug_draw_player_positions};
 
 /// Plugin for player-related functionality
 pub struct PlayerPlugin;

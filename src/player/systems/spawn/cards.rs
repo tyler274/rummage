@@ -1,5 +1,5 @@
 use super::table::TableLayout;
-use crate::camera::components::{AppLayer, GameCamera};
+use crate::camera::components::AppLayer;
 use crate::cards::components::card_entity::CardZone;
 use crate::cards::drag::Draggable;
 use crate::cards::text::card_text::spawn_card_text_components;
@@ -10,7 +10,6 @@ use bevy::prelude::*;
 /// Helper function to spawn visual card entities
 pub fn spawn_visual_cards(
     commands: &mut Commands,
-    game_cameras: &Query<Entity, With<GameCamera>>,
     card_size: &Vec2,
     spacing_multiplier: f32,
     player_position: Vec3,
@@ -76,8 +75,8 @@ pub fn spawn_visual_cards(
         let card_clone = card.clone(); // Clone card to use later
 
         // Calculate z-index based on position to ensure proper layering
-        // Use a higher base z-value (30.0) to ensure cards are always above playmats (which use around 10.0)
-        let z = 30.0 + (i as f32 * 1.0); // Increased z-index base to stay above playmats
+        // Use a smaller base z-value to ensure cards are closer to the camera
+        let z = 1.0 + (i as f32 * 0.1); // Drastically reduced z-index base
 
         // Calculate the position for this card
         let position = Vec3::new(
@@ -161,7 +160,8 @@ pub fn spawn_visual_cards(
         // The RenderLayers component should handle visibility via the camera's layers.
         // Parenting to the camera makes the card's transform relative to the camera,
         // which is likely incorrect given the world-space position calculation above.
-        // for camera in game_cameras.iter() {
+        // We are relying on RenderLayers now.
+        // for camera in game_cameras.iter() { // This loop is now invalid as game_cameras is removed
         //     debug!(
         //         "Attaching card for player {} to game camera {:?}",
         //         player_index, camera

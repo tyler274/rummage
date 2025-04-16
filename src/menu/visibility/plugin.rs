@@ -6,6 +6,7 @@ use super::systems::{
     force_main_menu_items_visibility, force_startup_visibility, update_menu_background,
 };
 use crate::menu::components::MenuVisibilityState;
+use crate::menu::state::AppState;
 use crate::menu::ui::update_menu_visibility_state;
 
 /// Plugin for managing menu item visibility and UI hierarchy
@@ -24,7 +25,8 @@ impl Plugin for MenuVisibilityPlugin {
                     detect_ui_hierarchy_issues,
                     update_menu_visibility_state,
                     debug_menu_visibility,
-                ),
+                )
+                    .run_if(in_state(AppState::Menu)),
             )
             // Main update systems - handle visibility changes
             .add_systems(
@@ -34,10 +36,14 @@ impl Plugin for MenuVisibilityPlugin {
                     fix_visibility_for_changed_items,
                     fix_changed_main_menu_visibility,
                     force_main_menu_items_visibility,
-                ),
+                )
+                    .run_if(in_state(AppState::Menu)),
             )
             // Background update system runs last
-            .add_systems(Last, update_menu_background);
+            .add_systems(
+                Last,
+                update_menu_background.run_if(in_state(AppState::Menu)),
+            );
 
         debug!("Visibility plugin registered");
     }

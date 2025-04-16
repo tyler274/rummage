@@ -14,6 +14,7 @@ use crate::player::{PlayerPlugin, resources::PlayerConfig};
 use crate::snapshot::systems::take_snapshot_after_setup;
 use crate::text::DebugConfig;
 use bevy::prelude::*;
+use bevy::render::view::RenderLayers;
 
 // Add AppState import
 use crate::menu::state::AppState;
@@ -57,13 +58,16 @@ impl Plugin for RummagePlugin {
                 OnEnter(AppState::InGame),
                 (
                     setup_game,
-                    // Run card spawning system after setup
-                    spawn_player_visual_hands.after(setup_game),
+                    // Ensure zoom is set before spawning hands
                     set_initial_zoom
                         .run_if(|context: Res<crate::menu::state::StateTransitionContext>| {
                             !context.from_pause_menu
                         })
                         .after(setup_game),
+                    // Spawn hands after setup AND after initial zoom is set
+                    spawn_player_visual_hands
+                        .after(setup_game)
+                        .after(set_initial_zoom),
                     // Snapshot system is controlled by feature flag
                     #[cfg(feature = "snapshot")]
                     take_snapshot_after_setup
@@ -85,8 +89,50 @@ fn setup_game(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     player_config: Res<PlayerConfig>,
+    existing_game_cameras: Query<Entity, With<GameCamera>>,
 ) {
     info!("Setting up game state...");
+
+    // --- Game Camera Setup (moved from camera/systems.rs) ---
+    // Check if a game camera already exists
+    if existing_game_cameras.is_empty() {
+        info!("Spawning Game Camera...");
+        let camera_entity = commands
+            .spawn((
+                Camera2d,
+                Camera {
+                    order: 0, // Explicitly set order to 0 for game camera
+                    ..default()
+                },
+                Visibility::Visible,
+                InheritedVisibility::default(),
+                ViewVisibility::default(),
+                Transform::from_xyz(0.0, 0.0, 999.0),
+                GlobalTransform::default(),
+                GameCamera,
+                // Ensure camera renders game layers
+                RenderLayers::from_layers(&[
+                    AppLayer::Game.as_usize(),
+                    AppLayer::Cards.as_usize(),
+                    AppLayer::GameWorld.as_usize(),
+                    AppLayer::Background.as_usize(),
+                    AppLayer::GameUI.as_usize(),
+                    AppLayer::Shared.as_usize(),
+                ]),
+                Name::new("Game Camera"),
+            ))
+            .id();
+        info!("Game camera spawned with entity {:?}", camera_entity);
+        // Initialize camera pan state here as well if needed, or ensure it's done elsewhere
+        // commands.insert_resource(CameraPanState::default()); // Pan state is initialized in plugin
+    } else {
+        info!(
+            "Game camera already exists ({:?}), not spawning a new one.",
+            existing_game_cameras.iter().collect::<Vec<_>>()
+        );
+        // Optionally, ensure existing camera has correct settings (layers, transform etc.)
+    }
+    // --- End Game Camera Setup ---
 
     let config = player_config.clone();
     info!("Spawning {} players...", config.player_count);
@@ -184,14 +230,13 @@ fn spawn_player_visual_hands(
 
             cards::spawn_visual_cards(
                 &mut commands,
-                &game_cameras,
                 &config.card_size,
                 config.card_spacing_multiplier,
                 marker.position,
                 player_index,
                 marker.player_entity,
                 &table,
-                Some(&asset_server),
+                Some(&asset_server).map(|v| &**v),
                 display_cards,
             );
         } else {

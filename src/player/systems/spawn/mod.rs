@@ -25,7 +25,6 @@ use bevy::prelude::*;
 pub fn spawn_players<'w, 's>(
     commands: &mut Commands<'w, 's>,
     asset_server: Res<AssetServer>,
-    game_cameras: Query<'w, 's, Entity, With<crate::camera::components::GameCamera>>,
     player_config: Option<Res<PlayerConfig>>,
 ) {
     // Use default config if none exists
@@ -133,14 +132,13 @@ pub fn spawn_players<'w, 's>(
             // Remove context creation, call spawn_visual_cards directly
             cards::spawn_visual_cards(
                 commands, // Pass mutable commands directly
-                &game_cameras,
                 &config.card_size,
                 config.card_spacing_multiplier,
                 card_position,
                 player_index,
                 player_entity,
                 &table,
-                Some(&asset_server),
+                Some(&asset_server).map(|v| &**v), // Convert Option<&Res<AssetServer>> to Option<&AssetServer>
                 display_cards,
             );
         } else {

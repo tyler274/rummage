@@ -16,8 +16,10 @@ use bevy::prelude::*;
 use crate::camera::config::CameraConfig;
 use crate::camera::systems::{
     camera_movement, debug_draw_card_positions, handle_window_resize,
-    manage_game_camera_visibility, set_initial_zoom, setup_camera,
+    manage_game_camera_visibility, set_initial_zoom,
 };
+// Import the player debug system
+use crate::player::systems::debug::debug_draw_player_positions;
 #[cfg(feature = "snapshot")]
 use crate::snapshot::SnapshotPlugin;
 
@@ -30,7 +32,8 @@ impl Plugin for CameraPlugin {
         #[cfg(feature = "snapshot")]
         app.add_plugins(SnapshotPlugin::new());
 
-        app.add_systems(Startup, setup_camera)
+        // app.add_systems(Startup, setup_camera) // Moved to setup_game in RummagePlugin
+        app // Removed setup_camera from Startup
             .add_systems(PostStartup, set_initial_zoom)
             .add_systems(
                 Update,
@@ -39,6 +42,8 @@ impl Plugin for CameraPlugin {
                     camera_movement,
                     manage_game_camera_visibility,
                     debug_draw_card_positions,
+                    // Add player debug drawing system here
+                    debug_draw_player_positions,
                 ),
             );
     }

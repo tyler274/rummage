@@ -4,7 +4,7 @@ use crate::menu::components::{MenuItem, ZLayers};
 use crate::menu::decorations::MenuDecorativeElement;
 use crate::menu::logo::text::{create_english_text, create_hebrew_text};
 use crate::menu::star_of_david::create_star_of_david;
-use crate::menu::state::{GameMenuState, StateTransitionContext};
+use crate::menu::state::{AppState, GameMenuState, StateTransitionContext};
 use bevy::prelude::*;
 
 /// Resource to track logo initialization attempts
@@ -47,7 +47,9 @@ impl Plugin for LogoPlugin {
             .add_systems(
                 OnExit(GameMenuState::PauseMenu),
                 cleanup_non_persistent_logo,
-            );
+            )
+            // Add general cleanup when exiting the overall Menu AppState
+            .add_systems(OnExit(AppState::Menu), cleanup_all_logos);
 
         debug!("Logo plugin registered - combines Star of David with text");
     }
@@ -298,6 +300,21 @@ fn cleanup_non_persistent_logo(
             "Cleaned up {} non-persistent logo entities from state: {:?}",
             count,
             current_state.get()
+        );
+    }
+}
+
+/// Cleans up ALL logo entities, regardless of persistence
+fn cleanup_all_logos(mut commands: Commands, logos: Query<Entity, With<MenuDecorativeElement>>) {
+    let mut count = 0;
+    for entity in logos.iter() {
+        commands.entity(entity).despawn_recursive();
+        count += 1;
+    }
+    if count > 0 {
+        info!(
+            "Cleaned up {} logo entities on exiting AppState::Menu",
+            count
         );
     }
 }

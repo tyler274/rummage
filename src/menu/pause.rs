@@ -7,7 +7,7 @@ use bevy::prelude::*;
 
 use super::systems::pause_menu::{
     // Correct path for systems
-    input_handler::esc_key_system,
+    input_handler::{esc_key_system, handle_pause_trigger},
     interactions::pause_menu_action,
     setup::setup_pause_menu,
 };
@@ -29,6 +29,8 @@ impl Plugin for PauseMenuPlugin {
                 )
                 .run_if(in_state(GameMenuState::PauseMenu).and(in_state(AppState::Paused))),
             )
+            // System to *trigger* the pause menu from the game
+            .add_systems(Update, handle_pause_trigger.run_if(in_state(AppState::InGame)))
             // Exit pause menu cleanup - Commented out
             // .add_systems(
             //     OnExit(GameMenuState::PauseMenu),

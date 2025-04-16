@@ -22,7 +22,7 @@ pub fn handle_save_load_buttons(
     mut interaction_query: SaveLoadButtonInteractionQuery,
     mut save_load_state: ResMut<NextState<SaveLoadUiState>>,
     mut game_state: ResMut<NextState<GameMenuState>>,
-    mut app_state: ResMut<NextState<AppState>>,
+    mut _app_state: ResMut<NextState<AppState>>,
     mut save_events: EventWriter<SaveGameEvent>,
     mut load_events: EventWriter<LoadGameEvent>,
     context: ResMut<SaveLoadUiContext>,
