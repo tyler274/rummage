@@ -232,7 +232,6 @@ fn spawn_player_visual_hands(
                 &mut commands,
                 &config.card_size,
                 config.card_spacing_multiplier,
-                marker.position,
                 player_index,
                 marker.player_entity,
                 &table,

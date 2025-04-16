@@ -126,15 +126,11 @@ pub fn spawn_players<'w, 's>(
                 player_index, position_name
             );
 
-            // Get the base position for the player's cards
-            let card_position = player_transform.translation;
-
             // Remove context creation, call spawn_visual_cards directly
             cards::spawn_visual_cards(
                 commands, // Pass mutable commands directly
                 &config.card_size,
                 config.card_spacing_multiplier,
-                card_position,
                 player_index,
                 player_entity,
                 &table,

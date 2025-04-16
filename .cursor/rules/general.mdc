@@ -1,6 +1,6 @@
 ---
-description: 
-globs: 
+description: General rules to always be applied
+globs:
 alwaysApply: true
 ---
 1. Using Bevy 0.15.x APIs that aren't deprecated [deprecated_apis.md](mdc:docs/development/bevy_guide/deprecated_apis.md), we are implementing a robust unit and integrated end to end tested Magic the Gathering Commander format game engine.
@@ -13,4 +13,4 @@ alwaysApply: true
 message using repeated "-m" flags for proper multiline commits in a single command
 invocation. 
 8. Use chainable builder pattern APIs to construct structs in a reusable way. Especially
-in test code. These builders/constructors should be const where possible. 
+in test code. These builders/constructors should be const where possible.
