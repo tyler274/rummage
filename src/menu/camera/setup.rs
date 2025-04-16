@@ -10,78 +10,58 @@ pub struct MenuCameraEntity(pub Entity);
 /// Sets up a dedicated camera for the menu
 pub fn setup_menu_camera(
     mut commands: Commands,
-    cameras: Query<(Entity, Option<&Camera>), With<MenuCamera>>,
-    all_cameras: Query<&Camera>,
+    mut cameras: Query<(Entity, &mut Camera), With<MenuCamera>>,
 ) {
-    // Check if a menu camera already exists
-    // Instead of removing existing cameras, we'll update their order
-    if !cameras.is_empty() {
-        info!("Menu camera already exists, will update camera order");
+    const MENU_CAMERA_ORDER: isize = isize::MAX / 2;
 
-        // Find the highest camera order from all existing cameras
-        let mut highest_order = 0;
-        for camera in all_cameras.iter() {
-            if camera.order > highest_order {
-                highest_order = camera.order;
-            }
+    if let Ok((_entity, mut camera)) = cameras.get_single_mut() {
+        if camera.order != MENU_CAMERA_ORDER {
+            info!(
+                "Updating existing menu camera order to {}",
+                MENU_CAMERA_ORDER
+            );
+            camera.order = MENU_CAMERA_ORDER;
         }
-
-        // Update all menu cameras to ensure unique orders
-        for (entity, _) in cameras.iter() {
-            let new_order = highest_order + 1;
-            info!("Updating menu camera order to {}", new_order);
-            commands.entity(entity).insert(Camera {
-                order: new_order,
-                ..default()
-            });
-            highest_order = new_order; // Increment for next camera if multiple exist
-        }
-
         return;
     }
 
-    info!("Setting up new menu camera (none found in the query)");
-    info!("Total cameras in scene: {}", all_cameras.iter().count());
-
-    // Find the highest camera order from all existing cameras
-    let mut highest_order = 0;
-    for camera in all_cameras.iter() {
-        if camera.order > highest_order {
-            highest_order = camera.order;
+    let count = cameras.iter().count();
+    if count > 1 {
+        warn!(
+            "Multiple ({}) MenuCamera entities found. Setting order for all to {}.",
+            count, MENU_CAMERA_ORDER
+        );
+        for (_entity, mut camera) in cameras.iter_mut() {
+            camera.order = MENU_CAMERA_ORDER;
         }
+        return;
     }
 
-    // Create a new camera with a higher order
-    let new_order = highest_order + 1;
+    info!(
+        "Setting up new menu camera (none found in the query) with order {}",
+        MENU_CAMERA_ORDER
+    );
     let camera_entity = commands
         .spawn((
-            Camera2d,
+            Camera2d::default(),
             Camera {
-                order: new_order,
+                order: MENU_CAMERA_ORDER,
                 ..default()
             },
             MenuCamera,
             Name::new("Menu Camera"),
-            // Add essential UI components to make it a valid UI parent
             Node {
                 width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
+                height: Val::Percent(10.0),
                 ..default()
             },
-            // Full visibility components to ensure UI items inherit visibility properly
-            ViewVisibility::default(),
-            InheritedVisibility::VISIBLE,
-            Visibility::Visible,
-            // Standard ZIndex
-            ZIndex::default(),
-            // Add render layers for menu items
             crate::camera::components::AppLayer::menu_layers(),
         ))
         .id();
 
     info!(
         "Menu camera created with order {} and entity {:?}",
-        new_order, camera_entity
+        MENU_CAMERA_ORDER, camera_entity
     );
 }
 
