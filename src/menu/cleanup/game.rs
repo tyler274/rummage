@@ -25,6 +25,9 @@ pub fn cleanup_game(
         commands.entity(entity).despawn_recursive();
     }
 
+    // Apply the commands immediately to ensure cleanup is effective
+    apply_deferred(&mut commands);
+
     // Verify cleanup
     let remaining_cameras = game_cameras.iter().count();
     if remaining_cameras > 0 {
