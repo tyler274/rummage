@@ -101,14 +101,25 @@ pub fn setup_main_menu_camera(
     mut commands: Commands,
     camera_query: Query<Entity, With<MenuCamera>>,
 ) {
-    let camera_entity = camera_query.single();
-    commands.entity(camera_entity).insert(Camera {
-        order: isize::MAX - 1,
-        ..default()
-    });
-    commands.insert_resource(MenuCameraEntity(camera_entity));
-
-    info!("Main Menu Camera setup complete");
+    match camera_query.get_single() {
+        Ok(camera_entity) => {
+            commands.entity(camera_entity).insert(Camera {
+                order: isize::MAX - 1,
+                ..default()
+            });
+            commands.insert_resource(MenuCameraEntity(camera_entity));
+            info!(
+                "Main Menu Camera setup complete for entity {:?}",
+                camera_entity
+            );
+        }
+        Err(e) => {
+            warn!(
+                "Failed to get single MenuCamera entity in setup_main_menu_camera: {}. This might be okay if the camera is created later.",
+                e
+            );
+        }
+    }
 }
 
 /// System to despawn the main menu camera

@@ -62,9 +62,7 @@ impl Plugin for SettingsPlugin {
                 OnEnter(SettingsMenuState::Main),
                 (
                     setup_main_settings,
-                    crate::menu::camera::setup::setup_menu_camera.run_if(
-                        |state: Res<State<GameMenuState>>| *state.get() != GameMenuState::Settings,
-                    ),
+                    crate::menu::camera::setup::setup_menu_camera,
                 ),
             )
             // Settings state - Video settings

@@ -1,9 +1,9 @@
 //! Module for handling cleanup of menu and game entities
 
-mod decorative;
+// mod decorative; // Removed declaration for deleted file
 mod game;
 mod main_menu;
-mod pause_menu;
+pub mod pause_menu;
 pub mod plugin;
 
 // These modules are used internally but not exported

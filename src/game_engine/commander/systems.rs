@@ -228,7 +228,6 @@ pub fn validate_commander_deck(
 /// System to track damage dealt by commanders to players
 pub fn track_commander_damage(
     _commands: Commands,
-    _game_state: ResMut<GameMenuState>,
     commanders: Query<(Entity, &Commander)>,
     _players: Query<Entity, With<Player>>,
     _cmd_zone_manager: Res<CommandZoneManager>,

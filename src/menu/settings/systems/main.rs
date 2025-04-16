@@ -61,8 +61,11 @@ pub fn settings_button_action(
     mut context: ResMut<StateTransitionContext>,
 ) {
     for (interaction, action) in interaction_query.iter_mut() {
+        // Log every interaction detected in the settings menu
+        // debug!("Detected interaction {:?} for action {:?}", interaction, action);
+
         if *interaction == Interaction::Pressed {
-            info!("Settings button pressed: {:?}", action);
+            info!("Settings button pressed: {:?} ({:?})", action, interaction);
             match action {
                 SettingsButtonAction::NavigateToVideo => {
                     next_state.set(SettingsMenuState::Video);

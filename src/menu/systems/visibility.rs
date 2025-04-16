@@ -2,6 +2,7 @@ use crate::menu::{
     backgrounds::MenuBackground,
     camera::MenuCamera,
     components::{MenuItem, MenuVisibilityState},
+    settings::SettingsMenuState,
     state::GameMenuState,
     ui::{MenuVisibilityLogState, PreviousWindowSize},
 };
@@ -168,26 +169,38 @@ pub fn detect_ui_hierarchy_issues(
 /// Ensure menu items are visible in appropriate states
 pub fn ensure_menu_item_visibility(
     mut menu_items: Query<(&mut Visibility, &Name), With<MenuItem>>,
-    state: Res<State<GameMenuState>>,
+    game_state: Res<State<GameMenuState>>,
+    settings_state: Res<State<SettingsMenuState>>,
 ) {
-    let should_be_visible = matches!(
-        state.get(),
+    // Determine if *any* menu UI should be visible based on game state
+    let game_wants_menu_visible = matches!(
+        game_state.get(),
         GameMenuState::MainMenu | GameMenuState::PauseMenu | GameMenuState::Settings
     );
+
+    // Determine if the settings menu specifically is active (not Disabled)
+    let settings_menu_active = *settings_state.get() != SettingsMenuState::Disabled;
+
+    // Final visibility check: Menu is visible if the game state requires it,
+    // AND if we are in the Settings game state, the settings menu state must also be active.
+    let should_be_visible = game_wants_menu_visible
+        && !(*game_state.get() == GameMenuState::Settings && !settings_menu_active);
 
     for (mut visibility, name) in menu_items.iter_mut() {
         if should_be_visible && *visibility != Visibility::Visible {
             info!(
-                "Setting menu item '{}' to Visible in state {:?}",
+                "Setting menu item '{}' to Visible based on states Game={:?}, Settings={:?}",
                 name,
-                state.get()
+                game_state.get(),
+                settings_state.get()
             );
             *visibility = Visibility::Visible;
         } else if !should_be_visible && *visibility == Visibility::Visible {
             info!(
-                "Setting menu item '{}' to Hidden in state {:?}",
+                "Setting menu item '{}' to Hidden based on states Game={:?}, Settings={:?}",
                 name,
-                state.get()
+                game_state.get(),
+                settings_state.get()
             );
             *visibility = Visibility::Hidden;
         }

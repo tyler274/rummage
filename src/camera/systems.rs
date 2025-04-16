@@ -38,7 +38,8 @@ pub fn manage_game_camera_visibility(
 
         if *visibility != new_visibility {
             info!(
-                "Setting game camera visibility to {:?} in state {:?}",
+                "Setting game camera {:?} visibility to {:?} in state {:?}",
+                "(ID unknown)",
                 new_visibility,
                 game_state.get()
             );
@@ -97,7 +98,7 @@ pub fn set_initial_zoom(
     if let Ok(mut projection) = query.get_single_mut() {
         // Use a much wider view to ensure all cards are visible
         // In OrthographicProjection, higher scale = more zoomed out
-        projection.scale = 5.0; // Increased from 2.0 to 5.0 for much wider view
+        projection.scale = 500.0; // Drastically increased scale to see distant playmats
 
         info!("Set initial camera zoom level to {:.2}", projection.scale);
     } else {
