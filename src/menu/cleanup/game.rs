@@ -24,18 +24,6 @@ pub fn cleanup_game(
         info!("Despawning game camera entity: {:?}", entity);
         commands.entity(entity).despawn_recursive();
     }
-
-    // Apply the commands immediately to ensure cleanup is effective
-    apply_deferred(&mut commands);
-
-    // Verify cleanup
-    let remaining_cameras = game_cameras.iter().count();
-    if remaining_cameras > 0 {
-        warn!(
-            "{} game cameras still exist after cleanup!",
-            remaining_cameras
-        );
-    }
 }
 
 /// System to clean up temporary elements when leaving the card selection screen
