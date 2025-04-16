@@ -12,7 +12,6 @@ pub fn spawn_visual_cards(
     commands: &mut Commands,
     card_size: &Vec2,
     spacing_multiplier: f32,
-    player_position: Vec3,
     player_index: usize,
     player_entity: Entity,
     table: &TableLayout,

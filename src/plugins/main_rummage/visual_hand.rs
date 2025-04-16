@@ -64,11 +64,10 @@ pub(super) fn spawn_player_visual_hands(
                 &mut commands,
                 &config.card_size,
                 config.card_spacing_multiplier,
-                marker.position, // Use stored position
                 player_index,
                 marker.player_entity,
                 &table,
-                Some(&asset_server).map(|v| &**v), // Convert Option<&Res<AssetServer>> to Option<&AssetServer>
+                Some(&asset_server).map(|v| &**v),
                 display_cards,
             );
         } else {
@@ -81,4 +80,4 @@ pub(super) fn spawn_player_visual_hands(
         // Despawn the marker entity once processed
         commands.entity(marker_entity).despawn();
     }
-} 
+}
