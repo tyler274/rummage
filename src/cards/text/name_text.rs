@@ -52,11 +52,6 @@ pub fn create_name_text(
     // Create the text entity
     commands
         .spawn((
-            Node {
-                width: Val::Auto,
-                height: Val::Auto,
-                ..default()
-            },
             Text2d::new(name_text_component.name.clone()),
             Transform::from_translation(Vec3::new(
                 name_position.x,

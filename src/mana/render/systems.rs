@@ -117,11 +117,6 @@ pub fn render_mana_symbol(
         // Render the symbol with the appropriate color
         commands
             .spawn((
-                Node {
-                    width: Val::Auto,
-                    height: Val::Auto,
-                    ..default()
-                },
                 Text2d::new(display_symbol),
                 TextFont {
                     font: mana_font,
@@ -146,11 +141,6 @@ pub fn render_mana_symbol(
 
         commands
             .spawn((
-                Node {
-                    width: Val::Auto,
-                    height: Val::Auto,
-                    ..default()
-                },
                 Text2d::new(display_symbol.clone()),
                 TextFont {
                     font: mana_font.clone(),
@@ -170,11 +160,6 @@ pub fn render_mana_symbol(
     // Render the actual mana symbol
     commands
         .spawn((
-            Node {
-                width: Val::Auto,
-                height: Val::Auto,
-                ..default()
-            },
             Text2d::new(display_symbol),
             TextFont {
                 font: mana_font.clone(),

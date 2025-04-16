@@ -60,11 +60,6 @@ pub fn spawn_rules_text(
 
     commands
         .spawn((
-            Node {
-                width: Val::Auto,
-                height: Val::Auto,
-                ..default()
-            },
             Text2d::new(formatted_text.clone()),
             Transform::from_translation(Vec3::new(
                 local_offset.x,

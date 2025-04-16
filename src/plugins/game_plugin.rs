@@ -95,8 +95,10 @@ fn setup_game(
 
     // --- Game Camera Setup (moved from camera/systems.rs) ---
     // Check if a game camera already exists
+    info!("Checking for existing game cameras...");
     if existing_game_cameras.is_empty() {
         info!("Spawning Game Camera...");
+        info!("Attempting to spawn GameCamera entity...");
         let camera_entity = commands
             .spawn((
                 Camera2d,
@@ -122,7 +124,10 @@ fn setup_game(
                 Name::new("Game Camera"),
             ))
             .id();
-        info!("Game camera spawned with entity {:?}", camera_entity);
+        info!(
+            "Successfully spawned GameCamera with entity: {:?}",
+            camera_entity
+        );
         // Initialize camera pan state here as well if needed, or ensure it's done elsewhere
         // commands.insert_resource(CameraPanState::default()); // Pan state is initialized in plugin
     } else {

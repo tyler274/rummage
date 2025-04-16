@@ -122,7 +122,12 @@ pub fn handle_window_resize(
             let target_card_height = 936.0;
             let aspect = resize_event.width / resize_event.height;
             // Scale by aspect ratio to maintain card proportions across different window sizes
-            projection.scale = (target_card_height / resize_event.height) * 2.0 * aspect;
+            let new_scale = (target_card_height / resize_event.height) * 2.0 * aspect;
+            info!(
+                "WindowResize: New calculated scale = {:.2} (Window: {}x{}, Aspect: {:.2})",
+                new_scale, resize_event.width, resize_event.height, aspect
+            );
+            projection.scale = new_scale;
 
             // Update window surface - with WSL2 error handling
             if let Ok(mut window) = windows.get_single_mut() {
@@ -248,7 +253,14 @@ pub fn camera_movement(
     // This creates a more natural zoom feel rather than abrupt changes
     let delta = target_scale - projection.scale;
     let interpolation_factor = (config.zoom_interpolation_speed * time.delta_secs()).min(1.0);
-    projection.scale += delta * interpolation_factor;
+    let final_scale = projection.scale + delta * interpolation_factor;
+    if (final_scale - projection.scale).abs() > f32::EPSILON {
+        info!(
+            "CameraMovement: Target Scale: {:.2}, Current Scale: {:.2}, Final Applied Scale: {:.2}",
+            target_scale, projection.scale, final_scale
+        );
+    }
+    projection.scale = final_scale;
 }
 
 /// Draws debug visualization for card positions

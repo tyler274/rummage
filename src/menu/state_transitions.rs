@@ -92,19 +92,14 @@ pub fn check_loading_complete(
 
     match game_state {
         Some(state) => {
-            // Check if the GameState seems valid (e.g., turn number indicates loading happened)
-            // We assume turn_number 0 might be a default/new game state.
-            if state.turn_number > 0 {
-                info!(
-                    "Game state loaded (Turn {}), transitioning from Loading to InGame...",
-                    state.turn_number
-                );
-                next_menu_state.set(GameMenuState::InGame);
-                next_app_state.set(AppState::InGame);
-            } else {
-                // Still waiting for GameState to be populated by the load system
-                debug!("In Loading state, but GameState turn number is 0, waiting...");
-            }
+            // If the GameState resource exists, we consider loading complete
+            // regardless of the turn number (handles new game case where turn is 0)
+            info!(
+                "GameState resource found (Turn {}), transitioning from Loading to InGame...",
+                state.turn_number
+            );
+            next_menu_state.set(GameMenuState::InGame);
+            next_app_state.set(AppState::InGame);
         }
         None => {
             // GameState resource doesn't exist yet, still waiting

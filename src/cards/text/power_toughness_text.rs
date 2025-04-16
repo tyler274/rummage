@@ -39,11 +39,6 @@ pub fn spawn_power_toughness_text(
     // Spawn the P/T entity
     commands
         .spawn((
-            Node {
-                width: Val::Auto,
-                height: Val::Auto,
-                ..default()
-            },
             Text2d::new(pt_component.power_toughness.clone()),
             Transform::from_translation(Vec3::new(pt_x, pt_y, 0.1)),
             GlobalTransform::default(),
