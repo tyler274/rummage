@@ -21,7 +21,23 @@ pub struct EscKeyStateParams<'w, 's> {
     next_game_state: ResMut<'w, NextState<AppState>>,
 }
 
-/// Handles keyboard input when in the pause menu, specifically ESC to toggle pause
+/// Handles keyboard input (ESC) while the game is actively running to trigger the pause menu.
+/// Runs only when `AppState::InGame`.
+pub fn handle_pause_trigger(
+    keys: Res<ButtonInput<KeyCode>>,
+    mut next_app_state: ResMut<NextState<AppState>>,
+    mut next_menu_state: ResMut<NextState<GameMenuState>>,
+) {
+    if keys.just_pressed(KeyCode::Escape) {
+        info!("ESC key pressed in AppState::InGame - Triggering Pause Menu");
+        next_app_state.set(AppState::Paused);
+        next_menu_state.set(GameMenuState::PauseMenu);
+    }
+}
+
+/// Handles keyboard input (ESC) when the game is paused or in a menu state derived from pause.
+/// Toggles back to the game, navigates back within settings, or returns to the pause menu.
+/// Runs only when `AppState::Paused`.
 pub fn esc_key_system(mut params: EscKeyStateParams) {
     if params.keys.just_pressed(KeyCode::Escape) {
         info!(
@@ -40,6 +56,7 @@ pub fn esc_key_system(mut params: EscKeyStateParams) {
                 GameMenuState::PauseMenu => {
                     info!("Returning to game from pause menu");
                     params.next_game_state.set(AppState::InGame);
+                    params.next_menu_state.set(GameMenuState::InGame);
                 }
                 GameMenuState::Settings => {
                     if *params.settings_state.get() != SettingsMenuState::Main {

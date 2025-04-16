@@ -1,45 +1,29 @@
-use crate::menu::{
-    components::MenuItem, decorations::MenuDecorativeElement, star_of_david::StarOfDavid,
-};
+use crate::menu::{components::MenuItem, decorations::MenuDecorativeElement};
 use bevy::prelude::*;
 
 /// Cleans up pause menu entities
 pub fn cleanup_pause_menu(
     mut commands: Commands,
     menu_items: Query<Entity, With<MenuItem>>,
-    decorative_elements: Query<(Entity, Option<&StarOfDavid>), With<MenuDecorativeElement>>,
+    decorative_elements: Query<Entity, With<MenuDecorativeElement>>,
 ) {
-    let count = menu_items.iter().count();
-    info!("Cleaning up {} pause menu items", count);
-    for entity in menu_items.iter() {
-        commands.entity(entity).despawn_recursive();
+    let item_count = menu_items.iter().count();
+    if item_count > 0 {
+        info!("Cleaning up {} pause menu items", item_count);
+        for entity in menu_items.iter() {
+            commands.entity(entity).despawn_recursive();
+        }
     }
 
-    // Hide decorative elements (including Stars of David) rather than despawning them
-    // This allows us to reuse them when returning to main menu
+    // Despawn decorative elements as well
     let element_count = decorative_elements.iter().count();
     if element_count > 0 {
         info!(
-            "Setting {} decorative elements to Hidden visibility",
+            "Cleaning up {} pause menu decorative elements",
             element_count
         );
-        for (entity, star) in decorative_elements.iter() {
-            // Check if the entity still exists before attempting to modify it
-            if let Some(mut entity_commands) = commands.get_entity(entity) {
-                // Log if it's a Star of David
-                if star.is_some() {
-                    info!("Setting Star of David {:?} to Hidden", entity);
-                } else {
-                    debug!("Setting decorative element {:?} to Hidden", entity);
-                }
-                // Just change visibility instead of despawning
-                entity_commands.insert(Visibility::Hidden);
-            } else {
-                warn!(
-                    "Decorative element {:?} was already despawned before visibility could be set to Hidden.",
-                    entity
-                );
-            }
+        for entity in decorative_elements.iter() {
+            commands.entity(entity).despawn_recursive();
         }
     }
 }
