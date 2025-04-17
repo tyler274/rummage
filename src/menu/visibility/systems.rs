@@ -7,6 +7,7 @@ use crate::menu::{
     visibility::components::{MenuVisibilityLogState, PreviousWindowSize},
 };
 use bevy::prelude::*;
+use bevy::{prelude::*, render::view::InheritedVisibility, ui::RelativeCursorPosition};
 
 // Type Aliases for complex queries
 type MissingSizeBackgroundQueryVis<'w, 's> =
@@ -226,20 +227,20 @@ pub fn fix_visibility_for_changed_items(
     let z_count = items_with_z.iter().count();
 
     if global_z_count > 0 || z_count > 0 {
-        debug!(
-            "Checking visibility for {} menu items (GlobalZIndex: {}, ZIndex: {})",
-            global_z_count + z_count,
-            global_z_count,
-            z_count
-        );
+        // debug!(
+        //     "Checking visibility for {} menu items (GlobalZIndex: {}, ZIndex: {})",
+        //     global_z_count + z_count,
+        //     global_z_count,
+        //     z_count
+        // );
 
         // Process items with GlobalZIndex
         for (mut visibility, mut inherited, z_index, name) in items_with_global_z.iter_mut() {
             if *visibility == Visibility::Hidden && z_index.0 > 0 {
-                debug!(
-                    "Forcing menu item '{}' with GlobalZIndex {} to be visible",
-                    name, z_index.0
-                );
+                // debug!(
+                //     "Forcing menu item '{}' with GlobalZIndex {} to be visible",
+                //     name, z_index.0
+                // );
                 *visibility = Visibility::Visible;
                 *inherited = InheritedVisibility::VISIBLE;
             }
@@ -248,10 +249,10 @@ pub fn fix_visibility_for_changed_items(
         // Process items with ZIndex
         for (mut visibility, mut inherited, z_index, name) in items_with_z.iter_mut() {
             if *visibility == Visibility::Hidden && z_index.0 > 0 {
-                debug!(
-                    "Forcing menu item '{}' with ZIndex {} to be visible",
-                    name, z_index.0
-                );
+                // debug!(
+                //     "Forcing menu item '{}' with ZIndex {} to be visible",
+                //     name, z_index.0
+                // );
                 *visibility = Visibility::Visible;
                 *inherited = InheritedVisibility::VISIBLE;
             }
@@ -335,4 +336,18 @@ pub fn fix_changed_main_menu_visibility(mut menu_items: ChangedMainMenuVisibilit
             }
         }
     }
+}
+
+pub fn check_visibility(
+    mut menu_query: Query<
+        (&mut InheritedVisibility, &GlobalTransform, &Node),
+        (With<MenuItem>, Changed<GlobalTransform>),
+    >,
+    camera_query: Query<(&Camera, &GlobalTransform), With<MenuCamera>>,
+) {
+    if menu_query.is_empty() {
+        return;
+    }
+
+    // ... existing code ...
 }
