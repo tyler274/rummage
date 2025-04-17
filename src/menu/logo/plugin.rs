@@ -33,11 +33,10 @@ impl Plugin for LogoPlugin {
             .add_systems(Startup, setup_startup_logo)
             // Setup pause logo on enter
             .add_systems(OnEnter(GameMenuState::PauseMenu), setup_pause_logo)
-            // Add logo setup to PostUpdate schedule, running once when entering MainMenu
+            // Add logo setup ON ENTER MainMenu, after the camera is setup
             .add_systems(
-                PostUpdate,
+                OnEnter(GameMenuState::MainMenu),
                 setup_combined_logo
-                    .run_if(in_state(GameMenuState::MainMenu))
                     // Run only if the marker resource doesn't exist yet for this state instance
                     .run_if(not(resource_exists::<MainMenuLogoSpawned>))
                     .after(MainMenuSetupSet),
@@ -90,7 +89,7 @@ fn setup_combined_logo(
     asset_server: Res<AssetServer>,
     menu_cameras: Query<Entity, With<MenuCamera>>,
 ) {
-    info!("Setting up combined logo via PostUpdate schedule");
+    info!("Setting up combined logo via OnEnter(MainMenu) schedule");
 
     // Find the menu camera to attach to
     if let Some(camera_entity) = menu_cameras.iter().next() {
@@ -101,9 +100,10 @@ fn setup_combined_logo(
         commands.insert_resource(MainMenuLogoSpawned);
         info!("Inserted MainMenuLogoSpawned flag");
     } else {
-        // This warning might still appear if camera setup takes more than one frame,
-        // but the system will try again next frame until it succeeds or state changes.
-        warn!("No menu camera found during PostUpdate, will retry next frame if still in MainMenu");
+        // This warning should ideally NOT happen anymore if ordering works correctly within OnEnter
+        warn!(
+            "No menu camera found during OnEnter(MainMenu) after MainMenuSetupSet. Ordering issue?"
+        );
     }
 }
 
