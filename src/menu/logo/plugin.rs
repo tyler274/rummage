@@ -42,7 +42,8 @@ impl Plugin for LogoPlugin {
                     setup_combined_logo
                         // Run only if the marker resource doesn't exist yet for this state instance
                         .run_if(not(resource_exists::<MainMenuLogoSpawned>))
-                        .after(apply_deferred), // Run after the explicit flush
+                        // Just run after the setup set; the explicit flush above handles the delay
+                        .after(MainMenuSetupSet),
                 ),
             )
             // Cleanup logo when leaving main menu or pause menu
