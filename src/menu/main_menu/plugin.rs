@@ -2,7 +2,6 @@ use bevy::audio::AudioSink;
 use bevy::prelude::*;
 
 use crate::{
-    menu::camera::setup::setup_main_menu_camera,
     // TODO: menu::state::MenuState,
     menu::state::GameMenuState,
 };
@@ -32,7 +31,7 @@ impl Plugin for MainMenuPlugin {
             // Register systems
             .add_systems(
                 OnEnter(GameMenuState::MainMenu),
-                (setup_main_menu_adapter, setup_main_menu_camera).in_set(MainMenuSetupSet),
+                setup_main_menu_adapter.in_set(MainMenuSetupSet),
             )
             .add_systems(
                 Update,
