@@ -59,11 +59,11 @@ impl Plugin for MenuPlugin {
             ))
             // Schedule camera setup on startup
             .add_systems(Startup, setup_menu_camera)
-            // Main Menu systems - REMOVED conflicting setup here, handled by MainMenuPlugin
-            // .add_systems(
-            //     OnEnter(GameMenuState::MainMenu),
-            //     (setup_main_menu, apply_deferred, setup_main_menu_camera).chain(),
-            // )
+            // Main Menu systems
+            .add_systems(
+                OnEnter(GameMenuState::MainMenu),
+                (setup_main_menu, apply_deferred, setup_main_menu_camera).chain(),
+            )
             .add_systems(
                 OnExit(GameMenuState::MainMenu),
                 cleanup_menu_camera, // Schedule cleanup on exit
