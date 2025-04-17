@@ -16,7 +16,7 @@ use super::zones::{connect_cards_to_zones, register_unzoned_cards};
 
 // System to set the clear color for the game state
 fn setup_clear_color(mut clear_color: ResMut<ClearColor>) {
-    *clear_color = Color::srgb(0.3, 0.3, 0.3); // Set to a gray color
+    *clear_color = ClearColor(Color::srgb(0.3, 0.3, 0.3)); // Set to a gray color
     info!("Set clear color for InGame state");
 }
 
