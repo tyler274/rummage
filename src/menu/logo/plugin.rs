@@ -36,14 +36,10 @@ impl Plugin for LogoPlugin {
             // Add logo setup ON ENTER MainMenu, after the camera is setup
             .add_systems(
                 OnEnter(GameMenuState::MainMenu),
-                (
-                    // Apply deferred commands after main menu setup to ensure camera exists
-                    apply_deferred.after(MainMenuSetupSet),
-                    setup_combined_logo
-                        // Run only if the marker resource doesn't exist yet for this state instance
-                        .run_if(not(resource_exists::<MainMenuLogoSpawned>))
-                        .after(apply_deferred), // Run after the explicit flush
-                ),
+                setup_combined_logo
+                    // Run only if the marker resource doesn't exist yet for this state instance
+                    .run_if(not(resource_exists::<MainMenuLogoSpawned>))
+                    .after(MainMenuSetupSet),
             )
             // Cleanup logo when leaving main menu or pause menu
             .add_systems(
