@@ -3,7 +3,7 @@ use crate::menu::camera::MenuCamera;
 use crate::menu::components::{MenuItem, ZLayers};
 use crate::menu::decorations::MenuDecorativeElement;
 use crate::menu::logo::text::{create_english_text, create_hebrew_text};
-use crate::menu::main_menu::systems::setup::setup_main_menu;
+use crate::menu::main_menu::plugin::MainMenuSetupSet;
 use crate::menu::star_of_david::create_star_of_david;
 use crate::menu::state::{AppState, GameMenuState};
 use bevy::prelude::*;
@@ -40,7 +40,7 @@ impl Plugin for LogoPlugin {
                     .run_if(in_state(GameMenuState::MainMenu))
                     // Run only if the marker resource doesn't exist yet for this state instance
                     .run_if(not(resource_exists::<MainMenuLogoSpawned>))
-                    .after(setup_main_menu),
+                    .after(MainMenuSetupSet),
             )
             // Cleanup logo when leaving main menu or pause menu
             .add_systems(

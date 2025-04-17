@@ -11,6 +11,10 @@ use super::systems::{
     setup::setup_main_menu,
 };
 
+/// System set for main menu setup logic
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub struct MainMenuSetupSet;
+
 #[derive(Resource, Default)]
 pub struct MultiplayerState {
     // Field removed as it was unused
@@ -25,7 +29,10 @@ impl Plugin for MainMenuPlugin {
             // Register resources
             .init_resource::<MultiplayerState>()
             // Register systems
-            .add_systems(OnEnter(GameMenuState::MainMenu), setup_main_menu_adapter)
+            .add_systems(
+                OnEnter(GameMenuState::MainMenu),
+                setup_main_menu_adapter.in_set(MainMenuSetupSet),
+            )
             .add_systems(
                 Update,
                 (
