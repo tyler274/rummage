@@ -13,6 +13,7 @@ use crate::player::{PlayerPlugin, resources::PlayerConfig};
 #[cfg(feature = "snapshot")]
 use crate::snapshot::systems::take_snapshot_after_setup;
 use crate::text::DebugConfig;
+use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 use bevy::render::view::RenderLayers;
 
@@ -60,48 +61,50 @@ impl Plugin for RummagePlugin {
             .add_systems(
                 OnEnter(AppState::InGame),
                 (
-                    setup_game,
-                    // Ensure zoom is set before spawning hands
-                    set_initial_zoom
-                        .run_if(|context: Res<crate::menu::state::StateTransitionContext>| {
-                            !context.from_pause_menu
-                        })
-                        .after(GameCameraSetupSet),
-                    // Spawn hands after setup AND after initial zoom is set
-                    spawn_player_visual_hands
-                        .after(setup_game)
-                        .after(set_initial_zoom),
-                    // Snapshot system is controlled by feature flag
+                    // Chain systems with apply_deferred to ensure command application
+                    spawn_game_camera,
+                    apply_deferred, // Apply camera spawn command
+                    setup_game,     // Now safe to query for camera if needed
+                    apply_deferred, // Apply game setup commands
+                    spawn_player_visual_hands // Hands depend on setup
+                        .after(setup_game), // Only need after setup_game now
+                    // Snapshot system (conditional)
                     #[cfg(feature = "snapshot")]
-                    take_snapshot_after_setup
-                        .run_if(|context: Res<crate::menu::state::StateTransitionContext>| {
-                            !context.from_pause_menu
-                        })
-                        .after(setup_game),
-                ),
+                    (
+                        apply_deferred, // Ensure previous commands applied before snapshot
+                        take_snapshot_after_setup
+                            .run_if(|context: Res<crate::menu::state::StateTransitionContext>| {
+                                !context.from_pause_menu
+                            })
+                            .after(setup_game), // Snapshot depends on game setup
+                    )
+                        .chain(), // Chain snapshot logic
+                )
+                    .chain(), // Chain the core setup sequence
             )
             .add_systems(
                 Update,
-                (handle_window_resize, camera_movement).run_if(in_state(AppState::InGame)),
+                (
+                    // Run set_initial_zoom first in Update until it succeeds
+                    set_initial_zoom,
+                    // Then run other camera/window systems
+                    handle_window_resize,
+                    camera_movement,
+                )
+                    .chain() // Ensure zoom is set before movement/resize logic potentially uses it
+                    .run_if(in_state(AppState::InGame)),
             );
     }
 }
 
-// System to set up the game state
-fn setup_game(
+// --- New System to Spawn Game Camera ---
+fn spawn_game_camera(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    player_config: Res<PlayerConfig>,
     existing_game_cameras: Query<Entity, With<GameCamera>>,
 ) {
-    info!("Setting up game state...");
-
-    // --- Game Camera Setup (moved from camera/systems.rs) ---
-    // Check if a game camera already exists
     info!("Checking for existing game cameras...");
     if existing_game_cameras.is_empty() {
         info!("Spawning Game Camera...");
-        info!("Attempting to spawn GameCamera entity...");
         let camera_entity = commands
             .spawn((
                 Camera2d,
@@ -131,16 +134,25 @@ fn setup_game(
             "Successfully spawned GameCamera with entity: {:?}",
             camera_entity
         );
-        // Initialize camera pan state here as well if needed, or ensure it's done elsewhere
-        // commands.insert_resource(CameraPanState::default()); // Pan state is initialized in plugin
     } else {
         info!(
             "Game camera already exists ({:?}), not spawning a new one.",
             existing_game_cameras.iter().collect::<Vec<_>>()
         );
-        // Optionally, ensure existing camera has correct settings (layers, transform etc.)
     }
-    // --- End Game Camera Setup ---
+}
+// --- End New System ---
+
+// System to set up the game state (now without camera spawning)
+fn setup_game(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    player_config: Res<PlayerConfig>,
+) {
+    info!(
+        "Setting up game state (players, playmats)... N={}",
+        player_config.player_count
+    );
 
     let config = player_config.clone();
     info!("Spawning {} players...", config.player_count);

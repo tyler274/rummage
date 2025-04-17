@@ -1,4 +1,5 @@
 use bevy::core_pipeline::core_2d::Camera2d;
+use bevy::ecs::system::Local;
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 use bevy::render::view::RenderLayers;
@@ -92,17 +93,30 @@ pub fn setup_camera(mut commands: Commands) {
 }
 
 /// Sets the initial zoom level for the camera - called after camera is created
+/// Runs in Update until it succeeds once.
 pub fn set_initial_zoom(
     mut query: Query<&mut OrthographicProjection, (With<Camera>, With<GameCamera>)>,
+    mut initial_zoom_set: Local<bool>, // Track if zoom has been set
 ) {
+    // Only run if the initial zoom hasn't been set yet
+    if *initial_zoom_set {
+        return;
+    }
+
     if let Ok(mut projection) = query.get_single_mut() {
         // Use a much wider view to ensure all cards are visible
         // In OrthographicProjection, higher scale = more zoomed out
         projection.scale = 500.0; // Drastically increased scale to see distant playmats
 
-        info!("Set initial camera zoom level to {:.2}", projection.scale);
+        info!(
+            "Successfully set initial camera zoom level to {:.2}",
+            projection.scale
+        );
+        *initial_zoom_set = true; // Mark as done
     } else {
-        warn!("No game camera found when setting initial zoom");
+        // It's okay if the camera isn't found immediately, log minimally
+        debug!("Game camera not found yet for initial zoom setting...");
+        // Warn removed: warn!("No game camera found when setting initial zoom");
     }
 }
 
