@@ -3,6 +3,10 @@ use bevy::prelude::*;
 use crate::camera::components::GameCamera;
 use crate::camera::systems::setup_camera;
 
+/// System set for game camera setup logic.
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct GameCameraSetupSet;
+
 pub(super) fn setup_game_camera(commands: Commands, game_cameras: Query<Entity, With<GameCamera>>) {
     // Check if a game camera already exists
     if !game_cameras.is_empty() {

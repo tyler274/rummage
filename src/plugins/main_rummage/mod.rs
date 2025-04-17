@@ -1,4 +1,4 @@
-mod camera;
+pub mod camera;
 mod diagnostics;
 mod plugin;
 mod setup;

@@ -8,11 +8,17 @@ use crate::menu::GameMenuState;
 use crate::player::{PlayerPlugin, resources::PlayerConfig};
 use crate::text::DebugConfig;
 
-use super::camera::{ensure_game_camera_visible, setup_game_camera};
+use super::camera::{GameCameraSetupSet, ensure_game_camera_visible, setup_game_camera};
 use super::diagnostics::check_card_status;
 use super::setup::setup_game;
 use super::visual_hand::spawn_player_visual_hands;
 use super::zones::{connect_cards_to_zones, register_unzoned_cards};
+
+// System to set the clear color for the game state
+fn setup_clear_color(mut clear_color: ResMut<ClearColor>) {
+    *clear_color = Color::srgb(0.3, 0.3, 0.3); // Set to a gray color
+    info!("Set clear color for InGame state");
+}
 
 pub struct MainRummagePlugin;
 
@@ -48,10 +54,17 @@ impl Plugin for MainRummagePlugin {
             )
             // Initialize zone manager resource
             .init_resource::<ZoneManager>()
-            // Add game setup system
+            // Add game setup systems for InGame state
             .add_systems(
                 OnEnter(GameMenuState::InGame),
-                (setup_game, setup_game_camera, ensure_game_camera_visible),
+                (
+                    setup_game,
+                    // Put camera setup in its own set
+                    setup_game_camera.in_set(GameCameraSetupSet),
+                    ensure_game_camera_visible,
+                    // Add the clear color setup system
+                    setup_clear_color,
+                ),
             )
             // System to connect cards to zones after they're spawned - moved to FixedUpdate
             .add_systems(

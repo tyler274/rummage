@@ -19,6 +19,9 @@ use bevy::render::view::RenderLayers;
 // Add AppState import
 use crate::menu::state::AppState;
 
+// Import the new system set
+use crate::plugins::main_rummage::camera::GameCameraSetupSet;
+
 /// Marker component to trigger visual hand spawning for a player
 #[derive(Component)]
 struct SpawnVisualHand {
@@ -63,7 +66,7 @@ impl Plugin for RummagePlugin {
                         .run_if(|context: Res<crate::menu::state::StateTransitionContext>| {
                             !context.from_pause_menu
                         })
-                        .after(setup_game),
+                        .after(GameCameraSetupSet),
                     // Spawn hands after setup AND after initial zoom is set
                     spawn_player_visual_hands
                         .after(setup_game)
