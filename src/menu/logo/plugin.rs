@@ -1,14 +1,12 @@
 use crate::{
-    app_state::AppState,
-    camera::components::MenuCamera,
-    menu::components::{MenuItem, ZLayers},
-    menu::decorations::MenuDecorativeElement,
+    camera::components::{AppLayer, MenuCamera},
     menu::{
-        camera::setup::MainMenuSetupSet,
-        layering::AppLayer,
-        state::GameMenuState,
-        ui::{MenuItem, create_english_text, create_hebrew_text, create_star_of_david},
-        z_indices::ZLayers,
+        components::{MenuItem, ZLayers},
+        decorations::MenuDecorativeElement,
+        logo::{create_english_text, create_hebrew_text},
+        main_menu::plugin::MainMenuSetupSet,
+        star_of_david::create_star_of_david,
+        state::{AppState, GameMenuState},
     },
 };
 use bevy::prelude::*;
