@@ -27,46 +27,51 @@ pub fn setup_main_menu(
 ) {
     info!("Setting up main menu interface");
 
-    // Check for existing menu items first
-    let menu_items_count = existing_menu_items.iter().count();
-    if menu_items_count > 0 {
-        info!(
-            "Found {} existing menu cameras, they will be handled by camera systems",
-            menu_items_count
-        );
-    } else {
-        // Find the highest camera order
-        let mut highest_order = 0;
-        for camera in all_cameras.iter() {
-            if camera.order > highest_order {
-                highest_order = camera.order;
-            }
-        }
-
-        // Spawn camera with proper order if none exists
-        commands.spawn((
-            Camera2d,
-            Camera {
-                order: highest_order + 1,
-                ..default()
-            },
-            MenuCamera,
-            Name::new("Menu Camera"),
-            // Add essential UI components to make it a valid UI parent
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                ..default()
-            },
-            ViewVisibility::default(),
-            InheritedVisibility::default(),
-            Visibility::Visible,
-            ZIndex::default(),
-        ));
-
-        info!("Created menu camera with order {}", highest_order + 1);
+    // --- Camera Setup ---
+    // Always despawn existing menu cameras first to ensure a clean state
+    let mut existing_camera_count = 0;
+    for entity in existing_menu_items.iter() {
+        commands.entity(entity).despawn_recursive();
+        existing_camera_count += 1;
+    }
+    if existing_camera_count > 0 {
+        info!("Despawned {} existing menu cameras.", existing_camera_count);
     }
 
+    // Find the highest camera order among remaining cameras
+    let mut highest_order = 0;
+    for camera in all_cameras.iter() {
+        // Ensure we don't consider the cameras we just marked for despawn
+        // (Commands are deferred, so they might still appear in this query in the same frame)
+        // A more robust way would be to query without MenuCamera, but this works for now.
+        if camera.order > highest_order {
+            highest_order = camera.order;
+        }
+    }
+
+    // Spawn the main menu camera with proper order
+    commands.spawn((
+        Camera2d,
+        Camera {
+            order: highest_order + 1,
+            ..default()
+        },
+        MenuCamera,
+        Name::new("Menu Camera"),
+        // Add essential UI components to make it a valid UI parent
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            ..default()
+        },
+        ViewVisibility::default(),
+        InheritedVisibility::default(),
+        Visibility::Visible,
+        ZIndex::default(),
+    ));
+    info!("Created main menu camera with order {}", highest_order + 1);
+
+    // --- Root Node Cleanup ---
     // Clean up any existing menu items with MenuRoot
     for entity in existing_roots.iter() {
         commands.entity(entity).despawn_recursive();

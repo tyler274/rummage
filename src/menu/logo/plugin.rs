@@ -67,46 +67,17 @@ fn setup_startup_logo(
 ) {
     info!("Running startup logo setup");
 
-    // If no logos exist yet
-    if existing_logos.iter().count() == 0 {
-        // If there are no menu cameras, create one first (This might still be needed if MainMenu setup fails)
-        if menu_cameras.iter().count() == 0 {
-            info!("No menu camera found - creating one before logo setup");
-            let camera_entity = commands
-                .spawn((
-                    Camera2d,
-                    Camera {
-                        order: 100, // Use a much higher order
-                        ..default()
-                    },
-                    MenuCamera,
-                    Name::new("Startup Menu Camera"),
-                    Node {
-                        // Add essential UI components
-                        width: Val::Percent(100.0),
-                        height: Val::Percent(100.0),
-                        ..default()
-                    },
-                    ViewVisibility::default(),
-                    InheritedVisibility::VISIBLE,
-                    Visibility::Visible,
-                    ZIndex::default(),
-                    crate::camera::components::AppLayer::menu_layers(),
-                ))
-                .id();
-
+    // If no logos exist yet and a menu camera already exists
+    if existing_logos.is_empty() {
+        if let Some(camera_entity) = menu_cameras.iter().next() {
             info!(
-                "Created startup menu camera entity: {:?} with order 100",
+                "Attaching startup logo to existing camera: {:?}",
                 camera_entity
             );
-
             create_logo_on_camera(&mut commands, asset_server, camera_entity, "Startup");
-            info!("Logo attached to startup camera");
         } else {
-            info!("Using existing menu camera for startup logo");
-            if let Some(camera_entity) = menu_cameras.iter().next() {
-                create_logo_on_camera(&mut commands, asset_server, camera_entity, "Startup");
-            }
+            // Don't create a camera here, let the specific menu state handle it.
+            info!("No menu camera found at startup, logo not created yet.");
         }
     } else {
         info!("Logo already exists at startup");
