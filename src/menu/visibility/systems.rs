@@ -7,7 +7,7 @@ use crate::menu::{
     visibility::components::{MenuVisibilityLogState, PreviousWindowSize},
 };
 use bevy::prelude::*;
-use bevy::{prelude::*, render::view::InheritedVisibility, ui::RelativeCursorPosition};
+use bevy::render::view::InheritedVisibility;
 
 // Type Aliases for complex queries
 type MissingSizeBackgroundQueryVis<'w, 's> =
@@ -235,7 +235,7 @@ pub fn fix_visibility_for_changed_items(
         // );
 
         // Process items with GlobalZIndex
-        for (mut visibility, mut inherited, z_index, name) in items_with_global_z.iter_mut() {
+        for (mut visibility, mut inherited, z_index, _name) in items_with_global_z.iter_mut() {
             if *visibility == Visibility::Hidden && z_index.0 > 0 {
                 // debug!(
                 //     "Forcing menu item '{}' with GlobalZIndex {} to be visible",
@@ -247,7 +247,7 @@ pub fn fix_visibility_for_changed_items(
         }
 
         // Process items with ZIndex
-        for (mut visibility, mut inherited, z_index, name) in items_with_z.iter_mut() {
+        for (mut visibility, mut inherited, z_index, _name) in items_with_z.iter_mut() {
             if *visibility == Visibility::Hidden && z_index.0 > 0 {
                 // debug!(
                 //     "Forcing menu item '{}' with ZIndex {} to be visible",
@@ -336,18 +336,4 @@ pub fn fix_changed_main_menu_visibility(mut menu_items: ChangedMainMenuVisibilit
             }
         }
     }
-}
-
-pub fn check_visibility(
-    mut menu_query: Query<
-        (&mut InheritedVisibility, &GlobalTransform, &Node),
-        (With<MenuItem>, Changed<GlobalTransform>),
-    >,
-    camera_query: Query<(&Camera, &GlobalTransform), With<MenuCamera>>,
-) {
-    if menu_query.is_empty() {
-        return;
-    }
-
-    // ... existing code ...
 }
