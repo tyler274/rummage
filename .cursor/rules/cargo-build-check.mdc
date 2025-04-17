@@ -1,0 +1,3 @@
+# Cargo Build Check
+
+After every `git commit`, run `cargo build` to ensure the changes compile successfully. 
