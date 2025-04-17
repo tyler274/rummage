@@ -1,11 +1,16 @@
-use crate::camera::components::AppLayer;
-use crate::menu::camera::MenuCamera;
-use crate::menu::components::{MenuItem, ZLayers};
-use crate::menu::decorations::MenuDecorativeElement;
-use crate::menu::logo::text::{create_english_text, create_hebrew_text};
-use crate::menu::main_menu::plugin::MainMenuSetupSet;
-use crate::menu::star_of_david::create_star_of_david;
-use crate::menu::state::{AppState, GameMenuState};
+use crate::{
+    app_state::AppState,
+    camera::components::MenuCamera,
+    menu::components::{MenuItem, ZLayers},
+    menu::decorations::MenuDecorativeElement,
+    menu::{
+        camera::setup::MainMenuSetupSet,
+        layering::AppLayer,
+        state::GameMenuState,
+        ui::{MenuItem, create_english_text, create_hebrew_text, create_star_of_david},
+        z_indices::ZLayers,
+    },
+};
 use bevy::prelude::*;
 
 /// Marker resource to track if the main menu logo has been spawned for the current state instance
@@ -62,7 +67,7 @@ impl Plugin for LogoPlugin {
 fn setup_startup_logo(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    menu_cameras: Query<Entity, With<MenuCamera>>,
+    menu_cameras: Query<Entity, With<crate::camera::components::MenuCamera>>,
     existing_logos: Query<Entity, With<MenuDecorativeElement>>,
 ) {
     info!("Running startup logo setup");
@@ -88,7 +93,7 @@ fn setup_startup_logo(
 fn setup_combined_logo(
     mut commands: Commands, // Now needs mut
     asset_server: Res<AssetServer>,
-    menu_cameras: Query<Entity, With<MenuCamera>>,
+    menu_cameras: Query<Entity, With<crate::camera::components::MenuCamera>>,
 ) {
     info!("Setting up combined logo via PostUpdate schedule");
 
@@ -211,7 +216,7 @@ fn cleanup_all_logos(mut commands: Commands, logos: Query<Entity, With<MenuDecor
 fn setup_pause_logo(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    menu_cameras: Query<Entity, With<MenuCamera>>,
+    menu_cameras: Query<Entity, With<crate::camera::components::MenuCamera>>,
 ) {
     info!("Setting up logo for pause menu");
 
