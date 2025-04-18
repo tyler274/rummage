@@ -1,7 +1,7 @@
-//! Player module for managing player entities and states in the game
+//! Player related components, systems, and resources.
 
 pub mod components;
-pub mod playmat; // New playmat module
+pub mod playmat;
 pub mod resources;
 pub mod systems;
 // pub mod zone; // This seems unused or defined elsewhere
@@ -10,7 +10,7 @@ use bevy::prelude::*;
 
 // Import and re-export common player components and systems
 pub use components::Player;
-pub use playmat::PlayerPlaymatPlugin;
+pub use playmat::plugin::PlayerPlaymatPlugin;
 pub use resources::PlayerConfig;
 pub use systems::debug::{PlayerPositionTracker, debug_draw_player_positions};
 

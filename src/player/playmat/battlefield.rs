@@ -73,10 +73,10 @@ pub fn spawn_battlefield_zone(
 
     // Determine position relative to playmat based on player index
     let position = match player.player_index {
-        0 => Vec3::new(0.0, 0.0, 0.0), // Bottom player
-        1 => Vec3::new(0.0, 0.0, 0.0), // Right player
-        2 => Vec3::new(0.0, 0.0, 0.0), // Top player
-        3 => Vec3::new(0.0, 0.0, 0.0), // Left player
+        0 => Vec3::new(0.0, -100.0, 0.0), // Bottom player - Slightly offset down
+        1 => Vec3::new(100.0, 0.0, 0.0),  // Right player - Slightly offset right
+        2 => Vec3::new(0.0, 100.0, 0.0),  // Top player - Slightly offset up
+        3 => Vec3::new(-100.0, 0.0, 0.0), // Left player - Slightly offset left
         _ => Vec3::ZERO,
     };
 
