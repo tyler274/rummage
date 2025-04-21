@@ -7,13 +7,12 @@ use crate::menu::{
     components::{MenuButtonAction, MenuItem, MenuRoot, ZLayers},
     input_blocker::InputBlocker,
     styles::NORMAL_BUTTON,
-    systems::pause_menu::buttons::spawn_menu_button,
 };
 
 /// Sets up the pause menu interface
 pub fn setup_pause_menu(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
+    _asset_server: Res<AssetServer>,
     existing_menu_items: Query<Entity, With<MenuItem>>,
 ) {
     // First despawn any existing menu items to avoid duplication
@@ -128,46 +127,167 @@ pub fn setup_pause_menu(
                             Name::new("Button Container"),
                         ))
                         .with_children(|button_parent| {
-                            // Add the standard buttons
+                            // Manually spawn all buttons based on Quit Game pattern
+
                             // Resume Game Button
-                            spawn_menu_button(
-                                button_parent,
-                                "Resume Game",
-                                MenuButtonAction::Resume,
-                                &asset_server,
-                            );
+                            button_parent
+                                .spawn((
+                                    Name::new("Resume Game Button"),
+                                    Button,
+                                    Node {
+                                        width: Val::Px(200.0),
+                                        height: Val::Px(50.0),
+                                        justify_content: JustifyContent::Center,
+                                        align_items: AlignItems::Center,
+                                        margin: UiRect::all(Val::Px(10.0)),
+                                        ..default()
+                                    },
+                                    BackgroundColor(NORMAL_BUTTON),
+                                    MenuButtonAction::Resume,
+                                    MenuItem,
+                                    ZIndex::from(ZLayers::MenuButtons),
+                                ))
+                                .with_children(|text_parent| {
+                                    text_parent.spawn((
+                                        Text::new("Resume Game"),
+                                        TextFont {
+                                            font_size: 24.0,
+                                            ..default()
+                                        },
+                                        TextColor(Color::WHITE),
+                                        TextLayout::new_with_justify(JustifyText::Center),
+                                        MenuItem,
+                                        ZIndex::from(ZLayers::MenuButtonText),
+                                    ));
+                                });
 
                             // Save Game Button
-                            spawn_menu_button(
-                                button_parent,
-                                "Save Game",
-                                MenuButtonAction::SaveGame,
-                                &asset_server,
-                            );
+                            button_parent
+                                .spawn((
+                                    Name::new("Save Game Button"),
+                                    Button,
+                                    Node {
+                                        width: Val::Px(200.0),
+                                        height: Val::Px(50.0),
+                                        justify_content: JustifyContent::Center,
+                                        align_items: AlignItems::Center,
+                                        margin: UiRect::all(Val::Px(10.0)),
+                                        ..default()
+                                    },
+                                    BackgroundColor(NORMAL_BUTTON),
+                                    MenuButtonAction::SaveGame,
+                                    MenuItem,
+                                    ZIndex::from(ZLayers::MenuButtons),
+                                ))
+                                .with_children(|text_parent| {
+                                    text_parent.spawn((
+                                        Text::new("Save Game"),
+                                        TextFont {
+                                            font_size: 24.0,
+                                            ..default()
+                                        },
+                                        TextColor(Color::WHITE),
+                                        TextLayout::new_with_justify(JustifyText::Center),
+                                        MenuItem,
+                                        ZIndex::from(ZLayers::MenuButtonText),
+                                    ));
+                                });
 
                             // Load Game Button
-                            spawn_menu_button(
-                                button_parent,
-                                "Load Game",
-                                MenuButtonAction::LoadGame,
-                                &asset_server,
-                            );
+                            button_parent
+                                .spawn((
+                                    Name::new("Load Game Button"),
+                                    Button,
+                                    Node {
+                                        width: Val::Px(200.0),
+                                        height: Val::Px(50.0),
+                                        justify_content: JustifyContent::Center,
+                                        align_items: AlignItems::Center,
+                                        margin: UiRect::all(Val::Px(10.0)),
+                                        ..default()
+                                    },
+                                    BackgroundColor(NORMAL_BUTTON),
+                                    MenuButtonAction::LoadGame,
+                                    MenuItem,
+                                    ZIndex::from(ZLayers::MenuButtons),
+                                ))
+                                .with_children(|text_parent| {
+                                    text_parent.spawn((
+                                        Text::new("Load Game"),
+                                        TextFont {
+                                            font_size: 24.0,
+                                            ..default()
+                                        },
+                                        TextColor(Color::WHITE),
+                                        TextLayout::new_with_justify(JustifyText::Center),
+                                        MenuItem,
+                                        ZIndex::from(ZLayers::MenuButtonText),
+                                    ));
+                                });
 
                             // Settings Button
-                            spawn_menu_button(
-                                button_parent,
-                                "Settings",
-                                MenuButtonAction::Settings,
-                                &asset_server,
-                            );
+                            button_parent
+                                .spawn((
+                                    Name::new("Settings Button"),
+                                    Button,
+                                    Node {
+                                        width: Val::Px(200.0),
+                                        height: Val::Px(50.0),
+                                        justify_content: JustifyContent::Center,
+                                        align_items: AlignItems::Center,
+                                        margin: UiRect::all(Val::Px(10.0)),
+                                        ..default()
+                                    },
+                                    BackgroundColor(NORMAL_BUTTON),
+                                    MenuButtonAction::Settings,
+                                    MenuItem,
+                                    ZIndex::from(ZLayers::MenuButtons),
+                                ))
+                                .with_children(|text_parent| {
+                                    text_parent.spawn((
+                                        Text::new("Settings"),
+                                        TextFont {
+                                            font_size: 24.0,
+                                            ..default()
+                                        },
+                                        TextColor(Color::WHITE),
+                                        TextLayout::new_with_justify(JustifyText::Center),
+                                        MenuItem,
+                                        ZIndex::from(ZLayers::MenuButtonText),
+                                    ));
+                                });
 
                             // Exit to Main Menu Button
-                            spawn_menu_button(
-                                button_parent,
-                                "Exit to Main Menu",
-                                MenuButtonAction::MainMenu,
-                                &asset_server,
-                            );
+                            button_parent
+                                .spawn((
+                                    Name::new("Exit to Main Menu Button"),
+                                    Button,
+                                    Node {
+                                        width: Val::Px(200.0),
+                                        height: Val::Px(50.0),
+                                        justify_content: JustifyContent::Center,
+                                        align_items: AlignItems::Center,
+                                        margin: UiRect::all(Val::Px(10.0)),
+                                        ..default()
+                                    },
+                                    BackgroundColor(NORMAL_BUTTON),
+                                    MenuButtonAction::MainMenu,
+                                    MenuItem,
+                                    ZIndex::from(ZLayers::MenuButtons),
+                                ))
+                                .with_children(|text_parent| {
+                                    text_parent.spawn((
+                                        Text::new("Exit to Main Menu"),
+                                        TextFont {
+                                            font_size: 24.0,
+                                            ..default()
+                                        },
+                                        TextColor(Color::WHITE),
+                                        TextLayout::new_with_justify(JustifyText::Center),
+                                        MenuItem,
+                                        ZIndex::from(ZLayers::MenuButtonText),
+                                    ));
+                                });
 
                             // Create Quit button with proper Z-index
                             button_parent
