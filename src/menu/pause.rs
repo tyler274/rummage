@@ -9,7 +9,7 @@ use super::systems::pause_menu::{
     // Correct path for systems
     input_handler::{esc_key_system, handle_pause_trigger},
     interactions::pause_menu_action,
-    setup::setup_pause_menu,
+    // setup::setup_pause_menu, // Removed unused import
 };
 
 /// Plugin for the pause menu
@@ -18,8 +18,8 @@ pub struct PauseMenuPlugin;
 impl Plugin for PauseMenuPlugin {
     fn build(&self, app: &mut App) {
         app
-            // Enter pause menu setup
-            .add_systems(OnEnter(GameMenuState::PauseMenu), setup_pause_menu)
+            // Enter pause menu setup - Removed as it's handled by MenuPlugin
+            // .add_systems(OnEnter(GameMenuState::PauseMenu), setup_pause_menu)
             // Systems to run only in the pause menu state and when app is paused
             .add_systems(
                 Update,
