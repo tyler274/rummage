@@ -1,5 +1,5 @@
 use crate::{
-    camera::components::{AppLayer, MenuCamera},
+    camera::components::AppLayer,
     menu::{
         components::{MenuItem, ZLayers},
         decorations::MenuDecorativeElement,
@@ -24,6 +24,12 @@ struct LogoInitTracker {
     attempts: u32,
 }
 
+/// SystemSet for logo setup logic to ensure ordering
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub enum LogoSetupSet {
+    Setup,
+}
+
 /// Plugin for menu logo
 pub struct LogoPlugin;
 
@@ -32,10 +38,20 @@ impl Plugin for LogoPlugin {
         app
             // Add resource to track logo initialization
             .init_resource::<LogoInitTracker>()
+            // Configure the LogoSetupSet to run after the menu camera setup
+            // Note: We need to import setup_menu_camera or refer to it correctly
+            // Assuming setup_menu_camera is accessible or we use a marker set
+            .configure_sets(
+                OnEnter(GameMenuState::PauseMenu),
+                LogoSetupSet::Setup.after(crate::menu::camera::setup::setup_menu_camera),
+            )
             // Add a startup system to ensure the logo is created before states are processed
             .add_systems(Startup, setup_startup_logo)
-            // Setup pause logo on enter
-            .add_systems(OnEnter(GameMenuState::PauseMenu), setup_pause_logo)
+            // Setup pause logo on enter, now in its own set
+            .add_systems(
+                OnEnter(GameMenuState::PauseMenu),
+                setup_pause_logo.in_set(LogoSetupSet::Setup),
+            )
             // Add logo setup to PostUpdate schedule, running once when entering MainMenu
             .add_systems(
                 PostUpdate,

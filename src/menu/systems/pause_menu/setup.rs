@@ -60,10 +60,9 @@ pub fn setup_pause_menu(
                         padding: UiRect::all(Val::Px(20.0)),
                         ..default()
                     },
-                    BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
                     AppLayer::Menu.layer(),
                     MenuItem,
-                    ZIndex::from(ZLayers::MenuContainer), // Container layer
+                    ZIndex::from(ZLayers::MenuContainer), // Container layer (still useful for structure)
                     Name::new("Pause Menu Container"),
                 ))
                 .with_children(|inner_parent| {
@@ -80,7 +79,7 @@ pub fn setup_pause_menu(
                         TextColor(Color::WHITE),
                         Node {
                             margin: UiRect {
-                                top: Val::Px(80.0), // Adjusted margin for logo
+                                top: Val::Px(40.0), // Reduced margin as no box defines top edge
                                 bottom: Val::Px(20.0),
                                 ..default()
                             },
