@@ -25,68 +25,63 @@ pub fn setup_pause_menu(
         AppLayer::Menu.layer(),
         Name::new("Pause Menu Input Blocker"),
         ZIndex::from(ZLayers::Overlay),
+        MenuItem, // Mark as menu item for cleanup
     ));
 
-    // Spawn a pause menu root entity to help with cleanup
-    commands.spawn((
-        MenuRoot,
-        Name::new("Pause Menu Root"),
-        AppLayer::Menu.layer(),
-        ZIndex::from(ZLayers::Background),
-    ));
-
-    // Then spawn the pause menu UI
+    // Spawn a pause menu root entity to center the actual menu container
+    // This root should fill the screen or be positioned correctly by the caller state
     commands
         .spawn((
+            MenuRoot,
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
                 flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center, // Center horizontally
+                justify_content: JustifyContent::Center, // Center vertically
                 ..default()
             },
-            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.5)),
-            MenuItem,
+            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.5)), // Semi-transparent background on root
+            Name::new("Pause Menu Root"),
             AppLayer::Menu.layer(),
-            ZIndex::from(ZLayers::Background),
+            ZIndex::from(ZLayers::Background), // Root background layer
+            MenuItem,                          // Mark root as menu item for cleanup
         ))
         .with_children(|parent| {
-            // Pause menu container
+            // Spawn the main pause menu container (the grey box) directly as child of the root
             parent
                 .spawn((
                     Node {
                         width: Val::Px(300.0),
-                        height: Val::Px(450.0), // Reduced height back
+                        height: Val::Px(450.0), // Adjusted height
                         flex_direction: FlexDirection::Column,
-                        justify_content: JustifyContent::Start, // Align items top-to-bottom
-                        align_items: AlignItems::Center,
-                        padding: UiRect::all(Val::Px(20.0)), // Uniform padding
+                        justify_content: JustifyContent::Start, // Align content top-to-bottom inside
+                        align_items: AlignItems::Center, // Center content horizontally inside
+                        padding: UiRect::all(Val::Px(20.0)),
                         ..default()
                     },
                     BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),
                     AppLayer::Menu.layer(),
                     MenuItem,
-                    ZIndex::from(ZLayers::MenuContainer),
-                    Name::new("Pause Menu Container"), // Renamed for clarity
+                    ZIndex::from(ZLayers::MenuContainer), // Container layer
+                    Name::new("Pause Menu Container"),
                 ))
                 .with_children(|inner_parent| {
-                    // Logo is handled by LogoPlugin, no need for a placeholder here.
+                    // Logo is handled by LogoPlugin (absolute positioned relative to camera)
 
-                    // Title (PAUSED) - Add top margin to account for absolute positioned logo
+                    // Title (PAUSED) - Adjust top margin for logo space
                     inner_parent.spawn((
                         Text::new("PAUSED"),
                         TextFont {
                             font_size: 40.0,
                             ..default()
                         },
-                        TextLayout::default(), // Use default layout
+                        TextLayout::default(),
                         TextColor(Color::WHITE),
                         Node {
-                            // Use Node for margin
                             margin: UiRect {
-                                top: Val::Px(150.0),   // Pushed down significantly for logo space
-                                bottom: Val::Px(20.0), // Space below title
+                                top: Val::Px(80.0), // Adjusted margin for logo
+                                bottom: Val::Px(20.0),
                                 ..default()
                             },
                             ..default()
@@ -94,26 +89,25 @@ pub fn setup_pause_menu(
                         Name::new("Pause Menu Title"),
                         MenuItem,
                         AppLayer::Menu.layer(),
-                        ZIndex::from(ZLayers::MenuButtonText), // Title text z-index
+                        ZIndex::from(ZLayers::MenuButtonText),
                     ));
 
-                    // Create a container for buttons (excluding Quit Game)
+                    // Button container (all buttons together)
                     inner_parent
                         .spawn((
                             Node {
-                                width: Val::Percent(80.0),
+                                width: Val::Percent(100.0), // Take full width of parent container
                                 flex_direction: FlexDirection::Column,
                                 align_items: AlignItems::Center,
-                                // Removed top margin, spacing handled by title margin and button margins
                                 ..default()
                             },
                             MenuItem,
                             AppLayer::Menu.layer(),
-                            ZIndex::from(ZLayers::MenuContainer), // Container z-index
-                            Name::new("Inner Button Container"),
+                            ZIndex::from(ZLayers::MenuButtons), // Use button Z-layer
+                            Name::new("Button Container"),
                         ))
                         .with_children(|button_parent| {
-                            // Use the helper function to spawn buttons, EXCLUDING Quit Game
+                            // Spawn all buttons including Quit Game
                             spawn_menu_button(
                                 button_parent,
                                 "Resume Game",
@@ -144,32 +138,14 @@ pub fn setup_pause_menu(
                                 MenuButtonAction::MainMenu,
                                 "Exit to Main Menu Button",
                             );
+                            spawn_menu_button(
+                                // Quit game back in the group
+                                button_parent,
+                                "Quit Game",
+                                MenuButtonAction::Quit,
+                                "Quit Game Button",
+                            );
                         });
-                }); // End of inner_parent children
-
-            // Spawn the "Quit Game" button separately, as a direct child of the outer container (parent)
-            parent
-                .spawn((
-                    Node {
-                        // Wrap button spawner in a Node for positioning if needed
-                        margin: UiRect {
-                            top: Val::Px(10.0),
-                            ..default()
-                        }, // Add some space above Quit button
-                        ..default()
-                    },
-                    MenuItem, // Mark container as MenuItem if needed
-                    AppLayer::Menu.layer(),
-                    ZIndex::from(ZLayers::MenuButtons), // Ensure it's on button layer
-                    Name::new("Quit Button Wrapper"),
-                ))
-                .with_children(|quit_wrapper| {
-                    spawn_menu_button(
-                        quit_wrapper,
-                        "Quit Game",
-                        MenuButtonAction::Quit,
-                        "Quit Game Button",
-                    );
                 });
-        }); // End of outer parent children
+        });
 }
