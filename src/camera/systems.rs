@@ -106,7 +106,9 @@ pub fn set_initial_zoom(
     if let Ok(mut projection) = query.get_single_mut() {
         // Use a much wider view to ensure all cards are visible
         // In OrthographicProjection, higher scale = more zoomed out
-        projection.scale = 500.0; // Drastically increased scale to see distant playmats
+        // projection.scale = 500.0; // Drastically increased scale to see distant playmats
+        // Let's try a much smaller initial scale
+        projection.scale = 5.0; // Significantly reduced scale
 
         info!(
             "Successfully set initial camera zoom level to {:.2}",
@@ -128,23 +130,45 @@ pub fn set_initial_zoom(
 pub fn handle_window_resize(
     mut resize_events: EventReader<WindowResized>,
     mut projection_query: Query<&mut OrthographicProjection, (With<Camera2d>, With<GameCamera>)>,
-    mut windows: Query<&mut Window>,
+    _windows: Query<&Window>,
+    _config: Res<CameraConfig>,
 ) {
+    // Define the desired fixed vertical view size in world units.
+    // This could be based on your game's design, e.g., ensuring a certain
+    // number of units are always visible vertically. Let's use a value from config or a constant.
+    // Assuming CameraConfig has a field like `fixed_vertical_world_units`
+    // If not, let's define a reasonable constant for now.
+    const FIXED_VERTICAL_VIEW: f32 = 1000.0; // Example: Keep 1000 world units vertically visible
+
     for resize_event in resize_events.read() {
         if let Ok(mut projection) = projection_query.get_single_mut() {
-            // Scale based on card height (936px) relative to window height
-            // We want the card to take up roughly 1/3 of the screen height
-            let target_card_height = 936.0;
-            let aspect = resize_event.width / resize_event.height;
-            // Scale by aspect ratio to maintain card proportions across different window sizes
-            let new_scale = (target_card_height / resize_event.height) * 2.0 * aspect;
-            info!(
-                "WindowResize: New calculated scale = {:.2} (Window: {}x{}, Aspect: {:.2})",
-                new_scale, resize_event.width, resize_event.height, aspect
+            let aspect_ratio = resize_event.width / resize_event.height;
+            let new_height = FIXED_VERTICAL_VIEW; // Fixed vertical size
+            let new_width = FIXED_VERTICAL_VIEW * aspect_ratio; // Calculate width based on aspect ratio
+
+            // Update the projection's view area
+            projection.area = Rect::new(
+                -new_width / 2.0,
+                -new_height / 2.0,
+                new_width / 2.0,
+                new_height / 2.0,
             );
-            projection.scale = new_scale;
+
+            info!(
+                "WindowResize: Updated projection area to Rect {{ min: ({:.1}, {:.1}), max: ({:.1}, {:.1}) }} (Window: {}x{}, Aspect: {:.2})",
+                projection.area.min.x,
+                projection.area.min.y,
+                projection.area.max.x,
+                projection.area.max.y,
+                resize_event.width,
+                resize_event.height,
+                aspect_ratio
+            );
 
             // Update window surface - with WSL2 error handling
+            // REMOVED: Explicitly setting window resolution here can interfere with resizing.
+            // Bevy's WindowPlugin should handle updating the Window resource.
+            /*
             if let Ok(mut window) = windows.get_single_mut() {
                 // Set the new resolution but don't panic if the surface reconfiguration fails
                 // This handles the common Vulkan/WSL2 "Surface does not support the adapter's queue family" error
@@ -165,6 +189,7 @@ pub fn handle_window_resize(
                     );
                 }
             }
+            */
         }
     }
 }
