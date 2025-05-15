@@ -62,7 +62,7 @@ impl Plugin for MenuPlugin {
             // Main Menu systems
             .add_systems(
                 OnEnter(GameMenuState::MainMenu),
-                (setup_main_menu, apply_deferred, setup_main_menu_camera).chain(),
+                (setup_main_menu, ApplyDeferred, setup_main_menu_camera).chain(),
             )
             .add_systems(
                 OnExit(GameMenuState::MainMenu),
@@ -80,7 +80,7 @@ impl Plugin for MenuPlugin {
             // Pause Menu systems
             .add_systems(
                 OnEnter(GameMenuState::PauseMenu),
-                (setup_menu_camera, apply_deferred, setup_pause_menu).chain(),
+                (setup_menu_camera, ApplyDeferred, setup_pause_menu).chain(),
             )
             .add_systems(
                 OnExit(GameMenuState::PauseMenu),

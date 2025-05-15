@@ -20,7 +20,7 @@ impl Plugin for DiagnosticsPlugin {
         }));
 
         // Add Bevy's built-in diagnostics
-        app.add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin)
+        app.add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin::default())
             .add_plugins(bevy::diagnostic::EntityCountDiagnosticsPlugin)
             .add_plugins(bevy::diagnostic::SystemInformationDiagnosticsPlugin);
 

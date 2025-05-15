@@ -1,4 +1,5 @@
-use bevy::{prelude::*, utils::HashMap};
+use bevy::platform::collections::hash_map::HashMap;
+use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use super::color::*;

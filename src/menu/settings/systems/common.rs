@@ -10,7 +10,11 @@ use crate::menu::settings::components::*;
 pub const TEXT_COLOR: Color = Color::WHITE;
 
 /// Creates a settings button with text
-pub fn spawn_settings_button(parent: &mut ChildBuilder, text: &str, action: SettingsButtonAction) {
+pub fn spawn_settings_button(
+    parent: &mut ChildSpawnerCommands,
+    text: &str,
+    action: SettingsButtonAction,
+) {
     info!("Spawning settings button: {}", text);
     parent
         .spawn((
@@ -51,7 +55,7 @@ pub fn spawn_settings_button(parent: &mut ChildBuilder, text: &str, action: Sett
 }
 
 /// Creates a settings container node
-pub fn spawn_settings_container(parent: &mut ChildBuilder) -> Entity {
+pub fn spawn_settings_container(parent: &mut ChildSpawnerCommands) -> Entity {
     parent
         .spawn((
             Node {
@@ -75,7 +79,7 @@ pub fn spawn_settings_container(parent: &mut ChildBuilder) -> Entity {
 }
 
 /// Creates a settings title
-pub fn spawn_settings_title(parent: &mut ChildBuilder, title: &str) {
+pub fn spawn_settings_title(parent: &mut ChildSpawnerCommands, title: &str) {
     parent.spawn((
         Text::new(title),
         TextFont {
@@ -119,7 +123,7 @@ pub fn spawn_settings_root(commands: &mut Commands, background_color: Color, nam
 }
 
 /// Creates a toggle setting with a label and current value
-pub fn create_toggle_setting(parent: &mut ChildBuilder, label: &str, value: bool) {
+pub fn create_toggle_setting(parent: &mut ChildSpawnerCommands, label: &str, value: bool) {
     parent
         .spawn((
             Node {

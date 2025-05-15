@@ -1,3 +1,4 @@
+use bevy::prelude::ChildOf;
 use bevy::prelude::*;
 
 use crate::cards::text::rules_text::spawn_rules_text;
@@ -8,7 +9,7 @@ use crate::text::components::{CardRulesText, DebugConfig, SpawnedText};
 #[allow(dead_code)]
 pub fn process_rules_text_components(
     commands: &mut Commands,
-    query: &Query<(Entity, &CardRulesText, &Parent), (Without<SpawnedText>, With<CardRulesText>)>,
+    query: &Query<(Entity, &CardRulesText, &ChildOf), (Without<SpawnedText>, With<CardRulesText>)>,
     card_query: &Query<
         (
             Entity,
@@ -26,8 +27,8 @@ pub fn process_rules_text_components(
     asset_server: &AssetServer,
     _debug_config: Option<&DebugConfig>,
 ) {
-    for (entity, component, parent) in query.iter() {
-        let parent_entity = parent.get();
+    for (entity, component, child_of_component) in query.iter() {
+        let parent_entity = child_of_component.parent();
         if let Ok((_, transform, sprite, _card, _name, _cost, _types, _rules, _details)) =
             card_query.get(parent_entity)
         {

@@ -44,7 +44,7 @@ pub fn setup_gameplay_settings(mut commands: Commands, settings: Res<GameplaySet
 }
 
 /// Creates an animation speed setting display
-fn create_animation_speed_setting(parent: &mut ChildBuilder, speed: f32) {
+fn create_animation_speed_setting(parent: &mut ChildSpawnerCommands, speed: f32) {
     parent
         .spawn((
             Node {

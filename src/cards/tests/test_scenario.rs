@@ -1,5 +1,5 @@
+use bevy::platform::collections::hash_map::HashMap;
 use bevy::prelude::*;
-use bevy::utils::HashMap;
 
 use crate::cards::components::{CardOwner, CardZone};
 // Remove unused imports

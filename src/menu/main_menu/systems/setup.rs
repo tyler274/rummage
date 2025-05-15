@@ -96,7 +96,7 @@ pub fn setup_main_menu(
     // Handle background music: Resume if paused, otherwise start fresh
     let mut music_started = false;
     // Check if any sink exists and is paused
-    if let Ok(sink) = music_sinks.get_single() {
+    if let Ok(sink) = music_sinks.single() {
         if sink.is_paused() {
             info!("Resuming main menu music.");
             sink.play();

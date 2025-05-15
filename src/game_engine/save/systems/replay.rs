@@ -46,7 +46,7 @@ pub fn handle_start_replay(
                 info!("Replay started from save {}", event.slot_name);
 
                 // Send a load event to actually load the game state
-                load_events.send(LoadGameEvent {
+                load_events.write(LoadGameEvent {
                     slot_name: event.slot_name.clone(),
                 });
             }

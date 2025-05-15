@@ -1,3 +1,4 @@
+use bevy::ecs::hierarchy::ChildSpawnerCommands;
 use bevy::prelude::*;
 use bevy::text::JustifyText;
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, UiRect, Val};
@@ -162,16 +163,15 @@ impl MenuRootBundle {
 
 /// Creates the main menu buttons
 pub fn create_main_menu_buttons(
-    parent: &mut ChildBuilder,
+    parent_commands: &mut ChildSpawnerCommands,
     asset_server: &AssetServer,
     save_exists: bool,
 ) {
-    // Create the container for buttons
-    parent
+    parent_commands
         .spawn(MenuContainerBundle::button_container())
-        .with_children(|parent| {
+        .with_children(|buttons_container_builder: &mut ChildSpawnerCommands| {
             // Subtitle - Divider
-            parent.spawn((
+            buttons_container_builder.spawn((
                 Node {
                     width: Val::Px(300.0),
                     height: Val::Px(2.0),
@@ -186,40 +186,63 @@ pub fn create_main_menu_buttons(
             ));
 
             // New Game button
-            spawn_menu_button(parent, "New Game", MenuButtonAction::NewGame, asset_server);
+            spawn_menu_button(
+                buttons_container_builder,
+                "New Game",
+                MenuButtonAction::NewGame,
+                asset_server,
+            );
 
             // Continue button (only if save exists)
             if save_exists {
-                spawn_menu_button(parent, "Continue", MenuButtonAction::Continue, asset_server);
+                spawn_menu_button(
+                    buttons_container_builder,
+                    "Continue",
+                    MenuButtonAction::Continue,
+                    asset_server,
+                );
             }
 
             // Settings button
-            spawn_menu_button(parent, "Settings", MenuButtonAction::Settings, asset_server);
+            spawn_menu_button(
+                buttons_container_builder,
+                "Settings",
+                MenuButtonAction::Settings,
+                asset_server,
+            );
 
             // Credits button
-            spawn_menu_button(parent, "Credits", MenuButtonAction::Credits, asset_server);
+            spawn_menu_button(
+                buttons_container_builder,
+                "Credits",
+                MenuButtonAction::Credits,
+                asset_server,
+            );
 
             // Quit button
-            spawn_menu_button(parent, "Quit", MenuButtonAction::Quit, asset_server);
+            spawn_menu_button(
+                buttons_container_builder,
+                "Quit",
+                MenuButtonAction::Quit,
+                asset_server,
+            );
         });
 }
 
 /// Helper function to spawn a menu button with consistent styling
 fn spawn_menu_button(
-    parent: &mut ChildBuilder,
+    parent_builder: &mut ChildSpawnerCommands,
     text: &str,
     action: MenuButtonAction,
     asset_server: &AssetServer,
 ) {
-    // Create the button entity
-    parent
+    parent_builder
         .spawn((
             MenuButtonBundle::new(&format!("{} Button", text)),
             action, // Store the action with the button
         ))
-        .with_children(|parent| {
-            // Add the text as a child of the button
-            parent.spawn((
+        .with_children(|button_text_builder: &mut ChildSpawnerCommands| {
+            button_text_builder.spawn((
                 Text::new(text),
                 TextFont {
                     font: asset_server.load("fonts/FiraSans-Bold.ttf"),

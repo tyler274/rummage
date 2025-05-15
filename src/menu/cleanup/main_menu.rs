@@ -1,3 +1,5 @@
+use crate::menu::backgrounds::MenuBackground;
+use crate::menu::components::MenuItem;
 use crate::menu::components::MenuRoot;
 use crate::menu::main_menu::components::{MainMenuBackground, MainMenuMusic};
 use bevy::prelude::*;
@@ -8,8 +10,8 @@ pub fn cleanup_main_menu(
     menu_root_query: Query<Entity, With<MenuRoot>>,
     background_query: Query<Entity, With<MainMenuBackground>>,
     music_query: Query<Entity, With<MainMenuMusic>>,
-    menu_items_query: Query<Entity, With<MenuItem>>,
-    menu_backgrounds_query: Query<Entity, With<MenuBackground>>,
+    _menu_items_query: Query<Entity, With<MenuItem>>,
+    _menu_backgrounds_query: Query<Entity, With<MenuBackground>>,
 ) {
     // Despawn the root entity recursively
     if let Ok(root_entity) = menu_root_query.single() {

@@ -178,36 +178,36 @@ pub struct CombatState {
 
 // Combat systems
 pub fn initialize_combat_phase(
-    mut commands: Commands,
     mut combat_state: ResMut<CombatState>,
     turn_manager: Res<TurnManager>,
+    mut combat_begin_events: EventWriter<CombatBeginEvent>,
 ) {
     // Clear previous combat state
     *combat_state = CombatState::default();
 
     // Emit combat begin event
-    commands.spawn(CombatBeginEvent {
+    combat_begin_events.write(CombatBeginEvent {
         player: turn_manager.active_player,
     });
 }
 
 pub fn handle_declare_attackers_event(
-    mut commands: Commands,
     mut combat_state: ResMut<CombatState>,
     mut events: EventReader<DeclareAttackersEvent>,
+    mut step_begin_events: EventWriter<DeclareAttackersStepBeginEvent>,
 ) {
     for event in events.read() {
         combat_state.in_declare_attackers = true;
-        commands.spawn(DeclareAttackersStepBeginEvent {
+        step_begin_events.write(DeclareAttackersStepBeginEvent {
             player: event.player,
         });
     }
 }
 
 pub fn declare_attackers_system(
-    mut commands: Commands,
     mut combat_state: ResMut<CombatState>,
     mut events: EventReader<AttackerDeclaredEvent>,
+    mut creature_attacks_events: EventWriter<CreatureAttacksEvent>,
 ) {
     for event in events.read() {
         combat_state
@@ -216,7 +216,7 @@ pub fn declare_attackers_system(
         combat_state
             .blocked_status
             .insert(event.attacker, BlockedStatus::Unblocked);
-        commands.spawn(CreatureAttacksEvent {
+        creature_attacks_events.write(CreatureAttacksEvent {
             attacker: event.attacker,
             defender: event.defender,
         });
@@ -224,22 +224,23 @@ pub fn declare_attackers_system(
 }
 
 pub fn handle_declare_blockers_event(
-    mut commands: Commands,
     mut combat_state: ResMut<CombatState>,
     mut events: EventReader<DeclareBlockersEvent>,
+    mut step_begin_events: EventWriter<DeclareBlockersStepBeginEvent>,
 ) {
     for event in events.read() {
         combat_state.in_declare_blockers = true;
-        commands.spawn(DeclareBlockersStepBeginEvent {
+        step_begin_events.write(DeclareBlockersStepBeginEvent {
             player: event.player,
         });
     }
 }
 
 pub fn declare_blockers_system(
-    mut commands: Commands,
     mut combat_state: ResMut<CombatState>,
     mut events: EventReader<BlockerDeclaredEvent>,
+    mut creature_blocks_events: EventWriter<CreatureBlocksEvent>,
+    mut creature_blocked_events: EventWriter<CreatureBlockedEvent>,
 ) {
     for event in events.read() {
         if combat_state.attackers.contains_key(&event.attacker) {
@@ -251,11 +252,11 @@ pub fn declare_blockers_system(
                 .entry(event.attacker)
                 .or_default()
                 .push(event.blocker);
-            commands.spawn(CreatureBlocksEvent {
+            creature_blocks_events.write(CreatureBlocksEvent {
                 blocker: event.blocker,
                 attacker: event.attacker,
             });
-            commands.spawn(CreatureBlockedEvent {
+            creature_blocked_events.write(CreatureBlockedEvent {
                 attacker: event.attacker,
                 blocker: event.blocker,
             });
@@ -319,9 +320,9 @@ pub fn process_combat_damage_system(
 }
 
 pub fn end_combat_system(
-    mut commands: Commands,
     mut combat_state: ResMut<CombatState>,
     turn_manager: Res<TurnManager>,
+    mut combat_end_events: EventWriter<CombatEndEvent>,
 ) {
     // Clear all combat data
     combat_state.attackers.clear();
@@ -342,7 +343,7 @@ pub fn end_combat_system(
 
     // Emit combat end event for triggered abilities
     let active_player = turn_manager.active_player;
-    commands.spawn(CombatEndEvent {
+    combat_end_events.write(CombatEndEvent {
         player: active_player,
     });
 }

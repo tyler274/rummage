@@ -123,7 +123,7 @@ pub fn name_text_system(
                 CardTextType::Name,
                 Name::new(format!("Card Name: {}", name_text)),
             ))
-            .set_parent(entity);
+            .insert(ChildOf(entity));
     }
 }
 

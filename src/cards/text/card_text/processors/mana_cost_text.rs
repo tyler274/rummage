@@ -1,3 +1,4 @@
+use bevy::prelude::ChildOf;
 use bevy::prelude::*;
 
 use crate::cards::{Card, CardCost, CardDetailsComponent, CardName, CardTypeInfo};
@@ -8,7 +9,7 @@ use crate::text::components::{CardManaCostText, CardRulesText, DebugConfig, Spaw
 pub fn process_mana_cost_text_components(
     commands: &mut Commands,
     query: &Query<
-        (Entity, &CardManaCostText, &Parent),
+        (Entity, &CardManaCostText, &ChildOf),
         (Without<SpawnedText>, With<CardManaCostText>),
     >,
     card_query: &Query<
@@ -28,8 +29,8 @@ pub fn process_mana_cost_text_components(
     asset_server: &AssetServer,
     _debug_config: Option<&DebugConfig>,
 ) {
-    for (entity, component, parent) in query.iter() {
-        let parent_entity = parent.get();
+    for (entity, component, child_of_component) in query.iter() {
+        let parent_entity = child_of_component.0;
         if let Ok((_, transform, sprite, _card, _name, _cost, _types, _rules, _details)) =
             card_query.get(parent_entity)
         {

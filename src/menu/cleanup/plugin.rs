@@ -21,7 +21,7 @@ impl Plugin for CleanupPlugin {
         )
         .add_systems(
             OnExit(GameMenuState::InGame),
-            (super::game::cleanup_game, apply_deferred).chain(),
+            (super::game::cleanup_game, ApplyDeferred).chain(),
         );
 
         debug!("Cleanup plugin registered");

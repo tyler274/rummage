@@ -52,7 +52,7 @@ pub fn setup_video_settings(mut commands: Commands, graphics_quality: Res<Curren
 
 /// Creates a quality setting display with buttons
 fn create_quality_setting(
-    parent: &mut ChildBuilder,
+    parent: &mut ChildSpawnerCommands,
     label: &str,
     current_quality: &GraphicsQuality,
 ) {
@@ -104,7 +104,7 @@ fn create_quality_setting(
 
 /// Spawns a quality button
 fn spawn_quality_button(
-    parent: &mut ChildBuilder,
+    parent: &mut ChildSpawnerCommands,
     quality: GraphicsQuality,
     current_quality: &GraphicsQuality,
 ) {

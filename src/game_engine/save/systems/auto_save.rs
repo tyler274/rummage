@@ -27,7 +27,7 @@ pub fn handle_auto_save(
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default();
 
-        event_writer.send(SaveGameEvent {
+        event_writer.write(SaveGameEvent {
             slot_name: format!("auto_save_{}", now.as_secs()),
             description: Some("Auto save".to_string()),
             with_snapshot: true,
@@ -50,7 +50,7 @@ pub fn auto_capture_history(
         && game_state.turn_number != auto_save_tracker.last_turn_checkpoint
     {
         // Capture state at the beginning of each turn
-        event_writer.send(CaptureHistoryEvent);
+        event_writer.write(CaptureHistoryEvent);
 
         // Update last turn
         auto_save_tracker.last_turn_checkpoint = game_state.turn_number;

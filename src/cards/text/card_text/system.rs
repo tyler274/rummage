@@ -1,3 +1,4 @@
+use bevy::prelude::ChildOf;
 use bevy::prelude::*;
 
 use crate::cards::{Card, CardCost, CardDetails, CardDetailsComponent, CardName, CardTypeInfo};
@@ -19,21 +20,24 @@ use crate::cards::text::{
 #[allow(dead_code)]
 pub fn spawn_card_text(
     mut commands: Commands,
-    name_query: Query<(Entity, &CardNameText, &Parent), (Without<SpawnedText>, With<CardNameText>)>,
+    name_query: Query<
+        (Entity, &CardNameText, &ChildOf),
+        (Without<SpawnedText>, With<CardNameText>),
+    >,
     mana_cost_query: Query<
-        (Entity, &CardManaCostText, &Parent),
+        (Entity, &CardManaCostText, &ChildOf),
         (Without<SpawnedText>, With<CardManaCostText>),
     >,
     type_line_query: Query<
-        (Entity, &CardTypeLine, &Parent),
+        (Entity, &CardTypeLine, &ChildOf),
         (Without<SpawnedText>, With<CardTypeLine>),
     >,
     rules_text_query: Query<
-        (Entity, &CardRulesText, &Parent),
+        (Entity, &CardRulesText, &ChildOf),
         (Without<SpawnedText>, With<CardRulesText>),
     >,
     power_toughness_query: Query<
-        (Entity, &CardPowerToughness, &Parent),
+        (Entity, &CardPowerToughness, &ChildOf),
         (Without<SpawnedText>, With<CardPowerToughness>),
     >,
     card_query: Query<
@@ -198,8 +202,8 @@ pub fn spawn_card_text(
     );
 
     // Special case for power/toughness
-    for (entity, component, parent) in power_toughness_query.iter() {
-        let parent_entity = parent.get();
+    for (entity, component, child_of_component) in power_toughness_query.iter() {
+        let parent_entity = child_of_component.0;
         if let Ok((_, transform, sprite, _card, _name, _cost, _types, _rules, _details)) =
             card_query.get(parent_entity)
         {

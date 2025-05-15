@@ -61,15 +61,15 @@ impl Plugin for RummagePlugin {
                 (
                     // Chain systems with apply_deferred to ensure command application
                     spawn_game_camera,
-                    apply_deferred, // Apply camera spawn command
-                    setup_game,     // Now safe to query for camera if needed
-                    apply_deferred, // Apply game setup commands
+                    ApplyDeferred, // Apply camera spawn command
+                    setup_game,    // Now safe to query for camera if needed
+                    ApplyDeferred, // Apply game setup commands
                     spawn_player_visual_hands // Hands depend on setup
                         .after(setup_game), // Only need after setup_game now
                     // Snapshot system (conditional)
                     #[cfg(feature = "snapshot")]
                     (
-                        apply_deferred, // Ensure previous commands applied before snapshot
+                        ApplyDeferred, // Ensure previous commands applied before snapshot
                         take_snapshot_after_setup
                             .run_if(|context: Res<crate::menu::state::StateTransitionContext>| {
                                 !context.from_pause_menu
@@ -83,13 +83,10 @@ impl Plugin for RummagePlugin {
             .add_systems(
                 Update,
                 (
-                    // Run set_initial_zoom first in Update until it succeeds
-                    set_initial_zoom,
-                    // Then run other camera/window systems
-                    handle_window_resize,
-                    camera_movement,
-                )
-                    .run_if(in_state(AppState::InGame)),
+                    set_initial_zoom.run_if(in_state(AppState::InGame)),
+                    handle_window_resize.run_if(in_state(AppState::InGame)),
+                    camera_movement.run_if(in_state(AppState::InGame)),
+                ),
             )
             // Re-add the debug logging system
             .add_systems(
@@ -161,7 +158,8 @@ fn spawn_game_camera(
         info!("Spawning Game Camera...");
         let camera_entity = commands
             .spawn((
-                Camera2d,
+                Camera2d::default(), // Use Camera2d component directly
+                Projection::Orthographic(OrthographicProjection::default_2d()), // Add Projection component
                 Camera {
                     order: 0, // Explicitly set order to 0 for game camera
                     ..default()

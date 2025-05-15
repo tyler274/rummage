@@ -39,7 +39,7 @@ pub fn setup_controls_settings(mut commands: Commands) {
 }
 
 /// Creates a keybinding display
-fn create_keybinding(parent: &mut ChildBuilder, action: &str, key: &str) {
+fn create_keybinding(parent: &mut ChildSpawnerCommands, action: &str, key: &str) {
     parent
         .spawn((
             Node {

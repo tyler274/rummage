@@ -5,7 +5,9 @@ use crate::menu::settings::components::OnAudioSettingsMenu;
 use crate::menu::settings::components::*;
 use bevy::audio::Volume;
 use bevy::ecs::system::SystemParam;
+use bevy::prelude::ChildOf;
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 use bevy_persistent::prelude::*;
 
 /// Query for volume slider interactions
@@ -213,7 +215,7 @@ pub fn volume_slider_interaction(
 pub fn apply_volume_updates(
     mut volume_requests: ResMut<VolumeUpdateRequests>,
     mut text_query: Query<(&mut Text, &VolumeValueText)>,
-    mut volume_indicators: Query<(&mut Node, &Parent), Without<Button>>,
+    mut volume_indicators: Query<(&mut Node, &ChildOf), Without<Button>>,
     volume_type_query: Query<&VolumeType>,
     mut audio_players: Query<&mut bevy::audio::PlaybackSettings>,
     mut context: VolumeSettingsContext,
@@ -228,16 +230,12 @@ pub fn apply_volume_updates(
         match volume_type {
             VolumeType::Master => {
                 context.volume_settings.master = volume_value;
-                context.global_volume.volume = Volume {
-                    amplitude: volume_value,
-                };
+                context.global_volume.volume = Volume::Linear(volume_value);
             }
             VolumeType::Music => {
                 context.volume_settings.music = volume_value;
                 for mut settings in audio_players.iter_mut() {
-                    settings.volume = Volume {
-                        amplitude: volume_value,
-                    };
+                    settings.volume = Volume::Linear(volume_value);
                 }
             }
             VolumeType::Sfx => {
@@ -254,8 +252,8 @@ pub fn apply_volume_updates(
         }
 
         // Update slider indicators
-        for (mut node, parent) in volume_indicators.iter_mut() {
-            if let Ok(parent_volume_type) = volume_type_query.get(parent.get()) {
+        for (mut node, child_of_component) in volume_indicators.iter_mut() {
+            if let Ok(parent_volume_type) = volume_type_query.get(child_of_component.0) {
                 if *parent_volume_type as u8 == volume_type as u8 {
                     node.width = Val::Percent(clamped_value as f32);
                 }

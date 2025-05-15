@@ -6,6 +6,7 @@ use crate::menu::{
     state::GameMenuState,
     visibility::components::{MenuVisibilityLogState, PreviousWindowSize},
 };
+use bevy::prelude::ChildOf;
 use bevy::prelude::*;
 use bevy::render::view::InheritedVisibility;
 
@@ -150,8 +151,9 @@ pub fn update_menu_background(
 
 /// System to detect and report UI hierarchy issues
 pub fn detect_ui_hierarchy_issues(
-    menu_items: Query<(Entity, &Parent, Option<&Name>, &Node), With<MenuItem>>,
-    parents: Query<(Entity, Option<&Node>, Option<&ViewVisibility>)>,
+    _commands: Commands,
+    menu_items: Query<(Entity, &ChildOf, Option<&Name>, &Node), With<MenuItem>>,
+    parents_query: Query<(&Node, Option<&Interaction>, Option<&CalculatedClip>)>,
     mut found_issues: Local<bool>,
 ) {
     // Only run this diagnostic once if issues are found
@@ -161,11 +163,12 @@ pub fn detect_ui_hierarchy_issues(
 
     // Check for menu items that have non-UI parent entities
     let mut issues = false;
-    for (entity, parent, name, _) in menu_items.iter() {
-        if let Ok((parent_entity, node, view_vis)) = parents.get(parent.get()) {
-            if node.is_none() || view_vis.is_none() {
+    for (entity, child_of_component, name_option, _node) in menu_items.iter() {
+        let parent_entity = child_of_component.0;
+        if let Ok((_parent_node, interaction, clip)) = parents_query.get(parent_entity) {
+            if interaction.is_none() || clip.is_none() {
                 issues = true;
-                let name_str = name.map_or(String::from("unnamed"), |n| n.to_string());
+                let name_str = name_option.map_or(String::from("unnamed"), |n| n.to_string());
                 warn!(
                     "UI hierarchy issue: Node {:?} ({}) has parent {:?} without proper UI components",
                     entity, name_str, parent_entity

@@ -18,6 +18,7 @@ mod wsl2;
 
 use bevy::DefaultPlugins;
 use bevy::audio::AudioPlugin;
+use bevy::audio::Volume;
 use bevy::log::Level;
 use bevy::prelude::*;
 use bevy::time::Fixed;
@@ -86,7 +87,7 @@ fn main() {
             })
             // Explicitly configure the AudioPlugin
             .set(AudioPlugin {
-                global_volume: bevy::prelude::GlobalVolume::new(1.0),
+                global_volume: Volume::Linear(1.0).into(),
                 ..default()
             }),
     )

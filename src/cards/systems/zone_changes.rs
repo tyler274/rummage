@@ -35,7 +35,9 @@ pub fn process_zone_changes(
                             "Parenting card {:?} to HandZone {:?}",
                             event.card, hand_zone_entity
                         );
-                        commands.entity(event.card).set_parent(hand_zone_entity);
+                        commands
+                            .entity(event.card)
+                            .insert(ChildOf(hand_zone_entity));
                     } else {
                         warn!("Could not find HandZone for player {:?}", event.owner);
                     }
@@ -49,7 +51,7 @@ pub fn process_zone_changes(
                             "Parenting card {:?} to BattlefieldZone {:?}",
                             event.card, bf_zone_entity
                         );
-                        commands.entity(event.card).set_parent(bf_zone_entity);
+                        commands.entity(event.card).insert(ChildOf(bf_zone_entity));
                     } else {
                         warn!(
                             "Could not find BattlefieldZone for player {:?}",
@@ -62,7 +64,7 @@ pub fn process_zone_changes(
                         "Removing parent for card {:?} entering zone {:?}",
                         event.card, event.destination
                     );
-                    commands.entity(event.card).remove_parent();
+                    commands.entity(event.card).remove::<ChildOf>();
                 }
             }
 

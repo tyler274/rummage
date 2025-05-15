@@ -1,3 +1,5 @@
+//use bevy::prelude::WorldChildBuilder;
+use bevy::ecs::hierarchy::ChildSpawnerCommands;
 use bevy::prelude::*;
 use bevy::text::JustifyText;
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, UiRect, Val};
@@ -162,7 +164,7 @@ impl Default for MenuRootBundle {
 
 /// Creates the main menu buttons
 pub fn create_main_menu_buttons(
-    parent: &mut ChildBuilder,
+    parent: &mut ChildSpawnerCommands,
     asset_server: &AssetServer,
     save_exists: bool,
 ) {
@@ -181,7 +183,7 @@ pub fn create_main_menu_buttons(
             MenuItem,
             Name::new("Menu Buttons Container"),
         ))
-        .with_children(|container| {
+        .with_children(|container: &mut ChildSpawnerCommands| {
             // New Game button
             spawn_menu_button(
                 container,
@@ -231,7 +233,7 @@ pub fn create_main_menu_buttons(
 
 /// Spawns a menu button with the given text and action
 fn spawn_menu_button(
-    parent: &mut ChildBuilder,
+    parent: &mut ChildSpawnerCommands,
     text: &str,
     action: MenuButtonAction,
     asset_server: &AssetServer,
@@ -252,7 +254,7 @@ fn spawn_menu_button(
             MenuItem,
             Name::new(format!("{} Button", text)),
         ))
-        .with_children(|button| {
+        .with_children(|button: &mut ChildSpawnerCommands| {
             button.spawn((
                 Text::new(text),
                 TextFont {

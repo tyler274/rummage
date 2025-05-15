@@ -124,7 +124,7 @@ pub fn arrange_cards_in_hand(
         let start_x = -total_width / 2.0;
 
         for (i, child_ref) in children.iter().enumerate() {
-            if let Ok(mut card_transform) = card_query.get_mut(*child_ref) {
+            if let Ok(mut card_transform) = card_query.get_mut(child_ref) {
                 let relative_pos = i as f32 / (card_count as f32 - 1.0).max(1.0);
                 let angle = std::f32::consts::PI * (0.4 - (0.8 * relative_pos));
 

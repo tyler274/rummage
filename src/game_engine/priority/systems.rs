@@ -9,12 +9,14 @@ use super::resources::PrioritySystem;
 
 /// Main system for managing priority passing and game flow
 pub fn priority_system(
-    mut commands: Commands,
+    _commands: Commands,
     mut priority: ResMut<PrioritySystem>,
     _game_state: ResMut<GameState>,
     _stack: Res<GameStack>,
     phase: Res<crate::game_engine::Phase>,
     turn_manager: Res<TurnManager>,
+    mut next_phase_events: EventWriter<NextPhaseEvent>,
+    mut pass_priority_events: EventWriter<PassPriorityEvent>,
 ) {
     // Skip if we're waiting for decisions
     if !priority.simultaneous_decision_players.is_empty() {
@@ -29,7 +31,8 @@ pub fn priority_system(
 
         if !priority.has_processed_phase(*phase, turn_manager.turn_number) {
             priority.mark_phase_processed(*phase, turn_manager.turn_number);
-            commands.spawn_empty().insert(NextPhaseEvent);
+            // commands.spawn_empty().insert(NextPhaseEvent);
+            next_phase_events.write(NextPhaseEvent);
         }
     }
     // If everyone has passed and there's something on stack, resolve top item
@@ -44,7 +47,10 @@ pub fn priority_system(
 
     // Auto-pass priority in phases that don't allow player actions
     if !phase.allows_actions() && priority.stack_is_empty {
-        commands.spawn_empty().insert(PassPriorityEvent {
+        // commands.spawn_empty().insert(PassPriorityEvent {
+        //     player: priority.priority_player,
+        // });
+        pass_priority_events.write(PassPriorityEvent {
             player: priority.priority_player,
         });
     }

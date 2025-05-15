@@ -95,31 +95,36 @@ pub fn setup_camera(mut commands: Commands) {
 /// Sets the initial zoom level for the camera - called after camera is created
 /// Runs in Update until it succeeds once.
 pub fn set_initial_zoom(
-    mut query: Query<&mut OrthographicProjection, (With<Camera>, With<GameCamera>)>,
+    mut query: Query<&mut Projection, (With<Camera>, With<GameCamera>)>,
     mut initial_zoom_set: Local<bool>, // Track if zoom has been set
-) {
+) -> Result<(), BevyError> {
     // Only run if the initial zoom hasn't been set yet
     if *initial_zoom_set {
-        return;
+        return Ok(());
     }
 
-    if let Ok(mut projection) = query.single_mut() {
-        // Use a much wider view to ensure all cards are visible
-        // In OrthographicProjection, higher scale = more zoomed out
-        // projection.scale = 500.0; // Drastically increased scale to see distant playmats
-        // Let's try a much smaller initial scale
-        projection.scale = 5.0; // Significantly reduced scale
+    if let Ok(mut projection_enum) = query.single_mut() {
+        if let Projection::Orthographic(ref mut orthographic_projection) = *projection_enum {
+            // Use a much wider view to ensure all cards are visible
+            // In OrthographicProjection, higher scale = more zoomed out
+            // orthographic_projection.scale = 500.0; // Drastically increased scale to see distant playmats
+            // Let's try a much smaller initial scale
+            orthographic_projection.scale = 5.0; // Significantly reduced scale
 
-        info!(
-            "Successfully set initial camera zoom level to {:.2}",
-            projection.scale
-        );
-        *initial_zoom_set = true; // Mark as done
+            info!(
+                "Successfully set initial camera zoom level to {:.2}",
+                orthographic_projection.scale
+            );
+            *initial_zoom_set = true; // Mark as done
+        } else {
+            // Log if it's not an orthographic projection, though it should be for GameCamera
+            warn!("GameCamera does not have an OrthographicProjection for initial zoom.");
+        }
     } else {
         // It's okay if the camera isn't found immediately, log minimally
         debug!("Game camera not found yet for initial zoom setting...");
-        // Warn removed: warn!("No game camera found when setting initial zoom");
     }
+    Ok(())
 }
 
 /// Handles window resize events by maintaining a fixed vertical size and adjusting
@@ -129,69 +134,53 @@ pub fn set_initial_zoom(
 /// window size by scaling the camera's projection based on the window dimensions.
 pub fn handle_window_resize(
     mut resize_events: EventReader<WindowResized>,
-    mut projection_query: Query<&mut OrthographicProjection, (With<Camera2d>, With<GameCamera>)>,
+    mut projection_query: Query<&mut Projection, (With<Camera2d>, With<GameCamera>)>,
     _windows: Query<&Window>,
     _config: Res<CameraConfig>,
-) {
+) -> Result<(), BevyError> {
     // Define the desired fixed vertical view size in world units.
     // This could be based on your game's design, e.g., ensuring a certain
     // number of units are always visible vertically. Let's use a value from config or a constant.
-    // Assuming CameraConfig has a field like `fixed_vertical_world_units`
     // If not, let's define a reasonable constant for now.
     const FIXED_VERTICAL_VIEW: f32 = 1000.0; // Example: Keep 1000 world units vertically visible
 
+    // Attempt to get the single game camera's projection.
+    // If it's not found, or if it's not an OrthographicProjection, log and return.
+    let Ok(mut projection_enum) = projection_query.single_mut() else {
+        debug!("Game camera not found for handle_window_resize or multiple found.");
+        return Ok(());
+    };
+
+    let Projection::Orthographic(ref mut orthographic_projection) = *projection_enum else {
+        warn!("GameCamera in handle_window_resize does not have an OrthographicProjection.");
+        return Ok(());
+    };
+
     for resize_event in resize_events.read() {
-        if let Ok(mut projection) = projection_query.single_mut() {
-            let aspect_ratio = resize_event.width / resize_event.height;
-            let new_height = FIXED_VERTICAL_VIEW; // Fixed vertical size
-            let new_width = FIXED_VERTICAL_VIEW * aspect_ratio; // Calculate width based on aspect ratio
+        let aspect_ratio = resize_event.width / resize_event.height;
+        let new_height = FIXED_VERTICAL_VIEW; // Fixed vertical size
+        let new_width = FIXED_VERTICAL_VIEW * aspect_ratio; // Calculate width based on aspect ratio
 
-            // Update the projection's view area
-            projection.area = Rect::new(
-                -new_width / 2.0,
-                -new_height / 2.0,
-                new_width / 2.0,
-                new_height / 2.0,
-            );
+        // Update the projection's view area
+        orthographic_projection.area = Rect::new(
+            -new_width / 2.0,
+            -new_height / 2.0,
+            new_width / 2.0,
+            new_height / 2.0,
+        );
 
-            info!(
-                "WindowResize: Updated projection area to Rect {{ min: ({:.1}, {:.1}), max: ({:.1}, {:.1}) }} (Window: {}x{}, Aspect: {:.2})",
-                projection.area.min.x,
-                projection.area.min.y,
-                projection.area.max.x,
-                projection.area.max.y,
-                resize_event.width,
-                resize_event.height,
-                aspect_ratio
-            );
-
-            // Update window surface - with WSL2 error handling
-            // REMOVED: Explicitly setting window resolution here can interfere with resizing.
-            // Bevy's WindowPlugin should handle updating the Window resource.
-            /*
-            if let Ok(mut window) = windows.single_mut() {
-                // Set the new resolution but don't panic if the surface reconfiguration fails
-                // This handles the common Vulkan/WSL2 "Surface does not support the adapter's queue family" error
-                let prev_width = window.resolution.width();
-                let prev_height = window.resolution.height();
-
-                // Only attempt to update if the size actually changed
-                if resize_event.width != prev_width || resize_event.height != prev_height {
-                    // Set the new resolution
-                    window
-                        .resolution
-                        .set(resize_event.width, resize_event.height);
-
-                    // Log that we updated the window resolution
-                    debug!(
-                        "Window resized to {}x{}",
-                        resize_event.width, resize_event.height
-                    );
-                }
-            }
-            */
-        }
+        info!(
+            "WindowResize: Updated projection area to Rect {{ min: ({:.1}, {:.1}), max: ({:.1}, {:.1}) }} (Window: {}x{}, Aspect: {:.2})",
+            orthographic_projection.area.min.x,
+            orthographic_projection.area.min.y,
+            orthographic_projection.area.max.x,
+            orthographic_projection.area.max.y,
+            resize_event.width,
+            resize_event.height,
+            aspect_ratio
+        );
     }
+    Ok(())
 }
 
 /// Updates camera position and zoom based on user input.
@@ -212,21 +201,23 @@ pub fn camera_movement(
     keyboard: Res<ButtonInput<KeyCode>>,
     mouse_button: Res<ButtonInput<MouseButton>>,
     mut scroll_events: EventReader<MouseWheel>,
-    mut camera_query: Query<
-        (&mut Transform, &mut OrthographicProjection),
-        (With<Camera>, With<GameCamera>),
-    >,
+    mut camera_query: Query<(&mut Transform, &mut Projection), (With<Camera>, With<GameCamera>)>,
     windows: Query<&Window, With<PrimaryWindow>>,
     time: Res<Time>,
     config: Res<CameraConfig>,
     mut pan_state: ResMut<CameraPanState>,
-) {
-    let Ok((mut transform, mut projection)) = camera_query.single_mut() else {
-        return;
+) -> Result<(), BevyError> {
+    let Ok((mut transform, mut projection_enum)) = camera_query.single_mut() else {
+        return Ok(());
+    };
+
+    let Projection::Orthographic(ref mut orthographic_projection) = *projection_enum else {
+        warn!("GameCamera in camera_movement does not have an OrthographicProjection.");
+        return Ok(());
     };
 
     let Ok(window) = windows.single() else {
-        return;
+        return Ok(());
     };
 
     // Handle keyboard movement
@@ -248,7 +239,7 @@ pub fn camera_movement(
     if movement != Vec3::ZERO {
         movement = movement.normalize() * config.move_speed * time.delta_secs();
         // Scale movement by current zoom level to maintain consistent speed
-        movement *= projection.scale;
+        movement *= orthographic_projection.scale;
         transform.translation += movement;
     }
 
@@ -268,8 +259,8 @@ pub fn camera_movement(
             if let Some(last_pos) = pan_state.last_mouse_pos {
                 let delta = cursor_pos - last_pos;
                 let movement = Vec3::new(
-                    -delta.x * config.pan_sensitivity * projection.scale,
-                    delta.y * config.pan_sensitivity * projection.scale,
+                    -delta.x * config.pan_sensitivity * orthographic_projection.scale,
+                    delta.y * config.pan_sensitivity * orthographic_projection.scale,
                     0.0,
                 );
                 transform.translation += movement;
@@ -279,7 +270,7 @@ pub fn camera_movement(
     }
 
     // Handle zoom with smooth interpolation
-    let mut target_scale = projection.scale;
+    let mut target_scale = orthographic_projection.scale;
     for ev in scroll_events.read() {
         let zoom_delta = ev.y * config.zoom_speed;
         target_scale *= 1.0 - zoom_delta;
@@ -291,16 +282,17 @@ pub fn camera_movement(
 
     // Smoothly interpolate to the target scale
     // This creates a more natural zoom feel rather than abrupt changes
-    let delta = target_scale - projection.scale;
+    let delta = target_scale - orthographic_projection.scale;
     let interpolation_factor = (config.zoom_interpolation_speed * time.delta_secs()).min(1.0);
-    let final_scale = projection.scale + delta * interpolation_factor;
-    if (final_scale - projection.scale).abs() > f32::EPSILON {
+    let final_scale = orthographic_projection.scale + delta * interpolation_factor;
+    if (final_scale - orthographic_projection.scale).abs() > f32::EPSILON {
         info!(
             "CameraMovement: Target Scale: {:.2}, Current Scale: {:.2}, Final Applied Scale: {:.2}",
-            target_scale, projection.scale, final_scale
+            target_scale, orthographic_projection.scale, final_scale
         );
     }
-    projection.scale = final_scale;
+    orthographic_projection.scale = final_scale;
+    Ok(())
 }
 
 /// Draws debug visualization for card positions

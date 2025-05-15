@@ -1,3 +1,4 @@
+use bevy::prelude::ChildOf;
 use bevy::prelude::*;
 
 use crate::cards::text::name_text::create_name_text;
@@ -8,7 +9,7 @@ use crate::text::components::{CardNameText, CardRulesText, DebugConfig, SpawnedT
 #[allow(dead_code)]
 pub fn process_name_text_components(
     commands: &mut Commands,
-    query: &Query<(Entity, &CardNameText, &Parent), (Without<SpawnedText>, With<CardNameText>)>,
+    query: &Query<(Entity, &CardNameText, &ChildOf), (Without<SpawnedText>, With<CardNameText>)>,
     card_query: &Query<
         (
             Entity,
@@ -26,8 +27,8 @@ pub fn process_name_text_components(
     asset_server: &AssetServer,
     _debug_config: Option<&DebugConfig>,
 ) {
-    for (entity, component, parent) in query.iter() {
-        let parent_entity = parent.get();
+    for (entity, component, child_of_component) in query.iter() {
+        let parent_entity = child_of_component.0;
         if let Ok((_, transform, sprite, _card, _name, _cost, _types, _rules, _details)) =
             card_query.get(parent_entity)
         {

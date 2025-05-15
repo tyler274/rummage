@@ -44,7 +44,7 @@ pub fn calculate_commander_cost(
 
 /// Check if any player has lost due to commander damage
 pub fn check_commander_damage_loss(
-    mut commands: Commands,
+    mut eliminated_events: EventWriter<PlayerEliminatedEvent>,
     commander_query: Query<&Commander>,
     player_query: Query<(Entity, &Player)>,
 ) {
@@ -58,7 +58,7 @@ pub fn check_commander_damage_loss(
             {
                 if damage.1 >= CommanderRules::COMMANDER_DAMAGE_THRESHOLD {
                     // Player has lost due to commander damage
-                    commands.spawn(PlayerEliminatedEvent {
+                    eliminated_events.write(PlayerEliminatedEvent {
                         player: player_entity,
                         reason: EliminationReason::CommanderDamage(commander.owner),
                     });
@@ -102,11 +102,11 @@ pub fn record_commander_damage(
 
 /// Handle commander changing zones
 pub fn handle_commander_zone_change(
-    mut commands: Commands,
     _zone_manager: ResMut<ZoneManager>,
     mut cmd_zone_manager: ResMut<CommandZoneManager>,
     mut zone_events: EventReader<ZoneChangeEvent>,
     commander_query: Query<(Entity, &Commander)>,
+    mut choice_events: EventWriter<CommanderZoneChoiceEvent>,
 ) {
     for event in zone_events.read() {
         // Check if the card is a commander
@@ -129,7 +129,7 @@ pub fn handle_commander_zone_change(
                 && (event.source == Zone::Battlefield || event.source == Zone::Stack)
             {
                 // Spawn a choice event for the player
-                commands.spawn(CommanderZoneChoiceEvent {
+                choice_events.write(CommanderZoneChoiceEvent {
                     commander: entity,
                     owner: commander.owner,
                     current_zone: event.destination,

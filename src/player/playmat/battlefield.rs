@@ -158,18 +158,18 @@ pub fn organize_battlefield_cards(
 
             // Group cards by type
             for child_entity_ref in children.iter() {
-                if let Ok((_, permanent_type)) = card_query.get(*child_entity_ref) {
+                if let Ok((_, permanent_type)) = card_query.get(child_entity_ref) {
                     match permanent_type {
-                        Some(PermanentType::Creature) => creatures.push(*child_entity_ref),
-                        Some(PermanentType::Land) => lands.push(*child_entity_ref),
-                        Some(PermanentType::Artifact) => artifacts.push(*child_entity_ref),
-                        Some(PermanentType::Enchantment) => enchantments.push(*child_entity_ref),
-                        Some(PermanentType::Planeswalker) => planeswalkers.push(*child_entity_ref),
-                        Some(PermanentType::Token) => tokens.push(*child_entity_ref),
-                        None => other.push(*child_entity_ref),
+                        Some(PermanentType::Creature) => creatures.push(child_entity_ref),
+                        Some(PermanentType::Land) => lands.push(child_entity_ref),
+                        Some(PermanentType::Artifact) => artifacts.push(child_entity_ref),
+                        Some(PermanentType::Enchantment) => enchantments.push(child_entity_ref),
+                        Some(PermanentType::Planeswalker) => planeswalkers.push(child_entity_ref),
+                        Some(PermanentType::Token) => tokens.push(child_entity_ref),
+                        None => other.push(child_entity_ref),
                     }
                 } else {
-                    other.push(*child_entity_ref);
+                    other.push(child_entity_ref);
                 }
             }
 
@@ -250,7 +250,7 @@ pub fn organize_battlefield_cards(
             let start_y = -(grid_height * cell_size) / 2.0 + (cell_size / 2.0);
 
             for (i, child_entity_ref) in children.iter().enumerate() {
-                if let Ok((mut transform, _)) = card_query.get_mut(*child_entity_ref) {
+                if let Ok((mut transform, _)) = card_query.get_mut(child_entity_ref) {
                     let row = (i as u32) / battlefield.grid_columns;
                     let col = (i as u32) % battlefield.grid_columns;
 

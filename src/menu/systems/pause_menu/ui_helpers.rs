@@ -10,7 +10,7 @@ use crate::{
 
 /// Spawns a standard menu button with text within the pause menu context.
 pub(super) fn spawn_menu_button(
-    parent: &mut ChildBuilder,
+    parent: &mut ChildSpawnerCommands,
     button_text: &str,
     action: MenuButtonAction,
     button_name: &str,

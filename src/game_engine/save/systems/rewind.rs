@@ -203,6 +203,6 @@ pub fn handle_rollback(
         };
 
         // Just use the load system to perform the rollback
-        load_events.send(LoadGameEvent { slot_name });
+        load_events.write(LoadGameEvent { slot_name });
     }
 }

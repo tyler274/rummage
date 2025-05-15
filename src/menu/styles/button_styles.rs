@@ -212,7 +212,7 @@ pub fn create_settings_label(
 /// Create a button with text
 #[allow(unused_variables)]
 pub fn button_with_text<T: Component + Default>(
-    parent: &mut ChildBuilder,
+    parent: &mut ChildSpawnerCommands,
     asset_server: &AssetServer,
     button_text: &str,
     z_index: i32,

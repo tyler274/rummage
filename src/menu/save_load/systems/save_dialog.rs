@@ -159,7 +159,7 @@ pub fn setup_save_dialog(
 
 /// Spawns a save slot button in the save dialog
 fn spawn_save_slot_button(
-    parent: &mut ChildBuilder,
+    parent: &mut ChildSpawnerCommands,
     slot_name: &str,
     description: &Option<String>,
     asset_server: &AssetServer,

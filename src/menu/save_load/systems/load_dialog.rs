@@ -180,7 +180,7 @@ pub fn setup_load_dialog(
 
 /// Spawns a load slot button in the load dialog
 fn spawn_load_slot_button(
-    parent: &mut ChildBuilder,
+    parent: &mut ChildSpawnerCommands,
     slot_name: &str,
     description: &Option<String>,
     turn_info: &str,

@@ -6,7 +6,7 @@ use bevy::ui::{AlignItems, JustifyContent, Val};
 
 /// Creates a button for the pause menu
 pub fn spawn_menu_button(
-    parent: &mut ChildBuilder,
+    parent: &mut ChildSpawnerCommands,
     text: &str,
     action: MenuButtonAction,
     asset_server: &AssetServer,

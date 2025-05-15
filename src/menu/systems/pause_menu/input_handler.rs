@@ -7,7 +7,7 @@ use bevy::prelude::*;
 
 // Define the system parameter struct for EscKeyState
 #[derive(SystemParam)]
-pub struct EscKeyStateParams<'w, 's> {
+pub struct EscKeyStateParams<'w> {
     keys: Res<'w, ButtonInput<KeyCode>>,
     app_state: Res<'w, State<AppState>>,
     menu_state: Res<'w, State<GameMenuState>>,

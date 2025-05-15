@@ -1,3 +1,5 @@
+use crate::menu::AppState;
+use crate::menu::state::MenuState;
 use bevy::prelude::*;
 
 /// Component marker for menu cameras
@@ -14,7 +16,7 @@ pub fn setup_menu_camera(
 ) {
     const MENU_CAMERA_ORDER: isize = isize::MAX / 2;
 
-    if let Ok((_entity, mut camera)) = cameras.get_single_mut() {
+    if let Ok((_entity, mut camera)) = cameras.single_mut() {
         if camera.order != MENU_CAMERA_ORDER {
             info!(
                 "Updating existing menu camera order to {}",
@@ -81,7 +83,7 @@ pub fn setup_main_menu_camera(
     mut commands: Commands,
     camera_query: Query<Entity, With<MenuCamera>>,
 ) {
-    match camera_query.get_single() {
+    match camera_query.single() {
         Ok(camera_entity) => {
             commands.entity(camera_entity).insert(Camera {
                 order: isize::MAX - 1,
@@ -112,71 +114,95 @@ pub fn despawn_menu_camera(mut commands: Commands, camera_query: Query<Entity, W
 }
 
 /// Set initial zoom level for the menu camera
-#[allow(dead_code)]
 pub fn set_initial_zoom(
-    mut cameras: Query<(Entity, &mut Camera), (With<Camera2d>, With<MenuCamera>)>,
+    mut cameras: Query<(Entity, &mut Projection), (With<Camera2d>, With<MenuCamera>)>,
     mut ran: Local<bool>,
-) {
+) -> Result<(), BevyError> {
     if *ran {
-        return;
+        return Ok(());
     }
-    if let Ok((_entity, mut camera)) = cameras.single_mut() {
-        camera.scale = INITIAL_ZOOM_LEVEL;
-        *ran = true;
+    if let Ok((_entity, mut projection_enum)) = cameras.single_mut() {
+        if let Projection::Orthographic(ref mut orthographic_projection) = *projection_enum {
+            // TODO: Define INITIAL_ZOOM_LEVEL, perhaps from a config or constant
+            const INITIAL_ZOOM_LEVEL: f32 = 1.0;
+            orthographic_projection.scale = INITIAL_ZOOM_LEVEL;
+            *ran = true;
+            info!(
+                "Successfully set initial menu camera zoom to {}",
+                INITIAL_ZOOM_LEVEL
+            );
+        } else {
+            warn!("MenuCamera does not have an OrthographicProjection for initial zoom.");
+        }
+    } else {
+        debug!("Menu camera not found yet for initial zoom setting...");
     }
+    Ok(())
 }
 
 /// System to handle window resize events for the menu camera
 pub fn handle_window_resize(
-    mut commands: Commands,
-    config: Res<MenuConfig>,
-    camera_query: Query<(Entity, &Transform), With<MenuCamera>>,
-    window_query: Query<&Window>,
-) {
-    match camera_query.single() {
-        Ok((camera_entity, camera_transform)) => {
-            let window = window_query.single();
-            let cursor_pos_world = screen_to_world_coordinates(
-                camera_transform.translation,
-                camera_transform.scale,
-                window.width(),
-                window.height(),
-                config.screen_to_world_scale,
-                config.screen_to_world_offset,
-            );
-            // Implement the logic to handle window resize events
-        }
-        Err(e) => {
+    _commands: Commands, // Added mut for potential future use with commands
+    mut camera_query: Query<(Entity, &Transform, &mut Projection), With<MenuCamera>>,
+    window_query: Query<&Window, With<bevy::window::PrimaryWindow>>,
+) -> Result<(), BevyError> {
+    // It's not clear if MenuConfig is still relevant or how it should be used for resize.
+    // The previous logic was commented out. For now, this system will be a no-op
+    // regarding projection changes until further requirements are specified.
+
+    if let Ok((_camera_entity, _camera_transform, mut _projection_enum)) = camera_query.single_mut()
+    {
+        let _window = window_query.single().map_err(|e| {
             warn!(
-                "Failed to get single MenuCamera entity in handle_window_resize: {}. This might be okay if the camera is created later.",
+                "Primary window not found in menu handle_window_resize: {}",
                 e
             );
-        }
+            BevyError::from(e) // Or some other appropriate BevyError variant
+        })?;
+
+        // Example of accessing orthographic projection if needed in the future:
+        // if let Projection::Orthographic(ref mut _ortho_projection) = *_projection_enum {
+        //     // Implement logic to handle window resize events using window.width(), window.height()
+        //     // For example, adjust OrthographicProjection if this camera controls one.
+        //     // info!("Menu camera handled resize. New window: {}x{}", window.width(), window.height());
+        // }
+    } else {
+        warn!(
+            "Failed to get single MenuCamera entity in handle_window_resize. This might be okay if the camera is created later."
+        );
     }
+    Ok(())
 }
 
 /// System to update menu camera transform based on mouse position
-#[allow(dead_code)]
 pub fn menu_camera_system(
-    windows: Query<&Window>,
+    windows: Query<&Window, With<bevy::window::PrimaryWindow>>,
     mut camera_query: Query<&mut Transform, With<MenuCamera>>,
-    mouse_input: Res<ButtonInput<MouseButton>>,
-    config: Res<MenuConfig>,
-    mut last_drag_position: Local<Option<Vec2>>,
+    _mouse_input: Res<ButtonInput<MouseButton>>,
+    _last_drag_position: Local<Option<Vec2>>,
     current_menu_state: Res<State<MenuState>>,
     current_app_state: Res<State<AppState>>,
-    camera_movement_state: Res<CameraMovementState>,
 ) {
-    // Skip if not in the main menu or settings, or if camera movement is locked
-    if (*current_app_state != AppState::MainMenu && *current_app_state != AppState::Settings)
-        || camera_movement_state.locked
+    let app_state_val = current_app_state.get();
+    let menu_state_val = current_menu_state.get();
+
+    // Determine if camera movement should be active
+    let in_menu_app_state = *app_state_val == AppState::Menu;
+    let in_interactive_menu_state =
+        *menu_state_val == MenuState::MainMenu || *menu_state_val == MenuState::Settings;
+
+    // Skip if not in a state where menu camera should move
+    if !in_menu_app_state || !in_interactive_menu_state
+    /* || camera_movement_state.locked */
     {
         return;
     }
 
-    let window = windows.single(); // Assuming a single window
-    if let Ok(mut transform) = camera_query.single_mut() {
-        if let Some(cursor_position) = window.cursor_position() {
+    let window = windows
+        .single()
+        .expect("Primary window not found in menu_camera_system");
+    if let Ok(mut _transform) = camera_query.single_mut() {
+        if let Some(_cursor_position) = window.cursor_position() {
             // Implement the logic to update the camera transform based on mouse position
         }
     }

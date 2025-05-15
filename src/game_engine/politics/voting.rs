@@ -5,11 +5,12 @@ use std::collections::HashMap;
 
 /// System to handle voting mechanics
 pub fn voting_system(
-    mut commands: Commands,
+    _commands: Commands,
     mut politics: ResMut<PoliticsSystem>,
     mut vote_started_events: EventReader<VoteStartedEvent>,
     mut vote_cast_events: EventReader<VoteCastEvent>,
     _player_query: Query<Entity, With<Player>>,
+    mut vote_completed_events: EventWriter<VoteCompletedEvent>,
 ) {
     // Handle any new votes started
     for event in vote_started_events.read() {
@@ -51,7 +52,7 @@ pub fn voting_system(
                 );
 
                 // Spawn a VoteCompletedEvent
-                commands.spawn(VoteCompletedEvent {
+                vote_completed_events.write(VoteCompletedEvent {
                     vote_id: active_vote.id,
                     winning_choice,
                     vote_count,
