@@ -31,6 +31,8 @@ use snapshot::SnapshotDisabled;
 use tracing::DiagnosticsPlugin;
 
 #[cfg(debug_assertions)]
+use bevy_inspector_egui::bevy_egui::EguiPlugin;
+#[cfg(debug_assertions)]
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 fn main() {
@@ -103,6 +105,10 @@ fn main() {
     app.insert_resource(SnapshotDisabled::enabled()); // Enable snapshots
 
     // Add inspector plugin in debug builds
+    #[cfg(debug_assertions)]
+    app.add_plugins(EguiPlugin {
+        enable_multipass_for_primary_context: true,
+    });
     #[cfg(debug_assertions)]
     app.add_plugins(WorldInspectorPlugin::new());
 
