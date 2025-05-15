@@ -17,7 +17,7 @@ pub fn cleanup_game(
 
     // First clean up all cards
     for entity in cards.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 
     // // Then clean up all game cameras - REMOVED

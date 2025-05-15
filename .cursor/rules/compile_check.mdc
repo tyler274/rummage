@@ -1,0 +1,12 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Compile Check Rule
+
+Before staging files and committing changes, ensure the codebase compiles without any errors or warnings.
+
+1. After making code modifications, run the appropriate build or check command for the project (e.g., `cargo check --all-targets --all-features` for Rust projects).
+2. Address any reported compiler errors or warnings.
+3. Only proceed with staging and committing once the compilation is clean.

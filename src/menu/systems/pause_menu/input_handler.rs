@@ -12,12 +12,8 @@ pub struct EscKeyStateParams<'w, 's> {
     app_state: Res<'w, State<AppState>>,
     menu_state: Res<'w, State<GameMenuState>>,
     settings_state: Res<'w, State<SettingsMenuState>>,
-    #[system_param(ignore)]
-    _context: Res<'w, StateTransitionContext>, // Ignoring unused param
     next_menu_state: ResMut<'w, NextState<GameMenuState>>,
     next_settings_state: ResMut<'w, NextState<SettingsMenuState>>,
-    #[system_param(ignore)]
-    _commands: Commands<'w, 's>, // Ignoring unused param
     next_game_state: ResMut<'w, NextState<AppState>>,
 }
 

@@ -15,27 +15,27 @@ pub fn cleanup_main_menu(
 ) {
     // Clean up all menu items
     for entity in menu_items.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 
     // Clean up all menu backgrounds
     for entity in backgrounds.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 
     // Clean up all menu containers
     for entity in containers.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 
     // Clean up all menu buttons
     for entity in buttons.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 
     // Clean up menu music
     for entity in music.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 
     info!("Main menu cleanup completed");
@@ -45,7 +45,7 @@ pub fn cleanup_main_menu(
 pub fn pause_main_menu_music_on_settings_enter(
     music_query: Query<&AudioSink, With<MainMenuMusic>>,
 ) {
-    if let Ok(sink) = music_query.get_single() {
+    if let Ok(sink) = music_query.single() {
         info!("Pausing main menu music upon entering settings menu.");
         sink.pause();
     } else if music_query.iter().count() > 1 {

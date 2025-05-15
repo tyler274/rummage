@@ -1,3 +1,4 @@
+use bevy::hierarchy::ChildOf;
 use bevy::prelude::*;
 
 use crate::cards::Card;
@@ -103,7 +104,7 @@ pub fn render_mana_symbol(
                 Name::new(format!("Mana Circle: {}", clean_symbol)),
                 GlobalTransform::default(),
             ))
-            .set_parent(parent_entity);
+            .insert(ChildOf(parent_entity));
 
         // Determine text color based on background for better contrast
         let text_color = if is_dark_background(clean_symbol, &background_color) {
@@ -128,7 +129,7 @@ pub fn render_mana_symbol(
                 GlobalTransform::default(),
                 Name::new(format!("Mana Symbol: {}", clean_symbol)),
             ))
-            .set_parent(parent_entity);
+            .insert(ChildOf(parent_entity));
 
         return;
     }
@@ -154,7 +155,7 @@ pub fn render_mana_symbol(
                 GlobalTransform::default(),
                 Name::new(format!("Mana Symbol Shadow: {}", symbol)),
             ))
-            .set_parent(parent_entity);
+            .insert(ChildOf(parent_entity));
     }
 
     // Render the actual mana symbol
@@ -171,7 +172,7 @@ pub fn render_mana_symbol(
             GlobalTransform::default(),
             Name::new(format!("Mana Symbol: {}", symbol)),
         ))
-        .set_parent(parent_entity);
+        .insert(ChildOf(parent_entity));
 }
 
 /// Spawn mana cost text for a card

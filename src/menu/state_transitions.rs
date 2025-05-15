@@ -36,7 +36,7 @@ pub fn start_game_loading(
             // as the setup_game_camera system will create a fresh one
             for entity in game_cameras.iter() {
                 info!("Removing game camera entity: {:?}", entity);
-                commands.entity(entity).despawn_recursive();
+                commands.entity(entity).despawn();
             }
         } else {
             info!(
@@ -67,7 +67,7 @@ pub fn start_game_loading(
             warn!("Forcing cleanup of remaining game cameras...");
             for entity in game_cameras.iter() {
                 info!("Force despawning game camera entity: {:?}", entity);
-                commands.entity(entity).despawn_recursive();
+                commands.entity(entity).despawn();
             }
         }
     }

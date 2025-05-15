@@ -39,7 +39,7 @@ pub fn handle_save_load_buttons(
                         info!("Save game requested for slot: {}", slot_name);
 
                         // Send save game event with the slot name
-                        save_events.send(SaveGameEvent {
+                        save_events.write(SaveGameEvent {
                             slot_name: slot_name.clone(),
                             description: Some(format!(
                                 "Save from {}",
@@ -62,7 +62,7 @@ pub fn handle_save_load_buttons(
                         info!("Load game requested for slot: {}", slot_name);
 
                         // Send load game event with the slot name
-                        load_events.send(LoadGameEvent {
+                        load_events.write(LoadGameEvent {
                             slot_name: slot_name.clone(),
                         });
 

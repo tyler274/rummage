@@ -71,8 +71,6 @@ pub struct ZoneInteractionParams<'w, 's> {
     zone_query: Query<'w, 's, (Entity, &'static PlaymatZone, &'static GlobalTransform)>,
     zone_focus: ResMut<'w, ZoneFocusState>,
     game_state: Res<'w, State<crate::menu::state::GameMenuState>>,
-    #[system_param(ignore)]
-    _commands: Commands<'w, 's>, // Ignoring unused param
 }
 
 /// Handle interactions with playmat zones
@@ -92,73 +90,77 @@ pub fn handle_zone_interactions(mut params: ZoneInteractionParams) {
         return;
     }
 
-    let window = params.windows.single();
-    let cursor_position = window.cursor_position();
-    if let Some(cursor_position) = cursor_position {
-        // Get the camera transform, skip if no game camera exists (e.g., in menu states)
-        if let Ok((camera, camera_transform)) = params.camera_query.get_single() {
-            // Handle the Result from viewport_to_world_2d
-            if let Ok(world_pos) = camera.viewport_to_world_2d(camera_transform, cursor_position) {
-                let mut clicked_on_zone = false;
-                // Check for intersections with zones
-                for (zone_entity, zone, zone_transform) in params.zone_query.iter() {
-                    // Use Sprite size if available, otherwise fallback to transform scale
-                    // This requires querying the Sprite component as well
-                    // For simplicity, we stick to transform.scale, assuming it represents the zone size
-                    // Call GlobalTransform methods with parentheses
-                    let zone_half_size = zone_transform.scale().truncate() * 0.5;
-                    let zone_center = zone_transform.translation().truncate();
-                    let zone_min = zone_center - zone_half_size;
-                    let zone_max = zone_center + zone_half_size;
+    if let Ok(window) = params.windows.single() {
+        if let Some(cursor_position) = window.cursor_position() {
+            // Get the camera transform, skip if no game camera exists (e.g., in menu states)
+            if let Ok((camera, camera_transform)) = params.camera_query.single() {
+                // Handle the Result from viewport_to_world_2d
+                if let Ok(world_pos) =
+                    camera.viewport_to_world_2d(camera_transform, cursor_position)
+                {
+                    let mut clicked_on_zone = false;
+                    // Check for intersections with zones
+                    for (zone_entity, zone, zone_transform) in params.zone_query.iter() {
+                        // Use Sprite size if available, otherwise fallback to transform scale
+                        // This requires querying the Sprite component as well
+                        // For simplicity, we stick to transform.scale, assuming it represents the zone size
+                        // Call GlobalTransform methods with parentheses
+                        let zone_half_size = zone_transform.scale().truncate() * 0.5;
+                        let zone_center = zone_transform.translation().truncate();
+                        let zone_min = zone_center - zone_half_size;
+                        let zone_max = zone_center + zone_half_size;
 
-                    // Check if the click is within the zone bounds
-                    if world_pos.x >= zone_min.x
-                        && world_pos.x <= zone_max.x
-                        && world_pos.y >= zone_min.y
-                        && world_pos.y <= zone_max.y
-                    {
-                        clicked_on_zone = true;
-                        params.zone_focus.focused_zone = Some(zone_entity);
-                        params.zone_focus.focused_zone_type = Some(zone.zone_type.clone());
-                        params.zone_focus.focused_zone_owner = Some(zone.player_id);
+                        // Check if the click is within the zone bounds
+                        if world_pos.x >= zone_min.x
+                            && world_pos.x <= zone_max.x
+                            && world_pos.y >= zone_min.y
+                            && world_pos.y <= zone_max.y
+                        {
+                            clicked_on_zone = true;
+                            params.zone_focus.focused_zone = Some(zone_entity);
+                            params.zone_focus.focused_zone_type = Some(zone.zone_type.clone());
+                            params.zone_focus.focused_zone_owner = Some(zone.player_id);
 
-                        debug!(
-                            "Clicked on {:?} zone (Entity: {:?}) owned by player {:?}",
-                            zone.zone_type, zone_entity, zone.player_id
-                        );
+                            debug!(
+                                "Clicked on {:?} zone (Entity: {:?}) owned by player {:?}",
+                                zone.zone_type, zone_entity, zone.player_id
+                            );
 
-                        // NOTE: Specific zone interaction logic (like toggling hand expansion)
-                        // is handled by dedicated systems triggered via events or run criteria,
-                        // rather than directly calling functions here.
-                        // This keeps the interaction handler focused.
+                            // NOTE: Specific zone interaction logic (like toggling hand expansion)
+                            // is handled by dedicated systems triggered via events or run criteria,
+                            // rather than directly calling functions here.
+                            // This keeps the interaction handler focused.
 
-                        // Prevent checking other zones once one is found
-                        break;
+                            // Prevent checking other zones once one is found
+                            break;
+                        }
                     }
-                }
 
-                // If clicked outside any zone, clear focus
-                if !clicked_on_zone && mouse_clicked {
-                    params.zone_focus.focused_zone = None;
-                    params.zone_focus.focused_zone_type = None;
-                    params.zone_focus.focused_zone_owner = None;
-                    debug!("Clicked outside any zone, clearing focus");
+                    // If clicked outside any zone, clear focus
+                    if !clicked_on_zone && mouse_clicked {
+                        params.zone_focus.focused_zone = None;
+                        params.zone_focus.focused_zone_type = None;
+                        params.zone_focus.focused_zone_owner = None;
+                        debug!("Clicked outside any zone, clearing focus");
+                    }
+                } else {
+                    // Handle error if viewport_to_world_2d fails
+                    warn!("Could not convert cursor position to world coordinates.");
                 }
             } else {
-                // Handle error if viewport_to_world_2d fails
-                warn!("Could not convert cursor position to world coordinates.");
+                warn!("GameCamera not found, cannot process zone interactions.");
             }
         } else {
-            warn!("GameCamera not found, cannot process zone interactions.");
+            // Cursor is outside the window, clear focus if left click
+            if mouse_clicked {
+                params.zone_focus.focused_zone = None;
+                params.zone_focus.focused_zone_type = None;
+                params.zone_focus.focused_zone_owner = None;
+                debug!("Clicked outside window, clearing focus");
+            }
         }
     } else {
-        // Cursor is outside the window, clear focus if left click
-        if mouse_clicked {
-            params.zone_focus.focused_zone = None;
-            params.zone_focus.focused_zone_type = None;
-            params.zone_focus.focused_zone_owner = None;
-            debug!("Clicked outside window, clearing focus");
-        }
+        warn!("Primary window not found, cannot process zone interactions.");
     }
 }
 

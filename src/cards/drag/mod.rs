@@ -51,13 +51,11 @@ pub fn drag_system(
         return;
     }
 
-    // Get the primary window
-    let Ok(window) = windows.get_single() else {
+    // Get the primary window and camera
+    let Ok(window) = windows.single() else {
         return;
     };
-
-    // Get the camera
-    let Ok((camera, camera_transform)) = camera_q.get_single() else {
+    let Ok((camera, camera_transform)) = camera_q.single() else {
         return;
     };
 
@@ -125,13 +123,13 @@ fn update_draggables(
         return;
     }
 
-    let (camera, camera_transform) = match camera_query.get_single() {
-        Ok(result) => result,
+    let (camera, camera_transform) = match camera_query.single() {
+        Ok(c) => c,
         Err(_) => return, // No camera, can't process dragging
     };
 
-    let window = match window_query.get_single() {
-        Ok(result) => result,
+    let window = match window_query.single() {
+        Ok(w) => w,
         Err(_) => return, // No window, can't process dragging
     };
 
@@ -187,13 +185,13 @@ fn start_drag(
         return; // Not a left click, don't do anything
     }
 
-    let (camera, camera_transform) = match camera_query.get_single() {
-        Ok(result) => result,
+    let (camera, camera_transform) = match camera_query.single() {
+        Ok(c) => c,
         Err(_) => return, // No camera, can't process dragging
     };
 
-    let window = match window_query.get_single() {
-        Ok(result) => result,
+    let window = match window_query.single() {
+        Ok(w) => w,
         Err(_) => return, // No window, can't process dragging
     };
 

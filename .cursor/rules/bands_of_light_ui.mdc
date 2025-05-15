@@ -3,7 +3,7 @@ description:
 globs: 
 alwaysApply: false
 ---
-The ultimate mobile friendly UI format. A set of nested circular bands.
+A mobile friendly UI format. A set of nested circular bands.
 
 All player's playmats are positioned in the outermost band.
 

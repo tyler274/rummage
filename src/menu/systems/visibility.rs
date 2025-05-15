@@ -1,3 +1,4 @@
+use crate::menu::components::{MenuButton, MenuRoot};
 use crate::menu::{
     backgrounds::MenuBackground,
     camera::MenuCamera,
@@ -6,6 +7,7 @@ use crate::menu::{
     state::GameMenuState,
     ui::{MenuVisibilityLogState, PreviousWindowSize},
 };
+use bevy::ecs::hierarchy::ChildOf;
 use bevy::prelude::*;
 
 /// Type alias for query accessing menu background nodes that are missing the PreviousWindowSize component.
@@ -91,7 +93,7 @@ pub fn update_menu_background(
     mut commands: Commands,
 ) {
     // Get the primary window
-    if let Ok(window) = windows.get_single() {
+    if let Ok(window) = windows.single() {
         let current_width = window.width();
         let current_height = window.height();
 
@@ -137,7 +139,7 @@ pub fn update_menu_background(
 
 /// System to detect and report UI hierarchy issues
 pub fn detect_ui_hierarchy_issues(
-    menu_items: Query<(Entity, &Parent, Option<&Name>, &Node), With<MenuItem>>,
+    menu_items: Query<(Entity, &ChildOf, Option<&Name>, &Node), With<MenuItem>>,
     parents: Query<Entity, (Without<Node>, Without<ViewVisibility>)>,
     mut found_issues: Local<bool>,
 ) {
@@ -148,8 +150,8 @@ pub fn detect_ui_hierarchy_issues(
 
     // Check for menu items that have non-UI parent entities
     let mut issues = false;
-    for (entity, parent, name, _) in menu_items.iter() {
-        if parents.contains(parent.get()) {
+    for (entity, parent_component, name, _) in menu_items.iter() {
+        if parents.contains(parent_component.parent()) {
             issues = true;
             let name_str = name.map_or(String::from("unnamed"), |n| n.to_string());
             warn!(

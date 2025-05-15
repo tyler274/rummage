@@ -55,7 +55,7 @@ pub fn take_snapshot_safe(
         .with_description(description.to_string())
         .with_debug(true);
 
-    event_writer.send(event);
+    event_writer.write(event);
     {
         debug!("Successfully sent snapshot event");
     }
@@ -195,7 +195,7 @@ pub fn take_snapshot(
         event = event.with_description(desc);
     }
 
-    event_writer.send(event);
+    event_writer.write(event);
     {
         info!(
             "Successfully sent snapshot event for description: {:?}",
@@ -394,7 +394,7 @@ pub fn take_save_game_snapshot(
             .with_debug(true);
 
         // Send the snapshot event
-        snapshot_events.send(snapshot);
+        snapshot_events.write(snapshot);
 
         info!(
             "SaveGameSnapshot component attached to camera entity: {:?}",
@@ -490,7 +490,7 @@ pub fn take_replay_snapshot(
     );
 
     // Actually send the event
-    snapshot_events.send(snapshot_event);
+    snapshot_events.write(snapshot_event);
 }
 
 /// System for capturing snapshots at specific points in a replay for visual testing
@@ -583,5 +583,5 @@ pub fn capture_replay_at_point(
         "Taking visual differential test snapshot at turn {} step {}",
         turn, step
     );
-    snapshot_events.send(snapshot_event);
+    snapshot_events.write(snapshot_event);
 }

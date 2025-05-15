@@ -16,7 +16,7 @@ pub fn setup_pause_menu(
 ) {
     // First despawn any existing menu items to avoid duplication
     for entity in existing_menu_items.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 
     // Add an input blocker to catch keyboard/mouse input

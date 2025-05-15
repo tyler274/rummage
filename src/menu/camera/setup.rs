@@ -71,7 +71,7 @@ pub fn cleanup_menu_camera(mut commands: Commands, cameras: Query<Entity, With<M
     if count > 0 {
         info!("Cleaning up {} menu cameras", count);
         for entity in cameras.iter() {
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
         }
     }
 }
@@ -105,8 +105,79 @@ pub fn setup_main_menu_camera(
 /// System to despawn the main menu camera
 pub fn despawn_menu_camera(mut commands: Commands, camera_query: Query<Entity, With<MenuCamera>>) {
     for entity in camera_query.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
     commands.remove_resource::<MenuCameraEntity>();
     info!("Main Menu Camera despawned");
+}
+
+/// Set initial zoom level for the menu camera
+#[allow(dead_code)]
+pub fn set_initial_zoom(
+    mut cameras: Query<(Entity, &mut Camera), (With<Camera2d>, With<MenuCamera>)>,
+    mut ran: Local<bool>,
+) {
+    if *ran {
+        return;
+    }
+    if let Ok((_entity, mut camera)) = cameras.single_mut() {
+        camera.scale = INITIAL_ZOOM_LEVEL;
+        *ran = true;
+    }
+}
+
+/// System to handle window resize events for the menu camera
+pub fn handle_window_resize(
+    mut commands: Commands,
+    config: Res<MenuConfig>,
+    camera_query: Query<(Entity, &Transform), With<MenuCamera>>,
+    window_query: Query<&Window>,
+) {
+    match camera_query.single() {
+        Ok((camera_entity, camera_transform)) => {
+            let window = window_query.single();
+            let cursor_pos_world = screen_to_world_coordinates(
+                camera_transform.translation,
+                camera_transform.scale,
+                window.width(),
+                window.height(),
+                config.screen_to_world_scale,
+                config.screen_to_world_offset,
+            );
+            // Implement the logic to handle window resize events
+        }
+        Err(e) => {
+            warn!(
+                "Failed to get single MenuCamera entity in handle_window_resize: {}. This might be okay if the camera is created later.",
+                e
+            );
+        }
+    }
+}
+
+/// System to update menu camera transform based on mouse position
+#[allow(dead_code)]
+pub fn menu_camera_system(
+    windows: Query<&Window>,
+    mut camera_query: Query<&mut Transform, With<MenuCamera>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
+    config: Res<MenuConfig>,
+    mut last_drag_position: Local<Option<Vec2>>,
+    current_menu_state: Res<State<MenuState>>,
+    current_app_state: Res<State<AppState>>,
+    camera_movement_state: Res<CameraMovementState>,
+) {
+    // Skip if not in the main menu or settings, or if camera movement is locked
+    if (*current_app_state != AppState::MainMenu && *current_app_state != AppState::Settings)
+        || camera_movement_state.locked
+    {
+        return;
+    }
+
+    let window = windows.single(); // Assuming a single window
+    if let Ok(mut transform) = camera_query.single_mut() {
+        if let Some(cursor_position) = window.cursor_position() {
+            // Implement the logic to update the camera transform based on mouse position
+        }
+    }
 }

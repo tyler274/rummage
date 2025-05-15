@@ -4,6 +4,7 @@ use crate::camera::components::AppLayer;
 use crate::game_engine::zones::Zone;
 use crate::player::components::Player;
 use crate::player::resources::PlayerConfig;
+use bevy::ecs::hierarchy::ChildOf;
 use bevy::prelude::*;
 
 use super::PlaymatZone;
@@ -43,7 +44,7 @@ pub fn spawn_exile_zone(
             AppLayer::game_layers(),
             Name::new(format!("Exile-{}", player.name)),
         ))
-        .set_parent(playmat_entity)
+        .insert(ChildOf(playmat_entity))
         .id();
 
     info!(

@@ -18,13 +18,12 @@ pub fn handle_card_dragging(
         return;
     }
 
-    // Safely get window and camera
-    let Ok(window) = windows.get_single() else {
-        return; // No window available
+    // Get the window and camera, return if not found
+    let Ok(window) = windows.single() else {
+        return;
     };
-
-    let Ok((camera, camera_transform)) = camera_q.get_single() else {
-        return; // No camera available
+    let Ok((camera, camera_transform)) = camera_q.single() else {
+        return;
     };
 
     if let Some(cursor_pos) = window.cursor_position() {

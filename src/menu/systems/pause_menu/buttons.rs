@@ -15,7 +15,7 @@ pub fn spawn_menu_button(
         .spawn((
             Button,
             Node {
-                width: Val::Percent(100.0),
+                width: Val::Px(200.0),
                 height: Val::Px(50.0),
                 margin: UiRect::bottom(Val::Px(10.0)),
                 justify_content: JustifyContent::Center,

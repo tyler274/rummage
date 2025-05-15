@@ -103,7 +103,7 @@ pub fn set_initial_zoom(
         return;
     }
 
-    if let Ok(mut projection) = query.get_single_mut() {
+    if let Ok(mut projection) = query.single_mut() {
         // Use a much wider view to ensure all cards are visible
         // In OrthographicProjection, higher scale = more zoomed out
         // projection.scale = 500.0; // Drastically increased scale to see distant playmats
@@ -141,7 +141,7 @@ pub fn handle_window_resize(
     const FIXED_VERTICAL_VIEW: f32 = 1000.0; // Example: Keep 1000 world units vertically visible
 
     for resize_event in resize_events.read() {
-        if let Ok(mut projection) = projection_query.get_single_mut() {
+        if let Ok(mut projection) = projection_query.single_mut() {
             let aspect_ratio = resize_event.width / resize_event.height;
             let new_height = FIXED_VERTICAL_VIEW; // Fixed vertical size
             let new_width = FIXED_VERTICAL_VIEW * aspect_ratio; // Calculate width based on aspect ratio
@@ -169,7 +169,7 @@ pub fn handle_window_resize(
             // REMOVED: Explicitly setting window resolution here can interfere with resizing.
             // Bevy's WindowPlugin should handle updating the Window resource.
             /*
-            if let Ok(mut window) = windows.get_single_mut() {
+            if let Ok(mut window) = windows.single_mut() {
                 // Set the new resolution but don't panic if the surface reconfiguration fails
                 // This handles the common Vulkan/WSL2 "Surface does not support the adapter's queue family" error
                 let prev_width = window.resolution.width();
@@ -221,11 +221,11 @@ pub fn camera_movement(
     config: Res<CameraConfig>,
     mut pan_state: ResMut<CameraPanState>,
 ) {
-    let Ok((mut transform, mut projection)) = camera_query.get_single_mut() else {
+    let Ok((mut transform, mut projection)) = camera_query.single_mut() else {
         return;
     };
 
-    let Ok(window) = windows.get_single() else {
+    let Ok(window) = windows.single() else {
         return;
     };
 

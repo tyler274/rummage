@@ -48,7 +48,7 @@ pub fn handle_main_menu_interactions(
                     }
                     MenuButtonAction::Quit => {
                         info!("Exit button pressed");
-                        exit.send(bevy::app::AppExit::default());
+                        exit.write(bevy::app::AppExit::default());
                     }
                     MenuButtonAction::Credits => {
                         info!("Credits button pressed");

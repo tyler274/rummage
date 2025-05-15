@@ -103,7 +103,7 @@ fn capture_screenshot_system(
     let requests = std::mem::take(&mut screenshot_requests.pending);
 
     // Take the screenshot
-    let window = match q_window.get_single() {
+    let window = match q_window.single() {
         Ok(window) => window,
         Err(_) => {
             error!("Failed to get primary window for screenshot");

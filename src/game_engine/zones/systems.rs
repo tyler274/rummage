@@ -88,7 +88,7 @@ pub fn process_zone_changes(
                 .insert(PermanentController::new(event.owner));
 
             // Send an enters battlefield event
-            enters_battlefield_events.send(EntersBattlefieldEvent {
+            enters_battlefield_events.write(EntersBattlefieldEvent {
                 permanent: event.card,
                 owner: event.owner,
                 enters_tapped: false, // Default to untapped, can be modified by effects

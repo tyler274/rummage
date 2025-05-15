@@ -179,7 +179,7 @@ fn cleanup_main_menu_logo(
     let mut count = 0;
     for entity in logos.iter() {
         // Always clean up logos when leaving main menu
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
         count += 1;
     }
 
@@ -196,7 +196,7 @@ fn cleanup_pause_menu_logo(
 ) {
     let mut count = 0;
     for entity in logos.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
         count += 1;
     }
 
@@ -215,7 +215,7 @@ fn remove_main_menu_logo_spawned_flag(mut commands: Commands) {
 fn cleanup_all_logos(mut commands: Commands, logos: Query<Entity, With<MenuDecorativeElement>>) {
     let mut count = 0;
     for entity in logos.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
         count += 1;
     }
     if count > 0 {

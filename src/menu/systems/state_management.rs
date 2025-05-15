@@ -65,8 +65,6 @@ pub fn setup_settings_transition(
 #[derive(SystemParam)]
 pub struct StateMonitorParams<'w, 's> {
     state: Res<'w, State<GameMenuState>>,
-    #[system_param(ignore)]
-    _next_state: ResMut<'w, NextState<GameMenuState>>, // Ignoring unused param
     menu_items: Query<'w, 's, Entity, With<MenuItem>>,
     commands: Commands<'w, 's>,
     asset_server: Res<'w, AssetServer>,

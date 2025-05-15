@@ -1,6 +1,7 @@
 use crate::menu::{
     camera::setup::MenuCamera, settings::state::SettingsMenuState, state::GameMenuState,
 };
+use bevy::prelude::SystemSet;
 use bevy::prelude::*;
 use bevy_persistent::prelude::*;
 
@@ -24,13 +25,20 @@ use super::systems::{
 /// Plugin that sets up the settings menu system
 pub struct SettingsPlugin;
 
+// Define system sets for chaining on exit
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+struct SaveSettingsSet;
+
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+struct DespawnScreenSet;
+
 /// Despawns the menu camera when leaving the main settings state.
 fn cleanup_settings_menu_camera(
     mut commands: Commands,
     camera_query: Query<Entity, With<MenuCamera>>,
 ) {
     for entity in camera_query.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
         info!(
             "Despawned settings menu camera entity {:?} on exiting GameMenuState::Settings",
             entity
@@ -118,15 +126,27 @@ impl Plugin for SettingsPlugin {
             // Use specific despawn systems for each state
             .add_systems(
                 OnExit(SettingsMenuState::Audio),
-                (save_settings, despawn_screen::<OnAudioSettingsMenu>).chain(),
+                (
+                    save_settings.in_set(SaveSettingsSet),
+                    despawn_screen::<OnAudioSettingsMenu>.in_set(DespawnScreenSet),
+                )
+                    .chain(),
             )
             .add_systems(
                 OnExit(SettingsMenuState::Video),
-                (save_settings, despawn_screen::<OnVideoSettingsMenu>).chain(),
+                (
+                    save_settings.in_set(SaveSettingsSet),
+                    despawn_screen::<OnVideoSettingsMenu>.in_set(DespawnScreenSet),
+                )
+                    .chain(),
             )
             .add_systems(
                 OnExit(SettingsMenuState::Gameplay),
-                (save_settings, despawn_screen::<OnGameplaySettingsMenu>).chain(),
+                (
+                    save_settings.in_set(SaveSettingsSet),
+                    despawn_screen::<OnGameplaySettingsMenu>.in_set(DespawnScreenSet),
+                )
+                    .chain(),
             )
             .add_systems(
                 OnExit(SettingsMenuState::Controls),
@@ -177,16 +197,16 @@ fn apply_settings(
     info!("Applying saved settings");
 
     // Apply volume settings
-    volume_settings.master = persistent_settings.volume.master;
-    volume_settings.music = persistent_settings.volume.music;
-    volume_settings.sfx = persistent_settings.volume.sfx;
+    volume_settings.master = persistent_settings.get().volume.master;
+    volume_settings.music = persistent_settings.get().volume.music;
+    volume_settings.sfx = persistent_settings.get().volume.sfx;
 
     // Apply gameplay settings
-    gameplay_settings.auto_pass = persistent_settings.gameplay.auto_pass;
-    gameplay_settings.show_tooltips = persistent_settings.gameplay.show_tooltips;
+    gameplay_settings.auto_pass = persistent_settings.get().gameplay.auto_pass;
+    gameplay_settings.show_tooltips = persistent_settings.get().gameplay.show_tooltips;
 
     // Apply graphics settings - now using Copy trait
-    graphics_quality.quality = persistent_settings.graphics;
+    graphics_quality.quality = persistent_settings.get().graphics;
 
     info!("Settings applied successfully");
 }
@@ -201,16 +221,16 @@ fn save_settings(
     info!("Saving current settings");
 
     // Save volume settings
-    persistent_settings.volume.master = volume_settings.master;
-    persistent_settings.volume.music = volume_settings.music;
-    persistent_settings.volume.sfx = volume_settings.sfx;
+    persistent_settings.get_mut().volume.master = volume_settings.master;
+    persistent_settings.get_mut().volume.music = volume_settings.music;
+    persistent_settings.get_mut().volume.sfx = volume_settings.sfx;
 
     // Save gameplay settings
-    persistent_settings.gameplay.auto_pass = gameplay_settings.auto_pass;
-    persistent_settings.gameplay.show_tooltips = gameplay_settings.show_tooltips;
+    persistent_settings.get_mut().gameplay.auto_pass = gameplay_settings.auto_pass;
+    persistent_settings.get_mut().gameplay.show_tooltips = gameplay_settings.show_tooltips;
 
     // Save graphics settings - now using Copy trait
-    persistent_settings.graphics = graphics_quality.quality;
+    persistent_settings.get_mut().graphics = graphics_quality.quality;
 
     // Persist changes to disk
     if let Err(e) = persistent_settings.persist() {

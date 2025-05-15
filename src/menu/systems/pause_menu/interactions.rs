@@ -3,6 +3,7 @@ use crate::menu::{
     save_load::{SaveLoadUiContext, SaveLoadUiState},
     settings::state::SettingsMenuState,
     settings::systems::state_transitions::handle_settings_enter,
+    state::AppState,
     state::{GameMenuState, StateTransitionContext},
 };
 use bevy::{app::AppExit, prelude::*};
@@ -26,7 +27,8 @@ type PauseMenuButtonInteractionQuery<'w, 's> = Query<
 /// Handles button actions in the pause menu
 pub fn pause_menu_action(
     mut interaction_query: PauseMenuButtonInteractionQuery,
-    mut game_state: ResMut<NextState<GameMenuState>>,
+    mut game_menu_state: ResMut<NextState<GameMenuState>>,
+    mut app_state: ResMut<NextState<AppState>>,
     mut settings_state: ResMut<NextState<SettingsMenuState>>,
     mut context: ResMut<StateTransitionContext>,
     mut app_exit_events: EventWriter<AppExit>,
@@ -42,7 +44,8 @@ pub fn pause_menu_action(
                     MenuButtonAction::Resume => {
                         // Resume the game
                         info!("Resuming game from pause menu");
-                        game_state.set(GameMenuState::InGame);
+                        game_menu_state.set(GameMenuState::InGame);
+                        app_state.set(AppState::InGame);
                     }
                     MenuButtonAction::SaveGame => {
                         // Show save game UI
@@ -60,18 +63,18 @@ pub fn pause_menu_action(
                         info!("Opening settings from pause menu");
                         handle_settings_enter(
                             &mut settings_state,
-                            &mut game_state,
+                            &mut game_menu_state,
                             &mut context,
                             GameMenuState::PauseMenu,
                         );
                     }
                     MenuButtonAction::MainMenu => {
                         // Go back to the main menu
-                        game_state.set(GameMenuState::MainMenu);
+                        game_menu_state.set(GameMenuState::MainMenu);
                     }
                     MenuButtonAction::Quit => {
                         // Exit the game
-                        app_exit_events.send(AppExit::default());
+                        app_exit_events.write(AppExit::default());
                     }
                     _ => {}
                 }

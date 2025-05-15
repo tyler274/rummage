@@ -70,7 +70,7 @@ pub fn setup_main_menu(
 
     // Clean up any existing menu items with MenuRoot
     for entity in existing_roots.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 
     // Setup background

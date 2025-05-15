@@ -31,7 +31,7 @@ pub fn capture_screenshot_system(
     // Process any screenshot events
     for event in er_screenshot.read() {
         // Get window
-        let window = match q_window.get_single() {
+        let window = match q_window.single() {
             Ok(window) => window,
             Err(_) => {
                 error!("Failed to get primary window for screenshot");
@@ -99,7 +99,7 @@ pub fn capture_on_command_system(
         *screenshot_counter += 1;
 
         // Queue screenshot capture for next frame
-        ew_screenshots.send(ScreenshotEvent {
+        ew_screenshots.write(ScreenshotEvent {
             entity: Entity::PLACEHOLDER,
             name: screenshot_name,
         });

@@ -4,6 +4,7 @@ use crate::camera::components::AppLayer;
 use crate::game_engine::zones::Zone;
 use crate::player::components::Player;
 use crate::player::resources::PlayerConfig;
+use bevy::ecs::hierarchy::ChildOf;
 use bevy::prelude::*;
 
 use super::PlaymatZone;
@@ -75,7 +76,7 @@ pub fn spawn_hand_zone(
             AppLayer::game_layers(),
             Name::new(format!("Hand-{}", player.name)),
         ))
-        .set_parent(playmat_entity)
+        .insert(ChildOf(playmat_entity))
         .id();
 
     info!(
@@ -93,7 +94,7 @@ pub fn arrange_cards_in_hand(
     windows: Query<&Window, With<bevy::window::PrimaryWindow>>,
 ) {
     // Safely get window width, defaulting to a reasonable value if not available
-    let window_width = if let Ok(window) = windows.get_single() {
+    let window_width = if let Ok(window) = windows.single() {
         window.width()
     } else {
         // Default to standard widescreen width if window can't be queried
@@ -122,8 +123,8 @@ pub fn arrange_cards_in_hand(
         let total_width = spacing * (card_count as f32 - 1.0);
         let start_x = -total_width / 2.0;
 
-        for (i, &child) in children.iter().enumerate() {
-            if let Ok(mut card_transform) = card_query.get_mut(child) {
+        for (i, child_ref) in children.iter().enumerate() {
+            if let Ok(mut card_transform) = card_query.get_mut(*child_ref) {
                 let relative_pos = i as f32 / (card_count as f32 - 1.0).max(1.0);
                 let angle = std::f32::consts::PI * (0.4 - (0.8 * relative_pos));
 
@@ -212,35 +213,38 @@ pub fn toggle_hand_expansion(
     }
 
     // Get cursor position
-    let window = windows.single();
-    if let Some(cursor_position) = window.cursor_position() {
-        // Get camera, skip if no game camera exists (e.g., in menu states)
-        let (camera, camera_transform) = match camera_query.get_single() {
-            Ok(camera) => camera,
-            Err(_) => {
-                // Game camera doesn't exist (likely in a menu state), skip processing
-                return;
-            }
-        };
+    if let Ok(window) = windows.single() {
+        if let Some(cursor_position) = window.cursor_position() {
+            // Get camera, skip if no game camera exists (e.g., in menu states)
+            let (camera, camera_transform) = match camera_query.single() {
+                Ok(camera) => camera,
+                Err(_) => {
+                    // Game camera doesn't exist (likely in a menu state), skip processing
+                    return;
+                }
+            };
 
-        // Convert cursor to world position
-        if let Ok(cursor_world_position) = camera
-            .viewport_to_world(camera_transform, cursor_position)
-            .map(|ray| ray.origin.truncate())
-        {
-            // Check if cursor is over any hand zones
-            for (mut hand, transform) in hand_query.iter_mut() {
-                let hand_position = transform.translation().truncate();
-                let distance = (hand_position - cursor_world_position).length();
+            // Convert cursor to world position
+            if let Ok(cursor_world_position) = camera
+                .viewport_to_world(camera_transform, cursor_position)
+                .map(|ray| ray.origin.truncate())
+            {
+                // Check if cursor is over any hand zones
+                for (mut hand, transform) in hand_query.iter_mut() {
+                    let hand_position = transform.translation().truncate();
+                    let distance = (hand_position - cursor_world_position).length();
 
-                // Simple distance-based click detection - would be improved with actual colliders
-                if distance < 150.0 {
-                    // Toggle expanded state
-                    hand.is_expanded = !hand.is_expanded;
-                    info!("Hand expansion toggled: {}", hand.is_expanded);
-                    break;
+                    // Simple distance-based click detection - would be improved with actual colliders
+                    if distance < 150.0 {
+                        // Toggle expanded state
+                        hand.is_expanded = !hand.is_expanded;
+                        info!("Hand expansion toggled: {}", hand.is_expanded);
+                        break;
+                    }
                 }
             }
         }
+    } else {
+        warn!("Primary window not found, cannot process hand expansion toggle.");
     }
 }

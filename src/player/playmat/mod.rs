@@ -16,7 +16,7 @@ mod systems;
 mod zones;
 
 // Re-export necessary items publicly
-pub use components::{PlayerPlaymat, PlaymatZone};
+pub use components::PlaymatZone;
 // Remove the specific re-export for the plugin as it's now accessible via the public module path
 // pub use plugin::PlayerPlaymatPlugin;
 // Only export resources/systems actually needed outside this parent module

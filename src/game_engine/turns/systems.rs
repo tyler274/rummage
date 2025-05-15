@@ -38,7 +38,7 @@ pub fn handle_turn_start(
         }
 
         // Create a turn start event
-        turn_start_events.send(TurnStartEvent {
+        turn_start_events.write(TurnStartEvent {
             player: turn_manager.active_player,
             turn_number: turn_manager.turn_number,
         });
@@ -76,7 +76,7 @@ pub fn handle_turn_end(
         }
 
         // Create a turn end event
-        turn_end_events.send(TurnEndEvent {
+        turn_end_events.write(TurnEndEvent {
             player: turn_manager.active_player,
             turn_number: turn_manager.turn_number,
         });

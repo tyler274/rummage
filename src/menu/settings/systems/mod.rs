@@ -37,7 +37,7 @@ pub fn cleanup_settings_menu(
         for entity in settings_entities.iter() {
             // Attempt to despawn - might need adjustment based on hierarchy
             // Consider despawning only root entities if this causes issues.
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
             despawned += 1;
         }
         info!("Despawned {} entities via generic cleanup", despawned);
@@ -54,7 +54,7 @@ pub fn despawn_screen<T: Component>(mut commands: Commands, query: Query<Entity,
     );
     let mut count = 0;
     for entity in query.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
         count += 1;
     }
     info!("Despawned {} entities", count);

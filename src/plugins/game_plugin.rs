@@ -13,15 +13,13 @@ use crate::player::{PlayerPlugin, resources::PlayerConfig};
 #[cfg(feature = "snapshot")]
 use crate::snapshot::systems::take_snapshot_after_setup;
 use crate::text::DebugConfig;
-use bevy::ecs::system::SystemParam;
+use bevy::ecs::hierarchy::ChildOf;
 use bevy::prelude::*;
 use bevy::render::view::RenderLayers;
+use std::collections::HashSet;
 
 // Add AppState import
 use crate::menu::state::AppState;
-
-// Import the new system set
-use crate::plugins::main_rummage::camera::GameCameraSetupSet;
 
 /// Marker component to trigger visual hand spawning for a player
 #[derive(Component)]
@@ -91,13 +89,69 @@ impl Plugin for RummagePlugin {
                     handle_window_resize,
                     camera_movement,
                 )
-                    .chain() // Ensure zoom is set before movement/resize logic potentially uses it
                     .run_if(in_state(AppState::InGame)),
+            )
+            // Re-add the debug logging system
+            .add_systems(
+                Update,
+                debug_log_camera_state.run_if(in_state(AppState::InGame)),
             );
     }
 }
 
-// --- New System to Spawn Game Camera ---
+// --- System to Log Camera State ---
+fn debug_log_camera_state(
+    // Use Added<T> filter to log only when camera first appears or changes significantly
+    camera_query: Query<
+        (
+            Entity,
+            &Transform,
+            &Visibility,
+            &InheritedVisibility,
+            &ViewVisibility,
+            &Camera,
+            &RenderLayers,
+        ),
+        (
+            With<GameCamera>,
+            Or<(Added<GameCamera>, Changed<Transform>, Changed<Visibility>)>,
+        ),
+    >,
+    // Use Local to log only once per camera entity initially, then on changes
+    mut logged_cameras: Local<HashSet<Entity>>,
+) {
+    for (entity, transform, visibility, inherited_visibility, view_visibility, camera, layers) in
+        camera_query.iter()
+    {
+        if logged_cameras.insert(entity) {
+            info!(
+                "[CAMERA DEBUG] Initial State - Entity: {:?}, Order: {}, Transform: {:?}, Vis: {:?}, InheritedVis: {:?}, ViewVis: {:?}, Layers: {:?}",
+                entity,
+                camera.order,
+                transform,
+                visibility,
+                inherited_visibility,
+                view_visibility,
+                layers
+            );
+        } else {
+            // Log subsequent changes
+            info!(
+                "[CAMERA DEBUG] Changed State - Entity: {:?}, Order: {}, Transform: {:?}, Vis: {:?}, InheritedVis: {:?}, ViewVis: {:?}, Layers: {:?}",
+                entity,
+                camera.order,
+                transform,
+                visibility,
+                inherited_visibility,
+                view_visibility,
+                layers
+            );
+        }
+    }
+}
+// --- End System ---
+
+// --- System to Spawn Game Camera ---
 fn spawn_game_camera(
     mut commands: Commands,
     existing_game_cameras: Query<Entity, With<GameCamera>>,
@@ -112,9 +166,10 @@ fn spawn_game_camera(
                     order: 0, // Explicitly set order to 0 for game camera
                     ..default()
                 },
+                // Ensure Visibility components are explicitly added for clarity
                 Visibility::Visible,
-                InheritedVisibility::default(),
-                ViewVisibility::default(),
+                InheritedVisibility::default(), // Should become true if not parented
+                ViewVisibility::default(), // Should become true if Vis is Visible & Inherited is true
                 Transform::from_xyz(0.0, 0.0, 999.0),
                 GlobalTransform::default(),
                 GameCamera,
@@ -129,6 +184,8 @@ fn spawn_game_camera(
                 ]),
                 Name::new("Game Camera"),
             ))
+            // Explicitly remove Parent component to prevent accidental parenting
+            .remove::<ChildOf>()
             .id();
         info!(
             "Successfully spawned GameCamera with entity: {:?}",
@@ -141,7 +198,7 @@ fn spawn_game_camera(
         );
     }
 }
-// --- End New System ---
+// --- End System ---
 
 // System to set up the game state (now without camera spawning)
 fn setup_game(

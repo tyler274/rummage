@@ -14,7 +14,7 @@ pub fn cleanup_pause_menu(
     if item_count > 0 {
         info!("Cleaning up {} pause menu items", item_count);
         for entity in menu_items.iter() {
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
         }
     }
 
@@ -26,7 +26,7 @@ pub fn cleanup_pause_menu(
             element_count
         );
         for entity in decorative_elements.iter() {
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
         }
     }
 
@@ -36,7 +36,7 @@ pub fn cleanup_pause_menu(
         info!("Cleaning up {} input blockers", blocker_count);
         for entity in input_blockers.iter() {
             // Input blockers are typically simple nodes, despawn should be fine
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
         }
     }
 }

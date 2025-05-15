@@ -131,7 +131,7 @@ pub fn update_menu_background(
     mut commands: Commands,
 ) {
     // Get the primary window
-    if let Ok(window) = windows.get_single() {
+    if let Ok(window) = windows.single() {
         let current_width = window.width();
         let current_height = window.height();
 

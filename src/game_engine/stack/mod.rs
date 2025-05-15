@@ -234,7 +234,7 @@ pub fn stack_resolution_system(
             stack.remove_item(entity);
 
             // Emit a counter event with reason
-            counter_events.send(EffectCounteredEvent {
+            counter_events.write(EffectCounteredEvent {
                 item: entity,
                 reason: CounterReason::InvalidTargets,
             });
@@ -251,7 +251,7 @@ pub fn stack_resolution_system(
         // Resolve the top item
         if let Some(controller) = stack.resolve_top(&mut commands) {
             // Send an event so other systems know this stack item resolved
-            stack_resolution_events.send(StackItemResolvedEvent { controller });
+            stack_resolution_events.write(StackItemResolvedEvent { controller });
 
             // Get all players (simplified for now, using only active player)
             let players = vec![game_state.active_player];

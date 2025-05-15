@@ -31,7 +31,7 @@ pub fn setup_main_menu(
     // Always despawn existing menu cameras first to ensure a clean state
     let mut existing_camera_count = 0;
     for entity in existing_menu_items.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
         existing_camera_count += 1;
     }
     if existing_camera_count > 0 {
@@ -74,7 +74,7 @@ pub fn setup_main_menu(
     // --- Root Node Cleanup ---
     // Clean up any existing menu items with MenuRoot
     for entity in existing_roots.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 
     // Setup background

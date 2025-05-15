@@ -149,7 +149,7 @@ fn process_single_save(
                 .with_filename(snapshot_name.clone())
                 .with_description(format!("Save game snapshot for {}", event.slot_name));
 
-            snapshot_events.send(snapshot_event);
+            snapshot_events.write(snapshot_event);
             info!("Triggered snapshot for save game: {}", event.slot_name);
 
             // Return filename to store in save data
@@ -300,8 +300,8 @@ fn process_single_save(
                     );
 
                     // Send a snapshot event
-                    if let Ok(camera) = game_camera_query.get_single() {
-                        snapshot_events.send(
+                    if let Ok(camera) = game_camera_query.single() {
+                        snapshot_events.write(
                             SnapshotEvent::new()
                                 .with_camera(camera)
                                 .with_filename(snapshot_name.clone()),

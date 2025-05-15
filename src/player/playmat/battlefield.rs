@@ -4,6 +4,7 @@ use crate::camera::components::AppLayer;
 use crate::game_engine::zones::Zone;
 use crate::player::components::Player;
 use crate::player::resources::PlayerConfig;
+use bevy::ecs::hierarchy::ChildOf;
 use bevy::input::keyboard::KeyCode;
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
@@ -102,7 +103,7 @@ pub fn spawn_battlefield_zone(
             AppLayer::game_layers(),
             Name::new(format!("Battlefield-{}", player.name)),
         ))
-        .set_parent(playmat_entity)
+        .insert(ChildOf(playmat_entity))
         .id();
 
     info!(
@@ -120,7 +121,7 @@ pub fn organize_battlefield_cards(
     windows: Query<&Window, With<bevy::window::PrimaryWindow>>,
 ) {
     // Safely get the window dimensions, defaulting to reasonable values if not available
-    let (window_width, window_height) = if let Ok(window) = windows.get_single() {
+    let (window_width, window_height) = if let Ok(window) = windows.single() {
         (window.width(), window.height())
     } else {
         // Default to standard HD resolution if window can't be queried
@@ -156,19 +157,19 @@ pub fn organize_battlefield_cards(
             let mut other = Vec::new();
 
             // Group cards by type
-            for &child in children.iter() {
-                if let Ok((_, permanent_type)) = card_query.get(child) {
+            for child_entity_ref in children.iter() {
+                if let Ok((_, permanent_type)) = card_query.get(*child_entity_ref) {
                     match permanent_type {
-                        Some(PermanentType::Creature) => creatures.push(child),
-                        Some(PermanentType::Land) => lands.push(child),
-                        Some(PermanentType::Artifact) => artifacts.push(child),
-                        Some(PermanentType::Enchantment) => enchantments.push(child),
-                        Some(PermanentType::Planeswalker) => planeswalkers.push(child),
-                        Some(PermanentType::Token) => tokens.push(child),
-                        None => other.push(child),
+                        Some(PermanentType::Creature) => creatures.push(*child_entity_ref),
+                        Some(PermanentType::Land) => lands.push(*child_entity_ref),
+                        Some(PermanentType::Artifact) => artifacts.push(*child_entity_ref),
+                        Some(PermanentType::Enchantment) => enchantments.push(*child_entity_ref),
+                        Some(PermanentType::Planeswalker) => planeswalkers.push(*child_entity_ref),
+                        Some(PermanentType::Token) => tokens.push(*child_entity_ref),
+                        None => other.push(*child_entity_ref),
                     }
                 } else {
-                    other.push(child);
+                    other.push(*child_entity_ref);
                 }
             }
 
@@ -248,8 +249,8 @@ pub fn organize_battlefield_cards(
             let start_x = -(grid_width * cell_size) / 2.0 + (cell_size / 2.0);
             let start_y = -(grid_height * cell_size) / 2.0 + (cell_size / 2.0);
 
-            for (i, &child) in children.iter().enumerate() {
-                if let Ok((mut transform, _)) = card_query.get_mut(child) {
+            for (i, child_entity_ref) in children.iter().enumerate() {
+                if let Ok((mut transform, _)) = card_query.get_mut(*child_entity_ref) {
                     let row = (i as u32) / battlefield.grid_columns;
                     let col = (i as u32) % battlefield.grid_columns;
 
@@ -317,8 +318,8 @@ fn position_card_group(
     let start_y = (positioning.start_row * positioning.cell_size)
         - (((positioning.end_row - positioning.start_row) / 2.0) * positioning.cell_size);
 
-    for (i, &card) in cards.iter().enumerate() {
-        if let Ok((mut transform, _)) = card_query.get_mut(card) {
+    for (i, card_entity_ref) in cards.iter().enumerate() {
+        if let Ok((mut transform, _)) = card_query.get_mut(*card_entity_ref) {
             let local_row = (i as u32) / group_columns;
             let local_col = (i as u32) % group_columns;
 

@@ -172,7 +172,7 @@ pub fn setup_audio_settings(mut commands: Commands, volume_settings: Res<VolumeS
 pub fn volume_slider_interaction(
     interaction_query: VolumeSliderInteractionQuery,
     mut volume_requests: ResMut<VolumeUpdateRequests>,
-    windows: Query<&Window>,
+    windows: Query<&Window, With<PrimaryWindow>>,
     mouse_input: Res<ButtonInput<MouseButton>>,
 ) {
     // Only process if left mouse button is pressed
@@ -181,7 +181,7 @@ pub fn volume_slider_interaction(
     }
 
     // Get the primary window and cursor position
-    let window = windows.get_single().expect("Expected a primary window");
+    let window = windows.single().expect("Expected a primary window");
 
     if let Some(cursor_pos) = window.cursor_position() {
         // Process interaction data without modifying any other components
@@ -228,12 +228,16 @@ pub fn apply_volume_updates(
         match volume_type {
             VolumeType::Master => {
                 context.volume_settings.master = volume_value;
-                context.global_volume.volume = Volume::new(volume_value);
+                context.global_volume.volume = Volume {
+                    amplitude: volume_value,
+                };
             }
             VolumeType::Music => {
                 context.volume_settings.music = volume_value;
                 for mut settings in audio_players.iter_mut() {
-                    settings.volume = Volume::new(volume_value);
+                    settings.volume = Volume {
+                        amplitude: volume_value,
+                    };
                 }
             }
             VolumeType::Sfx => {

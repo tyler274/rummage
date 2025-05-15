@@ -78,7 +78,7 @@ pub fn handle_auto_save_for_tests(
             && auto_save_tracker.time_since_last_save >= config.auto_save_interval_seconds
         {
             // Trigger a save event
-            event_writer.send(SaveGameEvent {
+            event_writer.write(SaveGameEvent {
                 slot_name: "auto_save".to_string(),
                 description: None,
                 with_snapshot: false,

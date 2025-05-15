@@ -58,8 +58,8 @@ pub fn handle_main_menu_interactions(
                         // Placeholder for multiplayer functionality
                     }
                     MenuButtonAction::Quit => {
-                        info!("Exit button pressed");
-                        exit.send(bevy::app::AppExit::default());
+                        info!("Quit button pressed, sending AppExit event");
+                        exit.write(bevy::app::AppExit::default());
                     }
                     MenuButtonAction::Credits => {
                         info!("Credits button pressed");

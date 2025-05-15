@@ -1,3 +1,0 @@
-# Check Compilation Before Committing
-
-Before staging files and creating a commit, always ensure the codebase compiles without errors or significant warnings. Run `cargo check` or `cargo build` to verify. 
